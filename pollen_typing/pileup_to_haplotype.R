@@ -11,6 +11,7 @@ sample <- args[1]
 MAPQ <- args[2]
 
 setwd("/home/ajt200/analysis/nanopore/pollen_typing/")
+library(dplyr)
 library(parallel)
 library(doParallel)
 registerDoParallel(cores = detectCores())
@@ -67,23 +68,6 @@ for(x in 1:(dim(plpHap)[1])) {
 plpHap[] <- lapply(plpHap, function(x) as.character(gsub("AA", "A", x)))
 plpHap[] <- lapply(plpHap, function(x) as.character(gsub("BB", "B", x)))
 
-# Apply a minimal haplotype imputation approach which
-# is informed only by haplotypes at flanking markers
-# and not by haplotypes within other alignments
-
-for(x in 1:(dim(plpHap)[1])) {
-  for(y in 5:(dim(plpHap)[2])) {
-    if( plpHap[x,y] %in% c("-") ) {
-      plpHap[x,y] <- "AA"
-    } else if( plpHap[x,y] %in% c(plpHap[x,4],
-                                  tolower(plpHap[x,4])) ) {
-      plpHap[x,y] <- "BB"
-    } else {
-      plpHap[x,y] <- "-"
-    }
-  }
-}
-
 # Transpose haplotype matrix for sorting
 tplpHap <- data.frame(t(plpHap[,5:dim(plpHap)[2]]))
 colnames(tplpHap) <- as.integer(plpHap$pos)
@@ -96,14 +80,163 @@ tplpHap <- data.frame(tplpHap,
                       hap = stringHap)
 colnames(tplpHap) <- c(as.integer(plpHap$pos),
                        "hap")
+# Replace factors with characters
+factorColumns <- sapply(tplpHap, is.factor)
+tplpHap[factorColumns] <- lapply(tplpHap[factorColumns], as.character)
+
+# Retain only rows that contain both parental haplotypes
 tplpHap <- tplpHap[grepl("A", tplpHap$hap) &
-                   grepl("B",tplpHap$hap),]
+                   grepl("B", tplpHap$hap),]
+
+# Apply a minimal haplotype imputation approach which
+# is informed only by haplotypes at flanking markers
+# and not by haplotypes within other alignments
+# For Col-0 (A) alleles
+while( sum(grepl(pattern = "A(-+)A",
+                 x = tplpHap$hap,
+                 perl = T)) > 0 ) {
+  for(x in 1:length(tplpHap$hap)) {
+    if( grepl(pattern = "A(-+)A",
+              x = tplpHap$hap[x],
+              perl = T) ) {
+      tplpHap$hap[x] <- sub(pattern = "A(-+)A",
+                            replacement = paste0("A",
+                                                 paste0(rep(x = "A",
+                                                            times = attr(regexpr(pattern = "A(-+)A",
+                                                                                 text = tplpHap$hap[x],
+                                                                                 perl = T),
+                                                                         'capture.length')[1]),
+                                                        collapse = ""),
+                                                 "A"),
+                            x = tplpHap$hap[x],
+                            perl = T)
+    }
+  }
+}
+# For Ws-4 (B) alleles
+while( sum(grepl(pattern = "B(-+)B",
+                 x = tplpHap$hap,
+                 perl = T)) > 0 ) {
+  for(x in 1:length(tplpHap$hap)) {
+    if( grepl(pattern = "B(-+)B",
+              x = tplpHap$hap[x],
+              perl = T) ) {
+      tplpHap$hap[x] <- sub(pattern = "B(-+)B",
+                            replacement = paste0("B",
+                                                 paste0(rep(x = "B",
+                                                            times = attr(regexpr(pattern = "B(-+)B",
+                                                                                 text = tplpHap$hap[x],
+                                                                                 perl = T),
+                                                                         'capture.length')[1]),
+                                                        collapse = ""),
+                                                 "B"),
+                            x = tplpHap$hap[x],
+                            perl = T)
+    }
+  }
+}
+
+# Impute haplotypes at leftmost and rightmost markers based
+# on haplotype at nearest markers
+# For Col-0 (A) alleles
+# leftmost
+while( sum(grepl(pattern = "^(-+)AA",
+                 x = tplpHap$hap,
+                 perl = T)) > 0 ) {
+  for(x in 1:length(tplpHap$hap)) {
+    if( grepl(pattern = "^(-+)AA",
+              x = tplpHap$hap[x],
+              perl = T) ) {
+      tplpHap$hap[x] <- sub(pattern = "^(-+)AA",
+                            replacement = paste0(paste0(rep(x = "A",
+                                                            times = attr(regexpr(pattern = "^(-+)AA",
+                                                                                 text = tplpHap$hap[x],
+                                                                                 perl = T),
+                                                                         'capture.length')[1]),
+                                                        collapse = ""),
+                                                 "AA"),
+                            x = tplpHap$hap[x],
+                            perl = T)
+    }
+  }
+}
+# rightmost
+while( sum(grepl(pattern = "AA(-+)$",
+                 x = tplpHap$hap,
+                 perl = T)) > 0 ) {
+  for(x in 1:length(tplpHap$hap)) {
+    if( grepl(pattern = "AA(-+)$",
+              x = tplpHap$hap[x],
+              perl = T) ) {
+      tplpHap$hap[x] <- sub(pattern = "AA(-+)$",
+                            replacement = paste0("AA",
+                                                 paste0(rep(x = "A",
+                                                            times = attr(regexpr(pattern = "AA(-+)$",
+                                                                                 text = tplpHap$hap[x],
+                                                                                 perl = T),
+                                                                         'capture.length')[1]),
+                                                        collapse = "")),
+                            x = tplpHap$hap[x],
+                            perl = T)
+    }
+  }
+}
+
+# For Ws-4 (B) alleles
+# leftmost
+while( sum(grepl(pattern = "^(-+)BB",
+                 x = tplpHap$hap,
+                 perl = T)) > 0 ) {
+  for(x in 1:length(tplpHap$hap)) {
+    if( grepl(pattern = "^(-+)BB",
+              x = tplpHap$hap[x],
+              perl = T) ) {
+      tplpHap$hap[x] <- sub(pattern = "^(-+)BB",
+                            replacement = paste0(paste0(rep(x = "B",
+                                                            times = attr(regexpr(pattern = "^(-+)BB",
+                                                                                 text = tplpHap$hap[x],
+                                                                                 perl = T),
+                                                                         'capture.length')[1]),
+                                                        collapse = ""),
+                                                 "BB"),
+                            x = tplpHap$hap[x],
+                            perl = T)
+    }
+  }
+}
+# rightmost
+while( sum(grepl(pattern = "BB(-+)$",
+                 x = tplpHap$hap,
+                 perl = T)) > 0 ) {
+  for(x in 1:length(tplpHap$hap)) {
+    if( grepl(pattern = "BB(-+)$",
+              x = tplpHap$hap[x],
+              perl = T) ) {
+      tplpHap$hap[x] <- sub(pattern = "BB(-+)$",
+                            replacement = paste0("BB",
+                                                 paste0(rep(x = "B",
+                                                            times = attr(regexpr(pattern = "BB(-+)$",
+                                                                                 text = tplpHap$hap[x],
+                                                                                 perl = T),
+                                                                         'capture.length')[1]),
+                                                        collapse = "")),
+                            x = tplpHap$hap[x],
+                            perl = T)
+    }
+  }
+}
+
+
+# Order by (imputed) haplotypes
 tplpHap_sort <- tplpHap[sort.int(tplpHap$hap,
                                  decreasing = T,
                                  index.return=T)$ix,]
+# Group by (imputed) haplotypes
+tplpHap_group_n <- tplpHap %>%
+  group_by(hap) %>%
+  summarize(n())
 
 
-library(dplyr)
 tmp <- arrange(tplpHap,
                desc(tplpHap[,1]),
 	       desc(tplpHap[,2]),
