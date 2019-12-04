@@ -88,9 +88,16 @@ tplpHap[factorColumns] <- lapply(tplpHap[factorColumns], as.character)
 tplpHap <- tplpHap[grepl("A", tplpHap$hap) &
                    grepl("B", tplpHap$hap),]
 
+
 # Apply a minimal haplotype imputation approach which
 # is informed only by haplotypes at flanking markers
 # and not by haplotypes within other alignments
+
+# For imputation of missing haplotypes that are not at
+# the ends of an alignment, they must be flanked by
+# two of the same parental allele, one on each side
+# (e.g., for "AAAA-AAA-AAAAA-BB", only the first and second "-",
+#  and not the third "-", would be imputed as "A")
 # For Col-0 (A) alleles
 while( sum(grepl(pattern = "A(-+)A",
                  x = tplpHap$hap,
@@ -136,86 +143,78 @@ while( sum(grepl(pattern = "B(-+)B",
   }
 }
 
-# Impute haplotypes at leftmost and rightmost markers based
-# on haplotype at nearest markers
+# Impute missing haplotypes at the ends of an alignment based
+# on the haplotype at the nearest marker(s)
+
+# As an allele-specific primer on the left binds only Col-0 (A) alleles,
+# impute missing haplotypes at the left-hand side (beginning) of alignments
+# that have a Col-0 (A) allele at a marker on their right
+# (e.g., for "----ABBBBBBBBBA-", only the left-hand "----" and
+#  not the right-hand "-" would be imputed as "A")
 # For Col-0 (A) alleles
-# leftmost
-while( sum(grepl(pattern = "^(-+)AA",
+# left-hand side (beginning) of alignments
+while( sum(grepl(pattern = "^(-+)A",
                  x = tplpHap$hap,
                  perl = T)) > 0 ) {
   for(x in 1:length(tplpHap$hap)) {
-    if( grepl(pattern = "^(-+)AA",
+    if( grepl(pattern = "^(-+)A",
               x = tplpHap$hap[x],
               perl = T) ) {
-      tplpHap$hap[x] <- sub(pattern = "^(-+)AA",
+      tplpHap$hap[x] <- sub(pattern = "^(-+)A",
                             replacement = paste0(paste0(rep(x = "A",
-                                                            times = attr(regexpr(pattern = "^(-+)AA",
+                                                            times = attr(regexpr(pattern = "^(-+)A",
                                                                                  text = tplpHap$hap[x],
                                                                                  perl = T),
                                                                          'capture.length')[1]),
                                                         collapse = ""),
-                                                 "AA"),
+                                                 "A"),
                             x = tplpHap$hap[x],
                             perl = T)
     }
   }
 }
-# rightmost
-while( sum(grepl(pattern = "AA(-+)$",
-                 x = tplpHap$hap,
-                 perl = T)) > 0 ) {
-  for(x in 1:length(tplpHap$hap)) {
-    if( grepl(pattern = "AA(-+)$",
-              x = tplpHap$hap[x],
-              perl = T) ) {
-      tplpHap$hap[x] <- sub(pattern = "AA(-+)$",
-                            replacement = paste0("AA",
-                                                 paste0(rep(x = "A",
-                                                            times = attr(regexpr(pattern = "AA(-+)$",
-                                                                                 text = tplpHap$hap[x],
-                                                                                 perl = T),
-                                                                         'capture.length')[1]),
-                                                        collapse = "")),
-                            x = tplpHap$hap[x],
-                            perl = T)
-    }
-  }
-}
+## right-hand side (end) of alignments
+## (only to be used for Col-0 (A) alleles where a Col-0-specific
+##  primer binds the right-hand side of the amplicon)
+#while( sum(grepl(pattern = "A(-+)$",
+#                 x = tplpHap$hap,
+#                 perl = T)) > 0 ) {
+#  for(x in 1:length(tplpHap$hap)) {
+#    if( grepl(pattern = "A(-+)$",
+#              x = tplpHap$hap[x],
+#              perl = T) ) {
+#      tplpHap$hap[x] <- sub(pattern = "A(-+)$",
+#                            replacement = paste0("A",
+#                                                 paste0(rep(x = "A",
+#                                                            times = attr(regexpr(pattern = "A(-+)$",
+#                                                                                 text = tplpHap$hap[x],
+#                                                                                 perl = T),
+#                                                                         'capture.length')[1]),
+#                                                        collapse = "")),
+#                            x = tplpHap$hap[x],
+#                            perl = T)
+#    }
+#  }
+#}
 
+# As an allele-specific primer on the right binds only Ws-4 (B) alleles,
+# impute missing haplotypes at the right-hand side (end) of alignments
+# that have a Ws-4 (B) allele at a marker on their left
+# (e.g., for "-BAAAAAAAAAB----", only the right-hand "----" and
+#  not the left-hand "-" would be imputed as "B")
 # For Ws-4 (B) alleles
-# leftmost
-while( sum(grepl(pattern = "^(-+)BB",
+# right-hand side (end) of alignments
+while( sum(grepl(pattern = "B(-+)$",
                  x = tplpHap$hap,
                  perl = T)) > 0 ) {
   for(x in 1:length(tplpHap$hap)) {
-    if( grepl(pattern = "^(-+)BB",
+    if( grepl(pattern = "B(-+)$",
               x = tplpHap$hap[x],
               perl = T) ) {
-      tplpHap$hap[x] <- sub(pattern = "^(-+)BB",
-                            replacement = paste0(paste0(rep(x = "B",
-                                                            times = attr(regexpr(pattern = "^(-+)BB",
-                                                                                 text = tplpHap$hap[x],
-                                                                                 perl = T),
-                                                                         'capture.length')[1]),
-                                                        collapse = ""),
-                                                 "BB"),
-                            x = tplpHap$hap[x],
-                            perl = T)
-    }
-  }
-}
-# rightmost
-while( sum(grepl(pattern = "BB(-+)$",
-                 x = tplpHap$hap,
-                 perl = T)) > 0 ) {
-  for(x in 1:length(tplpHap$hap)) {
-    if( grepl(pattern = "BB(-+)$",
-              x = tplpHap$hap[x],
-              perl = T) ) {
-      tplpHap$hap[x] <- sub(pattern = "BB(-+)$",
-                            replacement = paste0("BB",
+      tplpHap$hap[x] <- sub(pattern = "B(-+)$",
+                            replacement = paste0("B",
                                                  paste0(rep(x = "B",
-                                                            times = attr(regexpr(pattern = "BB(-+)$",
+                                                            times = attr(regexpr(pattern = "B(-+)$",
                                                                                  text = tplpHap$hap[x],
                                                                                  perl = T),
                                                                          'capture.length')[1]),
@@ -225,7 +224,29 @@ while( sum(grepl(pattern = "BB(-+)$",
     }
   }
 }
-
+## (only to be used for Ws-4 (B) alleles where a Ws-4-specific
+##  primer binds the left-hand side of the amplicon)
+## left-hand side (beginning) of alignments
+#while( sum(grepl(pattern = "^(-+)B",
+#                 x = tplpHap$hap,
+#                 perl = T)) > 0 ) {
+#  for(x in 1:length(tplpHap$hap)) {
+#    if( grepl(pattern = "^(-+)B",
+#              x = tplpHap$hap[x],
+#              perl = T) ) {
+#      tplpHap$hap[x] <- sub(pattern = "^(-+)B",
+#                            replacement = paste0(paste0(rep(x = "B",
+#                                                            times = attr(regexpr(pattern = "^(-+)B",
+#                                                                                 text = tplpHap$hap[x],
+#                                                                                 perl = T),
+#                                                                         'capture.length')[1]),
+#                                                        collapse = ""),
+#                                                 "B"),
+#                            x = tplpHap$hap[x],
+#                            perl = T)
+#    }
+#  }
+#}
 
 # Order by (imputed) haplotypes
 tplpHap_sort <- tplpHap[sort.int(tplpHap$hap,
@@ -235,6 +256,15 @@ tplpHap_sort <- tplpHap[sort.int(tplpHap$hap,
 tplpHap_group_n <- tplpHap %>%
   group_by(hap) %>%
   summarize(n())
+
+# Extract the top 1% of haplotypes in terms
+# of frequency of occurrence
+tplpHap_group_n_quant99 <- tplpHap_group_n %>%
+ filter(n() > quantile(`n()`, 0.99))
+
+while( sum(grepl(pattern = "(-+)",
+                 x = tplpHap_group_n_quant99$hap,
+                 perl = T)) > 0 ) {
 
 
 tmp <- arrange(tplpHap,
