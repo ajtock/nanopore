@@ -356,20 +356,21 @@ for(x in 1:(length(as.integer(colnames(tplpHap)[1:16]))-1)) {
   widths <- c(widths, widthx)
 }
 
+tplpHap_quant <- tplpHap[tplpHap$hap %in% tplpHap_group_n_quant$hap,]
 hapRecDF <- data.frame()
-for(x in 1:(dim(tplpHap)[1])) {
-hapRec <- NULL
-for(i in 1:(length(unlist(strsplit(tplpHap$hap[x], split = "")))-1)) {
-  if( paste0( unlist(strsplit(tplpHap$hap[1], split = ""))[i],
-              unlist(strsplit(tplpHap$hap[1], split = ""))[i+1] )
-      %in% c("AB", "BA") ) {
-    hapRec <- c(hapRec, 1)
-  } else {
-    hapRec <- c(hapRec, 0)
+for(x in 1:(dim(tplpHap_quant)[1])) {
+  hapRec <- NULL
+  for(i in 1:(length(unlist(strsplit(tplpHap_quant$hap[x], split = "")))-1)) {
+    if( paste0( unlist(strsplit(tplpHap_quant$hap[x], split = ""))[i],
+                unlist(strsplit(tplpHap_quant$hap[x], split = ""))[i+1] )
+        %in% c("AB", "BA") ) {
+      hapRec <- c(hapRec, 1)
+    } else {
+      hapRec <- c(hapRec, 0)
+    }
   }
   hapRecDF <- rbind(hapRecDF, hapRec)
 }
-
 
 tmp <- arrange(tplpHap,
                desc(tplpHap[,1]),
