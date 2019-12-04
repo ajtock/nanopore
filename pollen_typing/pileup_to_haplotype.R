@@ -343,6 +343,34 @@ while( sum(grepl(pattern = "-",
 # Convert haplotype frequencies into proportions
 tplpHap_group_n_quant$`n()` / (sum(tplpHap_group_n_quant$`n()`))
 
+# Get inter-marker distances and midpoints
+midpoints <- NULL
+widths <- NULL
+for(x in 1:(length(as.integer(colnames(tplpHap)[1:16]))-1)) {
+  midpointx <- as.integer(colnames(tplpHap)[x]) +
+    round( ( as.integer(colnames(tplpHap)[x+1]) -
+             as.integer(colnames(tplpHap)[x]) ) / 2 )
+  midpoints <- c(midpoints, midpointx)
+  widthx <- ( as.integer(colnames(tplpHap)[x+1]) -
+              as.integer(colnames(tplpHap)[x]) ) + 1
+  widths <- c(widths, widthx)
+}
+
+hapRecDF <- data.frame()
+for(x in 1:(dim(tplpHap)[1])) {
+hapRec <- NULL
+for(i in 1:(length(unlist(strsplit(tplpHap$hap[x], split = "")))-1)) {
+  if( paste0( unlist(strsplit(tplpHap$hap[1], split = ""))[i],
+              unlist(strsplit(tplpHap$hap[1], split = ""))[i+1] )
+      %in% c("AB", "BA") ) {
+    hapRec <- c(hapRec, 1)
+  } else {
+    hapRec <- c(hapRec, 0)
+  }
+  hapRecDF <- rbind(hapRecDF, hapRec)
+}
+
+
 tmp <- arrange(tplpHap,
                desc(tplpHap[,1]),
 	       desc(tplpHap[,2]),
