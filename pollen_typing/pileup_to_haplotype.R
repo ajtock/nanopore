@@ -89,9 +89,9 @@ tplpHap <- tplpHap[grepl("A", tplpHap$hap) &
                    grepl("B", tplpHap$hap),]
 
 
-# Apply a minimal haplotype imputation approach which
-# is informed only by haplotypes at flanking markers
-# and not by haplotypes within other alignments
+# Apply a haplotype imputation approach which
+# is informed by haplotypes at flanking markers
+# and, later, by haplotypes within other alignments
 
 # For imputation of missing haplotypes that are not at
 # the ends of an alignment, they must be flanked by
@@ -174,7 +174,7 @@ while( sum(grepl(pattern = "^(-+)A",
   }
 }
 ## right-hand side (end) of alignments
-## (only to be used for Col-0 (A) alleles where a Col-0-specific
+## (to be used for Col-0 (A) alleles ONLY where a Col-0-specific
 ##  primer binds the right-hand side of the amplicon)
 #while( sum(grepl(pattern = "A(-+)$",
 #                 x = tplpHap$hap,
@@ -224,7 +224,7 @@ while( sum(grepl(pattern = "B(-+)$",
     }
   }
 }
-## (only to be used for Ws-4 (B) alleles where a Ws-4-specific
+## (to be used for Ws-4 (B) alleles ONLY where a Ws-4-specific
 ##  primer binds the left-hand side of the amplicon)
 ## left-hand side (beginning) of alignments
 #while( sum(grepl(pattern = "^(-+)B",
@@ -259,13 +259,89 @@ tplpHap_group_n <- tplpHap %>%
 
 # Extract the top 1% of haplotypes in terms
 # of frequency of occurrence
-tplpHap_group_n_quant99 <- tplpHap_group_n %>%
- filter(n() > quantile(`n()`, 0.99))
+tplpHap_group_n_quant <- tplpHap_group_n %>%
+  filter(`n()` > quantile(`n()`, 0.99))
 
-while( sum(grepl(pattern = "(-+)",
-                 x = tplpHap_group_n_quant99$hap,
+tplpHap_group_n_v1 <- tplpHap_group_n
+tplpHap_group_n_quant_v1 <- tplpHap_group_n_quant
+
+# For those haplotypes in the top 1% which contain "-",
+# impute "-" as "A" or "B" proportional to the observed
+# frequency of occurrence of the two otherwise matching
+# haplotypes
+# (e.g., "A-BBBBBBBBBBBBBB" occurs 130 times,
+#        "AABBBBBBBBBBBBBB" occurs 550 times,   
+#        "ABBBBBBBBBBBBBBB" occurs 2332 times;
+#  550 + round( 130 * ( 550 / (550+2332) ) ) = 575 "AABBBBBBBBBBBBBB" occurrences after imputation
+#  2332 + round( 130 * ( 2332 / (550+2332) ) ) = 2437 "ABBBBBBBBBBBBBBB" occurrences after imputation
+while( sum(grepl(pattern = "-",
+                 x = tplpHap_group_n_quant$hap,
                  perl = T)) > 0 ) {
+  for(x in 1:length(tplpHap_group_n_quant$hap)) {
+    if( grepl(pattern = "-",
+              x = tplpHap_group_n_quant$hap[x],
+              perl = T) ) {
+      impA <- sub(pattern = "-",
+                  replacement = "A",
+                  x = tplpHap_group_n_quant$hap[x],
+                  perl = T)
+      impB <- sub(pattern = "-",
+                  replacement = "B",
+                  x = tplpHap_group_n_quant$hap[x],
+                  perl = T)
+      hapNfreq <- tplpHap_group_n_quant$`n()`[x]
+      hapAfreq <- tplpHap_group_n$`n()`[tplpHap_group_n$hap %in% impA]
+      hapBfreq <- tplpHap_group_n$`n()`[tplpHap_group_n$hap %in% impB]
+      # If impA or impB are not present in tplpHap_group_n$hap (unlikely),
+      # redefine zero-length integer vector ( integer(0) ) with 0
+      if( !length(hapAfreq) ) { hapAfreq <- 0 }
+      if( !length(hapBfreq) ) { hapBfreq <- 0 }
+      if( hapAfreq + hapBfreq >= 1 ) {
+        hapNfreqA <- round( hapNfreq * ( hapAfreq / ( hapAfreq + hapBfreq ) ) )
+        hapNfreqB <- round( hapNfreq * ( hapBfreq / ( hapAfreq + hapBfreq ) ) )
+        imphapAfreq <- hapAfreq + hapNfreqA
+        print(paste0("Augmented haplotype frequency for ",
+                     impA, " = ", imphapAfreq))
+        imphapBfreq <- hapBfreq + hapNfreqB
+        print(paste0("Augmented haplotype frequency for ",
+                     impB, " = ", imphapBfreq))
+        # Sanity check
+        if( ( imphapAfreq + imphapBfreq ) != ( hapNfreq + hapAfreq + hapBfreq ) ) {
+          stop(paste0("Augmented haplotype frequencies for ",
+                      tplpHap_group_n_quant$hap[x],
+                      " do not add up to summed frequencies for ",
+                      tplpHap_group_n_quant$hap[x], " , ",
+                      impA, " , and ",
+                      impB, " !"))
+        }
+      } else {
+      stop(paste0("Complete versions of haplotype ",
+                  tplpHap_group_n_quant$hap[x],
+                  " are not present in the alignment dataset!"))
+      }
+      # Replace haplotypes in tplpHap$hap matching tplpHap_group_n_quant$hap[x]
+      # with imputed haplotypes proportional to the observed
+      # frequency of occurrence of the two otherwise matching haplotypes
+      # which have "A" or "B" at the marker with "-" in tplpHap_group_n_quant$hap[x]
+      tplpHap[tplpHap$hap == tplpHap_group_n_quant$hap[x],]$hap <- c(rep(x = impA,
+                                                                         times = hapNfreqA),
+                                                                     rep(x = impB,
+                                                                         times = hapNfreqB))
+    }
+  }
+  # Group by (imputed) haplotypes
+  tplpHap_group_n <- tplpHap %>%
+    group_by(hap) %>%
+    summarize(n())
+  
+  # Extract the top 1% of haplotypes in terms
+  # of frequency of occurrence
+  tplpHap_group_n_quant <- tplpHap_group_n %>%
+    filter(`n()` > quantile(`n()`, 0.99))
+}
 
+# Convert haplotype frequencies into proportions
+tplpHap_group_n_quant$`n()` / (sum(tplpHap_group_n_quant$`n()`))
 
 tmp <- arrange(tplpHap,
                desc(tplpHap[,1]),
