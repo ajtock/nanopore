@@ -35,6 +35,18 @@ samtools view -H minimap2_TAIR10_${sample}_sorted_primary_MAPQ${MAPQ}.bam \
 aln=$(samtools view minimap2_TAIR10_${sample}_sorted_primary_MAPQ${MAPQ}.bam | wc -l)
 
 # Generate indexed BAM file for each alignment
+for x in $(seq 1 ${aln})
+do
+  samtools view minimap2_TAIR10_${sample}_sorted_primary_MAPQ${MAPQ}.bam | \
+  cat - | while read
+cat myfile.txt | while read LINE; do echo $LINE > "$LINE.txt"; done.
+done
+
+while IFS="" read -r LINE || [ -n "$LINE" ]
+do
+  printf '%s\n' "$LINE"
+done < (samtools view 
+
 # ${x} in this for loop decreases from ${aln} to 1
 for x in $(seq ${aln} -1 1)
 do
