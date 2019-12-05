@@ -428,8 +428,19 @@ cM_tidy <- gather(data = cM,
 # to 639952 (18 nt downstream of 639934)
 
 # Define legend labels
-alnNames <- c("All", "COs", "COs & NCOs")
-alnColours <- c("dodgerblue2", "purple", "green")
+alnNames <- c(bquote("All (" *
+                     .(prettyNum(dim(hapRecDF)[1],
+                                 big.mark = ",", trim = T)) *
+                     ")"),
+              bquote("COs (" *
+                     .(prettyNum(dim(hapRecDF_COs)[1],
+                                 big.mark = ",", trim = T)) *
+                     ")"),
+              bquote("COs & NCOs (" *
+                     .(prettyNum(dim(hapRecDF_NCOs)[1],
+                                 big.mark = ",", trim = T)) *
+                     ")"))
+alnColours <- c("navy", "orangered", "green")
 makeTransparent <- function(thisColour, alpha = 180)
 {
   newColour <- col2rgb(thisColour)
