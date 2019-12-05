@@ -12,6 +12,12 @@ MAPQ <- args[2]
 
 setwd("/home/ajt200/analysis/nanopore/pollen_typing/")
 library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(ggthemes)
+library(grid)
+library(gridExtra)
+library(extrafont)
 library(parallel)
 library(doParallel)
 registerDoParallel(cores = detectCores())
@@ -87,6 +93,14 @@ tplpHap[factorColumns] <- lapply(tplpHap[factorColumns], as.character)
 # Retain only rows that contain both parental haplotypes
 tplpHap <- tplpHap[grepl("A", tplpHap$hap) &
                    grepl("B", tplpHap$hap),]
+
+tplpHap_complete <- tplpHap[!grepl("-", tplpHap$hap),]
+tplpHap_complete_n <- tplpHap_complete %>%
+  group_by(hap) %>%
+  summarize(n())
+tplpHap_complete_n_quant <- tplpHap_complete_n %>%
+  filter(`n()` > quantile(`n()`, 0.95))
+
 
 
 # Apply a haplotype imputation approach which
@@ -341,7 +355,8 @@ while( sum(grepl(pattern = "-",
 }
 
 # Convert haplotype frequencies into proportions
-tplpHap_group_n_quant$`n()` / (sum(tplpHap_group_n_quant$`n()`))
+tplpHap_group_n_quant_prop <- tplpHap_group_n_quant$`n()` /
+                              (sum(tplpHap_group_n_quant$`n()`))
 
 # Get inter-marker distances and midpoints
 midpoints <- NULL
@@ -355,7 +370,12 @@ for(x in 1:(length(as.integer(colnames(tplpHap)[1:16]))-1)) {
               as.integer(colnames(tplpHap)[x]) ) + 1
   widths <- c(widths, widthx)
 }
+widths <- as.vector(sapply(seq_along(widths), function(x) rep(widths[x], times = 2)))
 
+# Create a matrix of inter-marker recombination intervals, in which
+# 1 denotes an "A" to "B" or a "B" to "A" transition, and
+# 0 denotes no transition in parental allele from one marker to the next
+# Two "1"s or two "0"s are appended to represent two-marker interval
 tplpHap_quant <- tplpHap[tplpHap$hap %in% tplpHap_group_n_quant$hap,]
 hapRecDF <- data.frame()
 for(x in 1:(dim(tplpHap_quant)[1])) {
@@ -364,65 +384,149 @@ for(x in 1:(dim(tplpHap_quant)[1])) {
     if( paste0( unlist(strsplit(tplpHap_quant$hap[x], split = ""))[i],
                 unlist(strsplit(tplpHap_quant$hap[x], split = ""))[i+1] )
         %in% c("AB", "BA") ) {
-      hapRec <- c(hapRec, 1)
+      hapRec <- c(hapRec, 1, 1)
     } else {
-      hapRec <- c(hapRec, 0)
+      hapRec <- c(hapRec, 0, 0)
     }
   }
   hapRecDF <- rbind(hapRecDF, hapRec)
 }
+colnames(hapRecDF) <- sort(c(alleles$position[1:15],
+                             alleles$position[2:16]-1))
 
-tmp <- arrange(tplpHap,
-               desc(tplpHap[,1]),
-	       desc(tplpHap[,2]),
-               desc(tplpHap[,3]),
-               desc(tplpHap[,4]),
-               desc(tplpHap[,5]),
-               desc(tplpHap[,6]),
-               desc(tplpHap[,7]),
-               desc(tplpHap[,8]),
-               desc(tplpHap[,9]),
-               desc(tplpHap[,10]),
-               desc(tplpHap[,11]),
-               desc(tplpHap[,12]),
-               desc(tplpHap[,13]),
-               desc(tplpHap[,14]),
-               desc(tplpHap[,15]),
-               desc(tplpHap[,16]))
+# From the above complete recombination matrix:
+# extract alignments containing only crossovers
+hapRecDF_COs <- hapRecDF[rowSums(hapRecDF) == 2,]
+# extract alignments containing both crossovers and non-crossovers
+hapRecDF_NCOs <- hapRecDF[rowSums(hapRecDF) == 6,]
 
-tmp2 <- arrange(tbl_df(tplpHap),
-               desc(tplpHap[,1:16]))
-	       desc(tplpHap[,2]),
-               desc(tplpHap[,3]),
-               desc(tplpHap[,4]),
-               desc(tplpHap[,6]),
-               desc(tplpHap[,6]),
-               desc(tplpHap[,7]),
-               desc(tplpHap[,8]),
-               desc(tplpHap[,9]),
-               desc(tplpHap[,10]),
-               desc(tplpHap[,11]),
-               desc(tplpHap[,12]),
-               desc(tplpHap[,13]),
-               desc(tplpHap[,14]),
-               desc(tplpHap[,15]),
-               desc(tplpHap[,16]))
+# For each recombination matrix (complete and subsetted),
+# calculate cM/Mb in each marker interval
+cMMb <- data.frame(window = as.integer(colnames(hapRecDF)),
+                   All = as.vector( (colSums(hapRecDF)/dim(hapRecDF)[1]) /
+                                     (widths/1e6) ),
+                   COs = as.vector( (colSums(hapRecDF_COs)/dim(hapRecDF)[1]) /
+                                     (widths/1e6) ),
+                   NCOs = as.vector( (colSums(hapRecDF_NCOs)/dim(hapRecDF)[1]) /
+                                     (widths/1e6) )
+                  )
+cMMb_tidy <- gather(data = cMMb,
+                    key = aln,
+                    value = cMMb,
+                    -window)
 
-tmp <- tplpHap[order(
-                     tplpHap[,1],
-		     tplpHap[,2],
-                     tplpHap[,3],
-                     tplpHap[,4],
-                     tplpHap[,6],
-                     tplpHap[,6],
-                     tplpHap[,7],
-                     tplpHap[,8],
-                     tplpHap[,9],
-                     tplpHap[,10],
-                     tplpHap[,11],
-                     tplpHap[,12],
-                     tplpHap[,13],
-                     tplpHap[,14],
-                     tplpHap[,15],
-                     tplpHap[,16]
-                    ),]
+cM <- data.frame(window = as.integer(colnames(hapRecDF)),
+                 All = as.vector( (colSums(hapRecDF)/dim(hapRecDF)[1]) ),
+                 COs = as.vector( (colSums(hapRecDF_COs)/dim(hapRecDF)[1]) ),
+                 NCOs = as.vector( (colSums(hapRecDF_NCOs)/dim(hapRecDF)[1]) ))
+cM_tidy <- gather(data = cM,
+                  key = aln,
+                  value = cM,
+                  -window)
+
+# Complete amplicon extends from 634089 (20 nt upstream of 634109)
+# to 639952 (18 nt downstream of 639934)
+
+# Define legend labels
+alnNames <- c("All", "COs", "COs & NCOs")
+alnColours <- c("dodgerblue2", "purple", "green")
+makeTransparent <- function(thisColour, alpha = 180)
+{
+  newColour <- col2rgb(thisColour)
+  apply(newColour, 2, function(x) {
+    rgb(red = x[1], green = x[2], blue = x[3],
+        alpha = alpha, maxColorValue = 300)
+  })
+}
+alnColours <- makeTransparent(alnColours)
+legendPos <- as.numeric(unlist(strsplit("0.01,0.96",
+                                        split = ",")))
+legendLabs <- lapply(seq_along(alnNames), function(x) {
+  grobTree(textGrob(bquote(.(alnNames[x])),
+                    x = legendPos[1], y = legendPos[2]-((x-1)*0.06), just = "left",
+                    gp = gpar(col = alnColours[x], fontsize = 18)))
+})  
+
+# Plot recombination rates for group of alignments
+# (all, COs only, both COs and NCOs)
+plotDir <- "/home/ajt200/analysis/nanopore/"
+ggObj_cMMb <- ggplot(data = cMMb_tidy,
+                     mapping = aes(x = window,
+                                   y = cMMb,
+                                   group = aln)) +
+  geom_line(data = cMMb_tidy,
+            mapping = aes(colour = aln),
+            size = 1) +
+  scale_colour_manual(values = alnColours) +
+  scale_x_continuous(breaks = c(alleles$position),
+                     labels = c(as.character(alleles$position))) +
+  scale_y_continuous(labels = function(x) sprintf("%4.0f", as.numeric(x))) +
+  geom_vline(xintercept = c(alleles$position),
+             linetype = "dashed",
+             size = 0.5) +
+  labs(x = bquote(italic("3a") ~ "marker"),
+       y = "cM/Mb") +
+  annotation_custom(legendLabs[[1]]) +
+  annotation_custom(legendLabs[[2]]) +
+  annotation_custom(legendLabs[[3]]) +
+  theme_bw() +
+  theme(
+        axis.ticks = element_line(size = 1.0, colour = "black"),
+        axis.ticks.length = unit(0.25, "cm"),
+        axis.text.x = element_text(size = 18, colour = "black", family = "Luxi Mono", angle = 90, vjust = 0.5),
+        axis.text.y = element_text(size = 18, colour = "black", family = "Luxi Mono"),
+        axis.title = element_text(size = 30, colour = "black"),
+        legend.position = "none",
+        panel.grid = element_blank(),
+        panel.border = element_rect(size = 3.5, colour = "black"),
+        panel.background = element_blank(),
+        plot.margin = unit(c(0.3,1.2,0.0,0.3), "cm"),
+        plot.title = element_text(hjust = 0.5, size = 30)) +
+  ggtitle(bquote(.(sample) ~ "ONT (" * italic("n") ~ "=" ~
+                 .(prettyNum(dim(hapRecDF)[1],
+                             big.mark = ",", trim = T)) *
+                 ")"))
+
+ggObj_cM <- ggplot(data = cM_tidy,
+                   mapping = aes(x = window,
+                                 y = cM,
+                                 group = aln)) +
+  geom_line(data = cM_tidy,
+            mapping = aes(colour = aln),
+            size = 1) +
+  scale_colour_manual(values = alnColours) +
+  scale_x_continuous(breaks = c(alleles$position),
+                     labels = c(as.character(alleles$position))) +
+  scale_y_continuous(labels = function(x) sprintf("%1.2f", as.numeric(x))) +
+  geom_vline(xintercept = c(alleles$position),
+             linetype = "dashed",
+             size = 0.5) +
+  labs(x = bquote(italic("3a") ~ "marker"),
+       y = "cM") +
+  annotation_custom(legendLabs[[1]]) +
+  annotation_custom(legendLabs[[2]]) +
+  annotation_custom(legendLabs[[3]]) +
+  theme_bw() +
+  theme(
+        axis.ticks = element_line(size = 1.0, colour = "black"),
+        axis.ticks.length = unit(0.25, "cm"),
+        axis.text.x = element_text(size = 18, colour = "black", family = "Luxi Mono", angle = 90, vjust = 0.5),
+        axis.text.y = element_text(size = 18, colour = "black", family = "Luxi Mono"),
+        axis.title = element_text(size = 30, colour = "black"),
+        legend.position = "none",
+        panel.grid = element_blank(),
+        panel.border = element_rect(size = 3.5, colour = "black"),
+        panel.background = element_blank(),
+        plot.margin = unit(c(0.3,1.2,0.0,0.3), "cm"),
+        plot.title = element_text(hjust = 0.5, size = 30)) +
+  ggtitle(bquote(.(sample) ~ "ONT (" * italic("n") ~ "=" ~
+                 .(prettyNum(dim(hapRecDF)[1],
+                             big.mark = ",", trim = T)) *
+                 ")"))
+ggObjGA_combined <- grid.arrange(ggObj_cMMb,
+                                 ggObj_cM,
+                                 nrow = 2, as.table = F)
+                                                    
+ggsave(paste0(plotDir, sample, "_ONT_cMMb_cM.pdf"),
+       plot = ggObjGA_combined,
+       height = 6.5*2, width = 20, limitsize = F)
