@@ -460,7 +460,7 @@ legendLabs <- lapply(seq_along(alnNames), function(x) {
 
 # Plot recombination rates for group of alignments
 # (all, COs only, both COs and NCOs)
-plotDir <- "/home/ajt200/analysis/nanopore/"
+plotDir <- "/home/ajt200/analysis/nanopore/pollen_typing/"
 ggObj_cMMb <- ggplot(data = cMMb_tidy,
                      mapping = aes(x = window,
                                    y = cMMb,
