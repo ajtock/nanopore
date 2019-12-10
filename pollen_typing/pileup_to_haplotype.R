@@ -78,13 +78,19 @@ plpHap[] <- lapply(plpHap, function(x) as.character(gsub("BB", "B", x)))
 tplpHap <- data.frame(t(plpHap[,5:dim(plpHap)[2]]))
 colnames(tplpHap) <- as.integer(plpHap$pos)
 
+# As the first (leftmost) and last (rightmost) markers are
+# within the primer binding sites and may be artificially converted
+# into an allele within the allele-specific primer, strip these markers
+# (first and last columns) from tplpHap
+tplpHap <- tplpHap[,2:(dim(tplpHap)[2]-1)]
+
 # Add column representing haplotypes as character strings
 stringHap <- sapply(1:(dim(tplpHap)[1]), function(x) {
   paste0(as.character(as.matrix(tplpHap[x,])), collapse = "")
 })
 tplpHap <- data.frame(tplpHap,
                       hap = stringHap)
-colnames(tplpHap) <- c(as.integer(plpHap$pos),
+colnames(tplpHap) <- c(as.integer(plpHap$pos[2:(length(plpHap$pos)-1)]),
                        "hap")
 # Replace factors with characters
 factorColumns <- sapply(tplpHap, is.factor)
@@ -94,13 +100,20 @@ tplpHap[factorColumns] <- lapply(tplpHap[factorColumns], as.character)
 tplpHap <- tplpHap[grepl("A", tplpHap$hap) &
                    grepl("B", tplpHap$hap),]
 
+
+### YET TO BE DONE
+# Extract alignments with complete haplotypes
+# Identify haplotypes in the top 5th percentile,
+# determine corresponding proportions for these haplotypes,
+# and impute missing data for alignments with incomplete haplotypes
+# based on these proportions
 tplpHap_complete <- tplpHap[!grepl("-", tplpHap$hap),]
 tplpHap_complete_n <- tplpHap_complete %>%
   group_by(hap) %>%
   summarize(n())
 tplpHap_complete_n_quant <- tplpHap_complete_n %>%
   filter(`n()` > quantile(`n()`, 0.95))
-
+### YET TO BE DONE
 
 
 # Apply a haplotype imputation approach which
@@ -359,9 +372,10 @@ tplpHap_group_n_quant_prop <- tplpHap_group_n_quant$`n()` /
                               (sum(tplpHap_group_n_quant$`n()`))
 
 # Get inter-marker distances and midpoints
+#### NOTE CHANGE WIDTH DEFINED BY COLUMN NUMBER
 midpoints <- NULL
 widths <- NULL
-for(x in 1:(length(as.integer(colnames(tplpHap)[1:16]))-1)) {
+for(x in 1:(length(as.integer(colnames(tplpHap)[1:(dim(tplpHap)[2]-1)]))-1)) {
   midpointx <- as.integer(colnames(tplpHap)[x]) +
     round( ( as.integer(colnames(tplpHap)[x+1]) -
              as.integer(colnames(tplpHap)[x]) ) / 2 )
@@ -391,8 +405,8 @@ for(x in 1:(dim(tplpHap_quant)[1])) {
   }
   hapRecDF <- rbind(hapRecDF, hapRec)
 }
-colnames(hapRecDF) <- sort(c(alleles$position[1:15],
-                             alleles$position[2:16]-1))
+colnames(hapRecDF) <- sort(c(alleles$position[2:(length(alleles$position)-2)],
+                             alleles$position[3:(length(alleles$position)-1)]-1))
 
 # From the above complete recombination matrix:
 # extract alignments containing only crossovers
@@ -403,11 +417,11 @@ hapRecDF_NCOs <- hapRecDF[rowSums(hapRecDF) == 6,]
 # For each recombination matrix (complete and subsetted),
 # calculate cM/Mb in each marker interval
 cMMb <- data.frame(window = as.integer(colnames(hapRecDF)),
-                   All = as.vector( (colSums(hapRecDF)/dim(hapRecDF)[1]) /
+                   All = as.vector( ( (colSums(hapRecDF)/dim(hapRecDF)[1]) * 100 ) /
                                      (widths/1e6) ),
-                   COs = as.vector( (colSums(hapRecDF_COs)/dim(hapRecDF)[1]) /
+                   COs = as.vector( ( (colSums(hapRecDF_COs)/dim(hapRecDF)[1]) * 100 ) /
                                      (widths/1e6) ),
-                   NCOs = as.vector( (colSums(hapRecDF_NCOs)/dim(hapRecDF)[1]) /
+                   NCOs = as.vector( ( (colSums(hapRecDF_NCOs)/dim(hapRecDF)[1]) * 100 ) /
                                      (widths/1e6) )
                   )
 cMMb_tidy <- gather(data = cMMb,
@@ -416,9 +430,9 @@ cMMb_tidy <- gather(data = cMMb,
                     -window)
 
 cM <- data.frame(window = as.integer(colnames(hapRecDF)),
-                 All = as.vector( (colSums(hapRecDF)/dim(hapRecDF)[1]) ),
-                 COs = as.vector( (colSums(hapRecDF_COs)/dim(hapRecDF)[1]) ),
-                 NCOs = as.vector( (colSums(hapRecDF_NCOs)/dim(hapRecDF)[1]) ))
+                 All = as.vector( (colSums(hapRecDF)/dim(hapRecDF)[1]) * 100 ),
+                 COs = as.vector( (colSums(hapRecDF_COs)/dim(hapRecDF)[1]) * 100 ),
+                 NCOs = as.vector( (colSums(hapRecDF_NCOs)/dim(hapRecDF)[1]) * 100 ))
 cM_tidy <- gather(data = cM,
                   key = aln,
                   value = cM,
@@ -538,6 +552,6 @@ ggObjGA_combined <- grid.arrange(ggObj_cMMb,
                                  ggObj_cM,
                                  nrow = 2, as.table = F)
                                                     
-ggsave(paste0(plotDir, sample, "_ONT_cMMb_cM.pdf"),
+ggsave(paste0(plotDir, sample, "_ONT_cMMb_cM_v101219.pdf"),
        plot = ggObjGA_combined,
        height = 6.5*2, width = 20, limitsize = F)
