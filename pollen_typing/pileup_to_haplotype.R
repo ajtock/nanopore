@@ -32,9 +32,9 @@ alleles <- read.table("3a_SNPs_indels_in_Col_and_Ws.tsv",
 # Replace factors with characters
 factorColumns <- sapply(alleles, is.factor)
 alleles[factorColumns] <- lapply(alleles[factorColumns], as.character)
-# Re-specify Ws-4 allele at Chr3:637898 in "alleles"
-## NOTE: This could be made more or less specific to the known Ws-4 allele "TGTTT"
-## to capture sequences consisting of either complete or partial matches
+# Re-specify Ws-4 deletion allele at Chr3:637898 in row 8 of "alleles"
+## NOTE: This could be made more or less specific to the known Col allele "ATGTTT"
+## to capture sequences lacking either complete or partial matches to "TGTTT"
 alleles[8, ]$Ws.4 <- "[.,]-[1-9]TGT"
 # Re-specify Ws-4 alleles at Chr3:638788 in "alleles"
 alleles[20, ]$Ws.4 <- "[.,]\\+[1-9]AT"
@@ -78,7 +78,9 @@ plpHap <- plp
 # to avoid incorrect encoding of adenosine bases
 # Col-0 as "AA", Ws-4 as "BB", "*" and all others as "-" 
 for(x in 1:(dim(plpHap)[1])) {
+  print(paste0("Marker ", x, " of ", dim(plpHap)[1]))
   for(y in 5:(dim(plpHap)[2])) {
+    print(paste0("Alignment ", y-4, " of ", dim(plpHap)[2]-4))
     if( plpHap[x,y] %in% c(".", ",") ) {
       plpHap[x,y] <- "AA"
     } else if( plpHap[x,y] %in% c(plpHap[x,4],
@@ -86,7 +88,8 @@ for(x in 1:(dim(plpHap)[1])) {
       plpHap[x,y] <- "BB"
     } else if( grepl(pattern = plpHap[x,4],
                      x = plpHap[x,y],
-                     ignore.case = T, perl = T) ) {
+                     ignore.case = T,
+                     perl = T) ) {
       plpHap[x,y] <- "BB"
     } else {
       plpHap[x,y] <- "-"
