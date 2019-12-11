@@ -450,7 +450,7 @@ colnames(hapRecDF) <- sort(c(alleles$position[2:(length(alleles$position)-2)],
 # extract alignments containing only crossovers
 hapRecDF_COs <- hapRecDF[rowSums(hapRecDF) == 2,]
 # extract alignments containing both crossovers and non-crossovers
-hapRecDF_NCOs <- hapRecDF[rowSums(hapRecDF) == 6,]
+hapRecDF_NCOs <- hapRecDF[rowSums(hapRecDF) >= 4,]
 
 # For each recombination matrix (complete and subsetted),
 # calculate cM/Mb in each marker interval
@@ -492,7 +492,7 @@ alnNames <- c(bquote("All (" *
                      .(prettyNum(dim(hapRecDF_NCOs)[1],
                                  big.mark = ",", trim = T)) *
                      ")"))
-alnColours <- c("navy", "orangered", "green")
+alnColours <- c("navy", "purple", "green")
 makeTransparent <- function(thisColour, alpha = 180)
 {
   newColour <- col2rgb(thisColour)
@@ -590,6 +590,6 @@ ggObjGA_combined <- grid.arrange(ggObj_cMMb,
                                  ggObj_cM,
                                  nrow = 2, as.table = F)
                                                     
-ggsave(paste0(plotDir, sample, "_ONT_cMMb_cM_v101219.pdf"),
+ggsave(paste0(plotDir, sample, "_ONT_cMMb_cM_v111219.pdf"),
        plot = ggObjGA_combined,
        height = 6.5*2, width = 20, limitsize = F)
