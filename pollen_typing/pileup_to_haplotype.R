@@ -3,6 +3,9 @@
 # Convert samtools pileup file into a haplotype matrix
 # for visualisation of recombination over interval
 
+# Usage:
+# ./pileup_to_haplotype.R barcode1_120 60 0.153  
+
 #sample <- "barcode1_120"
 #MAPQ <- 60
 #cMscale <- 0.153
@@ -36,13 +39,27 @@ alleles <- read.table("3a_SNPs_indels_in_Col_and_Ws.tsv",
 factorColumns <- sapply(alleles, is.factor)
 alleles[factorColumns] <- lapply(alleles[factorColumns], as.character)
 # Re-specify Ws-4 deletion allele at Chr3:637898 in row 8 of "alleles"
-## NOTE: This could be made more or less specific to the known Col allele "ATGTTT"
+## NOTE: This could be made more or less specific to the known Col allele "ATGTTT" (vs. "AAAAA" in Ws-4)
 ## to capture sequences lacking either complete or partial matches to "TGTTT"
 alleles[8, ]$Ws.4 <- "[.,]-[1-9]TGT"
 # Re-specify Ws-4 alleles at Chr3:638788 in "alleles"
+## NOTE: In the following two cases of insertions in Ws-4, the alternate allele specified
+## could be made more specific to the known Ws-4 allele "TAT" (vs. "T" in Col) to capture
+## sequences containing exact matches to the "AT" insertion in Ws-4
+## However, only putative insertions with additional inserted bases (e.g., "ATA") were
+## observed in the 5 samples
 alleles[20, ]$Ws.4 <- "[.,]\\+[1-9]AT"
 # Re-specify Ws-4 alleles at Chr3:639539 in "alleles"
 alleles[23, ]$Ws.4 <- "[.,]\\+[1-9]AT"
+# The alternate alleles for rows 20 and 23 (Chr3:638788 and 639539) appear not to be
+# correctly called using ONT reads, possibly due the limited ability of this technology to generate
+# sequences of repeat arrays that represent the true number of repeats in an array
+# We observe largely ostensible reference alleles at these markers (e.g., 44163/55803 [79%] and 48451/55803 [87%]),
+# which is improbable given that these alignments represent recombinant molecules which
+# have the alternate (Ws-4) alleles at the rightmost marker
+# (located within the Ws-4 allele-specific primer binding site)
+# Therefore, remove rows 20 and 23 (Chr3:638788 and 639539)
+alleles <- alleles[c(-20, -23), ]
 # Remove rows 9, 10, 11, 12 and 13 (Chr3:637899, 637900, 637901, 637902, and 637903),
 # (use information in row 8 (Chr3:637898) to obtain genotype at this indel polymorphism;
 # ATGTTT in Col, AAAAA in Ws-4)
@@ -57,9 +74,11 @@ plp <- read.table(paste0("minimap2_TAIR10_",
                   header = F, sep = "\t",
                   quote = "", comment.char = "",
                   stringsAsFactors = F)
+# Remove rows 20 and 23 (Chr3:638788 and 639539)
 # Remove rows 9, 10, 11, 12 and 13 (Chr3:637899, 637900, 637901, 637902, and 637903),
 # (use information in row 8 (Chr3:637898) to obtain genotype at this indel polymorphism;
 # ATGTTT in Col, AAAAA in Ws-4)
+plp <- plp[c(-20, -23), ]
 plp <- plp[-9:-13, ]
 rownames(plp) <- 1:dim(plp)[1]
 
@@ -81,9 +100,9 @@ plpHap <- plp
 # to avoid incorrect encoding of adenosine bases
 # Col-0 as "AA", Ws-4 as "BB", "*" and all others as "-" 
 for(x in 1:(dim(plpHap)[1])) {
-  print(paste0("Marker ", x, " of ", dim(plpHap)[1]))
   for(y in 5:(dim(plpHap)[2])) {
-    print(paste0("Alignment ", y-4, " of ", dim(plpHap)[2]-4))
+    print(paste0("Marker ", x, " of ", dim(plpHap)[1],
+                 ": Alignment ", y-4, " of ", dim(plpHap)[2]-4))
     if( plpHap[x,y] %in% c(".", ",") ) {
       plpHap[x,y] <- "AA"
     } else if( plpHap[x,y] %in% c(plpHap[x,4],
@@ -599,14 +618,42 @@ ggsave(paste0(plotDir, sample, "_ONT_cMMb_cM_v111219.pdf"),
 
 
 
+
+# Order by (imputed) haplotypes
+tplpHap_quant_sort <- tplpHap_quant[sort.int(tplpHap_quant$hap,
+                                             decreasing = F,
+                                             index.return=T)$ix,]
+
+mat1 <- matrix(unlist(strsplit(tplpHap_quant_sort$hap,
+                               split = "")),
+               ncol = dim(tplpHap_quant_sort)[2]-1,
+               byrow = T)
+colnames(mat1) <- colnames(tplpHap_quant_sort)[-length(colnames(tplpHap_quant_sort))]
+
 mat1 <- matrix(c(sample(letters[1:2], 50, replace = T),
                  sample(letters[1:2], 50, replace = T)),
                nrow = 2, ncol = 50, byrow = T)
 
-pdf("test.pdf")
+pdf("test.pdf", height = 10)
 ha <- columnAnnotation(foo = anno_mark(at = c(1, seq(0, 50, by = 5)[-1]), labels = c(1, seq(0, 50, by = 5)[-1])))
-ha <- rowAnnotation(foo = anno_mark(at = 1, labels = "1"))
-htmp <- Heatmap(mat1, name = "mat", col = c("a" = "red", "b" = "blue"), right_annotation = ha)
+ha <- columnAnnotation(foo = anno_mark(at = 1, labels = "1"))
+htmp <- Heatmap(mat1, name = "Haplotypes",
+                col = c("A" = "red", "B" = "blue", "-" = "grey40"),
+#                bottom_annotation = ha,
+#                column_title = colnames(mat1),
+                column_title_side = "bottom",
+                show_column_names = TRUE
+#                column_names_max_height = unit(6, "cm"),
+#                column_title_gp = gpar(fontsize = 12),
+#                column_title_rot = 90
+#                column_names_centered = T
+               )
+#decorate_heatmap_body(htmp,
+#                      code = grid.lines(x = c(0.5, 0.5),
+#                                        y = c(0, 1),
+#                                        gp = gpar(lty = 1, lwd = 1)),
+#                      slice = 2) 
+draw(htmp)
 dev.off()
      anno_mark(at, labels, which = c("column", "row"),
          side = ifelse(which == "column", "top", "right"),
