@@ -5,10 +5,12 @@
 
 #sample <- "barcode1_120"
 #MAPQ <- 60
+#cMscale <- 0.153
 
 args <- commandArgs(trailingOnly = T)
 sample <- args[1]
 MAPQ <- args[2]
+cMscale <- as.numeric(args[3])
 
 setwd("/home/ajt200/analysis/nanopore/pollen_typing/")
 library(dplyr)
@@ -18,6 +20,7 @@ library(ggthemes)
 library(grid)
 library(gridExtra)
 library(extrafont)
+library(ComplexHeatmap)
 library(parallel)
 library(doParallel)
 registerDoParallel(cores = detectCores())
@@ -455,12 +458,12 @@ hapRecDF_NCOs <- hapRecDF[rowSums(hapRecDF) >= 4,]
 # For each recombination matrix (complete and subsetted),
 # calculate cM/Mb in each marker interval
 cMMb <- data.frame(window = as.integer(colnames(hapRecDF)),
-                   All = as.vector( ( (colSums(hapRecDF)/dim(hapRecDF)[1]) * 100 ) /
-                                     (widths/1e6) ),
-                   COs = as.vector( ( (colSums(hapRecDF_COs)/dim(hapRecDF)[1]) * 100 ) /
-                                     (widths/1e6) ),
-                   NCOs = as.vector( ( (colSums(hapRecDF_NCOs)/dim(hapRecDF)[1]) * 100 ) /
-                                     (widths/1e6) )
+                   All = as.vector( ( (colSums(hapRecDF)/dim(hapRecDF)[1]) /
+                                      (widths/1e6) ) * cMscale ),
+                   COs = as.vector( ( (colSums(hapRecDF_COs)/dim(hapRecDF)[1]) /
+                                      (widths/1e6) ) * cMscale ),
+                   NCOs = as.vector( ( (colSums(hapRecDF_NCOs)/dim(hapRecDF)[1]) /
+                                       (widths/1e6) ) * cMscale )
                   )
 cMMb_tidy <- gather(data = cMMb,
                     key = aln,
@@ -593,3 +596,22 @@ ggObjGA_combined <- grid.arrange(ggObj_cMMb,
 ggsave(paste0(plotDir, sample, "_ONT_cMMb_cM_v111219.pdf"),
        plot = ggObjGA_combined,
        height = 6.5*2, width = 20, limitsize = F)
+
+
+
+mat1 <- matrix(c(sample(letters[1:2], 50, replace = T),
+                 sample(letters[1:2], 50, replace = T)),
+               nrow = 2, ncol = 50, byrow = T)
+
+pdf("test.pdf")
+ha <- columnAnnotation(foo = anno_mark(at = c(1, seq(0, 50, by = 5)[-1]), labels = c(1, seq(0, 50, by = 5)[-1])))
+ha <- rowAnnotation(foo = anno_mark(at = 1, labels = "1"))
+htmp <- Heatmap(mat1, name = "mat", col = c("a" = "red", "b" = "blue"), right_annotation = ha)
+dev.off()
+     anno_mark(at, labels, which = c("column", "row"),
+         side = ifelse(which == "column", "top", "right"),
+         lines_gp = gpar(), labels_gp = gpar(),
+         labels_rot = ifelse(which == "column", 90, 0), padding = unit(1, "mm"),
+         link_width = unit(5, "mm"), link_height = link_width,
+         link_gp = lines_gp,
+         extend = unit(0, "mm"))
