@@ -1,10 +1,10 @@
-#!/applications/R/R-3.5.0/bin/Rscript
+#!/applications/R/R-3.6.0/bin/Rscript
 
 # Convert samtools pileup file into a haplotype matrix
 # for visualisation of recombination over interval
 
 # Usage:
-# ./pileup_to_haplotype.R barcode1_120 60 0.153  
+# ./pileup_to_haplotype_2.R barcode1_120 60 0.153  
 
 #sample <- "barcode1_120"
 #MAPQ <- 60
@@ -23,7 +23,10 @@ library(ggthemes)
 library(grid)
 library(gridExtra)
 library(extrafont)
+font_import()
+loadfonts()
 library(ComplexHeatmap)
+library(Cairo)
 library(parallel)
 library(doParallel)
 registerDoParallel(cores = detectCores())
@@ -558,7 +561,7 @@ ggObj_cMMb <- ggplot(data = cMMb_tidy,
   scale_x_continuous(breaks = c(alleles$position),
                      labels = c(as.character(alleles$position))) +
   scale_y_continuous(limits = c(0, 300),
-		     labels = function(x) sprintf("%4.0f", as.numeric(x))) +
+                     labels = function(x) sprintf("%4.0f", as.numeric(x))) +
   geom_vline(xintercept = c(alleles$position),
              linetype = "dashed",
              size = 0.5) +
@@ -632,21 +635,39 @@ ggsave(paste0(plotDir, sample, "_ONT_cMMb_cM_v121219.pdf"),
 
 
 
+# Convert haplotype frequencies into proportions
+tplpHap_group_n_quant_prop <- ceiling( ( tplpHap_group_n_quant$`n()` /
+                                         (sum(tplpHap_group_n_quant$`n()`)) ) * 100000 )
 
-# Order by (imputed) haplotypes
-tplpHap_quant_sort <- tplpHap_quant[sort.int(tplpHap_quant$hap,
-                                             decreasing = F,
-                                             index.return=T)$ix,]
+tplpHap_group_n_quant_prop_hap <- bind_rows(lapply(seq_along(tplpHap_group_n_quant_prop), function(x) {
+  data.frame(hap = as.character(rep(tplpHap_group_n_quant$hap[x],
+                                    tplpHap_group_n_quant_prop[x])),
+             prop = as.numeric(rep(tplpHap_group_n_quant_prop[x],
+                                   tplpHap_group_n_quant_prop[x])),
+             perc = as.numeric(rep(tplpHap_group_n_quant_prop[x]/1000,
+                                   tplpHap_group_n_quant_prop[x])),
+             stringsAsFactors = F)
+}), .id = "hapNo")
 
-mat1 <- matrix(unlist(strsplit(tplpHap_quant_sort$hap,
+tplpHap_group_n_quant_prop_hap_sort <- tplpHap_group_n_quant_prop_hap[sort.int(tplpHap_group_n_quant_prop_hap$prop,
+                                                                               decreasing = T,
+                                                                               index.return = T)$ix,]
+mat1 <- matrix(unlist(strsplit(tplpHap_group_n_quant_prop_hap_sort$hap,
                                split = "")),
-               ncol = dim(tplpHap_quant_sort)[2]-1,
+               ncol = dim(tplpHap_quant)[2]-1,
                byrow = T)
-colnames(mat1) <- colnames(tplpHap_quant_sort)[-length(colnames(tplpHap_quant_sort))]
-pdf(paste0(plotDir, sample, "_ONT_recombo_heatmap_v121219.pdf"), height = 10)
+mat1 <- cbind(mat1,
+              tplpHap_group_n_quant_prop_hap_sort$hap,
+              tplpHap_group_n_quant_prop_hap_sort$prop,
+              tplpHap_group_n_quant_prop_hap_sort$perc)
+colnames(mat1) <- c(colnames(tplpHap_quant)[-length(colnames(tplpHap_quant))],
+                    "hap", "prop", "perc")
+
+pdf(paste0(plotDir, sample, "_ONT_recombo_heatmap_v131219.pdf"), height = 10)
 #ha <- columnAnnotation(foo = anno_mark(at = c(1, seq(0, 50, by = 5)[-1]), labels = c(1, seq(0, 50, by = 5)[-1])))
-htmp <- Heatmap(mat1, name = "Haplotype",
+htmp <- Heatmap(mat1[ ,1:(dim(tplpHap_quant)[2]-1)], name = "Haplotype",
                 col = c("A" = "red", "B" = "blue", "-" = "grey40"),
+                raster_device = "CairoPNG",
 #                bottom_annotation = ha,
 #                column_title = colnames(mat1),
                 column_title_side = "bottom",
@@ -661,5 +682,7 @@ htmp <- Heatmap(mat1, name = "Haplotype",
 #                                        y = c(0, 1),
 #                                        gp = gpar(lty = 1, lwd = 1)),
 #                      slice = 2) 
-draw(htmp)
+draw(htmp,
+     split = tplpHap_group_n_quant_prop_hap_sort$hap,
+     heatmap_legend_side = "bottom")
 dev.off()
