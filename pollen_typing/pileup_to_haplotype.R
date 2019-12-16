@@ -103,11 +103,11 @@ colnames(plp) <- c("chr", "pos", "ref", "alt",
 # Replace factors with characters
 factorColumns <- sapply(plp, is.factor)
 plp[factorColumns] <- lapply(plp[factorColumns], as.character)
-plpHap <- plp
-write.table(plpHap,
-            file = paste0(hapMatDir, sample, "_ONT_pileup_to_haplotype.tsv"),
+write.table(plp,
+            file = paste0(hapMatDir, sample, "_ONT_pileup_alleles.tsv"),
             quote = F, sep = "\t",
             row.names = F, col.names = T)
+plpHap <- plp
 
 # Re-encode haplotypes using genotype naming convention
 # to avoid incorrect encoding of adenosine bases
@@ -136,6 +136,11 @@ for(x in 1:(dim(plpHap)[1])) {
 # each allele from single-molecule sequencing
 plpHap[] <- lapply(plpHap, function(x) as.character(gsub("AA", "A", x)))
 plpHap[] <- lapply(plpHap, function(x) as.character(gsub("BB", "B", x)))
+
+write.table(plpHap,
+            file = paste0(hapMatDir, sample, "_ONT_pileup_to_haplotype.tsv"),
+            quote = F, sep = "\t",
+            row.names = F, col.names = T)
 
 # Transpose haplotype matrix for sorting
 tplpHap <- data.frame(t(plpHap[,5:dim(plpHap)[2]]))
