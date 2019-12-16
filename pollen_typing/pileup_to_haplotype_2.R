@@ -27,6 +27,7 @@ font_import()
 loadfonts()
 library(ComplexHeatmap)
 library(Cairo)
+library(png)
 library(parallel)
 library(doParallel)
 registerDoParallel(cores = detectCores())
@@ -505,18 +506,6 @@ cM_tidy <- gather(data = cM,
 # to 639952 (18 nt downstream of 639934)
 
 # Define legend labels
-#alnNames <- c(bquote("All (" *
-#                     .(prettyNum(dim(hapRecDF)[1],
-#                                 big.mark = ",", trim = T)) *
-#                     ")"),
-#              bquote("COs (" *
-#                     .(prettyNum(dim(hapRecDF_COs)[1],
-#                                 big.mark = ",", trim = T)) *
-#                     ")"),
-#              bquote("COs & NCOs (" *
-#                     .(prettyNum(dim(hapRecDF_NCOs)[1],
-#                                 big.mark = ",", trim = T)) *
-#                     ")"))
 alnNames <- c(paste0("All (",
                      prettyNum(dim(hapRecDF)[1],
                                big.mark = ",", trim = T),
@@ -558,11 +547,11 @@ ggObj_cMMb <- ggplot(data = cMMb_tidy,
             mapping = aes(colour = aln),
             size = 1) +
   scale_colour_manual(values = alnColours) +
-  scale_x_continuous(breaks = c(alleles$position),
-                     labels = c(as.character(alleles$position))) +
+  scale_x_continuous(breaks = c(alleles$position[2:(length(alleles$position)-1)]),
+                     labels = c(as.character(alleles$position[2:(length(alleles$position)-1)]))) +
   scale_y_continuous(limits = c(0, 300),
-                     labels = function(x) sprintf("%4.0f", as.numeric(x))) +
-  geom_vline(xintercept = c(alleles$position),
+                     labels = function(x) sprintf("%3.0f", as.numeric(x))) +
+  geom_vline(xintercept = c(alleles$position[2:(length(alleles$position)-1)]),
              linetype = "dashed",
              size = 0.5) +
   labs(x = bquote(italic("3a") ~ "marker"),
@@ -583,10 +572,10 @@ ggObj_cMMb <- ggplot(data = cMMb_tidy,
         panel.background = element_blank(),
         plot.margin = unit(c(0.3,1.2,0.0,0.3), "cm"),
         plot.title = element_text(hjust = 0.5, size = 30)) +
-  ggtitle(bquote(.(sample) ~ "ONT (" * italic("n") ~ "=" ~
-                 .(prettyNum(dim(hapRecDF)[1],
+  ggtitle(bquote(bold(.(sample) ~ "ONT (" *
+                      .(prettyNum(dim(hapRecDF)[1],
                              big.mark = ",", trim = T)) *
-                 ")"))
+                      " alignments)")))
 
 ggObj_cM <- ggplot(data = cM_tidy,
                    mapping = aes(x = window,
@@ -596,11 +585,11 @@ ggObj_cM <- ggplot(data = cM_tidy,
             mapping = aes(colour = aln),
             size = 1) +
   scale_colour_manual(values = alnColours) +
-  scale_x_continuous(breaks = c(alleles$position),
-                     labels = c(as.character(alleles$position))) +
+  scale_x_continuous(breaks = c(alleles$position[2:(length(alleles$position)-1)]),
+                     labels = c(as.character(alleles$position[2:(length(alleles$position)-1)]))) +
   scale_y_continuous(limits = c(0, 40),
-		     labels = function(x) sprintf("%1.2f", as.numeric(x))) +
-  geom_vline(xintercept = c(alleles$position),
+		     labels = function(x) sprintf("%3.0f", as.numeric(x))) +
+  geom_vline(xintercept = c(alleles$position[2:(length(alleles$position)-1)]),
              linetype = "dashed",
              size = 0.5) +
   labs(x = bquote(italic("3a") ~ "marker"),
@@ -621,21 +610,22 @@ ggObj_cM <- ggplot(data = cM_tidy,
         panel.background = element_blank(),
         plot.margin = unit(c(0.3,1.2,0.0,0.3), "cm"),
         plot.title = element_text(hjust = 0.5, size = 30)) +
-  ggtitle(bquote(.(sample) ~ "ONT (" * italic("n") ~ "=" ~
-                 .(prettyNum(dim(hapRecDF)[1],
+  ggtitle(bquote(bold(.(sample) ~ "ONT (" *
+                      .(prettyNum(dim(hapRecDF)[1],
                              big.mark = ",", trim = T)) *
-                 ")"))
+                      " alignments)")))
 ggObjGA_combined <- grid.arrange(ggObj_cMMb,
                                  ggObj_cM,
                                  nrow = 2, as.table = F)
                                                     
-ggsave(paste0(plotDir, sample, "_ONT_cMMb_cM_v121219.pdf"),
+ggsave(paste0(plotDir, sample, "_ONT_cMMb_cM_v161219.pdf"),
        plot = ggObjGA_combined,
        height = 6.5*2, width = 20, limitsize = F)
 
 
 
 # Convert haplotype frequencies into proportions
+# for heat map plotting
 tplpHap_group_n_quant_prop <- ceiling( ( tplpHap_group_n_quant$`n()` /
                                          (sum(tplpHap_group_n_quant$`n()`)) ) * 100000 )
 
@@ -662,27 +652,46 @@ mat1 <- cbind(mat1,
               tplpHap_group_n_quant_prop_hap_sort$perc)
 colnames(mat1) <- c(colnames(tplpHap_quant)[-length(colnames(tplpHap_quant))],
                     "hap", "prop", "perc")
+row_order <- order(tplpHap_group_n_quant_prop_hap_sort$perc,
+                   decreasing = T)
+proportions <- sapply(seq_along(unique(tplpHap_group_n_quant_prop_hap_sort$hap)), function(x) {
+  mean(tplpHap_group_n_quant_prop_hap_sort[tplpHap_group_n_quant_prop_hap_sort$hap ==
+         unique(tplpHap_group_n_quant_prop_hap_sort$hap)[x],]$perc)
+})
 
-pdf(paste0(plotDir, sample, "_ONT_recombo_heatmap_v131219.pdf"), height = 10)
-#ha <- columnAnnotation(foo = anno_mark(at = c(1, seq(0, 50, by = 5)[-1]), labels = c(1, seq(0, 50, by = 5)[-1])))
-htmp <- Heatmap(mat1[ ,1:(dim(tplpHap_quant)[2]-1)], name = "Haplotype",
+htmp <- Heatmap(mat1[ ,1:(dim(tplpHap_quant)[2]-1)],
+                name = "Allele",
                 col = c("A" = "red", "B" = "blue", "-" = "grey40"),
-                raster_device = "CairoPNG",
-#                bottom_annotation = ha,
-#                column_title = colnames(mat1),
-                column_title_side = "bottom",
-                show_column_names = TRUE
-#                column_names_max_height = unit(6, "cm"),
-#                column_title_gp = gpar(fontsize = 12),
-#                column_title_rot = 90
-#                column_names_centered = T
+                row_split = factor(tplpHap_group_n_quant_prop_hap_sort$hap,
+                                   levels = unique(as.character(tplpHap_group_n_quant_prop_hap_sort$hap))),
+                row_gap = unit(1.5, "mm"),
+                row_title = paste0(sprintf('%.3f', proportions), "%"),
+                row_title_rot = 0,
+                row_title_gp = gpar(fontsize = 10),
+                row_order = row_order,
+                show_row_names = F,
+                #column_split = colnames(mat1[ ,1:(dim(tplpHap_quant)[2]-1)]),
+                #column_gap = unit(1.0, "mm"),
+                #column_title = rep("", length(colnames(mat1[ ,1:(dim(tplpHap_quant)[2]-1)]))),
+                column_title = paste0(sample, " ONT (",
+                                      prettyNum(dim(hapRecDF)[1],
+                                                big.mark = ",", trim = T),
+                                      " alignments)"),
+                column_title_gp = gpar(fontsize = 20, fontface = "bold"),
+                show_column_names = T,
+                column_names_side = "bottom",
+                column_names_gp = gpar(fontsize = 16),
+                heatmap_legend_param = list(title = bquote(bolditalic("3a") ~ bold("marker allele")),
+                                            title_gp = gpar(fontsize = 16),
+                                            title_position = "topcenter",
+                                            grid_height = unit(6, "mm"),
+                                            grid_width = unit(10, "mm"),
+                                            labels = c("Col-0", "Ws-4"),
+                                            labels_gp = gpar(fontsize = 16),
+                                            ncol = 2),
+                raster_device = "CairoPNG"
                )
-#decorate_heatmap_body(htmp,
-#                      code = grid.lines(x = c(0.5, 0.5),
-#                                        y = c(0, 1),
-#                                        gp = gpar(lty = 1, lwd = 1)),
-#                      slice = 2) 
+pdf(paste0(plotDir, sample, "_ONT_recombo_heatmap_v161219.pdf"), height = 18)
 draw(htmp,
-     split = tplpHap_group_n_quant_prop_hap_sort$hap,
      heatmap_legend_side = "bottom")
 dev.off()
