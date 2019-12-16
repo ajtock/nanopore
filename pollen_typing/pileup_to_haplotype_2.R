@@ -514,7 +514,7 @@ alnNames <- c(paste0("All (",
                      prettyNum(dim(hapRecDF_COs)[1],
                                big.mark = ",", trim = T),
                      ")"),
-              paste0("COs & NCOs (",
+              paste0("NCOs & COs (",
                      prettyNum(dim(hapRecDF_NCOs)[1],
                                big.mark = ",", trim = T),
                      ")"))
@@ -537,7 +537,7 @@ legendLabs <- lapply(seq_along(alnNames), function(x) {
 })  
 
 # Plot recombination rates for group of alignments
-# (all, COs only, both COs and NCOs)
+# (all, COs only, both NCOs and COs)
 plotDir <- "/home/ajt200/analysis/nanopore/pollen_typing/"
 ggObj_cMMb <- ggplot(data = cMMb_tidy,
                      mapping = aes(x = window,
@@ -691,7 +691,7 @@ htmp <- Heatmap(mat1[ ,1:(dim(tplpHap_quant)[2]-1)],
                                             ncol = 2),
                 raster_device = "CairoPNG"
                )
-pdf(paste0(plotDir, sample, "_ONT_recombo_heatmap_v161219.pdf"), height = 18)
+pdf(paste0(plotDir, sample, "_ONT_recombo_heatmap_v161219.pdf"), height = 18, width = 10)
 draw(htmp,
      heatmap_legend_side = "bottom")
 dev.off()
