@@ -562,13 +562,13 @@ ggObj_cMMb <- ggplot(data = cMMb_tidy,
   scale_colour_manual(values = alnColours) +
   scale_x_continuous(breaks = c(alleles$position[2:(length(alleles$position)-1)]),
                      labels = c(as.character(alleles$position[2:(length(alleles$position)-1)]))) +
-  scale_y_continuous(limits = c(0, 300),
+  scale_y_continuous(limits = c(0, 400),
                      labels = function(x) sprintf("%4.0f", as.numeric(x))) +
   geom_vline(xintercept = c(alleles$position[2:(length(alleles$position)-1)]),
              linetype = "dashed",
              size = 0.5) +
   labs(x = bquote(italic("3a") ~ "marker"),
-       y = bquote("cM/Mb x" ~ .(cMscale))) +
+       y = bquote("cM/Mb *" ~ .(cMscale))) +
   annotation_custom(legendLabs[[1]]) +
   annotation_custom(legendLabs[[2]]) +
   annotation_custom(legendLabs[[3]]) +
@@ -600,13 +600,13 @@ ggObj_cM <- ggplot(data = cM_tidy,
   scale_colour_manual(values = alnColours) +
   scale_x_continuous(breaks = c(alleles$position[2:(length(alleles$position)-1)]),
                      labels = c(as.character(alleles$position[2:(length(alleles$position)-1)]))) +
-  scale_y_continuous(limits = c(0, 10),
+  scale_y_continuous(limits = c(0, 7.5),
 		     labels = function(x) sprintf("%2.1f", as.numeric(x))) +
   geom_vline(xintercept = c(alleles$position[2:(length(alleles$position)-1)]),
              linetype = "dashed",
              size = 0.5) +
   labs(x = bquote(italic("3a") ~ "marker"),
-       y = bquote("cM x" ~ .(cMscale))) +
+       y = bquote("cM *" ~ .(cMscale))) +
   annotation_custom(legendLabs[[1]]) +
   annotation_custom(legendLabs[[2]]) +
   annotation_custom(legendLabs[[3]]) +
