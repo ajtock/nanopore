@@ -147,8 +147,31 @@ plp2 <- read.table(paste0(hapMatDir, sample, "_ONT_pileup_alleles.tsv"),
                    stringsAsFactors = F)
 colnames(plp2) <- c("chr", "pos", "ref", "alt",
                     seq(1:(dim(plp2)[2]-4)))
-integerColumns <- sapply(plp2, is.integer)
-plp2[integerColumns] <- lapply(plp2[integerColumns], as.character)
+
+# Re-encode haplotypes using genotype naming convention
+# to avoid incorrect encoding of adenosine bases
+# Col-0 as "AA", Ws-4 as "BB", "*" and all others as "-" 
+for(x in 1:(dim(plp2)[1])) {
+  for(y in 5:(dim(plp2)[2])) {
+    print(paste0("Marker ", x, " of ", dim(plp2)[1],
+                 ": Alignment ", y-4, " of ", dim(plp2)[2]-4))
+    if( plp2[x,y] %in% c(".", ",") ) {
+      plp2[x,y] <- "AA"
+    } else if( plp2[x,y] %in% c(plp2[x,4],
+                                  tolower(plp2[x,4])) ) {
+      plp2[x,y] <- "BB"
+    } else if( grepl(pattern = plp2[x,4],
+                     x = plp2[x,y],
+                     ignore.case = T,
+                     perl = T) ) {
+      plp2[x,y] <- "BB"
+    } else if( plp2[x,y] %in% c("A", "C", "G", "T") ) {
+      plp2[x,y] <- "XX"
+    } else {
+      plpHap[x,y] <- "-"
+    }
+  }
+}
 
 plpHap <- read.table(paste0(hapMatDir, sample, "_ONT_pileup_to_haplotype.tsv"),
                       header = T, sep = "\t",
