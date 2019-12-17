@@ -96,6 +96,8 @@ ulimit -Sn 1048576
 ##  "^]" denotes a base at the start of a read,
 ##  "$" denotes a base at the end of a  read)
 # 6. BAM file 1: Phred-scaled base qualities
+## see https://davetang.org/muse/2015/08/26/samtools-mpileup/
+## http://www.htslib.org/doc/1.9/samtools.html
 [[ -f minimap2_TAIR10_${sample}_sorted_primary_MAPQ${MAPQ}.plp ]] && \
 echo "ERROR: minimap2_TAIR10_${sample}_sorted_primary_MAPQ${MAPQ}.plp EXISTS; NOT OVERWRITTEN" || \
 samtools mpileup --bam-list minimap2_TAIR10_${sample}_sorted_primary_MAPQ${MAPQ}_BAM_list.txt \
