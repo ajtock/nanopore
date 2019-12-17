@@ -562,13 +562,22 @@ ggObj_cMMb <- ggplot(data = cMMb_tidy,
   scale_colour_manual(values = alnColours) +
   scale_x_continuous(breaks = c(alleles$position[2:(length(alleles$position)-1)]),
                      labels = c(as.character(alleles$position[2:(length(alleles$position)-1)]))) +
-  scale_y_continuous(limits = c(0, 400),
+  scale_y_continuous(limits = c(-50, 500),
                      labels = function(x) sprintf("%3.0f", as.numeric(x))) +
   geom_vline(xintercept = c(alleles$position[2:(length(alleles$position)-1)]),
              linetype = "dashed",
              size = 0.5) +
+  # Add genes within 3a hotspot
+  # 3       634653  637284  +       AT3G02880.1
+  # 3       638021  639055  -       AT3G02885.1
+  geom_segment(mapping = aes(x = 634653, y = -35,
+                             xend = 637284, yend = -35),
+               arrow = arrow(angle = 10, type = "closed"), size = 1.5, linejoin = "mitre") +
+  geom_segment(mapping = aes(x = 639055, y = -35,
+                             xend = 638021, yend = -35),
+               arrow = arrow(angle = 10, type = "closed"), size = 1.5, linejoin = "mitre") +
   labs(x = bquote(italic("3a") ~ "marker"),
-       y = bquote("cM/Mb *" ~ .(cMscale))) +
+       y = bquote(cM*"/"*Mb%*% ~ .(cMscale))) +
   annotation_custom(legendLabs[[1]]) +
   annotation_custom(legendLabs[[2]]) +
   annotation_custom(legendLabs[[3]]) +
@@ -600,13 +609,19 @@ ggObj_cM <- ggplot(data = cM_tidy,
   scale_colour_manual(values = alnColours) +
   scale_x_continuous(breaks = c(alleles$position[2:(length(alleles$position)-1)]),
                      labels = c(as.character(alleles$position[2:(length(alleles$position)-1)]))) +
-  scale_y_continuous(limits = c(0, 6.5),
+  scale_y_continuous(limits = c(-0.6, 6.5),
 		     labels = function(x) sprintf("%1.1f", as.numeric(x))) +
   geom_vline(xintercept = c(alleles$position[2:(length(alleles$position)-1)]),
              linetype = "dashed",
              size = 0.5) +
+  geom_segment(mapping = aes(x = 634653, y = -0.4,
+                             xend = 637284, yend = -0.4),
+               arrow = arrow(angle = 10, type = "closed"), size = 1.5, linejoin = "mitre") +
+  geom_segment(mapping = aes(x = 639055, y = -0.4,
+                             xend = 638021, yend = -0.4),
+               arrow = arrow(angle = 10, type = "closed"), size = 1.5, linejoin = "mitre") +
   labs(x = bquote(italic("3a") ~ "marker"),
-       y = bquote("cM *" ~ .(cMscale))) +
+       y = bquote(cM%*% ~ .(cMscale))) +
   annotation_custom(legendLabs[[1]]) +
   annotation_custom(legendLabs[[2]]) +
   annotation_custom(legendLabs[[3]]) +
