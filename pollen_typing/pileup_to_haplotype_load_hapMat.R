@@ -570,7 +570,7 @@ ggObj_cMMb <- ggplot(data = cMMb_tidy,
                                    group = aln)) +
   geom_line(data = cMMb_tidy,
             mapping = aes(colour = aln),
-            size = 1) +
+            size = 2) +
   scale_colour_manual(values = alnColours) +
   scale_x_continuous(breaks = c(alleles$position[2:(length(alleles$position)-1)]),
                      labels = c(as.character(alleles$position[2:(length(alleles$position)-1)]))) +
@@ -617,7 +617,7 @@ ggObj_cM <- ggplot(data = cM_tidy,
                                  group = aln)) +
   geom_line(data = cM_tidy,
             mapping = aes(colour = aln),
-            size = 1) +
+            size = 2) +
   scale_colour_manual(values = alnColours) +
   scale_x_continuous(breaks = c(alleles$position[2:(length(alleles$position)-1)]),
                      labels = c(as.character(alleles$position[2:(length(alleles$position)-1)]))) +

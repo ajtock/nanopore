@@ -303,7 +303,7 @@ ggObj_cMMb <- ggplot(data = cMMb_tidy,
                                    group = aln)) +
   geom_line(data = cMMb_tidy,
             mapping = aes(colour = aln),
-            size = 1) +
+            size = 2) +
   scale_colour_manual(values = alnColours) +
   scale_x_continuous(breaks = c(alleles$position[2:(length(alleles$position)-1)]),
                      labels = c(as.character(alleles$position[2:(length(alleles$position)-1)]))) +
@@ -322,7 +322,7 @@ ggObj_cMMb <- ggplot(data = cMMb_tidy,
                              xend = 638021, yend = -35),
                arrow = arrow(angle = 10, type = "closed"), size = 1.5, linejoin = "round") +
   labs(x = bquote(italic("3a") ~ "marker"),
-       y = bquote(cM*"/"*Mb%*% ~ .(cMscale))) +
+       y = bquote(cM*"/"*Mb~""%*%~.(cMscale))) +
   annotation_custom(legendLabs[[1]]) +
   annotation_custom(legendLabs[[2]]) +
   annotation_custom(legendLabs[[3]]) +
@@ -350,7 +350,7 @@ ggObj_cM <- ggplot(data = cM_tidy,
                                  group = aln)) +
   geom_line(data = cM_tidy,
             mapping = aes(colour = aln),
-            size = 1) +
+            size = 2) +
   scale_colour_manual(values = alnColours) +
   scale_x_continuous(breaks = c(alleles$position[2:(length(alleles$position)-1)]),
                      labels = c(as.character(alleles$position[2:(length(alleles$position)-1)]))) +
@@ -366,7 +366,7 @@ ggObj_cM <- ggplot(data = cM_tidy,
                              xend = 638021, yend = -0.4),
                arrow = arrow(angle = 10, type = "closed"), size = 1.5, linejoin = "round") +
   labs(x = bquote(italic("3a") ~ "marker"),
-       y = bquote(cM%*% ~ .(cMscale))) +
+       y = bquote(cM~""%*%~.(cMscale))) +
   annotation_custom(legendLabs[[1]]) +
   annotation_custom(legendLabs[[2]]) +
   annotation_custom(legendLabs[[3]]) +
