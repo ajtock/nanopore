@@ -514,10 +514,9 @@ cMMb <- data.frame(window = as.integer(colnames(hapRecDF)),
                    NCOs = as.vector( ( (colSums(hapRecDF_NCOs)/dim(hapRecDF)[1]) /
                                        (widths/1e6) ) * cMscale )
                   )
-cMMb_tidy <- gather(data = cMMb,
-                    key = aln,
-                    value = cMMb,
-                    -window)
+cMMb_tidy$aln <- factor(cMMb_tidy$aln,
+                        levels = unique(cMMb_tidy$aln))
+
 
 cM <- data.frame(window = as.integer(colnames(hapRecDF)),
                  All = as.vector( ( (colSums(hapRecDF)/dim(hapRecDF)[1]) * 100 ) * cMscale ),
@@ -527,6 +526,8 @@ cM_tidy <- gather(data = cM,
                   key = aln,
                   value = cM,
                   -window)
+cM_tidy$aln <- factor(cM_tidy$aln,
+                      levels = unique(cM_tidy$aln))
 
 # Complete amplicon extends from 634089 (20 nt upstream of 634109)
 # to 639952 (18 nt downstream of 639934)
