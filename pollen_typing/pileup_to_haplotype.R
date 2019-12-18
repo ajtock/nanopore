@@ -576,10 +576,10 @@ ggObj_cMMb <- ggplot(data = cMMb_tidy,
   # 3       638021  639055  -       AT3G02885.1
   geom_segment(mapping = aes(x = 634653, y = -35,
                              xend = 637284, yend = -35),
-               arrow = arrow(angle = 10, type = "closed"), size = 1.5, linejoin = "mitre") +
+               arrow = arrow(angle = 10, type = "closed"), size = 1.5, linejoin = "round") +
   geom_segment(mapping = aes(x = 639055, y = -35,
                              xend = 638021, yend = -35),
-               arrow = arrow(angle = 10, type = "closed"), size = 1.5, linejoin = "mitre") +
+               arrow = arrow(angle = 10, type = "closed"), size = 1.5, linejoin = "round") +
   labs(x = bquote(italic("3a") ~ "marker"),
        y = bquote(cM*"/"*Mb%*% ~ .(cMscale))) +
   annotation_custom(legendLabs[[1]]) +
@@ -620,10 +620,10 @@ ggObj_cM <- ggplot(data = cM_tidy,
              size = 0.5) +
   geom_segment(mapping = aes(x = 634653, y = -0.4,
                              xend = 637284, yend = -0.4),
-               arrow = arrow(angle = 10, type = "closed"), size = 1.5, linejoin = "mitre") +
+               arrow = arrow(angle = 10, type = "closed"), size = 1.5, linejoin = "round") +
   geom_segment(mapping = aes(x = 639055, y = -0.4,
                              xend = 638021, yend = -0.4),
-               arrow = arrow(angle = 10, type = "closed"), size = 1.5, linejoin = "mitre") +
+               arrow = arrow(angle = 10, type = "closed"), size = 1.5, linejoin = "round") +
   labs(x = bquote(italic("3a") ~ "marker"),
        y = bquote(cM%*% ~ .(cMscale))) +
   annotation_custom(legendLabs[[1]]) +
@@ -650,7 +650,7 @@ ggObjGA_combined <- grid.arrange(ggObj_cMMb,
                                  ggObj_cM,
                                  nrow = 2, as.table = F)
                                                     
-ggsave(paste0(plotDir, sample, "_ONT_cMMb_cM_v161219.pdf"),
+ggsave(paste0(plotDir, sample, "_ONT_cMMb_cM_v181219.pdf"),
        plot = ggObjGA_combined,
        height = 6.5*2, width = 20, limitsize = F)
 
@@ -723,7 +723,7 @@ htmp <- Heatmap(mat1[ ,1:(dim(tplpHap_quant)[2]-1)],
                                             ncol = 2),
                 raster_device = "CairoPNG"
                )
-pdf(paste0(plotDir, sample, "_ONT_recombo_heatmap_v161219.pdf"), height = 18, width = 10)
+pdf(paste0(plotDir, sample, "_ONT_recombo_heatmap_v181219.pdf"), height = 18, width = 10)
 draw(htmp,
      heatmap_legend_side = "bottom")
 dev.off()
