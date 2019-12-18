@@ -168,7 +168,7 @@ for(x in 1:(dim(plp2)[1])) {
     } else if( plp2[x,y] %in% c("A", "C", "G", "T") ) {
       plp2[x,y] <- "XX"
     } else {
-      plpHap[x,y] <- "-"
+      plp2[x,y] <- "-"
     }
   }
 }
