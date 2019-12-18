@@ -116,10 +116,14 @@ rownames(alleles) <- 1:dim(alleles)[1]
 #  for(y in 5:(dim(plpHap)[2])) {
 #    print(paste0("Marker ", x, " of ", dim(plpHap)[1],
 #                 ": Alignment ", y-4, " of ", dim(plpHap)[2]-4))
-#    if( plpHap[x,y] %in% c(".", ",") ) {
+#    if( plpHap[x,y] %in% c(".", ",", "^].", "^],", ".$", ",$") ) {
 #      plpHap[x,y] <- "AA"
 #    } else if( plpHap[x,y] %in% c(plpHap[x,4],
-#                                  tolower(plpHap[x,4])) ) {
+#                                  tolower(plpHap[x,4]),
+#                                  paste0("^]", plpHap[x,4]),
+#                                  paste0("^]", tolower(plpHap[x,4])),
+#                                  paste0(plpHap[x,4], "$"),
+#                                  paste0(tolower(plpHap[x,4]), "$")) ) {
 #      plpHap[x,y] <- "BB"
 #    } else if( grepl(pattern = plpHap[x,4],
 #                     x = plpHap[x,y],

@@ -116,10 +116,14 @@ rownames(alleles) <- 1:dim(alleles)[1]
 #  for(y in 5:(dim(plpHap)[2])) {
 #    print(paste0("Marker ", x, " of ", dim(plpHap)[1],
 #                 ": Alignment ", y-4, " of ", dim(plpHap)[2]-4))
-#    if( plpHap[x,y] %in% c(".", ",") ) {
+#    if( plpHap[x,y] %in% c(".", ",", "^].", "^],", ".$", ",$") ) {
 #      plpHap[x,y] <- "AA"
 #    } else if( plpHap[x,y] %in% c(plpHap[x,4],
-#                                  tolower(plpHap[x,4])) ) {
+#                                  tolower(plpHap[x,4]),
+#                                  paste0("^]", plpHap[x,4]),
+#                                  paste0("^]", tolower(plpHap[x,4])), 
+#                                  paste0(plpHap[x,4], "$"),
+#                                  paste0(tolower(plpHap[x,4]), "$")) ) {
 #      plpHap[x,y] <- "BB"
 #    } else if( grepl(pattern = plpHap[x,4],
 #                     x = plpHap[x,y],
@@ -155,23 +159,46 @@ for(x in 1:(dim(plp2)[1])) {
   for(y in 5:(dim(plp2)[2])) {
     print(paste0("Marker ", x, " of ", dim(plp2)[1],
                  ": Alignment ", y-4, " of ", dim(plp2)[2]-4))
-    if( plp2[x,y] %in% c(".", ",") ) {
+    if( plp2[x,y] %in% c(".", ",", "^].", "^],", ".$", ",$") ) {
       plp2[x,y] <- "AA"
     } else if( plp2[x,y] %in% c(plp2[x,4],
-                                  tolower(plp2[x,4])) ) {
+                                tolower(plp2[x,4]),
+                                paste0("^]", plp2[x,4]),
+                                paste0("^]", tolower(plp2[x,4])), 
+                                paste0(plp2[x,4], "$"),
+                                paste0(tolower(plp2[x,4]), "$")) ) {
       plp2[x,y] <- "BB"
     } else if( grepl(pattern = plp2[x,4],
                      x = plp2[x,y],
                      ignore.case = T,
                      perl = T) ) {
       plp2[x,y] <- "BB"
-    } else if( plp2[x,y] %in% c("A", "C", "G", "T") ) {
+    } else if( plp2[x,y] %in% c("A", "C", "G", "T",
+                                "a", "c", "g", "t",
+                                "^]A", "^]C", "^]G", "^]T",
+                                "^]a", "^]c", "^]g", "^]t",
+                                "A$", "C$", "G$", "T$",
+                                "a$", "c$", "g$", "t$") ) {
       plp2[x,y] <- "XX"
-    } else {
-      plp2[x,y] <- "-"
+#    } else {
+#      plp2[x,y] <- "-"
     }
   }
 }
+
+row3_total <- length( plp2[3,5:(dim(plp2)[2]-4)] )
+stopifnot( ( sum( ( plp2[3,5:(dim(plp2)[2]-4)] %in%
+                  c("AA", "BB", "XX", "*") ) ) +
+             sum(!( plp2[3,5:(dim(plp2)[2]-4)] %in%
+                    c("AA", "BB", "XX", "*") ) ) ) ==
+          row3_total)
+
+row3_AA <- sum( ( plp2[3,5:(dim(plp2)[2]-4)] %in% c("AA") ) )
+row3_BB <- sum( ( plp2[3,5:(dim(plp2)[2]-4)] %in% c("BB") ) )
+row3_XX <- sum( ( plp2[3,5:(dim(plp2)[2]-4)] %in% c("XX") ) )
+
+plp2[3, !( plp2[3,] %in% c("AA", "BB", "XX", "*") )]
+
 
 plpHap <- read.table(paste0(hapMatDir, sample, "_ONT_pileup_to_haplotype.tsv"),
                       header = T, sep = "\t",
