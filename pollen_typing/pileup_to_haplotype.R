@@ -135,7 +135,6 @@ for(x in 1:(dim(plpHap)[1])) {
     }
   }
 }
-
 # Convert genotype naming convention into
 # haplotype naming convention as we cannot derive
 # each allele from single-molecule sequencing

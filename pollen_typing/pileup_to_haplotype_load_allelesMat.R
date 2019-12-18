@@ -187,18 +187,13 @@ for(x in 1:(dim(plp2)[1])) {
 }
 
 row3_total <- length( plp2[3,5:(dim(plp2)[2]-4)] )
-stopifnot( ( sum( ( plp2[3,5:(dim(plp2)[2]-4)] %in%
-                  c("AA", "BB", "XX", "*") ) ) +
-             sum(!( plp2[3,5:(dim(plp2)[2]-4)] %in%
-                    c("AA", "BB", "XX", "*") ) ) ) ==
-          row3_total)
-
 row3_AA <- sum( ( plp2[3,5:(dim(plp2)[2]-4)] %in% c("AA") ) )
 row3_BB <- sum( ( plp2[3,5:(dim(plp2)[2]-4)] %in% c("BB") ) )
 row3_XX <- sum( ( plp2[3,5:(dim(plp2)[2]-4)] %in% c("XX") ) )
-
-plp2[3, !( plp2[3,] %in% c("AA", "BB", "XX", "*") )]
-
+row3_NA <- sum( ( plp2[3,5:(dim(plp2)[2]-4)] %in% c("*") ) )
+row3_ID <- sum(!( plp2[3,5:(dim(plp2)[2]-4)] %in% c("AA", "BB", "XX", "*") ) )
+stopifnot(row3_total ==
+          sum(row3_AA, row3_BB, row3_XX, row3_NA, row3_ID))
 
 plpHap <- read.table(paste0(hapMatDir, sample, "_ONT_pileup_to_haplotype.tsv"),
                       header = T, sep = "\t",
