@@ -50,7 +50,7 @@ alleles[factorColumns] <- lapply(alleles[factorColumns], as.character)
 # Re-specify Ws-4 deletion allele at Chr3:637898 in row 8 of "alleles"
 ## NOTE: This could be made more or less specific to the known Col allele "ATGTTT" (vs. "AAAAA" in Ws-4)
 ## to capture sequences lacking either complete or partial matches to "TGTTT"
-alleles[8, ]$Ws.4 <- "[.,]-[1-9]TGT"
+alleles[8, ]$Ws.4 <- "[.,]-[1-9]T"
 # Re-specify Ws-4 alleles at Chr3:638788 in "alleles"
 ## NOTE: In the following two cases of insertions in Ws-4, the alternate allele specified
 ## could be made more specific to the known Ws-4 allele "TAT" (vs. "T" in Col) to capture
@@ -512,7 +512,6 @@ cMMb_tidy <- gather(data = cMMb,
                     -window)
 cMMb_tidy$aln <- factor(cMMb_tidy$aln,
                         levels = unique(cMMb_tidy$aln))
-
 
 cM <- data.frame(window = as.integer(colnames(hapRecDF)),
                  All = as.vector( ( (colSums(hapRecDF)/dim(hapRecDF)[1]) * 100 ) * cMscale ),
