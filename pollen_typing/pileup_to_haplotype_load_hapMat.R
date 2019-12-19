@@ -556,6 +556,22 @@ for(x in 1:(dim(plp2)[1])) {
 #            quote = F, sep = "\t",
 #            row.names = F, col.names = T)
 
+
+# Convert genotype naming convention into
+# haplotype naming convention as we cannot derive
+# each allele from single-molecule sequencing
+plp2[] <- lapply(plp2, function(x) as.character(gsub("AA", "A", x)))
+plp2[] <- lapply(plp2, function(x) as.character(gsub("BB", "B", x)))
+plp2[] <- lapply(plp2, function(x) as.character(gsub("XX", "X", x)))
+plp2[] <- lapply(plp2, function(x) as.character(gsub("ID", "I", x)))
+plp2[] <- lapply(plp2, function(x) as.character(gsub("NN", "N", x)))
+
+write.table(plpHap,
+            file = paste0(hapMatDir, sample, "_ONT_pileup_to_haplotype.tsv"),
+            quote = F, sep = "\t",
+            row.names = F, col.names = T)
+
+
 af <- data.frame()
 for(x in 1:dim(plp2)[1]) {
   marker_total <- length( plp2[x,5:dim(plp2)[2]] )
