@@ -149,10 +149,10 @@ rownames(alleles) <- 1:dim(alleles)[1]
 #            row.names = F, col.names = T)
 
 plpHap <- read.table(paste0(hapMatDir, sample, "_ONT_pileup_to_haplotype.tsv"),
-                      header = T, sep = "\t",
-                      stringsAsFactors = F)
+                     header = T, sep = "\t",
+                     stringsAsFactors = F)
 colnames(plpHap) <- c("chr", "pos", "ref", "alt",
-                       seq(1:(dim(plpHap)[2]-4)))
+                      seq(1:(dim(plpHap)[2]-4)))
 integerColumns <- sapply(plpHap, is.integer)
 plpHap[integerColumns] <- lapply(plpHap[integerColumns], as.character)
 
@@ -505,6 +505,86 @@ colnames(hapRecDF) <- sort(c(alleles$position[2:(length(alleles$position)-2)],
 hapRecDF_COs <- hapRecDF[rowSums(hapRecDF) == 2,]
 # extract alignments containing both crossovers and non-crossovers
 hapRecDF_NCOs <- hapRecDF[rowSums(hapRecDF) >= 4,]
+
+# Get haplotypes containing noncrossovers
+hap_NCOs <- unique(tplpHap_quant[which(rowSums(hapRecDF) >= 4),]$hap)
+
+# Load truncated pileup matrix containing variants
+plp2 <- read.table(paste0(hapMatDir, sample, "_ONT_pileup_alleles.tsv"),
+                   header = T, sep = "\t",
+                   stringsAsFactors = F)
+colnames(plp2) <- c("chr", "pos", "ref", "alt",
+                    seq(1:(dim(plp2)[2]-4)))
+
+# Re-encode haplotypes using genotype naming convention
+# to avoid incorrect encoding of adenosine bases
+# Col-0 as "AA", Ws-4 as "BB", "*" and all others as "-"
+for(x in 1:(dim(plp2)[1])) {
+  for(y in 5:(dim(plp2)[2])) {
+    print(paste0("Marker ", x, " of ", dim(plp2)[1],
+                 ": Alignment ", y-4, " of ", dim(plp2)[2]-4))
+    if( plp2[x,y] %in% c(".", ",", "^].", "^],", ".$", ",$") ) {
+      plp2[x,y] <- "AA"
+    } else if( plp2[x,y] %in% c(plp2[x,4],
+                                tolower(plp2[x,4]),
+                                paste0("^]", plp2[x,4]),
+                                paste0("^]", tolower(plp2[x,4])),
+                                paste0(plp2[x,4], "$"),
+                                paste0(tolower(plp2[x,4]), "$")) ) {
+      plp2[x,y] <- "BB"
+    } else if( grepl(pattern = plp2[x,4],
+                     x = plp2[x,y],
+                     ignore.case = T,
+                     perl = T) ) {
+      plp2[x,y] <- "BB"
+    } else if( plp2[x,y] %in% c("A", "C", "G", "T",
+                                "a", "c", "g", "t",
+                                "^]A", "^]C", "^]G", "^]T",
+                                "^]a", "^]c", "^]g", "^]t",
+                                "A$", "C$", "G$", "T$",
+                                "a$", "c$", "g$", "t$") ) {
+      plp2[x,y] <- "XX"
+    } else if( plp2[x,y] %in% c("*", "^]*", "*$") ) {
+      plp2[x,y] <- "NN"
+    } else {
+      plp2[x,y] <- "ID"
+    }
+  }
+}
+#write.table(plp2,
+#            file = paste0(hapMatDir, sample, "_ONT_pileup_alleles_errors.tsv"),
+#            quote = F, sep = "\t",
+#            row.names = F, col.names = T)
+
+af <- data.frame()
+for(x in 1:dim(plp2)[1]) {
+  marker_total <- length( plp2[x,5:dim(plp2)[2]] )
+  marker_A <- sum( ( plp2[x,5:dim(plp2)[2]] %in% c("AA") ) )
+  marker_B <- sum( ( plp2[x,5:dim(plp2)[2]] %in% c("BB") ) )
+  marker_X <- sum( ( plp2[x,5:dim(plp2)[2]] %in% c("XX") ) )
+  marker_N <- sum( ( plp2[x,5:dim(plp2)[2]] %in% c("*") ) )
+  marker_I <- sum(!( plp2[x,5:dim(plp2)[2]] %in% c("AA", "BB", "XX", "*") ) )
+  stopifnot(marker_total ==
+            sum(marker_A, marker_B, marker_X, marker_N, marker_I))
+  af_x <- data.frame(marker = alleles$pos[x],
+                     A = marker_A/marker_total,
+                     B = marker_B/marker_total,
+                     X = marker_X/marker_total,
+                     I = marker_I/marker_total,
+                     N = marker_N/marker_total)
+  af <- rbind(af, af_x)
+}
+
+# Remove markers within allele-specific primer binding sites
+af <- af[c(-1, -dim(af)[1]), ]
+af_tidy <- gather(data = af,
+                  key = allele,
+                  value = af,
+                  -marker)
+af_tidy$allele <- factor(af_tidy$allele,
+                         levels = unique(af_tidy$allele))
+
+
 
 # For each recombination matrix (complete and subsetted),
 # calculate cM/Mb in each marker interval
