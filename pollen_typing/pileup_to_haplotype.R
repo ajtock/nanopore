@@ -69,10 +69,11 @@ alleles[23, ]$Ws.4 <- "[.,]\\+[1-9]AT"
 # (located within the Ws-4 allele-specific primer binding site)
 # Therefore, remove rows 20 and 23 (Chr3:638788 and 639539)
 alleles <- alleles[c(-20, -23), ]
-# Remove rows 9, 10, 11, 12 and 13 (Chr3:637899, 637900, 637901, 637902, and 637903),
-# (use information in row 8 (Chr3:637898) to obtain genotype at this indel polymorphism;
+# Remove rows 8, 9, 10, 11, 12 and 13 (Chr3:637898,637899, 637900, 637901, 637902, and 637903)
+# (i.e., remove all info for this indel polymorphism;
+# previously used information in row 8 (Chr3:637898) to obtain genotype at this indel polymorphism;
 # ATGTTT in Col, AAAAA in Ws-4)
-alleles <- alleles[-9:-13, ]
+alleles <- alleles[-8:-13, ]
 rownames(alleles) <- 1:dim(alleles)[1]
 
 # Load pileup containing per-alignment genotype information,
@@ -84,11 +85,12 @@ plp <- read.table(paste0("minimap2_TAIR10_",
                   quote = "", comment.char = "",
                   stringsAsFactors = F)
 # Remove rows 20 and 23 (Chr3:638788 and 639539)
-# Remove rows 9, 10, 11, 12 and 13 (Chr3:637899, 637900, 637901, 637902, and 637903),
-# (use information in row 8 (Chr3:637898) to obtain genotype at this indel polymorphism;
+# Remove rows 8, 9, 10, 11, 12 and 13 (Chr3:637898,637899, 637900, 637901, 637902, and 637903)
+# (i.e., remove all info for this indel polymorphism;
+# previously used information in row 8 (Chr3:637898) to obtain genotype at this indel polymorphism;
 # ATGTTT in Col, AAAAA in Ws-4)
 plp <- plp[c(-20, -23), ]
-plp <- plp[-9:-13, ]
+plp <- plp[-8:-13, ]
 rownames(plp) <- 1:dim(plp)[1]
 
 # Append the first 3 columns, the alternate allele, and columns
