@@ -506,127 +506,127 @@ hapRecDF_COs <- hapRecDF[rowSums(hapRecDF) == 2,]
 # extract alignments containing both crossovers and non-crossovers
 hapRecDF_NCOs <- hapRecDF[rowSums(hapRecDF) >= 4,]
 
-# Get haplotypes containing noncrossovers
-hap_NCOs <- unique(tplpHap_quant[which(rowSums(hapRecDF) >= 4),]$hap)
-
-# Load truncated pileup matrix containing variants
-plp2 <- read.table(paste0(hapMatDir, sample, "_ONT_pileup_alleles.tsv"),
-                   header = T, sep = "\t",
-                   stringsAsFactors = F)
-colnames(plp2) <- c("chr", "pos", "ref", "alt",
-                    seq(1:(dim(plp2)[2]-4)))
-
-# Re-encode haplotypes using genotype naming convention
-# to avoid incorrect encoding of adenosine bases
-# Col-0 as "AA", Ws-4 as "BB", "*" and all others as "-"
-for(x in 1:(dim(plp2)[1])) {
-  for(y in 5:(dim(plp2)[2])) {
-    print(paste0("Marker ", x, " of ", dim(plp2)[1],
-                 ": Alignment ", y-4, " of ", dim(plp2)[2]-4))
-    if( plp2[x,y] %in% c(".", ",", "^].", "^],", ".$", ",$") ) {
-      plp2[x,y] <- "AA"
-    } else if( plp2[x,y] %in% c(plp2[x,4],
-                                tolower(plp2[x,4]),
-                                paste0("^]", plp2[x,4]),
-                                paste0("^]", tolower(plp2[x,4])),
-                                paste0(plp2[x,4], "$"),
-                                paste0(tolower(plp2[x,4]), "$")) ) {
-      plp2[x,y] <- "BB"
-    } else if( grepl(pattern = plp2[x,4],
-                     x = plp2[x,y],
-                     ignore.case = T,
-                     perl = T) ) {
-      plp2[x,y] <- "BB"
-    } else if( plp2[x,y] %in% c("A", "C", "G", "T",
-                                "a", "c", "g", "t",
-                                "^]A", "^]C", "^]G", "^]T",
-                                "^]a", "^]c", "^]g", "^]t",
-                                "A$", "C$", "G$", "T$",
-                                "a$", "c$", "g$", "t$") ) {
-      plp2[x,y] <- "XX"
-    } else if( plp2[x,y] %in% c("*", "^]*", "*$") ) {
-      plp2[x,y] <- "NN"
-    } else {
-      plp2[x,y] <- "ID"
-    }
-  }
-}
-#write.table(plp2,
-#            file = paste0(hapMatDir, sample, "_ONT_pileup_alleles_errors.tsv"),
+## Get haplotypes containing noncrossovers
+#hap_NCOs <- unique(tplpHap_quant[which(rowSums(hapRecDF) >= 4),]$hap)
+#
+## Load truncated pileup matrix containing variants
+#plp2 <- read.table(paste0(hapMatDir, sample, "_ONT_pileup_alleles.tsv"),
+#                   header = T, sep = "\t",
+#                   stringsAsFactors = F)
+#colnames(plp2) <- c("chr", "pos", "ref", "alt",
+#                    seq(1:(dim(plp2)[2]-4)))
+#
+## Re-encode haplotypes using genotype naming convention
+## to avoid incorrect encoding of adenosine bases
+## Col-0 as "AA", Ws-4 as "BB", "*" and all others as "-"
+#for(x in 1:(dim(plp2)[1])) {
+#  for(y in 5:(dim(plp2)[2])) {
+#    print(paste0("Marker ", x, " of ", dim(plp2)[1],
+#                 ": Alignment ", y-4, " of ", dim(plp2)[2]-4))
+#    if( plp2[x,y] %in% c(".", ",", "^].", "^],", ".$", ",$") ) {
+#      plp2[x,y] <- "AA"
+#    } else if( plp2[x,y] %in% c(plp2[x,4],
+#                                tolower(plp2[x,4]),
+#                                paste0("^]", plp2[x,4]),
+#                                paste0("^]", tolower(plp2[x,4])),
+#                                paste0(plp2[x,4], "$"),
+#                                paste0(tolower(plp2[x,4]), "$")) ) {
+#      plp2[x,y] <- "BB"
+#    } else if( grepl(pattern = plp2[x,4],
+#                     x = plp2[x,y],
+#                     ignore.case = T,
+#                     perl = T) ) {
+#      plp2[x,y] <- "BB"
+#    } else if( plp2[x,y] %in% c("A", "C", "G", "T",
+#                                "a", "c", "g", "t",
+#                                "^]A", "^]C", "^]G", "^]T",
+#                                "^]a", "^]c", "^]g", "^]t",
+#                                "A$", "C$", "G$", "T$",
+#                                "a$", "c$", "g$", "t$") ) {
+#      plp2[x,y] <- "XX"
+#    } else if( plp2[x,y] %in% c("*", "^]*", "*$") ) {
+#      plp2[x,y] <- "NN"
+#    } else {
+#      plp2[x,y] <- "ID"
+#    }
+#  }
+#}
+##write.table(plp2,
+##            file = paste0(hapMatDir, sample, "_ONT_pileup_alleles_errors.tsv"),
+##            quote = F, sep = "\t",
+##            row.names = F, col.names = T)
+## Convert genotype naming convention into
+## haplotype naming convention as we cannot derive
+## each allele from single-molecule sequencing
+#plp2[] <- lapply(plp2, function(x) as.character(gsub("AA", "A", x)))
+#plp2[] <- lapply(plp2, function(x) as.character(gsub("BB", "B", x)))
+#plp2[] <- lapply(plp2, function(x) as.character(gsub("XX", "X", x)))
+#plp2[] <- lapply(plp2, function(x) as.character(gsub("ID", "I", x)))
+#plp2[] <- lapply(plp2, function(x) as.character(gsub("NN", "N", x)))
+#plpHapVar <- plp2
+#write.table(plpHapVar,
+#            file = paste0(hapMatDir, sample, "_ONT_pileup_to_haplotype_incl_nonparental.tsv"),
 #            quote = F, sep = "\t",
 #            row.names = F, col.names = T)
-# Convert genotype naming convention into
-# haplotype naming convention as we cannot derive
-# each allele from single-molecule sequencing
-plp2[] <- lapply(plp2, function(x) as.character(gsub("AA", "A", x)))
-plp2[] <- lapply(plp2, function(x) as.character(gsub("BB", "B", x)))
-plp2[] <- lapply(plp2, function(x) as.character(gsub("XX", "X", x)))
-plp2[] <- lapply(plp2, function(x) as.character(gsub("ID", "I", x)))
-plp2[] <- lapply(plp2, function(x) as.character(gsub("NN", "N", x)))
-plpHapVar <- plp2
-write.table(plpHapVar,
-            file = paste0(hapMatDir, sample, "_ONT_pileup_to_haplotype_incl_nonparental.tsv"),
-            quote = F, sep = "\t",
-            row.names = F, col.names = T)
-
-plpHapVar <- read.table(paste0(hapMatDir, sample, "_ONT_pileup_to_haplotype_incl_nonparental.tsv"),
-                        header = T, sep = "\t",
-                        stringsAsFactors = F)
-colnames(plpHapVar) <- c("chr", "pos", "ref", "alt",
-                         seq(1:(dim(plpHapVar)[2]-4)))
-integerColumns <- sapply(plpHapVar, is.integer)
-plpHapVar[integerColumns] <- lapply(plpHapVar[integerColumns], as.character)
-
-# Transpose haplotype matrix for sorting
-tplpHapVar <- data.frame(t(plpHapVar[,5:dim(plpHapVar)[2]]))
-colnames(tplpHapVar) <- as.integer(plpHapVar$pos)
-
-# As the first (leftmost) and last (rightmost) markers are
-# within the primer binding sites and may be artificially converted
-# into an allele within the allele-specific primer, strip these markers
-# (first and last columns) from tplpHapVar
-tplpHapVar <- tplpHapVar[,2:(dim(tplpHapVar)[2]-1)]
-
-# Add column representing haplotypes as character strings
-stringHapVar <- sapply(1:(dim(tplpHapVar)[1]), function(x) {
-  paste0(as.character(as.matrix(tplpHapVar[x,])), collapse = "")
-})
-tplpHapVar <- data.frame(tplpHapVar,
-                         hap = stringHapVar)
-colnames(tplpHapVar) <- c(as.integer(plpHapVar$pos[2:(length(plpHapVar$pos)-1)]),
-                          "hap")
-# Replace factors with characters
-factorColumns <- sapply(tplpHapVar, is.factor)
-tplpHapVar[factorColumns] <- lapply(tplpHapVar[factorColumns], as.character)
-
-
-af <- data.frame()
-for(x in 1:dim(plp2)[1]) {
-  marker_total <- length( plp2[x,5:dim(plp2)[2]] )
-  marker_A <- sum( ( plp2[x,5:dim(plp2)[2]] %in% c("AA") ) )
-  marker_B <- sum( ( plp2[x,5:dim(plp2)[2]] %in% c("BB") ) )
-  marker_X <- sum( ( plp2[x,5:dim(plp2)[2]] %in% c("XX") ) )
-  marker_N <- sum( ( plp2[x,5:dim(plp2)[2]] %in% c("*") ) )
-  marker_I <- sum(!( plp2[x,5:dim(plp2)[2]] %in% c("AA", "BB", "XX", "*") ) )
-  stopifnot(marker_total ==
-            sum(marker_A, marker_B, marker_X, marker_N, marker_I))
-  af_x <- data.frame(marker = alleles$pos[x],
-                     A = marker_A/marker_total,
-                     B = marker_B/marker_total,
-                     X = marker_X/marker_total,
-                     I = marker_I/marker_total,
-                     N = marker_N/marker_total)
-  af <- rbind(af, af_x)
-}
-
-# Remove markers within allele-specific primer binding sites
-af <- af[c(-1, -dim(af)[1]), ]
-af_tidy <- gather(data = af,
-                  key = allele,
-                  value = af,
-                  -marker)
-af_tidy$allele <- factor(af_tidy$allele,
-                         levels = unique(af_tidy$allele))
+#
+#plpHapVar <- read.table(paste0(hapMatDir, sample, "_ONT_pileup_to_haplotype_incl_nonparental.tsv"),
+#                        header = T, sep = "\t",
+#                        stringsAsFactors = F)
+#colnames(plpHapVar) <- c("chr", "pos", "ref", "alt",
+#                         seq(1:(dim(plpHapVar)[2]-4)))
+#integerColumns <- sapply(plpHapVar, is.integer)
+#plpHapVar[integerColumns] <- lapply(plpHapVar[integerColumns], as.character)
+#
+## Transpose haplotype matrix for sorting
+#tplpHapVar <- data.frame(t(plpHapVar[,5:dim(plpHapVar)[2]]))
+#colnames(tplpHapVar) <- as.integer(plpHapVar$pos)
+#
+## As the first (leftmost) and last (rightmost) markers are
+## within the primer binding sites and may be artificially converted
+## into an allele within the allele-specific primer, strip these markers
+## (first and last columns) from tplpHapVar
+#tplpHapVar <- tplpHapVar[,2:(dim(tplpHapVar)[2]-1)]
+#
+## Add column representing haplotypes as character strings
+#stringHapVar <- sapply(1:(dim(tplpHapVar)[1]), function(x) {
+#  paste0(as.character(as.matrix(tplpHapVar[x,])), collapse = "")
+#})
+#tplpHapVar <- data.frame(tplpHapVar,
+#                         hap = stringHapVar)
+#colnames(tplpHapVar) <- c(as.integer(plpHapVar$pos[2:(length(plpHapVar$pos)-1)]),
+#                          "hap")
+## Replace factors with characters
+#factorColumns <- sapply(tplpHapVar, is.factor)
+#tplpHapVar[factorColumns] <- lapply(tplpHapVar[factorColumns], as.character)
+#
+#
+#af <- data.frame()
+#for(x in 1:dim(plp2)[1]) {
+#  marker_total <- length( plp2[x,5:dim(plp2)[2]] )
+#  marker_A <- sum( ( plp2[x,5:dim(plp2)[2]] %in% c("AA") ) )
+#  marker_B <- sum( ( plp2[x,5:dim(plp2)[2]] %in% c("BB") ) )
+#  marker_X <- sum( ( plp2[x,5:dim(plp2)[2]] %in% c("XX") ) )
+#  marker_N <- sum( ( plp2[x,5:dim(plp2)[2]] %in% c("*") ) )
+#  marker_I <- sum(!( plp2[x,5:dim(plp2)[2]] %in% c("AA", "BB", "XX", "*") ) )
+#  stopifnot(marker_total ==
+#            sum(marker_A, marker_B, marker_X, marker_N, marker_I))
+#  af_x <- data.frame(marker = alleles$pos[x],
+#                     A = marker_A/marker_total,
+#                     B = marker_B/marker_total,
+#                     X = marker_X/marker_total,
+#                     I = marker_I/marker_total,
+#                     N = marker_N/marker_total)
+#  af <- rbind(af, af_x)
+#}
+#
+## Remove markers within allele-specific primer binding sites
+#af <- af[c(-1, -dim(af)[1]), ]
+#af_tidy <- gather(data = af,
+#                  key = allele,
+#                  value = af,
+#                  -marker)
+#af_tidy$allele <- factor(af_tidy$allele,
+#                         levels = unique(af_tidy$allele))
 
 
 
@@ -657,6 +657,25 @@ cM_tidy <- gather(data = cM,
                   -window)
 cM_tidy$aln <- factor(cM_tidy$aln,
                       levels = unique(cM_tidy$aln))
+
+# Generate more complete summary (including CO and NCO recombination event counts)
+rec_summary <- data.frame(window = as.integer(colnames(hapRecDF)),
+                          width = widths,
+                          total_alignments = dim(hapRecDF)[1],
+                          cMscale = cMscale,
+                          All_rec_events = as.vector( colSums(hapRecDF) ),
+                          COs_rec_events = as.vector( colSums(hapRecDF_COs) ),
+                          NCOs_COs_rec_events = as.vector( colSums(hapRecDF_NCOs) ),
+                          All_cMMb = as.vector( ( (colSums(hapRecDF)/dim(hapRecDF)[1]) /
+                                                  (widths/1e6) ) * cMscale ),
+                          COs_cMMb = as.vector( ( (colSums(hapRecDF_COs)/dim(hapRecDF)[1]) /
+                                                  (widths/1e6) ) * cMscale ),
+                          NCOs_COs_cMMb = as.vector( ( (colSums(hapRecDF_NCOs)/dim(hapRecDF)[1]) /
+                                                       (widths/1e6) ) * cMscale )
+                         )
+write.table(rec_summary,
+            file = paste0(plotDir, sample, "_ONT_recombo_summary_v201219.tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
 
 # Complete amplicon extends from 634089 (20 nt upstream of 634109)
 # to 639952 (18 nt downstream of 639934)
@@ -788,7 +807,7 @@ ggObjGA_combined <- grid.arrange(ggObj_cMMb,
                                  ggObj_cM,
                                  nrow = 2, as.table = F)
                                                     
-ggsave(paste0(plotDir, sample, "_ONT_cMMb_cM_v181219.pdf"),
+ggsave(paste0(plotDir, sample, "_ONT_cMMb_cM_v201219.pdf"),
        plot = ggObjGA_combined,
        height = 6.5*2, width = 20, limitsize = F)
 
@@ -861,7 +880,7 @@ htmp <- Heatmap(mat1[ ,1:(dim(tplpHap_quant)[2]-1)],
                                             ncol = 2),
                 raster_device = "CairoPNG"
                )
-pdf(paste0(plotDir, sample, "_ONT_recombo_heatmap_v181219.pdf"), height = 18, width = 10)
+pdf(paste0(plotDir, sample, "_ONT_recombo_heatmap_v201219.pdf"), height = 18, width = 10)
 draw(htmp,
      heatmap_legend_side = "bottom")
 dev.off()

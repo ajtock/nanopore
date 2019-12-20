@@ -267,6 +267,25 @@ cM_tidy <- gather(data = cM,
 cM_tidy$aln <- factor(cM_tidy$aln,
                       levels = unique(cM_tidy$aln))
 
+# Generate more complete summary (including CO and NCO recombination event counts)
+rec_summary <- data.frame(window = as.integer(colnames(hapRecDF)),
+                          width = widths,
+                          total_alignments = dim(hapRecDF)[1],
+                          cMscale = cMscale,
+                          All_rec_events = as.vector( colSums(hapRecDF) ),
+                          COs_rec_events = as.vector( colSums(hapRecDF_COs) ),
+                          NCOs_COs_rec_events = as.vector( colSums(hapRecDF_NCOs) ),
+                          All_cMMb = as.vector( ( (colSums(hapRecDF)/dim(hapRecDF)[1]) /
+                                                  (widths/1e6) ) * cMscale ),
+                          COs_cMMb = as.vector( ( (colSums(hapRecDF_COs)/dim(hapRecDF)[1]) /
+                                                  (widths/1e6) ) * cMscale ),
+                          NCOs_COs_cMMb = as.vector( ( (colSums(hapRecDF_NCOs)/dim(hapRecDF)[1]) /
+                                                       (widths/1e6) ) * cMscale )
+                         )
+write.table(rec_summary,
+            file = paste0(plotDir, sample, "_ONT_recombo_summary_complete_haplotypes_v201219.tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+
 # Complete amplicon extends from 634089 (20 nt upstream of 634109)
 # to 639952 (18 nt downstream of 639934)
 
@@ -397,7 +416,7 @@ ggObjGA_combined <- grid.arrange(ggObj_cMMb,
                                  ggObj_cM,
                                  nrow = 2, as.table = F)
                                                     
-ggsave(paste0(plotDir, sample, "_ONT_cMMb_cM_complete_haplotypes_v181219.pdf"),
+ggsave(paste0(plotDir, sample, "_ONT_cMMb_cM_complete_haplotypes_v201219.pdf"),
        plot = ggObjGA_combined,
        height = 6.5*2, width = 20, limitsize = F)
 
@@ -470,7 +489,7 @@ htmp <- Heatmap(mat1[ ,1:(dim(tplpHap_quant)[2]-1)],
                                             ncol = 2),
                 raster_device = "CairoPNG"
                )
-pdf(paste0(plotDir, sample, "_ONT_recombo_heatmap_complete_haplotypes_v181219.pdf"), height = 18, width = 10)
+pdf(paste0(plotDir, sample, "_ONT_recombo_heatmap_complete_haplotypes_v201219.pdf"), height = 18, width = 10)
 draw(htmp,
      heatmap_legend_side = "bottom")
 dev.off()
