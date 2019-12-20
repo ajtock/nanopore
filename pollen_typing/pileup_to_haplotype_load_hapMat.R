@@ -592,9 +592,9 @@ stringHapVar <- sapply(1:(dim(tplpHapVar)[1]), function(x) {
   paste0(as.character(as.matrix(tplpHapVar[x,])), collapse = "")
 })
 tplpHapVar <- data.frame(tplpHapVar,
-                      hap = stringHapVar)
+                         hap = stringHapVar)
 colnames(tplpHapVar) <- c(as.integer(plpHapVar$pos[2:(length(plpHapVar$pos)-1)]),
-                       "hap")
+                          "hap")
 # Replace factors with characters
 factorColumns <- sapply(tplpHapVar, is.factor)
 tplpHapVar[factorColumns] <- lapply(tplpHapVar[factorColumns], as.character)
