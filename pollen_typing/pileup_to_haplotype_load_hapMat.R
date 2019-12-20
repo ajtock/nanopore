@@ -555,8 +555,6 @@ for(x in 1:(dim(plp2)[1])) {
 #            file = paste0(hapMatDir, sample, "_ONT_pileup_alleles_errors.tsv"),
 #            quote = F, sep = "\t",
 #            row.names = F, col.names = T)
-
-
 # Convert genotype naming convention into
 # haplotype naming convention as we cannot derive
 # each allele from single-molecule sequencing
@@ -565,11 +563,41 @@ plp2[] <- lapply(plp2, function(x) as.character(gsub("BB", "B", x)))
 plp2[] <- lapply(plp2, function(x) as.character(gsub("XX", "X", x)))
 plp2[] <- lapply(plp2, function(x) as.character(gsub("ID", "I", x)))
 plp2[] <- lapply(plp2, function(x) as.character(gsub("NN", "N", x)))
-
-write.table(plpHap,
-            file = paste0(hapMatDir, sample, "_ONT_pileup_to_haplotype.tsv"),
+plpHapVar <- plp2
+write.table(plpHapVar,
+            file = paste0(hapMatDir, sample, "_ONT_pileup_to_haplotype_incl_nonparental.tsv"),
             quote = F, sep = "\t",
             row.names = F, col.names = T)
+
+plpHapVar <- read.table(paste0(hapMatDir, sample, "_ONT_pileup_to_haplotype_incl_nonparental.tsv"),
+                        header = T, sep = "\t",
+                        stringsAsFactors = F)
+colnames(plpHapVar) <- c("chr", "pos", "ref", "alt",
+                         seq(1:(dim(plpHapVar)[2]-4)))
+integerColumns <- sapply(plpHapVar, is.integer)
+plpHapVar[integerColumns] <- lapply(plpHapVar[integerColumns], as.character)
+
+# Transpose haplotype matrix for sorting
+tplpHapVar <- data.frame(t(plpHapVar[,5:dim(plpHapVar)[2]]))
+colnames(tplpHapVar) <- as.integer(plpHapVar$pos)
+
+# As the first (leftmost) and last (rightmost) markers are
+# within the primer binding sites and may be artificially converted
+# into an allele within the allele-specific primer, strip these markers
+# (first and last columns) from tplpHapVar
+tplpHapVar <- tplpHapVar[,2:(dim(tplpHapVar)[2]-1)]
+
+# Add column representing haplotypes as character strings
+stringHapVar <- sapply(1:(dim(tplpHapVar)[1]), function(x) {
+  paste0(as.character(as.matrix(tplpHapVar[x,])), collapse = "")
+})
+tplpHapVar <- data.frame(tplpHapVar,
+                      hap = stringHapVar)
+colnames(tplpHapVar) <- c(as.integer(plpHapVar$pos[2:(length(plpHapVar$pos)-1)]),
+                       "hap")
+# Replace factors with characters
+factorColumns <- sapply(tplpHapVar, is.factor)
+tplpHapVar[factorColumns] <- lapply(tplpHapVar[factorColumns], as.character)
 
 
 af <- data.frame()
