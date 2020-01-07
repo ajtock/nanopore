@@ -626,81 +626,95 @@ hap_match_hapNCO_group_n_list <- lapply(seq_along(hap_NCOs), function(x) {
                                    tplpHapVar_match_hapNCOx_group_n$'n()' > 0,]
 })
 
-# Convert haplotype frequencies into proportions
-# for heat map plotting
+# Convert haplotype frequencies into proportions and percentages
 hap_match_hapNCO_group_n_list_prop <- lapply(seq_along(hap_match_hapNCO_group_n_list), function(x) {
   ceiling( ( hap_match_hapNCO_group_n_list[[x]]$'n()' /
              (sum(hap_match_hapNCO_group_n_list[[x]]$'n()')) ) * 100000 )
-
-tplpHap_group_n_quant_prop <- ceiling( ( tplpHap_group_n_quant$`n()` /
-                                         (sum(tplpHap_group_n_quant$`n()`)) ) * 100000 )
-
-tplpHap_group_n_quant_prop_hap <- bind_rows(lapply(seq_along(tplpHap_group_n_quant_prop), function(x) {
-  data.frame(hap = as.character(rep(tplpHap_group_n_quant$hap[x],
-                                    tplpHap_group_n_quant_prop[x])),
-             prop = as.numeric(rep(tplpHap_group_n_quant_prop[x],
-                                   tplpHap_group_n_quant_prop[x])),
-             perc = as.numeric(rep(tplpHap_group_n_quant_prop[x]/1000,
-                                   tplpHap_group_n_quant_prop[x])),
-             stringsAsFactors = F)
-}), .id = "hapNo")
-
-tplpHap_group_n_quant_prop_hap_sort <- tplpHap_group_n_quant_prop_hap[sort.int(tplpHap_group_n_quant_prop_hap$prop,
-                                                                               decreasing = T,
-                                                                               index.return = T)$ix,]
-mat1 <- matrix(unlist(strsplit(tplpHap_group_n_quant_prop_hap_sort$hap,
-                               split = "")),
-               ncol = dim(tplpHap_quant)[2]-1,
-               byrow = T)
-mat1 <- cbind(mat1,
-              tplpHap_group_n_quant_prop_hap_sort$hap,
-              tplpHap_group_n_quant_prop_hap_sort$prop,
-              tplpHap_group_n_quant_prop_hap_sort$perc)
-colnames(mat1) <- c(colnames(tplpHap_quant)[-length(colnames(tplpHap_quant))],
-                    "hap", "prop", "perc")
-row_order <- order(tplpHap_group_n_quant_prop_hap_sort$perc,
-                   decreasing = T)
-proportions <- sapply(seq_along(unique(tplpHap_group_n_quant_prop_hap_sort$hap)), function(x) {
-  mean(tplpHap_group_n_quant_prop_hap_sort[tplpHap_group_n_quant_prop_hap_sort$hap ==
-         unique(tplpHap_group_n_quant_prop_hap_sort$hap)[x],]$perc)
 })
 
-htmp <- Heatmap(mat1[ ,1:(dim(tplpHap_quant)[2]-1)],
-                name = "Allele",
-                col = c("A" = "red", "B" = "blue", "-" = "grey40"),
-                row_split = factor(tplpHap_group_n_quant_prop_hap_sort$hap,
-                                   levels = unique(as.character(tplpHap_group_n_quant_prop_hap_sort$hap))),
-                row_gap = unit(1.5, "mm"),
-                row_title = paste0(sprintf('%.3f', proportions), "%"),
-                row_title_rot = 0,
-                row_title_gp = gpar(fontsize = 10),
-                row_order = row_order,
-                show_row_names = F,
-                #column_split = colnames(mat1[ ,1:(dim(tplpHap_quant)[2]-1)]),
-                #column_gap = unit(1.0, "mm"),
-                #column_title = rep("", length(colnames(mat1[ ,1:(dim(tplpHap_quant)[2]-1)]))),
-                column_title = paste0(sample, " ONT (",
-                                      prettyNum(dim(hapRecDF)[1],
-                                                big.mark = ",", trim = T),
-                                      " alignments)"),
-                column_title_gp = gpar(fontsize = 20, fontface = "bold"),
-                show_column_names = T,
-                column_names_side = "bottom",
-                column_names_gp = gpar(fontsize = 16),
-                heatmap_legend_param = list(title = bquote(bolditalic("3a") ~ bold("marker allele")),
-                                            title_gp = gpar(fontsize = 16),
-                                            title_position = "topcenter",
-                                            grid_height = unit(6, "mm"),
-                                            grid_width = unit(10, "mm"),
-                                            labels = c("Col-0", "Ws-4"),
-                                            labels_gp = gpar(fontsize = 16),
-                                            ncol = 2),
-                raster_device = "CairoPNG"
-               )
-pdf(paste0(plotDir, sample, "_ONT_recombo_heatmap_v201219.pdf"), height = 18, width = 10)
-draw(htmp,
-     heatmap_legend_side = "bottom")
-dev.off()
+hap_match_hapNCO_group_n_list_df <- lapply(seq_along(hap_match_hapNCO_group_n_list), function(x) {
+  dfx <- bind_rows(lapply(seq_along(hap_match_hapNCO_group_n_list_prop[[x]]), function(y) {
+    data.frame(hap = as.character(rep(hap_match_hapNCO_group_n_list[[x]]$hap[y],
+                                      hap_match_hapNCO_group_n_list[[x]]$'n()'[y])),
+               freq = as.numeric(rep(hap_match_hapNCO_group_n_list[[x]]$'n()'[y],
+                                     hap_match_hapNCO_group_n_list[[x]]$'n()'[y])),
+               prop = as.numeric(rep(hap_match_hapNCO_group_n_list_prop[[x]][y],
+                                     hap_match_hapNCO_group_n_list[[x]]$'n()'[y])),
+               perc = as.numeric(rep(hap_match_hapNCO_group_n_list_prop[[x]][y]/1000,
+                                     hap_match_hapNCO_group_n_list[[x]]$'n()'[y])),
+               stringsAsFactors = F)
+  }), .id = "hapNo")
+  dfx[sort.int(dfx$freq,
+               decreasing = T,
+               index.return = T)$ix,]
+})
+
+# Create matrices suitable for plotting as haplotype heat maps
+NCOmat_list <- lapply(seq_along(hap_match_hapNCO_group_n_list_df), function(x) {
+  NCOmatx <- matrix(unlist(strsplit(hap_match_hapNCO_group_n_list_df[[x]]$hap,
+                                    split = "")),
+                    ncol = dim(tplpHapVar)[2]-1,
+                    byrow = T)
+  NCOmatx <- cbind(NCOmatx,
+                   hap_match_hapNCO_group_n_list_df[[x]]$hap,
+                   hap_match_hapNCO_group_n_list_df[[x]]$freq,
+                   hap_match_hapNCO_group_n_list_df[[x]]$prop,
+                   hap_match_hapNCO_group_n_list_df[[x]]$perc)
+  colnames(NCOmatx) <- c(colnames(tplpHapVar)[-length(colnames(tplpHapVar))],
+                         "hap", "freq", "prop", "perc")
+  NCOmatx
+})
+
+NCOmat_list_row_order <- lapply(seq_along(hap_match_hapNCO_group_n_list_df), function(x) {
+  order(hap_match_hapNCO_group_n_list_df[[x]]$freq,
+        decreasing = T)
+})
+NCOmat_list_frequencies <- lapply(seq_along(hap_match_hapNCO_group_n_list_df), function(x) {
+  sapply(seq_along(unique(hap_match_hapNCO_group_n_list_df[[x]]$hap)), function(y) {
+    mean( hap_match_hapNCO_group_n_list_df[[x]][hap_match_hapNCO_group_n_list_df[[x]]$hap ==
+            unique(hap_match_hapNCO_group_n_list_df[[x]]$hap)[y],]$freq )
+  })
+})
+
+# Plot a haplotype heat map for matches to each noncrossover haplotype
+for(x in seq_along(NCOmat_list)) {
+  NCOhtmp <- Heatmap(NCOmat_list[[x]][ ,1:(dim(tplpHapVar)[2]-1)],
+                     name = "Allele",
+                     col = c("A" = "red", "B" = "blue",
+                             "X" = "goldenrod1", "I" = "forestgreen", "N" = "grey40"),
+                     row_split = factor(hap_match_hapNCO_group_n_list_df[[x]]$hap,
+                                        levels = unique(as.character(hap_match_hapNCO_group_n_list_df[[x]]$hap))),
+                     row_gap = unit(1.5, "mm"),
+                     row_title = paste0(sprintf('%2.0f', NCOmat_list_frequencies[[x]])),
+                     row_title_rot = 0,
+                     row_title_gp = gpar(fontsize = 10),
+                     row_order = NCOmat_list_row_order[[x]],
+                     show_row_names = F,
+                     #column_split = colnames(mat1[ ,1:(dim(tplpHap_quant)[2]-1)]),
+                     #column_gap = unit(1.0, "mm"),
+                     #column_title = rep("", length(colnames(mat1[ ,1:(dim(tplpHap_quant)[2]-1)]))),
+                     column_title = paste0("NCO haplotype ", hap_NCOs[x],
+                                           " matches in ", sample, " ONT"),
+                     column_title_gp = gpar(fontsize = 20, fontface = "bold"),
+                     show_column_names = T,
+                     column_names_side = "bottom",
+                     column_names_gp = gpar(fontsize = 16),
+                     heatmap_legend_param = list(title = bquote(bolditalic("3a") ~ bold("marker allele")),
+                                                 title_gp = gpar(fontsize = 16),
+                                                 title_position = "topcenter",
+                                                 grid_height = unit(6, "mm"),
+                                                 grid_width = unit(10, "mm"),
+                                                 labels = c("Col-0", "Ws-4",
+                                                            "Nonparental SNV", "Nonparental InDel", "Missing"),
+                                                 labels_gp = gpar(fontsize = 16),
+                                                 ncol = 2),
+                     raster_device = "CairoPNG"
+                    )
+  pdf(paste0(plotDir, sample, "_ONT_NCO_haplotype_", hap_NCOs[x], "_matches_recombo_heatmap_v070120.pdf"), height = 18, width = 10)
+  draw(NCOhtmp,
+       heatmap_legend_side = "bottom")
+  dev.off()
+}
 
 af <- data.frame()
 for(x in 1:dim(plp2)[1]) {
