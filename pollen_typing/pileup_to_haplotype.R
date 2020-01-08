@@ -747,7 +747,7 @@ htmp <- Heatmap(mat1[ ,1:(dim(tplpHap_quant)[2]-1)],
                                             grid_width = unit(10, "mm"),
                                             labels = c("Col-0", "Ws-4"),
                                             labels_gp = gpar(fontsize = 16),
-                                            ncol = 2),
+                                            ncol = 2, by_row = T),
                 raster_device = "CairoPNG"
                )
 pdf(paste0(plotDir, sample, "_ONT_recombo_heatmap_v181219.pdf"), height = 18, width = 10)
