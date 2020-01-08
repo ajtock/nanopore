@@ -38,8 +38,10 @@ print(getDoParVersion())
 print(getDoParWorkers())
 
 hapMatDir <- "haplotype_matrices/"
-plotDir <- "plots/"
 system(paste0("[ -d ", hapMatDir, " ] || mkdir ", hapMatDir))
+plotDir <- "plots/"
+system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
+plotDir <- paste0(plotDir, "complete_and_imputed_haplotypes/")
 system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
 
 # Load reference and alternate alleles
@@ -511,44 +513,44 @@ hapRecDF_NCOs <- hapRecDF[rowSums(hapRecDF) >= 4,]
 hap_NCOs <- unique(tplpHap_quant[which(rowSums(hapRecDF) >= 4),]$hap)
 
 # Load truncated pileup matrix containing variants
-plp4 <- read.table(paste0(hapMatDir, sample, "_ONT_pileup_alleles.tsv"),
+plp2 <- read.table(paste0(hapMatDir, sample, "_ONT_pileup_alleles.tsv"),
                    header = T, sep = "\t",
                    stringsAsFactors = F)
-colnames(plp4) <- c("chr", "pos", "ref", "alt",
-                    seq(1:(dim(plp4)[2]-4)))
+colnames(plp2) <- c("chr", "pos", "ref", "alt",
+                    seq(1:(dim(plp2)[2]-4)))
 
 # Re-encode haplotypes using genotype naming convention
 # to avoid incorrect encoding of adenosine bases;
 # Col-0 as "AA", Ws-4 as "BB", etc.
-for(x in 1:(dim(plp4)[1])) {
-  for(y in 5:(dim(plp4)[2])) {
-    print(paste0("Marker ", x, " of ", dim(plp4)[1],
-                 ": Alignment ", y-4, " of ", dim(plp4)[2]-4))
-    if( plp4[x,y] %in% c(".", ",", "^].", "^],", ".$", ",$") ) {
-      plp4[x,y] <- "AA"
-    } else if( plp4[x,y] %in% c(plp4[x,4],
-                                tolower(plp4[x,4]),
-                                paste0("^]", plp4[x,4]),
-                                paste0("^]", tolower(plp4[x,4])),
-                                paste0(plp4[x,4], "$"),
-                                paste0(tolower(plp4[x,4]), "$")) ) {
-      plp4[x,y] <- "BB"
-    } else if( grepl(pattern = plp4[x,4],
-                     x = plp4[x,y],
+for(x in 1:(dim(plp2)[1])) {
+  for(y in 5:(dim(plp2)[2])) {
+    print(paste0("Marker ", x, " of ", dim(plp2)[1],
+                 ": Alignment ", y-4, " of ", dim(plp2)[2]-4))
+    if( plp2[x,y] %in% c(".", ",", "^].", "^],", ".$", ",$") ) {
+      plp2[x,y] <- "AA"
+    } else if( plp2[x,y] %in% c(plp2[x,4],
+                                tolower(plp2[x,4]),
+                                paste0("^]", plp2[x,4]),
+                                paste0("^]", tolower(plp2[x,4])),
+                                paste0(plp2[x,4], "$"),
+                                paste0(tolower(plp2[x,4]), "$")) ) {
+      plp2[x,y] <- "BB"
+    } else if( grepl(pattern = plp2[x,4],
+                     x = plp2[x,y],
                      ignore.case = T,
                      perl = T) ) {
-      plp4[x,y] <- "BB"
-    } else if( plp4[x,y] %in% c("A", "C", "G", "T",
+      plp2[x,y] <- "BB"
+    } else if( plp2[x,y] %in% c("A", "C", "G", "T",
                                 "a", "c", "g", "t",
                                 "^]A", "^]C", "^]G", "^]T",
                                 "^]a", "^]c", "^]g", "^]t",
                                 "A$", "C$", "G$", "T$",
                                 "a$", "c$", "g$", "t$") ) {
-      plp4[x,y] <- "XX"
-    } else if( plp4[x,y] %in% c("*", "^]*", "*$") ) {
-      plp4[x,y] <- "NN"
-#    } else {
-#      plp4[x,y] <- "ID"
+      plp2[x,y] <- "XX"
+    } else if( plp2[x,y] %in% c("*", "^]*", "*$") ) {
+      plp2[x,y] <- "NN"
+    } else {
+      plp2[x,y] <- "ID"
     }
   }
 }
@@ -681,7 +683,7 @@ for(x in seq_along(NCOmat_list)) {
   NCOhtmp <- Heatmap(NCOmat_list[[x]][ ,1:(dim(tplpHapVar)[2]-1)],
                      name = "Allele",
                      col = c("A" = "red", "B" = "blue",
-                             "X" = "goldenrod1", "I" = "forestgreen", "N" = "grey40"),
+                             "X" = "darkorange2", "I" = "green2", "N" = "grey40"),
                      row_split = factor(hap_match_hapNCO_group_n_list_df[[x]]$hap,
                                         levels = unique(as.character(hap_match_hapNCO_group_n_list_df[[x]]$hap))),
                      row_gap = unit(1.5, "mm"),
@@ -705,12 +707,12 @@ for(x in seq_along(NCOmat_list)) {
                                                  grid_height = unit(6, "mm"),
                                                  grid_width = unit(10, "mm"),
                                                  labels = c("Col-0", "Ws-4",
-                                                            "Nonparental SNV", "Nonparental InDel", "Missing"),
+                                                            "Nonparental SNV", "Nonparental indel", "Missing"),
                                                  labels_gp = gpar(fontsize = 16),
-                                                 ncol = 2),
+                                                 ncol = 2, by_row = T),
                      raster_device = "CairoPNG"
                     )
-  pdf(paste0(plotDir, sample, "_ONT_NCO_haplotype_", hap_NCOs[x], "_matches_recombo_heatmap_v070120.pdf"), height = 18, width = 10)
+  pdf(paste0(plotDir, sample, "_ONT_NCO_haplotype_", hap_NCOs[x], "_matches_recombo_heatmap_v080120.pdf"), height = 18, width = 10)
   draw(NCOhtmp,
        heatmap_legend_side = "bottom")
   dev.off()
@@ -993,7 +995,7 @@ htmp <- Heatmap(mat1[ ,1:(dim(tplpHap_quant)[2]-1)],
                                             grid_width = unit(10, "mm"),
                                             labels = c("Col-0", "Ws-4"),
                                             labels_gp = gpar(fontsize = 16),
-                                            ncol = 2),
+                                            ncol = 2, by_row = T),
                 raster_device = "CairoPNG"
                )
 pdf(paste0(plotDir, sample, "_ONT_recombo_heatmap_v201219.pdf"), height = 18, width = 10)

@@ -37,8 +37,10 @@ print(getDoParVersion())
 print(getDoParWorkers())
 
 hapMatDir <- "haplotype_matrices/"
-plotDir <- "plots/"
 system(paste0("[ -d ", hapMatDir, " ] || mkdir ", hapMatDir))
+plotDir <- "plots/"
+system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
+plotDir <- paste0(plotDir, "complete_and_imputed_haplotypes/")
 system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
 
 # Load reference and alternate alleles
