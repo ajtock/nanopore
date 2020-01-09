@@ -220,7 +220,7 @@ af_tidy$allele <- factor(af_tidy$allele,
 
 # Define legend labels
 alleleNames <- c("Col-0", "Ws-4", "Nonparental SNV", "Nonparental indel", "Missing")
-alleleColours <- c("red", "blue", "darkorange2", "green2", "grey40") 
+alleleColours <- c("red", "blue", "goldenrod1", "green2", "grey40") 
 makeTransparent <- function(thisColour, alpha = 180)
 {
   newColour <- col2rgb(thisColour)

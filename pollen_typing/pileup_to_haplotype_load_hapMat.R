@@ -602,7 +602,38 @@ colnames(tplpHapVar) <- c(as.integer(plpHapVar$pos[2:(length(plpHapVar$pos)-1)])
 factorColumns <- sapply(tplpHapVar, is.factor)
 tplpHapVar[factorColumns] <- lapply(tplpHapVar[factorColumns], as.character)
 
-# Find matches to putative noncrossover haplotypes (allowing up to 1 mismatch),
+# Discard any haplotypes that have the Ws-4 ("B") allele at the leftmost marker
+# that is not within the forward primer binding site (Chr3:634,938),
+# and any haplotypes that have the Col-0 ("A") allele at the rightmost marker
+# that is not within the reverse primer binding site (Chr3:639,370);
+# many of these apparent noncrossover haplotypes should be rejected due to
+# high sequencing error rates at the markers around which noncrossovers ostensibly occur
+tplpHapVar_BAAAB_idx <- which(grepl(pattern = "^B\\w*A{1,}\\w*A{1,}\\w*A{1,}\\w*B$",
+                                    x = tplpHapVar$hap,
+                                    perl = T))
+tplpHapVar_ABBBA_idx <- which(grepl(pattern = "^A\\w*B{1,}\\w*B{1,}\\w*B{1,}\\w*A$",
+                                    x = tplpHapVar$hap,
+                                    perl = T))
+tplpHapVar_notStartB_idx <- which(!grepl(pattern = "^B",
+                                         x = tplpHapVar$hap))
+tplpHapVar_notStartA_idx <- which(!grepl(pattern = "A$",
+                                         x = tplpHapVar$hap))
+tplpHapVar_notStartB_notStartA_idx <- intersect(tplpHapVar_notStartB_idx,
+                                                tplpHapVar_notStartA_idx)
+tplpHapVar_T <- tplpHapVar[c(tplpHapVar_BAAAB_idx,
+                              tplpHapVar_ABBBA_idx,
+                              tplpHapVar_notStartB_notStartA_idx),]
+
+# List all possible noncrossover patterns for each consecutive 3-marker combination
+NCO_patterns <- c("ABA\\w{11}", "\\w{1}ABA\\w{10}", "\\w{2}ABA\\w{9}", "\\w{3}ABA\\w{8}",
+                  "\\w{4}ABA\\w{7}", "\\w{5}ABA\\w{6}", "\\w{6}ABA\\w{5}", "\\w{7}ABA\\w{4}",
+                  "\\w{8}ABA\\w{3}", "\\w{9}ABA\\w{2}", "\\w{10}ABA\\w{1}", "\\w{11}ABA", "\\w{12}BA",
+                  "BA\\w{12}", "BAB\\w{11}", "\\w{1}BAB\\w{10}", "\\w{2}BAB\\w{9}", "\\w{3}BAB\\w{8}",
+                  "\\w{4}BAB\\w{7}", "\\w{5}BAB\\w{6}", "\\w{6}BAB\\w{5}", "\\w{7}BAB\\w{4}",
+                  "\\w{8}BAB\\w{3}", "\\w{9}BAB\\w{2}", "\\w{10}BAB\\w{1}", "\\w{11}BAB")
+
+
+# Find matches to high-frequency apparent noncrossover haplotypes (allowing up to 1 mismatch),
 # including those containing nonparental variants (likely sequencing errors)
 # Then get the frequency of occurrence of each of these matching haplotypes
 hap_match_hapNCO_group_n_list <- lapply(seq_along(hap_NCOs), function(x) {
@@ -683,7 +714,7 @@ for(x in seq_along(NCOmat_list)) {
   NCOhtmp <- Heatmap(NCOmat_list[[x]][ ,1:(dim(tplpHapVar)[2]-1)],
                      name = "Allele",
                      col = c("A" = "red", "B" = "blue",
-                             "X" = "darkorange2", "I" = "green2", "N" = "grey40"),
+                             "X" = "goldenrod1", "I" = "green2", "N" = "grey40"),
                      row_split = factor(hap_match_hapNCO_group_n_list_df[[x]]$hap,
                                         levels = unique(as.character(hap_match_hapNCO_group_n_list_df[[x]]$hap))),
                      row_gap = unit(1.5, "mm"),
