@@ -311,6 +311,7 @@ tplpHapPar[] <- lapply(tplpHapPar, function(x) as.character(gsub("N", "-", x)))
 tplpHapPar <- tplpHapPar[grepl("A", tplpHapPar$hap) &
                          grepl("B", tplpHapPar$hap),]
 
+
 #### YET TO BE DONE
 ## Extract alignments with complete haplotypes
 ## Identify haplotypes in the top 5th percentile,
@@ -344,16 +345,16 @@ while( sum(grepl(pattern = "A(-+)A",
               x = tplpHapPar$hap[x],
               perl = T) ) {
       tplpHapPar$hap[x] <- sub(pattern = "A(-+)A",
-                            replacement = paste0("A",
-                                                 paste0(rep(x = "A",
-                                                            times = attr(regexpr(pattern = "A(-+)A",
-                                                                                 text = tplpHapPar$hap[x],
-                                                                                 perl = T),
-                                                                         'capture.length')[1]),
-                                                        collapse = ""),
-                                                 "A"),
-                            x = tplpHapPar$hap[x],
-                            perl = T)
+                               replacement = paste0("A",
+                                                    paste0(rep(x = "A",
+                                                               times = attr(regexpr(pattern = "A(-+)A",
+                                                                                    text = tplpHapPar$hap[x],
+                                                                                    perl = T),
+                                                                            'capture.length')[1]),
+                                                           collapse = ""),
+                                                    "A"),
+                               x = tplpHapPar$hap[x],
+                               perl = T)
     }
   }
 }
@@ -366,16 +367,16 @@ while( sum(grepl(pattern = "B(-+)B",
               x = tplpHapPar$hap[x],
               perl = T) ) {
       tplpHapPar$hap[x] <- sub(pattern = "B(-+)B",
-                            replacement = paste0("B",
-                                                 paste0(rep(x = "B",
-                                                            times = attr(regexpr(pattern = "B(-+)B",
-                                                                                 text = tplpHapPar$hap[x],
-                                                                                 perl = T),
-                                                                         'capture.length')[1]),
-                                                        collapse = ""),
-                                                 "B"),
-                            x = tplpHapPar$hap[x],
-                            perl = T)
+                               replacement = paste0("B",
+                                                    paste0(rep(x = "B",
+                                                               times = attr(regexpr(pattern = "B(-+)B",
+                                                                                    text = tplpHapPar$hap[x],
+                                                                                    perl = T),
+                                                                            'capture.length')[1]),
+                                                           collapse = ""),
+                                                    "B"),
+                               x = tplpHapPar$hap[x],
+                               perl = T)
     }
   }
 }
@@ -398,15 +399,15 @@ while( sum(grepl(pattern = "^(-+)A",
               x = tplpHapPar$hap[x],
               perl = T) ) {
       tplpHapPar$hap[x] <- sub(pattern = "^(-+)A",
-                            replacement = paste0(paste0(rep(x = "A",
-                                                            times = attr(regexpr(pattern = "^(-+)A",
-                                                                                 text = tplpHapPar$hap[x],
-                                                                                 perl = T),
-                                                                         'capture.length')[1]),
-                                                        collapse = ""),
-                                                 "A"),
-                            x = tplpHapPar$hap[x],
-                            perl = T)
+                               replacement = paste0(paste0(rep(x = "A",
+                                                               times = attr(regexpr(pattern = "^(-+)A",
+                                                                                    text = tplpHapPar$hap[x],
+                                                                                    perl = T),
+                                                                            'capture.length')[1]),
+                                                           collapse = ""),
+                                                    "A"),
+                               x = tplpHapPar$hap[x],
+                               perl = T)
     }
   }
 }
@@ -449,15 +450,15 @@ while( sum(grepl(pattern = "B(-+)$",
               x = tplpHapPar$hap[x],
               perl = T) ) {
       tplpHapPar$hap[x] <- sub(pattern = "B(-+)$",
-                            replacement = paste0("B",
-                                                 paste0(rep(x = "B",
-                                                            times = attr(regexpr(pattern = "B(-+)$",
-                                                                                 text = tplpHapPar$hap[x],
-                                                                                 perl = T),
-                                                                         'capture.length')[1]),
-                                                        collapse = "")),
-                            x = tplpHapPar$hap[x],
-                            perl = T)
+                               replacement = paste0("B",
+                                                    paste0(rep(x = "B",
+                                                               times = attr(regexpr(pattern = "B(-+)$",
+                                                                                    text = tplpHapPar$hap[x],
+                                                                                    perl = T),
+                                                                            'capture.length')[1]),
+                                                           collapse = "")),
+                               x = tplpHapPar$hap[x],
+                               perl = T)
     }
   }
 }
@@ -487,8 +488,8 @@ while( sum(grepl(pattern = "B(-+)$",
 
 # Order by (imputed) haplotypes
 tplpHapPar_sort <- tplpHapPar[sort.int(tplpHapPar$hap,
-                                 decreasing = T,
-                                 index.return=T)$ix,]
+                                       decreasing = T,
+                                       index.return=T)$ix,]
 # Group by (imputed) haplotypes
 tplpHapPar_group_n <- tplpHapPar %>%
   group_by(hap) %>%
@@ -571,9 +572,9 @@ while( sum(grepl(pattern = "-",
       # frequency of occurrence of the two otherwise matching haplotypes
       # which have "A" or "B" at the marker with "-" in tplpHapPar_group_n_quant$hap[x]
       tplpHapPar[tplpHapPar$hap == tplpHapPar_group_n_quant$hap[x],]$hap <- c(rep(x = impA,
-                                                                         times = hapNfreqA),
-                                                                     rep(x = impB,
-                                                                         times = hapNfreqB))
+                                                                                  times = hapNfreqA),
+                                                                              rep(x = impB,
+                                                                                  times = hapNfreqB))
     }
   }
   # Group by (imputed) haplotypes
@@ -589,7 +590,7 @@ while( sum(grepl(pattern = "-",
 
 # Convert haplotype frequencies into proportions
 tplpHapPar_group_n_quant_prop <- tplpHapPar_group_n_quant$`n()` /
-                              (sum(tplpHapPar_group_n_quant$`n()`))
+                                 (sum(tplpHapPar_group_n_quant$`n()`))
 
 # Get inter-marker distances and midpoints
 #### NOTE CHANGE WIDTH DEFINED BY COLUMN NUMBER
