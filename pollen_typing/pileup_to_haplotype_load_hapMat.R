@@ -892,26 +892,26 @@ threshold_ratio <- 2
 for(x in seq_along(ABA_patterns[hap_match_ABA_patterns_ratios < threshold_ratio])) {
   print(ABA_patterns[hap_match_ABA_patterns_ratios < threshold_ratio][x])
   print(which(grepl(pattern = ABA_patterns[hap_match_ABA_patterns_ratios < threshold_ratio][x],
-              x = tplpHapPar_group_n_quant_tmp$hap,
-              perl = T)))
-  print(tplpHapPar_group_n_quant_tmp[which(grepl(pattern = ABA_patterns[hap_match_ABA_patterns_ratios < threshold_ratio][x],
-                                        x = tplpHapPar_group_n_quant_tmp$hap,
-                                        perl = T)),])
-  tplpHapPar_group_n_quant_tmp <- tplpHapPar_group_n_quant_tmp[which(!grepl(pattern = ABA_patterns[hap_match_ABA_patterns_ratios < threshold_ratio][x],
-                                                                      x = tplpHapPar_group_n_quant_tmp$hap,
-                                                                      perl = T)),]
+                    x = tplpHapPar_group_n_quant$hap,
+                    perl = T)))
+  print(tplpHapPar_group_n_quant[which(grepl(pattern = ABA_patterns[hap_match_ABA_patterns_ratios < threshold_ratio][x],
+                                             x = tplpHapPar_group_n_quant$hap,
+                                             perl = T)),])
+  tplpHapPar_group_n_quant <- tplpHapPar_group_n_quant[which(!grepl(pattern = ABA_patterns[hap_match_ABA_patterns_ratios < threshold_ratio][x],
+                                                                    x = tplpHapPar_group_n_quant$hap,
+                                                                    perl = T)),]
 }
 for(x in seq_along(BAB_patterns[hap_match_BAB_patterns_ratios < threshold_ratio])) {
   print(BAB_patterns[hap_match_BAB_patterns_ratios < threshold_ratio][x])
   print(which(grepl(pattern = BAB_patterns[hap_match_BAB_patterns_ratios < threshold_ratio][x],
-              x = tplpHapPar_group_n_quant_tmp$hap,
-              perl = T)))
-  print(tplpHapPar_group_n_quant_tmp[which(grepl(pattern = BAB_patterns[hap_match_BAB_patterns_ratios < threshold_ratio][x],
-                                        x = tplpHapPar_group_n_quant_tmp$hap,
-                                        perl = T)),])
-  tplpHapPar_group_n_quant_tmp <- tplpHapPar_group_n_quant_tmp[which(!grepl(pattern = BAB_patterns[hap_match_BAB_patterns_ratios < threshold_ratio][x],
-                                                                      x = tplpHapPar_group_n_quant_tmp$hap,
-                                                                      perl = T)),]
+                    x = tplpHapPar_group_n_quant$hap,
+                    perl = T)))
+  print(tplpHapPar_group_n_quant[which(grepl(pattern = BAB_patterns[hap_match_BAB_patterns_ratios < threshold_ratio][x],
+                                             x = tplpHapPar_group_n_quant$hap,
+                                             perl = T)),])
+  tplpHapPar_group_n_quant <- tplpHapPar_group_n_quant[which(!grepl(pattern = BAB_patterns[hap_match_BAB_patterns_ratios < threshold_ratio][x],
+                                                                    x = tplpHapPar_group_n_quant$hap,
+                                                                    perl = T)),]
 }
 
 # Find matches to high-frequency apparent noncrossover haplotypes (allowing up to 1 mismatch),
@@ -1246,7 +1246,7 @@ ggsave(paste0(plotDir, sample, "_ONT_cMMb_cM_v100120.pdf"),
 # Convert haplotype frequencies into proportions
 # for heat map plotting
 tplpHapPar_group_n_quant_prop <- ceiling( ( tplpHapPar_group_n_quant$`n()` /
-                                         (sum(tplpHapPar_group_n_quant$`n()`)) ) * 100000 )
+                                          (sum(tplpHapPar_group_n_quant$`n()`)) ) * 100000 )
 
 tplpHapPar_group_n_quant_prop_hap <- bind_rows(lapply(seq_along(tplpHapPar_group_n_quant_prop), function(x) {
   data.frame(hap = as.character(rep(tplpHapPar_group_n_quant$hap[x],
