@@ -616,21 +616,263 @@ tplpHapVar_ABBBA_idx <- which(grepl(pattern = "^A\\w*B{1,}\\w*B{1,}\\w*B{1,}\\w*
                                     perl = T))
 tplpHapVar_notStartB_idx <- which(!grepl(pattern = "^B",
                                          x = tplpHapVar$hap))
-tplpHapVar_notStartA_idx <- which(!grepl(pattern = "A$",
-                                         x = tplpHapVar$hap))
-tplpHapVar_notStartB_notStartA_idx <- intersect(tplpHapVar_notStartB_idx,
-                                                tplpHapVar_notStartA_idx)
-tplpHapVar_T <- tplpHapVar[c(tplpHapVar_BAAAB_idx,
-                              tplpHapVar_ABBBA_idx,
-                              tplpHapVar_notStartB_notStartA_idx),]
+tplpHapVar_notEndA_idx <- which(!grepl(pattern = "A$",
+                                       x = tplpHapVar$hap))
+tplpHapVar_notStartB_notEndA_idx <- intersect(tplpHapVar_notStartB_idx,
+                                              tplpHapVar_notEndA_idx)
+tplpHapVar <- tplpHapVar[c(tplpHapVar_BAAAB_idx,
+                           tplpHapVar_ABBBA_idx,
+                           tplpHapVar_notStartB_notEndA_idx),]
 
 # List all possible noncrossover patterns for each consecutive 3-marker combination
-NCO_patterns <- c("ABA\\w{11}", "\\w{1}ABA\\w{10}", "\\w{2}ABA\\w{9}", "\\w{3}ABA\\w{8}",
-                  "\\w{4}ABA\\w{7}", "\\w{5}ABA\\w{6}", "\\w{6}ABA\\w{5}", "\\w{7}ABA\\w{4}",
-                  "\\w{8}ABA\\w{3}", "\\w{9}ABA\\w{2}", "\\w{10}ABA\\w{1}", "\\w{11}ABA", "\\w{12}BA",
-                  "BA\\w{12}", "BAB\\w{11}", "\\w{1}BAB\\w{10}", "\\w{2}BAB\\w{9}", "\\w{3}BAB\\w{8}",
-                  "\\w{4}BAB\\w{7}", "\\w{5}BAB\\w{6}", "\\w{6}BAB\\w{5}", "\\w{7}BAB\\w{4}",
-                  "\\w{8}BAB\\w{3}", "\\w{9}BAB\\w{2}", "\\w{10}BAB\\w{1}", "\\w{11}BAB")
+#ABA_patterns <- c("BA\\w{12}", "ABA\\w{11}", "\\w{1}ABA\\w{10}", "\\w{2}ABA\\w{9}", "\\w{3}ABA\\w{8}",
+#                  "\\w{4}ABA\\w{7}", "\\w{5}ABA\\w{6}", "\\w{6}ABA\\w{5}", "\\w{7}ABA\\w{4}",
+#                  "\\w{8}ABA\\w{3}", "\\w{9}ABA\\w{2}", "\\w{10}ABA\\w{1}", "\\w{11}ABA")
+#BAB_patterns <- c("BAB\\w{11}", "\\w{1}BAB\\w{10}", "\\w{2}BAB\\w{9}", "\\w{3}BAB\\w{8}",
+#                  "\\w{4}BAB\\w{7}", "\\w{5}BAB\\w{6}", "\\w{6}BAB\\w{5}", "\\w{7}BAB\\w{4}",
+#                  "\\w{8}BAB\\w{3}", "\\w{9}BAB\\w{2}", "\\w{10}BAB\\w{1}", "\\w{11}BAB", "\\w{12}BA")
+ABA_patterns <- c(
+                  "BA............",
+                  "ABA...........",
+                  ".ABA..........",
+                  "..ABA.........",
+                  "...ABA........",
+                  "....ABA.......",
+                  ".....ABA......",
+                  "......ABA.....",
+                  ".......ABA....",
+                  "........ABA...",
+                  ".........ABA..",
+                  "..........ABA.",
+                  "...........ABA"
+                 )
+BAB_patterns <- c(
+                  "BAB...........",
+                  ".BAB..........",
+                  "..BAB.........",
+                  "...BAB........",
+                  "....BAB.......",
+                  ".....BAB......",
+                  "......BAB.....",
+                  ".......BAB....",
+                  "........BAB...",
+                  ".........BAB..",
+                  "..........BAB.",
+                  "...........BAB",
+                  "............BA"
+                 )
+
+# Find matches to ABA_patterns NCO patterns
+# including those containing likely sequencing errors (e.g., "AXA", "AIA")
+hap_match_ABA_patterns_list_df <- lapply(seq_along(ABA_patterns), function(x) {
+  tplpHapVar_ABA <- tplpHapVar[grepl(pattern = ABA_patterns[x],
+                                     x = tplpHapVar$hap),]
+  tplpHapVar_AXA <- tplpHapVar[grepl(pattern = gsub(pattern = "B",
+                                                    replacement = "X",
+                                                    x = ABA_patterns[x]), 
+                                     x = tplpHapVar$hap),]
+  dfx <- bind_rows(list(
+    data.frame(hap = as.character(rep(ABA_patterns[x],
+                                      dim(tplpHapVar_ABA)[1])),
+               freq = as.numeric(rep(dim(tplpHapVar_ABA)[1],
+                                     dim(tplpHapVar_ABA)[1])),
+               stringsAsFactors = F),
+    data.frame(hap = as.character(rep(gsub(pattern = "B",
+                                           replacement = "X",
+                                           x = ABA_patterns[x]),
+                                      dim(tplpHapVar_AXA)[1])),
+               freq = as.numeric(rep(dim(tplpHapVar_AXA)[1],
+                                     dim(tplpHapVar_AXA)[1])),
+               stringsAsFactors = F)
+  ), .id = "hapNo")
+})
+hap_match_ABA_patterns_ratios <- sapply(seq_along(ABA_patterns), function(x) {
+  if( !is.na(unique(hap_match_ABA_patterns_list_df[[x]]$freq)[1]) &
+      !is.na(unique(hap_match_ABA_patterns_list_df[[x]]$freq)[2]) ) {
+    unique(hap_match_ABA_patterns_list_df[[x]]$freq)[1] /
+    unique(hap_match_ABA_patterns_list_df[[x]]$freq)[2]
+  } else if ( is.na(unique(hap_match_ABA_patterns_list_df[[x]]$freq)[1]) ) {
+    1 / (unique(hap_match_ABA_patterns_list_df[[x]]$freq)[2])
+  } else if ( is.na(unique(hap_match_ABA_patterns_list_df[[x]]$freq)[2]) ) {
+    (unique(hap_match_ABA_patterns_list_df[[x]]$freq)[1]) / 1
+  }
+})
+
+# Create matrices suitable for plotting as haplotype heat maps
+ABAmat_list <- lapply(seq_along(hap_match_ABA_patterns_list_df), function(x) {
+  ABAmatx <- matrix(unlist(strsplit(hap_match_ABA_patterns_list_df[[x]]$hap,
+                                    split = "")),
+                    ncol = dim(tplpHapVar)[2]-1,
+                    byrow = T)
+  ABAmatx <- cbind(ABAmatx,
+                   hap_match_ABA_patterns_list_df[[x]]$hap,
+                   hap_match_ABA_patterns_list_df[[x]]$freq)
+  colnames(ABAmatx) <- c(colnames(tplpHapVar)[-length(colnames(tplpHapVar))],
+                         "hap", "freq")
+  ABAmatx
+})
+
+ABAmat_list_row_order <- lapply(seq_along(hap_match_ABA_patterns_list_df), function(x) {
+  1:dim(hap_match_ABA_patterns_list_df[[x]])[1]
+  #order(hap_match_ABA_patterns_list_df[[x]]$freq,
+  #      decreasing = T)
+})
+ABAmat_list_frequencies <- lapply(seq_along(hap_match_ABA_patterns_list_df), function(x) {
+  sapply(seq_along(unique(hap_match_ABA_patterns_list_df[[x]]$hap)), function(y) {
+    mean( hap_match_ABA_patterns_list_df[[x]][hap_match_ABA_patterns_list_df[[x]]$hap ==
+            unique(hap_match_ABA_patterns_list_df[[x]]$hap)[y],]$freq )
+  })
+})
+
+# Plot a haplotype heat map for matches to each noncrossover haplotype
+for(x in seq_along(ABAmat_list)) {
+  ABAhtmp <- Heatmap(ABAmat_list[[x]][ ,1:(dim(tplpHapVar)[2]-1)],
+                     name = "Allele",
+                     col = c("A" = "red", "B" = "blue",
+                             "X" = "goldenrod1", "I" = "green2", "N" = "black", "." = "grey60"),
+                     row_split = factor(hap_match_ABA_patterns_list_df[[x]]$hap,
+                                        levels = unique(as.character(hap_match_ABA_patterns_list_df[[x]]$hap))),
+                     row_gap = unit(1.5, "mm"),
+                     row_title = paste0(sprintf('%2.0f', ABAmat_list_frequencies[[x]])),
+                     row_title_rot = 0,
+                     row_title_gp = gpar(fontsize = 10),
+                     row_order = ABAmat_list_row_order[[x]],
+                     show_row_names = F,
+                     #column_split = colnames(mat1[ ,1:(dim(tplpHap_quant)[2]-1)]),
+                     #column_gap = unit(1.0, "mm"),
+                     #column_title = rep("", length(colnames(mat1[ ,1:(dim(tplpHap_quant)[2]-1)]))),
+                     column_title = paste0(ABA_patterns[x],
+                                           " haplotype matches in ", sample, " ONT (ratio = ",
+                                           round(hap_match_ABA_patterns_ratios[x], digits = 2), ")"),
+                     column_title_gp = gpar(fontsize = 20, fontface = "bold"),
+                     show_column_names = T,
+                     column_names_side = "bottom",
+                     column_names_gp = gpar(fontsize = 16),
+                     heatmap_legend_param = list(title = bquote(bolditalic("3a") ~ bold("marker allele")),
+                                                 title_gp = gpar(fontsize = 16),
+                                                 title_position = "topcenter",
+                                                 grid_height = unit(6, "mm"),
+                                                 grid_width = unit(10, "mm"),
+                                                 at = c("A", "B", "X", "."),
+#                                                        "X", "I", "N", "."),
+                                                 labels = c("Col-0", "Ws-4", "Nonparental SNV", "Any"),
+#                                                            "Nonparental SNV", "Nonparental indel", "Missing", "Any"),
+                                                 labels_gp = gpar(fontsize = 16),
+                                                 ncol = 1, by_row = T),
+                     raster_device = "CairoPNG"
+                    )
+  pdf(paste0(plotDir, sample, "_ONT_ABA_patterns_", ABA_patterns[x], "_matches_recombo_heatmap_v100120.pdf"), height = 18, width = 10)
+  draw(ABAhtmp,
+       heatmap_legend_side = "bottom")
+  dev.off()
+}
+
+# Find matches to BAB_patterns NCO patterns
+# including those containing likely sequencing errors (e.g., "BXB", "BIB")
+hap_match_BAB_patterns_list_df <- lapply(seq_along(BAB_patterns), function(x) {
+  tplpHapVar_BAB <- tplpHapVar[grepl(pattern = BAB_patterns[x],
+                                     x = tplpHapVar$hap),]
+  tplpHapVar_BXB <- tplpHapVar[grepl(pattern = gsub(pattern = "A",
+                                                    replacement = "X",
+                                                    x = BAB_patterns[x]), 
+                                     x = tplpHapVar$hap),]
+  dfx <- bind_rows(list(
+    data.frame(hap = as.character(rep(BAB_patterns[x],
+                                      dim(tplpHapVar_BAB)[1])),
+               freq = as.numeric(rep(dim(tplpHapVar_BAB)[1],
+                                     dim(tplpHapVar_BAB)[1])),
+               stringsAsFactors = F),
+    data.frame(hap = as.character(rep(gsub(pattern = "A",
+                                           replacement = "X",
+                                           x = BAB_patterns[x]),
+                                      dim(tplpHapVar_BXB)[1])),
+               freq = as.numeric(rep(dim(tplpHapVar_BXB)[1],
+                                     dim(tplpHapVar_BXB)[1])),
+               stringsAsFactors = F)
+  ), .id = "hapNo")
+})
+hap_match_BAB_patterns_ratios <- sapply(seq_along(BAB_patterns), function(x) {
+  if( !is.na(unique(hap_match_BAB_patterns_list_df[[x]]$freq)[1]) &
+      !is.na(unique(hap_match_BAB_patterns_list_df[[x]]$freq)[2]) ) {
+    unique(hap_match_BAB_patterns_list_df[[x]]$freq)[1] /
+    unique(hap_match_BAB_patterns_list_df[[x]]$freq)[2]
+  } else if ( is.na(unique(hap_match_BAB_patterns_list_df[[x]]$freq)[1]) ) {
+    1 / (unique(hap_match_BAB_patterns_list_df[[x]]$freq)[2])
+  } else if ( is.na(unique(hap_match_BAB_patterns_list_df[[x]]$freq)[2]) ) {
+    (unique(hap_match_BAB_patterns_list_df[[x]]$freq)[1]) / 1
+  }
+})
+
+# Create matrices suitable for plotting as haplotype heat maps
+BABmat_list <- lapply(seq_along(hap_match_BAB_patterns_list_df), function(x) {
+  BABmatx <- matrix(unlist(strsplit(hap_match_BAB_patterns_list_df[[x]]$hap,
+                                    split = "")),
+                    ncol = dim(tplpHapVar)[2]-1,
+                    byrow = T)
+  BABmatx <- cbind(BABmatx,
+                   hap_match_BAB_patterns_list_df[[x]]$hap,
+                   hap_match_BAB_patterns_list_df[[x]]$freq)
+  colnames(BABmatx) <- c(colnames(tplpHapVar)[-length(colnames(tplpHapVar))],
+                         "hap", "freq")
+  BABmatx
+})
+
+BABmat_list_row_order <- lapply(seq_along(hap_match_BAB_patterns_list_df), function(x) {
+  1:dim(hap_match_BAB_patterns_list_df[[x]])[1]
+  #order(hap_match_BAB_patterns_list_df[[x]]$freq,
+  #      decreasing = T)
+})
+BABmat_list_frequencies <- lapply(seq_along(hap_match_BAB_patterns_list_df), function(x) {
+  sapply(seq_along(unique(hap_match_BAB_patterns_list_df[[x]]$hap)), function(y) {
+    mean( hap_match_BAB_patterns_list_df[[x]][hap_match_BAB_patterns_list_df[[x]]$hap ==
+            unique(hap_match_BAB_patterns_list_df[[x]]$hap)[y],]$freq )
+  })
+})
+
+# Plot a haplotype heat map for matches to each noncrossover haplotype
+for(x in seq_along(BABmat_list)) {
+  BABhtmp <- Heatmap(BABmat_list[[x]][ ,1:(dim(tplpHapVar)[2]-1)],
+                     name = "Allele",
+                     col = c("A" = "red", "B" = "blue",
+                             "X" = "goldenrod1", "I" = "green2", "N" = "black", "." = "grey60"),
+                     row_split = factor(hap_match_BAB_patterns_list_df[[x]]$hap,
+                                        levels = unique(as.character(hap_match_BAB_patterns_list_df[[x]]$hap))),
+                     row_gap = unit(1.5, "mm"),
+                     row_title = paste0(sprintf('%2.0f', BABmat_list_frequencies[[x]])),
+                     row_title_rot = 0,
+                     row_title_gp = gpar(fontsize = 10),
+                     row_order = BABmat_list_row_order[[x]],
+                     show_row_names = F,
+                     #column_split = colnames(mat1[ ,1:(dim(tplpHap_quant)[2]-1)]),
+                     #column_gap = unit(1.0, "mm"),
+                     #column_title = rep("", length(colnames(mat1[ ,1:(dim(tplpHap_quant)[2]-1)]))),
+                     column_title = paste0(BAB_patterns[x],
+                                           " haplotype matches in ", sample, " ONT (ratio = ",
+                                           round(hap_match_BAB_patterns_ratios[x], digits = 2), ")"),
+                     column_title_gp = gpar(fontsize = 20, fontface = "bold"),
+                     show_column_names = T,
+                     column_names_side = "bottom",
+                     column_names_gp = gpar(fontsize = 16),
+                     heatmap_legend_param = list(title = bquote(bolditalic("3a") ~ bold("marker allele")),
+                                                 title_gp = gpar(fontsize = 16),
+                                                 title_position = "topcenter",
+                                                 grid_height = unit(6, "mm"),
+                                                 grid_width = unit(10, "mm"),
+                                                 at = c("A", "B", "X", "."),
+#                                                        "X", "I", "N", "."),
+                                                 labels = c("Col-0", "Ws-4", "Nonparental SNV", "Any"),
+#                                                            "Nonparental SNV", "Nonparental indel", "Missing", "Any"),
+                                                 labels_gp = gpar(fontsize = 16),
+                                                 ncol = 1, by_row = T),
+                     raster_device = "CairoPNG"
+                    )
+  pdf(paste0(plotDir, sample, "_ONT_BAB_patterns_", BAB_patterns[x], "_matches_recombo_heatmap_v100120.pdf"), height = 18, width = 10)
+  draw(BABhtmp,
+       heatmap_legend_side = "bottom")
+  dev.off()
+}
+
+
 
 
 # Find matches to high-frequency apparent noncrossover haplotypes (allowing up to 1 mismatch),
