@@ -186,332 +186,6 @@ tplpHap <- tplpHap[grepl("A", tplpHap$hap) &
                    grepl("B", tplpHap$hap),]
 
 
-### YET TO BE DONE
-# Extract alignments with complete haplotypes
-# Identify haplotypes in the top 5th percentile,
-# determine corresponding proportions for these haplotypes,
-# and impute missing data for alignments with incomplete haplotypes
-# based on these proportions
-tplpHap_complete <- tplpHap[!grepl("-", tplpHap$hap),]
-tplpHap_complete_n <- tplpHap_complete %>%
-  group_by(hap) %>%
-  summarize(n())
-tplpHap_complete_n_quant <- tplpHap_complete_n %>%
-  filter(`n()` > quantile(`n()`, 0.95))
-### YET TO BE DONE
-
-
-# Apply a haplotype imputation approach which
-# is informed by haplotypes at flanking markers
-# and, later, by haplotypes within other alignments
-
-# For imputation of missing haplotypes that are not at
-# the ends of an alignment, they must be flanked by
-# two of the same parental allele, one on each side
-# (e.g., for "AAAA-AAA-AAAAA-BB", only the first and second "-",
-#  and not the third "-", would be imputed as "A")
-# For Col-0 (A) alleles
-while( sum(grepl(pattern = "A(-+)A",
-                 x = tplpHap$hap,
-                 perl = T)) > 0 ) {
-  for(x in 1:length(tplpHap$hap)) {
-    if( grepl(pattern = "A(-+)A",
-              x = tplpHap$hap[x],
-              perl = T) ) {
-      tplpHap$hap[x] <- sub(pattern = "A(-+)A",
-                            replacement = paste0("A",
-                                                 paste0(rep(x = "A",
-                                                            times = attr(regexpr(pattern = "A(-+)A",
-                                                                                 text = tplpHap$hap[x],
-                                                                                 perl = T),
-                                                                         'capture.length')[1]),
-                                                        collapse = ""),
-                                                 "A"),
-                            x = tplpHap$hap[x],
-                            perl = T)
-    }
-  }
-}
-# For Ws-4 (B) alleles
-while( sum(grepl(pattern = "B(-+)B",
-                 x = tplpHap$hap,
-                 perl = T)) > 0 ) {
-  for(x in 1:length(tplpHap$hap)) {
-    if( grepl(pattern = "B(-+)B",
-              x = tplpHap$hap[x],
-              perl = T) ) {
-      tplpHap$hap[x] <- sub(pattern = "B(-+)B",
-                            replacement = paste0("B",
-                                                 paste0(rep(x = "B",
-                                                            times = attr(regexpr(pattern = "B(-+)B",
-                                                                                 text = tplpHap$hap[x],
-                                                                                 perl = T),
-                                                                         'capture.length')[1]),
-                                                        collapse = ""),
-                                                 "B"),
-                            x = tplpHap$hap[x],
-                            perl = T)
-    }
-  }
-}
-
-# Impute missing haplotypes at the ends of an alignment based
-# on the haplotype at the nearest marker(s)
-
-# As an allele-specific primer on the left binds only Col-0 (A) alleles,
-# impute missing haplotypes at the left-hand side (beginning) of alignments
-# that have a Col-0 (A) allele at a marker on their right
-# (e.g., for "----ABBBBBBBBBA-", only the left-hand "----" and
-#  not the right-hand "-" would be imputed as "A")
-# For Col-0 (A) alleles
-# left-hand side (beginning) of alignments
-while( sum(grepl(pattern = "^(-+)A",
-                 x = tplpHap$hap,
-                 perl = T)) > 0 ) {
-  for(x in 1:length(tplpHap$hap)) {
-    if( grepl(pattern = "^(-+)A",
-              x = tplpHap$hap[x],
-              perl = T) ) {
-      tplpHap$hap[x] <- sub(pattern = "^(-+)A",
-                            replacement = paste0(paste0(rep(x = "A",
-                                                            times = attr(regexpr(pattern = "^(-+)A",
-                                                                                 text = tplpHap$hap[x],
-                                                                                 perl = T),
-                                                                         'capture.length')[1]),
-                                                        collapse = ""),
-                                                 "A"),
-                            x = tplpHap$hap[x],
-                            perl = T)
-    }
-  }
-}
-## right-hand side (end) of alignments
-## (to be used for Col-0 (A) alleles ONLY where a Col-0-specific
-##  primer binds the right-hand side of the amplicon)
-#while( sum(grepl(pattern = "A(-+)$",
-#                 x = tplpHap$hap,
-#                 perl = T)) > 0 ) {
-#  for(x in 1:length(tplpHap$hap)) {
-#    if( grepl(pattern = "A(-+)$",
-#              x = tplpHap$hap[x],
-#              perl = T) ) {
-#      tplpHap$hap[x] <- sub(pattern = "A(-+)$",
-#                            replacement = paste0("A",
-#                                                 paste0(rep(x = "A",
-#                                                            times = attr(regexpr(pattern = "A(-+)$",
-#                                                                                 text = tplpHap$hap[x],
-#                                                                                 perl = T),
-#                                                                         'capture.length')[1]),
-#                                                        collapse = "")),
-#                            x = tplpHap$hap[x],
-#                            perl = T)
-#    }
-#  }
-#}
-
-# As an allele-specific primer on the right binds only Ws-4 (B) alleles,
-# impute missing haplotypes at the right-hand side (end) of alignments
-# that have a Ws-4 (B) allele at a marker on their left
-# (e.g., for "-BAAAAAAAAAB----", only the right-hand "----" and
-#  not the left-hand "-" would be imputed as "B")
-# For Ws-4 (B) alleles
-# right-hand side (end) of alignments
-while( sum(grepl(pattern = "B(-+)$",
-                 x = tplpHap$hap,
-                 perl = T)) > 0 ) {
-  for(x in 1:length(tplpHap$hap)) {
-    if( grepl(pattern = "B(-+)$",
-              x = tplpHap$hap[x],
-              perl = T) ) {
-      tplpHap$hap[x] <- sub(pattern = "B(-+)$",
-                            replacement = paste0("B",
-                                                 paste0(rep(x = "B",
-                                                            times = attr(regexpr(pattern = "B(-+)$",
-                                                                                 text = tplpHap$hap[x],
-                                                                                 perl = T),
-                                                                         'capture.length')[1]),
-                                                        collapse = "")),
-                            x = tplpHap$hap[x],
-                            perl = T)
-    }
-  }
-}
-## (to be used for Ws-4 (B) alleles ONLY where a Ws-4-specific
-##  primer binds the left-hand side of the amplicon)
-## left-hand side (beginning) of alignments
-#while( sum(grepl(pattern = "^(-+)B",
-#                 x = tplpHap$hap,
-#                 perl = T)) > 0 ) {
-#  for(x in 1:length(tplpHap$hap)) {
-#    if( grepl(pattern = "^(-+)B",
-#              x = tplpHap$hap[x],
-#              perl = T) ) {
-#      tplpHap$hap[x] <- sub(pattern = "^(-+)B",
-#                            replacement = paste0(paste0(rep(x = "B",
-#                                                            times = attr(regexpr(pattern = "^(-+)B",
-#                                                                                 text = tplpHap$hap[x],
-#                                                                                 perl = T),
-#                                                                         'capture.length')[1]),
-#                                                        collapse = ""),
-#                                                 "B"),
-#                            x = tplpHap$hap[x],
-#                            perl = T)
-#    }
-#  }
-#}
-
-# Order by (imputed) haplotypes
-tplpHap_sort <- tplpHap[sort.int(tplpHap$hap,
-                                 decreasing = T,
-                                 index.return=T)$ix,]
-# Group by (imputed) haplotypes
-tplpHap_group_n <- tplpHap %>%
-  group_by(hap) %>%
-  summarize(n())
-
-# Extract the top 1% of haplotypes in terms
-# of frequency of occurrence
-tplpHap_group_n_quant <- tplpHap_group_n %>%
-  filter(`n()` > quantile(`n()`, 0.99))
-
-tplpHap_group_n_v1 <- tplpHap_group_n
-tplpHap_group_n_quant_v1 <- tplpHap_group_n_quant
-
-# For those haplotypes in the top 1% which contain "-",
-# impute "-" as "A" or "B" proportional to the observed
-# frequency of occurrence of the two otherwise matching
-# haplotypes
-# (e.g., "A-BBBBBBBBBBBBBB" occurs 130 times,
-#        "AABBBBBBBBBBBBBB" occurs 550 times,   
-#        "ABBBBBBBBBBBBBBB" occurs 2332 times;
-#  550 + round( 130 * ( 550 / (550+2332) ) ) = 575 "AABBBBBBBBBBBBBB" occurrences after imputation
-#  2332 + round( 130 * ( 2332 / (550+2332) ) ) = 2437 "ABBBBBBBBBBBBBBB" occurrences after imputation
-while( sum(grepl(pattern = "-",
-                 x = tplpHap_group_n_quant$hap,
-                 perl = T)) > 0 ) {
-  for(x in 1:length(tplpHap_group_n_quant$hap)) {
-    if( grepl(pattern = "-",
-              x = tplpHap_group_n_quant$hap[x],
-              perl = T) ) {
-      impA <- sub(pattern = "(-+)",
-                  replacement = paste0(rep(x = "A",
-                                           times = attr(regexpr(pattern = "(-+)",
-                                                                text = tplpHap_group_n_quant$hap[x],
-                                                                perl = T),
-                                                        'capture.length')[1]),
-                                       collapse = ""),
-                  x = tplpHap_group_n_quant$hap[x],
-                  perl = T)
-      impB <- sub(pattern = "(-+)",
-                  replacement = paste0(rep(x = "B",
-                                           times = attr(regexpr(pattern = "(-+)",
-                                                                text = tplpHap_group_n_quant$hap[x],
-                                                                perl = T),
-                                                        'capture.length')[1]),
-                                       collapse = ""),
-                  x = tplpHap_group_n_quant$hap[x],
-                  perl = T)
-      hapNfreq <- tplpHap_group_n_quant$`n()`[x]
-      hapAfreq <- tplpHap_group_n$`n()`[tplpHap_group_n$hap %in% impA]
-      hapBfreq <- tplpHap_group_n$`n()`[tplpHap_group_n$hap %in% impB]
-      # If impA or impB are not present in tplpHap_group_n$hap (unlikely),
-      # redefine zero-length integer vector ( integer(0) ) with 0
-      if( !length(hapAfreq) ) { hapAfreq <- 0 }
-      if( !length(hapBfreq) ) { hapBfreq <- 0 }
-      if( hapAfreq + hapBfreq >= 1 ) {
-        hapNfreqA <- round( hapNfreq * ( hapAfreq / ( hapAfreq + hapBfreq ) ) )
-        hapNfreqB <- round( hapNfreq * ( hapBfreq / ( hapAfreq + hapBfreq ) ) )
-        imphapAfreq <- hapAfreq + hapNfreqA
-        print(paste0("Augmented haplotype frequency for ",
-                     impA, " = ", imphapAfreq))
-        imphapBfreq <- hapBfreq + hapNfreqB
-        print(paste0("Augmented haplotype frequency for ",
-                     impB, " = ", imphapBfreq))
-        # Sanity check
-        if( ( imphapAfreq + imphapBfreq ) != ( hapNfreq + hapAfreq + hapBfreq ) ) {
-          stop(paste0("Augmented haplotype frequencies for ",
-                      tplpHap_group_n_quant$hap[x],
-                      " do not add up to summed frequencies for ",
-                      tplpHap_group_n_quant$hap[x], " , ",
-                      impA, " , and ",
-                      impB, " !"))
-        }
-      } else {
-      stop(paste0("Complete versions of haplotype ",
-                  tplpHap_group_n_quant$hap[x],
-                  " are not present in the alignment dataset!"))
-      }
-      # Replace haplotypes in tplpHap$hap matching tplpHap_group_n_quant$hap[x]
-      # with imputed haplotypes proportional to the observed
-      # frequency of occurrence of the two otherwise matching haplotypes
-      # which have "A" or "B" at the marker with "-" in tplpHap_group_n_quant$hap[x]
-      tplpHap[tplpHap$hap == tplpHap_group_n_quant$hap[x],]$hap <- c(rep(x = impA,
-                                                                         times = hapNfreqA),
-                                                                     rep(x = impB,
-                                                                         times = hapNfreqB))
-    }
-  }
-  # Group by (imputed) haplotypes
-  tplpHap_group_n <- tplpHap %>%
-    group_by(hap) %>%
-    summarize(n())
-  
-  # Extract the top 1% of haplotypes in terms
-  # of frequency of occurrence
-  tplpHap_group_n_quant <- tplpHap_group_n %>%
-    filter(`n()` > quantile(`n()`, 0.99))
-}
-
-# Convert haplotype frequencies into proportions
-tplpHap_group_n_quant_prop <- tplpHap_group_n_quant$`n()` /
-                              (sum(tplpHap_group_n_quant$`n()`))
-
-# Get inter-marker distances and midpoints
-#### NOTE CHANGE WIDTH DEFINED BY COLUMN NUMBER
-midpoints <- NULL
-widths <- NULL
-for(x in 1:(length(as.integer(colnames(tplpHap)[1:(dim(tplpHap)[2]-1)]))-1)) {
-  midpointx <- as.integer(colnames(tplpHap)[x]) +
-    round( ( as.integer(colnames(tplpHap)[x+1]) -
-             as.integer(colnames(tplpHap)[x]) ) / 2 )
-  midpoints <- c(midpoints, midpointx)
-  widthx <- ( as.integer(colnames(tplpHap)[x+1]) -
-              as.integer(colnames(tplpHap)[x]) ) + 1
-  widths <- c(widths, widthx)
-}
-widths <- as.vector(sapply(seq_along(widths), function(x) rep(widths[x], times = 2)))
-
-# Create a matrix of inter-marker recombination intervals, in which
-# 1 denotes an "A" to "B" or a "B" to "A" transition, and
-# 0 denotes no transition in parental allele from one marker to the next
-# Two "1"s or two "0"s are appended to represent two-marker interval
-tplpHap_quant <- tplpHap[tplpHap$hap %in% tplpHap_group_n_quant$hap,]
-hapRecDF <- data.frame()
-for(x in 1:(dim(tplpHap_quant)[1])) {
-  hapRec <- NULL
-  for(i in 1:(length(unlist(strsplit(tplpHap_quant$hap[x], split = "")))-1)) {
-    if( paste0( unlist(strsplit(tplpHap_quant$hap[x], split = ""))[i],
-                unlist(strsplit(tplpHap_quant$hap[x], split = ""))[i+1] )
-        %in% c("AB", "BA") ) {
-      hapRec <- c(hapRec, 1, 1)
-    } else {
-      hapRec <- c(hapRec, 0, 0)
-    }
-  }
-  hapRecDF <- rbind(hapRecDF, hapRec)
-}
-colnames(hapRecDF) <- sort(c(alleles$position[2:(length(alleles$position)-2)],
-                             alleles$position[3:(length(alleles$position)-1)]-1))
-
-# From the above complete recombination matrix:
-# extract alignments containing only crossovers
-hapRecDF_COs <- hapRecDF[rowSums(hapRecDF) == 2,]
-# extract alignments containing both crossovers and non-crossovers
-hapRecDF_NCOs <- hapRecDF[rowSums(hapRecDF) >= 4,]
-
-# Get haplotypes containing noncrossovers
-hap_NCOs <- unique(tplpHap_quant[which(rowSums(hapRecDF) >= 4),]$hap)
-
 # Load truncated pileup matrix containing variants
 plp2 <- read.table(paste0(hapMatDir, sample, "_ONT_pileup_alleles.tsv"),
                    header = T, sep = "\t",
@@ -605,9 +279,11 @@ tplpHapVar[factorColumns] <- lapply(tplpHapVar[factorColumns], as.character)
 # Discard any haplotypes that have the Ws-4 ("B") allele at the leftmost marker
 # that is not within the forward primer binding site (Chr3:634,938),
 # and any haplotypes that have the Col-0 ("A") allele at the rightmost marker
-# that is not within the reverse primer binding site (Chr3:639,370);
-# many of these apparent noncrossover haplotypes should be rejected due to
-# high sequencing error rates at the markers around which noncrossovers ostensibly occur
+# that is not within the reverse primer binding site (Chr3:639,370),
+# UNLESS these haplotypes start and end with the same parental allele and they have
+# at least three intervening markers with the alternate parental allele.
+## Many of these apparent noncrossover haplotypes should be rejected due to
+## high sequencing error rates at the markers around which noncrossovers ostensibly occur
 tplpHapVar_BAAAB_idx <- which(grepl(pattern = "^B\\w*A{1,}\\w*A{1,}\\w*A{1,}\\w*B$",
                                     x = tplpHapVar$hap,
                                     perl = T))
@@ -623,6 +299,344 @@ tplpHapVar_notStartB_notEndA_idx <- intersect(tplpHapVar_notStartB_idx,
 tplpHapVar <- tplpHapVar[c(tplpHapVar_BAAAB_idx,
                            tplpHapVar_ABBBA_idx,
                            tplpHapVar_notStartB_notEndA_idx),]
+
+# Replace each sequencing error (nonparental SNVs, nonparental indels, and missing base calls)
+# with a dash to enable potential replacement with parental alleles by imputation
+tplpHapPar <- tplpHapVar
+tplpHapPar[] <- lapply(tplpHapPar, function(x) as.character(gsub("X", "-", x)))
+tplpHapPar[] <- lapply(tplpHapPar, function(x) as.character(gsub("I", "-", x)))
+tplpHapPar[] <- lapply(tplpHapPar, function(x) as.character(gsub("N", "-", x)))
+
+# Retain only rows that contain both parental haplotypes
+tplpHapPar <- tplpHapPar[grepl("A", tplpHapPar$hap) &
+                         grepl("B", tplpHapPar$hap),]
+
+#### YET TO BE DONE
+## Extract alignments with complete haplotypes
+## Identify haplotypes in the top 5th percentile,
+## determine corresponding proportions for these haplotypes,
+## and impute missing data for alignments with incomplete haplotypes
+## based on these proportions
+#tplpHap_complete <- tplpHap[!grepl("-", tplpHap$hap),]
+#tplpHap_complete_n <- tplpHap_complete %>%
+#  group_by(hap) %>%
+#  summarize(n())
+#tplpHap_complete_n_quant <- tplpHap_complete_n %>%
+#  filter(`n()` > quantile(`n()`, 0.95))
+#### YET TO BE DONE
+
+
+# Apply a haplotype imputation approach which
+# is informed by haplotypes at flanking markers
+# and, later, by haplotypes within other alignments
+
+# For imputation of missing haplotypes that are not at
+# the ends of an alignment, they must be flanked by
+# two of the same parental allele, one on each side
+# (e.g., for "AAAA-AAA-AAAAA-BB", only the first and second "-",
+#  and not the third "-", would be imputed as "A")
+# For Col-0 (A) alleles
+while( sum(grepl(pattern = "A(-+)A",
+                 x = tplpHapPar$hap,
+                 perl = T)) > 0 ) {
+  for(x in 1:length(tplpHapPar$hap)) {
+    if( grepl(pattern = "A(-+)A",
+              x = tplpHapPar$hap[x],
+              perl = T) ) {
+      tplpHapPar$hap[x] <- sub(pattern = "A(-+)A",
+                            replacement = paste0("A",
+                                                 paste0(rep(x = "A",
+                                                            times = attr(regexpr(pattern = "A(-+)A",
+                                                                                 text = tplpHapPar$hap[x],
+                                                                                 perl = T),
+                                                                         'capture.length')[1]),
+                                                        collapse = ""),
+                                                 "A"),
+                            x = tplpHapPar$hap[x],
+                            perl = T)
+    }
+  }
+}
+# For Ws-4 (B) alleles
+while( sum(grepl(pattern = "B(-+)B",
+                 x = tplpHapPar$hap,
+                 perl = T)) > 0 ) {
+  for(x in 1:length(tplpHapPar$hap)) {
+    if( grepl(pattern = "B(-+)B",
+              x = tplpHapPar$hap[x],
+              perl = T) ) {
+      tplpHapPar$hap[x] <- sub(pattern = "B(-+)B",
+                            replacement = paste0("B",
+                                                 paste0(rep(x = "B",
+                                                            times = attr(regexpr(pattern = "B(-+)B",
+                                                                                 text = tplpHapPar$hap[x],
+                                                                                 perl = T),
+                                                                         'capture.length')[1]),
+                                                        collapse = ""),
+                                                 "B"),
+                            x = tplpHapPar$hap[x],
+                            perl = T)
+    }
+  }
+}
+
+# Impute missing haplotypes at the ends of an alignment based
+# on the haplotype at the nearest marker(s)
+
+# As an allele-specific primer on the left binds only Col-0 (A) alleles,
+# impute missing haplotypes at the left-hand side (beginning) of alignments
+# that have a Col-0 (A) allele at a marker on their right
+# (e.g., for "----ABBBBBBBBBA-", only the left-hand "----" and
+#  not the right-hand "-" would be imputed as "A")
+# For Col-0 (A) alleles
+# left-hand side (beginning) of alignments
+while( sum(grepl(pattern = "^(-+)A",
+                 x = tplpHapPar$hap,
+                 perl = T)) > 0 ) {
+  for(x in 1:length(tplpHapPar$hap)) {
+    if( grepl(pattern = "^(-+)A",
+              x = tplpHapPar$hap[x],
+              perl = T) ) {
+      tplpHapPar$hap[x] <- sub(pattern = "^(-+)A",
+                            replacement = paste0(paste0(rep(x = "A",
+                                                            times = attr(regexpr(pattern = "^(-+)A",
+                                                                                 text = tplpHapPar$hap[x],
+                                                                                 perl = T),
+                                                                         'capture.length')[1]),
+                                                        collapse = ""),
+                                                 "A"),
+                            x = tplpHapPar$hap[x],
+                            perl = T)
+    }
+  }
+}
+## right-hand side (end) of alignments
+## (to be used for Col-0 (A) alleles ONLY where a Col-0-specific
+##  primer binds the right-hand side of the amplicon)
+#while( sum(grepl(pattern = "A(-+)$",
+#                 x = tplpHapPar$hap,
+#                 perl = T)) > 0 ) {
+#  for(x in 1:length(tplpHapPar$hap)) {
+#    if( grepl(pattern = "A(-+)$",
+#              x = tplpHapPar$hap[x],
+#              perl = T) ) {
+#      tplpHapPar$hap[x] <- sub(pattern = "A(-+)$",
+#                            replacement = paste0("A",
+#                                                 paste0(rep(x = "A",
+#                                                            times = attr(regexpr(pattern = "A(-+)$",
+#                                                                                 text = tplpHapPar$hap[x],
+#                                                                                 perl = T),
+#                                                                         'capture.length')[1]),
+#                                                        collapse = "")),
+#                            x = tplpHapPar$hap[x],
+#                            perl = T)
+#    }
+#  }
+#}
+
+# As an allele-specific primer on the right binds only Ws-4 (B) alleles,
+# impute missing haplotypes at the right-hand side (end) of alignments
+# that have a Ws-4 (B) allele at a marker on their left
+# (e.g., for "-BAAAAAAAAAB----", only the right-hand "----" and
+#  not the left-hand "-" would be imputed as "B")
+# For Ws-4 (B) alleles
+# right-hand side (end) of alignments
+while( sum(grepl(pattern = "B(-+)$",
+                 x = tplpHapPar$hap,
+                 perl = T)) > 0 ) {
+  for(x in 1:length(tplpHapPar$hap)) {
+    if( grepl(pattern = "B(-+)$",
+              x = tplpHapPar$hap[x],
+              perl = T) ) {
+      tplpHapPar$hap[x] <- sub(pattern = "B(-+)$",
+                            replacement = paste0("B",
+                                                 paste0(rep(x = "B",
+                                                            times = attr(regexpr(pattern = "B(-+)$",
+                                                                                 text = tplpHapPar$hap[x],
+                                                                                 perl = T),
+                                                                         'capture.length')[1]),
+                                                        collapse = "")),
+                            x = tplpHapPar$hap[x],
+                            perl = T)
+    }
+  }
+}
+## (to be used for Ws-4 (B) alleles ONLY where a Ws-4-specific
+##  primer binds the left-hand side of the amplicon)
+## left-hand side (beginning) of alignments
+#while( sum(grepl(pattern = "^(-+)B",
+#                 x = tplpHapPar$hap,
+#                 perl = T)) > 0 ) {
+#  for(x in 1:length(tplpHapPar$hap)) {
+#    if( grepl(pattern = "^(-+)B",
+#              x = tplpHapPar$hap[x],
+#              perl = T) ) {
+#      tplpHapPar$hap[x] <- sub(pattern = "^(-+)B",
+#                            replacement = paste0(paste0(rep(x = "B",
+#                                                            times = attr(regexpr(pattern = "^(-+)B",
+#                                                                                 text = tplpHapPar$hap[x],
+#                                                                                 perl = T),
+#                                                                         'capture.length')[1]),
+#                                                        collapse = ""),
+#                                                 "B"),
+#                            x = tplpHapPar$hap[x],
+#                            perl = T)
+#    }
+#  }
+#}
+
+# Order by (imputed) haplotypes
+tplpHapPar_sort <- tplpHapPar[sort.int(tplpHapPar$hap,
+                                 decreasing = T,
+                                 index.return=T)$ix,]
+# Group by (imputed) haplotypes
+tplpHapPar_group_n <- tplpHapPar %>%
+  group_by(hap) %>%
+  summarize(n())
+
+# Extract the top 1% of haplotypes in terms
+# of frequency of occurrence
+tplpHapPar_group_n_quant <- tplpHapPar_group_n %>%
+  filter(`n()` > quantile(`n()`, 0.99))
+
+tplpHapPar_group_n_v1 <- tplpHapPar_group_n
+tplpHapPar_group_n_quant_v1 <- tplpHapPar_group_n_quant
+
+# For those haplotypes in the top 1% which contain "-",
+# impute "-" as "A" or "B" proportional to the observed
+# frequency of occurrence of the two otherwise matching
+# haplotypes
+# (e.g., "A-BBBBBBBBBBBBBB" occurs 130 times,
+#        "AABBBBBBBBBBBBBB" occurs 550 times,   
+#        "ABBBBBBBBBBBBBBB" occurs 2332 times;
+#  550 + round( 130 * ( 550 / (550+2332) ) ) = 575 "AABBBBBBBBBBBBBB" occurrences after imputation
+#  2332 + round( 130 * ( 2332 / (550+2332) ) ) = 2437 "ABBBBBBBBBBBBBBB" occurrences after imputation
+while( sum(grepl(pattern = "-",
+                 x = tplpHapPar_group_n_quant$hap,
+                 perl = T)) > 0 ) {
+  for(x in 1:length(tplpHapPar_group_n_quant$hap)) {
+    if( grepl(pattern = "-",
+              x = tplpHapPar_group_n_quant$hap[x],
+              perl = T) ) {
+      impA <- sub(pattern = "(-+)",
+                  replacement = paste0(rep(x = "A",
+                                           times = attr(regexpr(pattern = "(-+)",
+                                                                text = tplpHapPar_group_n_quant$hap[x],
+                                                                perl = T),
+                                                        'capture.length')[1]),
+                                       collapse = ""),
+                  x = tplpHapPar_group_n_quant$hap[x],
+                  perl = T)
+      impB <- sub(pattern = "(-+)",
+                  replacement = paste0(rep(x = "B",
+                                           times = attr(regexpr(pattern = "(-+)",
+                                                                text = tplpHapPar_group_n_quant$hap[x],
+                                                                perl = T),
+                                                        'capture.length')[1]),
+                                       collapse = ""),
+                  x = tplpHapPar_group_n_quant$hap[x],
+                  perl = T)
+      hapNfreq <- tplpHapPar_group_n_quant$`n()`[x]
+      hapAfreq <- tplpHapPar_group_n$`n()`[tplpHapPar_group_n$hap %in% impA]
+      hapBfreq <- tplpHapPar_group_n$`n()`[tplpHapPar_group_n$hap %in% impB]
+      # If impA or impB are not present in tplpHapPar_group_n$hap (unlikely),
+      # redefine zero-length integer vector ( integer(0) ) with 0
+      if( !length(hapAfreq) ) { hapAfreq <- 0 }
+      if( !length(hapBfreq) ) { hapBfreq <- 0 }
+      if( hapAfreq + hapBfreq >= 1 ) {
+        hapNfreqA <- round( hapNfreq * ( hapAfreq / ( hapAfreq + hapBfreq ) ) )
+        hapNfreqB <- round( hapNfreq * ( hapBfreq / ( hapAfreq + hapBfreq ) ) )
+        imphapAfreq <- hapAfreq + hapNfreqA
+        print(paste0("Augmented haplotype frequency for ",
+                     impA, " = ", imphapAfreq))
+        imphapBfreq <- hapBfreq + hapNfreqB
+        print(paste0("Augmented haplotype frequency for ",
+                     impB, " = ", imphapBfreq))
+        # Sanity check
+        if( ( imphapAfreq + imphapBfreq ) != ( hapNfreq + hapAfreq + hapBfreq ) ) {
+          stop(paste0("Augmented haplotype frequencies for ",
+                      tplpHapPar_group_n_quant$hap[x],
+                      " do not add up to summed frequencies for ",
+                      tplpHapPar_group_n_quant$hap[x], " , ",
+                      impA, " , and ",
+                      impB, " !"))
+        }
+      } else {
+      stop(paste0("Complete versions of haplotype ",
+                  tplpHapPar_group_n_quant$hap[x],
+                  " are not present in the alignment dataset!"))
+      }
+      # Replace haplotypes in tplpHapPar$hap matching tplpHapPar_group_n_quant$hap[x]
+      # with imputed haplotypes proportional to the observed
+      # frequency of occurrence of the two otherwise matching haplotypes
+      # which have "A" or "B" at the marker with "-" in tplpHapPar_group_n_quant$hap[x]
+      tplpHapPar[tplpHapPar$hap == tplpHapPar_group_n_quant$hap[x],]$hap <- c(rep(x = impA,
+                                                                         times = hapNfreqA),
+                                                                     rep(x = impB,
+                                                                         times = hapNfreqB))
+    }
+  }
+  # Group by (imputed) haplotypes
+  tplpHapPar_group_n <- tplpHapPar %>%
+    group_by(hap) %>%
+    summarize(n())
+  
+  # Extract the top 1% of haplotypes in terms
+  # of frequency of occurrence
+  tplpHapPar_group_n_quant <- tplpHapPar_group_n %>%
+    filter(`n()` > quantile(`n()`, 0.99))
+}
+
+# Convert haplotype frequencies into proportions
+tplpHapPar_group_n_quant_prop <- tplpHapPar_group_n_quant$`n()` /
+                              (sum(tplpHapPar_group_n_quant$`n()`))
+
+# Get inter-marker distances and midpoints
+#### NOTE CHANGE WIDTH DEFINED BY COLUMN NUMBER
+midpoints <- NULL
+widths <- NULL
+for(x in 1:(length(as.integer(colnames(tplpHapPar)[1:(dim(tplpHapPar)[2]-1)]))-1)) {
+  midpointx <- as.integer(colnames(tplpHapPar)[x]) +
+    round( ( as.integer(colnames(tplpHapPar)[x+1]) -
+             as.integer(colnames(tplpHapPar)[x]) ) / 2 )
+  midpoints <- c(midpoints, midpointx)
+  widthx <- ( as.integer(colnames(tplpHapPar)[x+1]) -
+              as.integer(colnames(tplpHapPar)[x]) ) + 1
+  widths <- c(widths, widthx)
+}
+widths <- as.vector(sapply(seq_along(widths), function(x) rep(widths[x], times = 2)))
+
+# Create a matrix of inter-marker recombination intervals, in which
+# 1 denotes an "A" to "B" or a "B" to "A" transition, and
+# 0 denotes no transition in parental allele from one marker to the next
+# Two "1"s or two "0"s are appended to represent two-marker interval
+tplpHapPar_quant <- tplpHapPar[tplpHapPar$hap %in% tplpHapPar_group_n_quant$hap,]
+hapRecDF <- data.frame()
+for(x in 1:(dim(tplpHapPar_quant)[1])) {
+  hapRec <- NULL
+  for(i in 1:(length(unlist(strsplit(tplpHapPar_quant$hap[x], split = "")))-1)) {
+    if( paste0( unlist(strsplit(tplpHapPar_quant$hap[x], split = ""))[i],
+                unlist(strsplit(tplpHapPar_quant$hap[x], split = ""))[i+1] )
+        %in% c("AB", "BA") ) {
+      hapRec <- c(hapRec, 1, 1)
+    } else {
+      hapRec <- c(hapRec, 0, 0)
+    }
+  }
+  hapRecDF <- rbind(hapRecDF, hapRec)
+}
+colnames(hapRecDF) <- sort(c(alleles$position[2:(length(alleles$position)-2)],
+                             alleles$position[3:(length(alleles$position)-1)]-1))
+
+# From the above complete recombination matrix:
+# extract alignments containing only crossovers
+hapRecDF_COs <- hapRecDF[rowSums(hapRecDF) == 2,]
+# extract alignments containing both crossovers and non-crossovers
+hapRecDF_NCOs <- hapRecDF[rowSums(hapRecDF) >= 4,]
+
+# Get haplotypes containing noncrossovers
+hap_NCOs <- unique(tplpHapPar_quant[which(rowSums(hapRecDF) >= 4),]$hap)
+
 
 # List all possible noncrossover patterns for each consecutive 3-marker combination
 #ABA_patterns <- c("BA\\w{12}", "ABA\\w{11}", "\\w{1}ABA\\w{10}", "\\w{2}ABA\\w{9}", "\\w{3}ABA\\w{8}",
@@ -758,7 +772,7 @@ for(x in seq_along(ABAmat_list)) {
                                                  labels = c("Col-0", "Ws-4", "Nonparental SNV", "Any"),
 #                                                            "Nonparental SNV", "Nonparental indel", "Missing", "Any"),
                                                  labels_gp = gpar(fontsize = 16),
-                                                 ncol = 1, by_row = T),
+                                                 ncol = 4, by_row = T),
                      raster_device = "CairoPNG"
                     )
   pdf(paste0(plotDir, sample, "_ONT_ABA_patterns_", ABA_patterns[x], "_matches_recombo_heatmap_v100120.pdf"), height = 18, width = 10)
@@ -863,7 +877,7 @@ for(x in seq_along(BABmat_list)) {
                                                  labels = c("Col-0", "Ws-4", "Nonparental SNV", "Any"),
 #                                                            "Nonparental SNV", "Nonparental indel", "Missing", "Any"),
                                                  labels_gp = gpar(fontsize = 16),
-                                                 ncol = 1, by_row = T),
+                                                 ncol = 4, by_row = T),
                      raster_device = "CairoPNG"
                     )
   pdf(paste0(plotDir, sample, "_ONT_BAB_patterns_", BAB_patterns[x], "_matches_recombo_heatmap_v100120.pdf"), height = 18, width = 10)
@@ -872,8 +886,32 @@ for(x in seq_along(BABmat_list)) {
   dev.off()
 }
 
-
-
+# Remove high-frequency haplotypes that match error-prone noncrossover patterns
+threshold_ratio <- 2
+for(x in seq_along(ABA_patterns[hap_match_ABA_patterns_ratios < threshold_ratio])) {
+  print(ABA_patterns[hap_match_ABA_patterns_ratios < threshold_ratio][x])
+  print(which(grepl(pattern = ABA_patterns[hap_match_ABA_patterns_ratios < threshold_ratio][x],
+              x = tplpHapPar_group_n_quant_tmp$hap,
+              perl = T)))
+  print(tplpHapPar_group_n_quant_tmp[which(grepl(pattern = ABA_patterns[hap_match_ABA_patterns_ratios < threshold_ratio][x],
+                                        x = tplpHapPar_group_n_quant_tmp$hap,
+                                        perl = T)),])
+  tplpHapPar_group_n_quant_tmp <- tplpHapPar_group_n_quant_tmp[which(!grepl(pattern = ABA_patterns[hap_match_ABA_patterns_ratios < threshold_ratio][x],
+                                                                      x = tplpHapPar_group_n_quant_tmp$hap,
+                                                                      perl = T)),]
+}
+for(x in seq_along(BAB_patterns[hap_match_BAB_patterns_ratios < threshold_ratio])) {
+  print(BAB_patterns[hap_match_BAB_patterns_ratios < threshold_ratio][x])
+  print(which(grepl(pattern = BAB_patterns[hap_match_BAB_patterns_ratios < threshold_ratio][x],
+              x = tplpHapPar_group_n_quant_tmp$hap,
+              perl = T)))
+  print(tplpHapPar_group_n_quant_tmp[which(grepl(pattern = BAB_patterns[hap_match_BAB_patterns_ratios < threshold_ratio][x],
+                                        x = tplpHapPar_group_n_quant_tmp$hap,
+                                        perl = T)),])
+  tplpHapPar_group_n_quant_tmp <- tplpHapPar_group_n_quant_tmp[which(!grepl(pattern = BAB_patterns[hap_match_BAB_patterns_ratios < threshold_ratio][x],
+                                                                      x = tplpHapPar_group_n_quant_tmp$hap,
+                                                                      perl = T)),]
+}
 
 # Find matches to high-frequency apparent noncrossover haplotypes (allowing up to 1 mismatch),
 # including those containing nonparental variants (likely sequencing errors)
@@ -965,9 +1003,9 @@ for(x in seq_along(NCOmat_list)) {
                      row_title_gp = gpar(fontsize = 10),
                      row_order = NCOmat_list_row_order[[x]],
                      show_row_names = F,
-                     #column_split = colnames(mat1[ ,1:(dim(tplpHap_quant)[2]-1)]),
+                     #column_split = colnames(mat1[ ,1:(dim(tplpHapPar_quant)[2]-1)]),
                      #column_gap = unit(1.0, "mm"),
-                     #column_title = rep("", length(colnames(mat1[ ,1:(dim(tplpHap_quant)[2]-1)]))),
+                     #column_title = rep("", length(colnames(mat1[ ,1:(dim(tplpHapPar_quant)[2]-1)]))),
                      column_title = paste0("NCO haplotype ", hap_NCOs[x],
                                            " matches in ", sample, " ONT"),
                      column_title_gp = gpar(fontsize = 20, fontface = "bold"),
@@ -1065,7 +1103,7 @@ rec_summary <- data.frame(window = as.integer(colnames(hapRecDF)),
                                                        (widths/1e6) ) * cMscale )
                          )
 write.table(rec_summary,
-            file = paste0(plotDir, sample, "_ONT_recombo_summary_v201219.tsv"),
+            file = paste0(plotDir, sample, "_ONT_recombo_summary_v100120.tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
 
 # Complete amplicon extends from 634089 (20 nt upstream of 634109)
@@ -1198,7 +1236,7 @@ ggObjGA_combined <- grid.arrange(ggObj_cMMb,
                                  ggObj_cM,
                                  nrow = 2, as.table = F)
                                                     
-ggsave(paste0(plotDir, sample, "_ONT_cMMb_cM_v201219.pdf"),
+ggsave(paste0(plotDir, sample, "_ONT_cMMb_cM_v100120.pdf"),
        plot = ggObjGA_combined,
        height = 6.5*2, width = 20, limitsize = F)
 
@@ -1206,53 +1244,53 @@ ggsave(paste0(plotDir, sample, "_ONT_cMMb_cM_v201219.pdf"),
 
 # Convert haplotype frequencies into proportions
 # for heat map plotting
-tplpHap_group_n_quant_prop <- ceiling( ( tplpHap_group_n_quant$`n()` /
-                                         (sum(tplpHap_group_n_quant$`n()`)) ) * 100000 )
+tplpHapPar_group_n_quant_prop <- ceiling( ( tplpHapPar_group_n_quant$`n()` /
+                                         (sum(tplpHapPar_group_n_quant$`n()`)) ) * 100000 )
 
-tplpHap_group_n_quant_prop_hap <- bind_rows(lapply(seq_along(tplpHap_group_n_quant_prop), function(x) {
-  data.frame(hap = as.character(rep(tplpHap_group_n_quant$hap[x],
-                                    tplpHap_group_n_quant_prop[x])),
-             prop = as.numeric(rep(tplpHap_group_n_quant_prop[x],
-                                   tplpHap_group_n_quant_prop[x])),
-             perc = as.numeric(rep(tplpHap_group_n_quant_prop[x]/1000,
-                                   tplpHap_group_n_quant_prop[x])),
+tplpHapPar_group_n_quant_prop_hap <- bind_rows(lapply(seq_along(tplpHapPar_group_n_quant_prop), function(x) {
+  data.frame(hap = as.character(rep(tplpHapPar_group_n_quant$hap[x],
+                                    tplpHapPar_group_n_quant_prop[x])),
+             prop = as.numeric(rep(tplpHapPar_group_n_quant_prop[x],
+                                   tplpHapPar_group_n_quant_prop[x])),
+             perc = as.numeric(rep(tplpHapPar_group_n_quant_prop[x]/1000,
+                                   tplpHapPar_group_n_quant_prop[x])),
              stringsAsFactors = F)
 }), .id = "hapNo")
 
-tplpHap_group_n_quant_prop_hap_sort <- tplpHap_group_n_quant_prop_hap[sort.int(tplpHap_group_n_quant_prop_hap$prop,
+tplpHapPar_group_n_quant_prop_hap_sort <- tplpHapPar_group_n_quant_prop_hap[sort.int(tplpHapPar_group_n_quant_prop_hap$prop,
                                                                                decreasing = T,
                                                                                index.return = T)$ix,]
-mat1 <- matrix(unlist(strsplit(tplpHap_group_n_quant_prop_hap_sort$hap,
+mat1 <- matrix(unlist(strsplit(tplpHapPar_group_n_quant_prop_hap_sort$hap,
                                split = "")),
-               ncol = dim(tplpHap_quant)[2]-1,
+               ncol = dim(tplpHapPar_quant)[2]-1,
                byrow = T)
 mat1 <- cbind(mat1,
-              tplpHap_group_n_quant_prop_hap_sort$hap,
-              tplpHap_group_n_quant_prop_hap_sort$prop,
-              tplpHap_group_n_quant_prop_hap_sort$perc)
-colnames(mat1) <- c(colnames(tplpHap_quant)[-length(colnames(tplpHap_quant))],
+              tplpHapPar_group_n_quant_prop_hap_sort$hap,
+              tplpHapPar_group_n_quant_prop_hap_sort$prop,
+              tplpHapPar_group_n_quant_prop_hap_sort$perc)
+colnames(mat1) <- c(colnames(tplpHapPar_quant)[-length(colnames(tplpHapPar_quant))],
                     "hap", "prop", "perc")
-row_order <- order(tplpHap_group_n_quant_prop_hap_sort$perc,
+row_order <- order(tplpHapPar_group_n_quant_prop_hap_sort$perc,
                    decreasing = T)
-proportions <- sapply(seq_along(unique(tplpHap_group_n_quant_prop_hap_sort$hap)), function(x) {
-  mean(tplpHap_group_n_quant_prop_hap_sort[tplpHap_group_n_quant_prop_hap_sort$hap ==
-         unique(tplpHap_group_n_quant_prop_hap_sort$hap)[x],]$perc)
+proportions <- sapply(seq_along(unique(tplpHapPar_group_n_quant_prop_hap_sort$hap)), function(x) {
+  mean(tplpHapPar_group_n_quant_prop_hap_sort[tplpHapPar_group_n_quant_prop_hap_sort$hap ==
+         unique(tplpHapPar_group_n_quant_prop_hap_sort$hap)[x],]$perc)
 })
 
-htmp <- Heatmap(mat1[ ,1:(dim(tplpHap_quant)[2]-1)],
+htmp <- Heatmap(mat1[ ,1:(dim(tplpHapPar_quant)[2]-1)],
                 name = "Allele",
                 col = c("A" = "red", "B" = "blue", "-" = "grey40"),
-                row_split = factor(tplpHap_group_n_quant_prop_hap_sort$hap,
-                                   levels = unique(as.character(tplpHap_group_n_quant_prop_hap_sort$hap))),
+                row_split = factor(tplpHapPar_group_n_quant_prop_hap_sort$hap,
+                                   levels = unique(as.character(tplpHapPar_group_n_quant_prop_hap_sort$hap))),
                 row_gap = unit(1.5, "mm"),
                 row_title = paste0(sprintf('%.3f', proportions), "%"),
                 row_title_rot = 0,
                 row_title_gp = gpar(fontsize = 10),
                 row_order = row_order,
                 show_row_names = F,
-                #column_split = colnames(mat1[ ,1:(dim(tplpHap_quant)[2]-1)]),
+                #column_split = colnames(mat1[ ,1:(dim(tplpHapPar_quant)[2]-1)]),
                 #column_gap = unit(1.0, "mm"),
-                #column_title = rep("", length(colnames(mat1[ ,1:(dim(tplpHap_quant)[2]-1)]))),
+                #column_title = rep("", length(colnames(mat1[ ,1:(dim(tplpHapPar_quant)[2]-1)]))),
                 column_title = paste0(sample, " ONT (",
                                       prettyNum(dim(hapRecDF)[1],
                                                 big.mark = ",", trim = T),
@@ -1271,7 +1309,7 @@ htmp <- Heatmap(mat1[ ,1:(dim(tplpHap_quant)[2]-1)],
                                             ncol = 2, by_row = T),
                 raster_device = "CairoPNG"
                )
-pdf(paste0(plotDir, sample, "_ONT_recombo_heatmap_v201219.pdf"), height = 18, width = 10)
+pdf(paste0(plotDir, sample, "_ONT_recombo_heatmap_v100120.pdf"), height = 18, width = 10)
 draw(htmp,
      heatmap_legend_side = "bottom")
 dev.off()
