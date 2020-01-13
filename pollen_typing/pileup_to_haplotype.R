@@ -177,19 +177,19 @@ tplpHap <- tplpHap[grepl("A", tplpHap$hap) &
                    grepl("B", tplpHap$hap),]
 
 
-### YET TO BE DONE
-# Extract alignments with complete haplotypes
-# Identify haplotypes in the top 5th percentile,
-# determine corresponding proportions for these haplotypes,
-# and impute missing data for alignments with incomplete haplotypes
-# based on these proportions
-tplpHap_complete <- tplpHap[!grepl("-", tplpHap$hap),]
-tplpHap_complete_n <- tplpHap_complete %>%
-  group_by(hap) %>%
-  summarize(n())
-tplpHap_complete_n_quant <- tplpHap_complete_n %>%
-  filter(`n()` > quantile(`n()`, 0.95))
-### YET TO BE DONE
+#### YET TO BE DONE
+## Extract alignments with complete haplotypes
+## Identify haplotypes in the top 5th percentile,
+## determine corresponding proportions for these haplotypes,
+## and impute missing data for alignments with incomplete haplotypes
+## based on these proportions
+#tplpHap_complete <- tplpHap[!grepl("-", tplpHap$hap),]
+#tplpHap_complete_n <- tplpHap_complete %>%
+#  group_by(hap) %>%
+#  summarize(n())
+#tplpHap_complete_n_quant <- tplpHap_complete_n %>%
+#  filter(`n()` > quantile(`n()`, 0.95))
+#### YET TO BE DONE
 
 
 # Apply a haplotype imputation approach which

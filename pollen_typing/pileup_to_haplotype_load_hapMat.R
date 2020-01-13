@@ -296,36 +296,19 @@ tplpHapVar_notEndA_idx <- which(!grepl(pattern = "A$",
                                        x = tplpHapVar$hap))
 tplpHapVar_notStartB_notEndA_idx <- intersect(tplpHapVar_notStartB_idx,
                                               tplpHapVar_notEndA_idx)
-tplpHapVar <- tplpHapVar[c(tplpHapVar_BAAAB_idx,
-                           tplpHapVar_ABBBA_idx,
-                           tplpHapVar_notStartB_notEndA_idx),]
-
-# Replace each sequencing error (nonparental SNVs, nonparental indels, and missing base calls)
-# with a dash to enable potential replacement with parental alleles by imputation
-tplpHapPar <- tplpHapVar
-tplpHapPar[] <- lapply(tplpHapPar, function(x) as.character(gsub("X", "-", x)))
-tplpHapPar[] <- lapply(tplpHapPar, function(x) as.character(gsub("I", "-", x)))
-tplpHapPar[] <- lapply(tplpHapPar, function(x) as.character(gsub("N", "-", x)))
+tplpHapPar <- tplpHapVar[unique(c(tplpHapVar_BAAAB_idx,
+                                  tplpHapVar_ABBBA_idx,
+                                  tplpHapVar_notStartB_notEndA_idx)),]
 
 # Retain only rows that contain both parental haplotypes
 tplpHapPar <- tplpHapPar[grepl("A", tplpHapPar$hap) &
                          grepl("B", tplpHapPar$hap),]
 
-
-#### YET TO BE DONE
-## Extract alignments with complete haplotypes
-## Identify haplotypes in the top 5th percentile,
-## determine corresponding proportions for these haplotypes,
-## and impute missing data for alignments with incomplete haplotypes
-## based on these proportions
-#tplpHap_complete <- tplpHap[!grepl("-", tplpHap$hap),]
-#tplpHap_complete_n <- tplpHap_complete %>%
-#  group_by(hap) %>%
-#  summarize(n())
-#tplpHap_complete_n_quant <- tplpHap_complete_n %>%
-#  filter(`n()` > quantile(`n()`, 0.95))
-#### YET TO BE DONE
-
+# Replace each sequencing error (nonparental SNVs, nonparental indels, and missing base calls)
+# with a dash to enable potential replacement with parental alleles by imputation
+tplpHapPar[] <- lapply(tplpHapPar, function(x) as.character(gsub("X", "-", x)))
+tplpHapPar[] <- lapply(tplpHapPar, function(x) as.character(gsub("I", "-", x)))
+tplpHapPar[] <- lapply(tplpHapPar, function(x) as.character(gsub("N", "-", x)))
 
 # Apply a haplotype imputation approach which
 # is informed by haplotypes at flanking markers
@@ -616,12 +599,26 @@ hapRecDF <- data.frame()
 for(x in 1:(dim(tplpHapPar_quant)[1])) {
   hapRec <- NULL
   for(i in 1:(length(unlist(strsplit(tplpHapPar_quant$hap[x], split = "")))-1)) {
+    if( i == 1 &
+        paste0( unlist(strsplit(tplpHapPar_quant$hap[x], split = ""))[i] )
+        %in% c("B") ) {
+      hapRec <- c(hapRec, 1, 1)
+    } else {
+      hapRec <- c(hapRec, 0, 0)
+    }
     if( paste0( unlist(strsplit(tplpHapPar_quant$hap[x], split = ""))[i],
                 unlist(strsplit(tplpHapPar_quant$hap[x], split = ""))[i+1] )
         %in% c("AB", "BA") ) {
       hapRec <- c(hapRec, 1, 1)
     } else {
       hapRec <- c(hapRec, 0, 0)
+    }
+    if( i == (length(unlist(strsplit(tplpHapPar_quant$hap[x], split = "")))-1) &
+        paste0( unlist(strsplit(tplpHapPar_quant$hap[x], split = ""))[i+1] )
+        %in% c("A") ) {
+      hapRec <- c(hapRec, 1, 1)
+    } else {
+      hapRec <- c(hapRec, 0, 0) 
     }
   }
   hapRecDF <- rbind(hapRecDF, hapRec)
