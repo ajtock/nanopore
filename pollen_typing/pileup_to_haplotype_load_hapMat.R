@@ -575,66 +575,6 @@ while( sum(grepl(pattern = "-",
 tplpHapPar_group_n_quant_prop <- tplpHapPar_group_n_quant$`n()` /
                                  (sum(tplpHapPar_group_n_quant$`n()`))
 
-# Get inter-marker distances and midpoints
-#### NOTE CHANGE WIDTH DEFINED BY COLUMN NUMBER
-midpoints <- NULL
-widths <- NULL
-for(x in 1:(length(as.integer(colnames(tplpHapPar)[1:(dim(tplpHapPar)[2]-1)]))-1)) {
-  midpointx <- as.integer(colnames(tplpHapPar)[x]) +
-    round( ( as.integer(colnames(tplpHapPar)[x+1]) -
-             as.integer(colnames(tplpHapPar)[x]) ) / 2 )
-  midpoints <- c(midpoints, midpointx)
-  widthx <- ( as.integer(colnames(tplpHapPar)[x+1]) -
-              as.integer(colnames(tplpHapPar)[x]) ) + 1
-  widths <- c(widths, widthx)
-}
-widths <- as.vector(sapply(seq_along(widths), function(x) rep(widths[x], times = 2)))
-
-# Create a matrix of inter-marker recombination intervals, in which
-# 1 denotes an "A" to "B" or a "B" to "A" transition, and
-# 0 denotes no transition in parental allele from one marker to the next
-# Two "1"s or two "0"s are appended to represent two-marker interval
-tplpHapPar_quant <- tplpHapPar[tplpHapPar$hap %in% tplpHapPar_group_n_quant$hap,]
-hapRecDF <- data.frame()
-for(x in 1:(dim(tplpHapPar_quant)[1])) {
-  hapRec <- NULL
-  for(i in 1:(length(unlist(strsplit(tplpHapPar_quant$hap[x], split = "")))-1)) {
-    if( i == 1 &
-        paste0( unlist(strsplit(tplpHapPar_quant$hap[x], split = ""))[i] )
-        %in% c("B") ) {
-      hapRec <- c(hapRec, 1, 1)
-    } else {
-      hapRec <- c(hapRec, 0, 0)
-    }
-    if( paste0( unlist(strsplit(tplpHapPar_quant$hap[x], split = ""))[i],
-                unlist(strsplit(tplpHapPar_quant$hap[x], split = ""))[i+1] )
-        %in% c("AB", "BA") ) {
-      hapRec <- c(hapRec, 1, 1)
-    } else {
-      hapRec <- c(hapRec, 0, 0)
-    }
-    if( i == (length(unlist(strsplit(tplpHapPar_quant$hap[x], split = "")))-1) &
-        paste0( unlist(strsplit(tplpHapPar_quant$hap[x], split = ""))[i+1] )
-        %in% c("A") ) {
-      hapRec <- c(hapRec, 1, 1)
-    } else {
-      hapRec <- c(hapRec, 0, 0) 
-    }
-  }
-  hapRecDF <- rbind(hapRecDF, hapRec)
-}
-colnames(hapRecDF) <- sort(c(alleles$position[2:(length(alleles$position)-2)],
-                             alleles$position[3:(length(alleles$position)-1)]-1))
-
-# From the above complete recombination matrix:
-# extract alignments containing only crossovers
-hapRecDF_COs <- hapRecDF[rowSums(hapRecDF) == 2,]
-# extract alignments containing both crossovers and non-crossovers
-hapRecDF_NCOs <- hapRecDF[rowSums(hapRecDF) >= 4,]
-
-# Get haplotypes containing noncrossovers
-hap_NCOs <- unique(tplpHapPar_quant[which(rowSums(hapRecDF) >= 4),]$hap)
-
 
 # List all possible noncrossover patterns for each consecutive 3-marker combination
 #ABA_patterns <- c("BA\\w{12}", "ABA\\w{11}", "\\w{1}ABA\\w{10}", "\\w{2}ABA\\w{9}", "\\w{3}ABA\\w{8}",
@@ -656,8 +596,87 @@ ABA_patterns <- c(
                   "........ABA...",
                   ".........ABA..",
                   "..........ABA.",
-                  "...........ABA"
+                  "...........ABA",
+                  "BBA...........",
+                  "BBBA..........",
+                  "BBBBA.........",
+                  "BBBBBA........",
+                  "BBBBBBA.......",
+                  "BBBBBBBA......",
+                  "BBBBBBBBA.....",
+                  "BBBBBBBBBA....",
+                  "BBBBBBBBBBA...",
+                  "BBBBBBBBBBBA..",
+                  "BBBBBBBBBBBBA.",
+                  "BBBBBBBBBBBBBA",
+                  "ABBA..........",
+                  "ABBBA.........",
+                  "ABBBBA........",
+                  "ABBBBBA.......",
+                  "ABBBBBBA......",
+                  "ABBBBBBBA.....",
+                  "ABBBBBBBBA....",
+                  "ABBBBBBBBBA...",
+                  "ABBBBBBBBBBA..",
+                  "ABBBBBBBBBBBA.",
+                  "ABBBBBBBBBBBBA",
+                  ".ABBA.........",
+                  ".ABBBA........",
+                  ".ABBBBA.......",
+                  ".ABBBBBA......",
+                  ".ABBBBBBA.....",
+                  ".ABBBBBBBA....",
+                  ".ABBBBBBBBA...",
+                  ".ABBBBBBBBBA..",
+                  ".ABBBBBBBBBBA.",
+                  ".ABBBBBBBBBBBA",
+                  "..ABBA........",
+                  "..ABBBA.......",
+                  "..ABBBBA......",
+                  "..ABBBBBA.....",
+                  "..ABBBBBBA....",
+                  "..ABBBBBBBA...",
+                  "..ABBBBBBBBA..",
+                  "..ABBBBBBBBBA.",
+                  "..ABBBBBBBBBBA",
+                  "...ABBA.......",
+                  "...ABBBA......",
+                  "...ABBBBA.....",
+                  "...ABBBBBA....",
+                  "...ABBBBBBA...",
+                  "...ABBBBBBBA..",
+                  "...ABBBBBBBBA.",
+                  "...ABBBBBBBBBA",
+                  "....ABBA......",
+                  "....ABBBA.....",
+                  "....ABBBBA....",
+                  "....ABBBBBA...",
+                  "....ABBBBBBA..",
+                  "....ABBBBBBBA.",
+                  "....ABBBBBBBBA",
+                  ".....ABBA.....",
+                  ".....ABBBA....",
+                  ".....ABBBBA...",
+                  ".....ABBBBBA..",
+                  ".....ABBBBBBA.",
+                  ".....ABBBBBBBA",
+                  "......ABBA....",
+                  "......ABBBA...",
+                  "......ABBBBA..",
+                  "......ABBBBBA.",
+                  "......ABBBBBBA",
+                  ".......ABBA...",
+                  ".......ABBBA..",
+                  ".......ABBBBA.",
+                  ".......ABBBBBA",
+                  "........ABBA..",
+                  "........ABBBA.",
+                  "........ABBBBA",
+                  ".........ABBA.",
+                  ".........ABBBA",
+                  "..........ABBA"
                  )
+
 BAB_patterns <- c(
                   "BAB...........",
                   ".BAB..........",
@@ -671,7 +690,85 @@ BAB_patterns <- c(
                   ".........BAB..",
                   "..........BAB.",
                   "...........BAB",
-                  "............BA"
+                  "............BA",
+                  "BAAB..........",
+                  "BAAAB.........",
+                  "BAAAAB........",
+                  "BAAAAAB.......",
+                  "BAAAAAAB......",
+                  "BAAAAAAAB.....",
+                  "BAAAAAAAAB....",
+                  "BAAAAAAAAAB...",
+                  "BAAAAAAAAAAB..",
+                  "BAAAAAAAAAAAB.",
+                  "BAAAAAAAAAAAAB",
+                  ".BAAB.........",
+                  ".BAAAB........",
+                  ".BAAAAB.......",
+                  ".BAAAAAB......",
+                  ".BAAAAAAB.....",
+                  ".BAAAAAAAB....",
+                  ".BAAAAAAAAB...",
+                  ".BAAAAAAAAAB..",
+                  ".BAAAAAAAAAAB.",
+                  ".BAAAAAAAAAAAB",
+                  "..BAAB........",
+                  "..BAAAB.......",
+                  "..BAAAAB......",
+                  "..BAAAAAB.....",
+                  "..BAAAAAAB....",
+                  "..BAAAAAAAB...",
+                  "..BAAAAAAAAB..",
+                  "..BAAAAAAAAAB.",
+                  "..BAAAAAAAAAAB",
+                  "...BAAB.......",
+                  "...BAAAB......",
+                  "...BAAAAB.....",
+                  "...BAAAAAB....",
+                  "...BAAAAAAB...",
+                  "...BAAAAAAAB..",
+                  "...BAAAAAAAAB.",
+                  "...BAAAAAAAAAB",
+                  "....BAAB......",
+                  "....BAAAB.....",
+                  "....BAAAAB....",
+                  "....BAAAAAB...",
+                  "....BAAAAAAB..",
+                  "....BAAAAAAAB.",
+                  "....BAAAAAAAAB",
+                  ".....BAAB.....",
+                  ".....BAAAB....",
+                  ".....BAAAAB...",
+                  ".....BAAAAAB..",
+                  ".....BAAAAAAB.",
+                  ".....BAAAAAAAB",
+                  "......BAAB....",
+                  "......BAAAB...",
+                  "......BAAAAB..",
+                  "......BAAAAAB.",
+                  "......BAAAAAAB",
+                  ".......BAAB...",
+                  ".......BAAAB..",
+                  ".......BAAAAB.",
+                  ".......BAAAAAB",
+                  "........BAAB..",
+                  "........BAAAB.",
+                  "........BAAAAB",
+                  ".........BAAB.",
+                  ".........BAAAB",
+                  "..........BAAB",
+                  "..........BAAB",
+                  "...........BAA",
+                  ".........BAAAA",
+                  "........BAAAAA",
+		  ".......BAAAAAA",
+		  "......BAAAAAAA",
+		  ".....BAAAAAAAA",
+		  "....BAAAAAAAAA",
+		  "...BAAAAAAAAAA",
+		  "..BAAAAAAAAAAA",
+                  ".BAAAAAAAAAAAA",
+                  "BAAAAAAAAAAAAA"
                  )
 
 # Find matches to ABA_patterns NCO patterns
@@ -773,7 +870,7 @@ for(x in seq_along(ABAmat_list)) {
                                                  ncol = 4, by_row = T),
                      raster_device = "CairoPNG"
                     )
-  pdf(paste0(plotDir, sample, "_ONT_ABA_patterns_", ABA_patterns[x], "_matches_recombo_heatmap_v100120.pdf"), height = 18, width = 10)
+  pdf(paste0(plotDir, sample, "_ONT_ABA_patterns_", ABA_patterns[x], "_matches_recombo_heatmap_v140120.pdf"), height = 18, width = 10)
   draw(ABAhtmp,
        heatmap_legend_side = "bottom")
   dev.off()
@@ -878,7 +975,7 @@ for(x in seq_along(BABmat_list)) {
                                                  ncol = 4, by_row = T),
                      raster_device = "CairoPNG"
                     )
-  pdf(paste0(plotDir, sample, "_ONT_BAB_patterns_", BAB_patterns[x], "_matches_recombo_heatmap_v100120.pdf"), height = 18, width = 10)
+  pdf(paste0(plotDir, sample, "_ONT_BAB_patterns_", BAB_patterns[x], "_matches_recombo_heatmap_v140120.pdf"), height = 18, width = 10)
   draw(BABhtmp,
        heatmap_legend_side = "bottom")
   dev.off()
@@ -910,6 +1007,85 @@ for(x in seq_along(BAB_patterns[hap_match_BAB_patterns_ratios < threshold_ratio]
                                                                     x = tplpHapPar_group_n_quant$hap,
                                                                     perl = T)),]
 }
+
+# Get inter-marker distances and midpoints
+#### NOTE CHANGE WIDTH DEFINED BY COLUMN NUMBER
+#midpoints <- NULL
+#widths <- NULL
+#for(x in 1:(length(as.integer(colnames(tplpHapPar)[1:(dim(tplpHapPar)[2]-1)]))-1)) {
+#  midpointx <- as.integer(colnames(tplpHapPar)[x]) +
+#    round( ( as.integer(colnames(tplpHapPar)[x+1]) -
+#             as.integer(colnames(tplpHapPar)[x]) ) / 2 )
+#  midpoints <- c(midpoints, midpointx)
+#  widthx <- ( as.integer(colnames(tplpHapPar)[x+1]) -
+#              as.integer(colnames(tplpHapPar)[x]) ) + 1
+#  widths <- c(widths, widthx)
+#}
+#widths <- as.vector(sapply(seq_along(widths), function(x) rep(widths[x], times = 2)))
+
+# Get inter-marker distances and midpoints
+midpoints <- NULL
+widths <- NULL
+for(x in 1:(length(alleles$position)-1)) {
+  midpointx <- round( ( alleles$position[x] + alleles$position[x+1] ) / 2 )
+  midpoints <- c(midpoints, midpointx)
+  widthx <- ( alleles$position[x+1] - alleles$position[x] ) + 1
+  widths <- c(widths, widthx)
+}
+widths <- as.vector(sapply(seq_along(widths), function(x) rep(widths[x], times = 2)))
+
+# Create a matrix of inter-marker recombination intervals, in which
+# 1 denotes an "A" to "B" or a "B" to "A" transition, and
+# 0 denotes no transition in parental allele from one marker to the next
+# Two "1"s or two "0"s are appended to represent two-marker interval
+tplpHapPar_quant <- tplpHapPar[tplpHapPar$hap %in% tplpHapPar_group_n_quant$hap,]
+hapRecDF <- data.frame()
+for(x in 1:(dim(tplpHapPar_quant)[1])) {
+  hapRec <- NULL
+  for(i in 1:(length(unlist(strsplit(tplpHapPar_quant$hap[x], split = "")))-1)) {
+    # If a "B" (Ws-4) allele is at the leftmost marker not within the forward primer binding site,
+    # assign "c(1, 1)" to denote the transition from "A" (Col-0) at the leftmost marker within the forward primer binding site
+    if( i == 1 ) {
+      if( paste0( unlist(strsplit(tplpHapPar_quant$hap[x], split = ""))[i] )
+            %in% c("B") ) {
+        hapRec <- c(hapRec, 1, 1)
+      } else {
+        hapRec <- c(hapRec, 0, 0)
+      }
+    }
+    if( paste0( unlist(strsplit(tplpHapPar_quant$hap[x], split = ""))[i],
+                unlist(strsplit(tplpHapPar_quant$hap[x], split = ""))[i+1] )
+          %in% c("AB", "BA") ) {
+      hapRec <- c(hapRec, 1, 1)
+    } else {
+      hapRec <- c(hapRec, 0, 0)
+    }
+    # If an "A" (Col-0) allele is at the rightmost marker not within the reverse primer binding site,
+    # assign "c(1, 1)" to denote the transition from "B" (Ws-4) at the rightmost marker within the reverse primer binding site
+    if( i == (length(unlist(strsplit(tplpHapPar_quant$hap[x], split = "")))-1) ) {
+      if( paste0( unlist(strsplit(tplpHapPar_quant$hap[x], split = ""))[i+1] )
+            %in% c("A") ) {
+        hapRec <- c(hapRec, 1, 1)
+      } else {
+        hapRec <- c(hapRec, 0, 0) 
+      }
+    }
+  }
+  hapRecDF <- rbind(hapRecDF, hapRec)
+}
+colnames(hapRecDF) <- sort(c(alleles$position[1:(length(alleles$position)-1)],
+                             alleles$position[2:(length(alleles$position))]-1))
+#colnames(hapRecDF) <- sort(c(alleles$position[2:(length(alleles$position)-2)],
+#                             alleles$position[3:(length(alleles$position)-1)]-1))
+
+# From the above complete recombination matrix:
+# extract alignments containing only crossovers
+hapRecDF_COs <- hapRecDF[rowSums(hapRecDF) == 2,]
+# extract alignments containing both crossovers and non-crossovers
+hapRecDF_NCOs <- hapRecDF[rowSums(hapRecDF) >= 4,]
+
+# Get haplotypes containing noncrossovers
+hap_NCOs <- unique(tplpHapPar_quant[which(rowSums(hapRecDF) >= 4),]$hap)
 
 # Find matches to high-frequency apparent noncrossover haplotypes (allowing up to 1 mismatch),
 # including those containing nonparental variants (likely sequencing errors)
@@ -1021,7 +1197,7 @@ for(x in seq_along(NCOmat_list)) {
                                                  ncol = 2, by_row = T),
                      raster_device = "CairoPNG"
                     )
-  pdf(paste0(plotDir, sample, "_ONT_NCO_haplotype_", hap_NCOs[x], "_matches_recombo_heatmap_v080120.pdf"), height = 18, width = 10)
+  pdf(paste0(plotDir, sample, "_ONT_NCO_haplotype_", hap_NCOs[x], "_matches_recombo_heatmap_v140120.pdf"), height = 18, width = 10)
   draw(NCOhtmp,
        heatmap_legend_side = "bottom")
   dev.off()
@@ -1101,7 +1277,7 @@ rec_summary <- data.frame(window = as.integer(colnames(hapRecDF)),
                                                        (widths/1e6) ) * cMscale )
                          )
 write.table(rec_summary,
-            file = paste0(plotDir, sample, "_ONT_recombo_summary_v100120.tsv"),
+            file = paste0(plotDir, sample, "_ONT_recombo_summary_v140120.tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
 
 # Complete amplicon extends from 634089 (20 nt upstream of 634109)
@@ -1148,11 +1324,11 @@ ggObj_cMMb <- ggplot(data = cMMb_tidy,
             mapping = aes(colour = aln),
             size = 2) +
   scale_colour_manual(values = alnColours) +
-  scale_x_continuous(breaks = c(alleles$position[2:(length(alleles$position)-1)]),
-                     labels = c(as.character(alleles$position[2:(length(alleles$position)-1)]))) +
+  scale_x_continuous(breaks = c(alleles$position[1:(length(alleles$position))]),
+                     labels = c(as.character(alleles$position[1:(length(alleles$position))]))) +
   scale_y_continuous(limits = c(-50, 500),
                      labels = function(x) sprintf("%3.0f", as.numeric(x))) +
-  geom_vline(xintercept = c(alleles$position[2:(length(alleles$position)-1)]),
+  geom_vline(xintercept = c(alleles$position[1:(length(alleles$position))]),
              linetype = "dashed",
              size = 0.5) +
   # Add genes within 3a hotspot
@@ -1195,11 +1371,11 @@ ggObj_cM <- ggplot(data = cM_tidy,
             mapping = aes(colour = aln),
             size = 2) +
   scale_colour_manual(values = alnColours) +
-  scale_x_continuous(breaks = c(alleles$position[2:(length(alleles$position)-1)]),
-                     labels = c(as.character(alleles$position[2:(length(alleles$position)-1)]))) +
+  scale_x_continuous(breaks = c(alleles$position[1:(length(alleles$position))]),
+                     labels = c(as.character(alleles$position[1:(length(alleles$position))]))) +
   scale_y_continuous(limits = c(-0.6, 6.5),
 		     labels = function(x) sprintf("%1.1f", as.numeric(x))) +
-  geom_vline(xintercept = c(alleles$position[2:(length(alleles$position)-1)]),
+  geom_vline(xintercept = c(alleles$position[1:(length(alleles$position))]),
              linetype = "dashed",
              size = 0.5) +
   geom_segment(mapping = aes(x = 634653, y = -0.4,
@@ -1234,7 +1410,7 @@ ggObjGA_combined <- grid.arrange(ggObj_cMMb,
                                  ggObj_cM,
                                  nrow = 2, as.table = F)
                                                     
-ggsave(paste0(plotDir, sample, "_ONT_cMMb_cM_v100120.pdf"),
+ggsave(paste0(plotDir, sample, "_ONT_cMMb_cM_v140120.pdf"),
        plot = ggObjGA_combined,
        height = 6.5*2, width = 20, limitsize = F)
 
@@ -1307,7 +1483,7 @@ htmp <- Heatmap(mat1[ ,1:(dim(tplpHapPar_quant)[2]-1)],
                                             ncol = 2, by_row = T),
                 raster_device = "CairoPNG"
                )
-pdf(paste0(plotDir, sample, "_ONT_recombo_heatmap_v100120.pdf"), height = 18, width = 10)
+pdf(paste0(plotDir, sample, "_ONT_recombo_heatmap_v140120.pdf"), height = 18, width = 10)
 draw(htmp,
      heatmap_legend_side = "bottom")
 dev.off()
