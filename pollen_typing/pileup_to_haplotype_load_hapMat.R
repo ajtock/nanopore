@@ -196,10 +196,6 @@ rownames(alleles) <- 1:dim(alleles)[1]
 #    }
 #  }
 #}
-##write.table(plp2,
-##            file = paste0(hapMatDir, sample, "_ONT_pileup_alleles_errors.tsv"),
-##            quote = F, sep = "\t",
-##            row.names = F, col.names = T)
 ## Convert genotype naming convention into
 ## haplotype naming convention as we cannot derive
 ## each allele from single-molecule sequencing
@@ -214,6 +210,7 @@ rownames(alleles) <- 1:dim(alleles)[1]
 #            quote = F, sep = "\t",
 #            row.names = F, col.names = T)
 
+# Load haplotype matrix containing re-encoded parental and nonparental variants
 plpHapVar <- read.table(paste0(hapMatDir, sample, "_ONT_pileup_to_haplotype_incl_nonparental.tsv"),
                         header = T, sep = "\t",
                         stringsAsFactors = F)
@@ -221,6 +218,7 @@ colnames(plpHapVar) <- c("chr", "pos", "ref", "alt",
                          seq(1:(dim(plpHapVar)[2]-4)))
 integerColumns <- sapply(plpHapVar, is.integer)
 plpHapVar[integerColumns] <- lapply(plpHapVar[integerColumns], as.character)
+plp2 <- plpHapVar
 
 # Transpose haplotype matrix for sorting
 tplpHapVar <- data.frame(t(plpHapVar[,5:dim(plpHapVar)[2]]))
@@ -777,28 +775,52 @@ hap_match_ABA_patterns_ratios <- sapply(seq_along(ABA_patterns), function(x) {
 
 # Create matrices suitable for plotting as haplotype heat maps
 ABAmat_list <- lapply(seq_along(hap_match_ABA_patterns_list_df), function(x) {
-  ABAmatx <- matrix(unlist(strsplit(hap_match_ABA_patterns_list_df[[x]]$hap,
-                                    split = "")),
-                    ncol = dim(tplpHapVar)[2]-1,
-                    byrow = T)
-  ABAmatx <- cbind(ABAmatx,
-                   hap_match_ABA_patterns_list_df[[x]]$hap,
-                   hap_match_ABA_patterns_list_df[[x]]$freq)
-  colnames(ABAmatx) <- c(colnames(tplpHapVar)[-length(colnames(tplpHapVar))],
-                         "hap", "freq")
-  ABAmatx
+  if( !(!length(hap_match_ABA_patterns_list_df[[x]]$hap)) ) {
+    ABAmatx <- matrix(unlist(strsplit(hap_match_ABA_patterns_list_df[[x]]$hap,
+                                      split = "")),
+                      ncol = dim(tplpHapVar)[2]-1,
+                      byrow = T)
+    ABAmatx <- cbind(ABAmatx,
+                     hap_match_ABA_patterns_list_df[[x]]$hap,
+                     hap_match_ABA_patterns_list_df[[x]]$freq)
+    colnames(ABAmatx) <- c(colnames(tplpHapVar)[-length(colnames(tplpHapVar))],
+                           "hap", "freq")
+    ABAmatx
+  }
 })
+# Remove NULL elements from list of matrices
+names(ABAmat_list) <- seq_along(ABAmat_list)
+ABAmat_list[sapply(ABAmat_list, is.null)] <- NULL
+## Or using some higher-order convenience functions
+#ABAmat_list <- Filter(Negate(is.null), ABAmat_list)
 
-ABAmat_list_row_order <- lapply(seq_along(hap_match_ABA_patterns_list_df), function(x) {
-  1:dim(hap_match_ABA_patterns_list_df[[x]])[1]
-  #order(hap_match_ABA_patterns_list_df[[x]]$freq,
+ABAmat_list_patterns <- sapply(seq_along(ABAmat_list), function(x) {
+  data.frame(ABAmat_list[[x]], stringsAsFactors = F)$hap[1]
+})
+ABAmat_list_row_order <- lapply(seq_along(ABAmat_list), function(x) {
+  1:dim(ABAmat_list[[x]])[1]
+  #order(as.numeric(data.frame(ABAmat_list[[x]], stringsAsFactors = F)$freq),
   #      decreasing = T)
 })
-ABAmat_list_frequencies <- lapply(seq_along(hap_match_ABA_patterns_list_df), function(x) {
-  sapply(seq_along(unique(hap_match_ABA_patterns_list_df[[x]]$hap)), function(y) {
-    mean( hap_match_ABA_patterns_list_df[[x]][hap_match_ABA_patterns_list_df[[x]]$hap ==
-            unique(hap_match_ABA_patterns_list_df[[x]]$hap)[y],]$freq )
+ABAmat_list_frequencies <- lapply(seq_along(ABAmat_list), function(x) {
+  sapply(seq_along(unique(as.data.frame(ABAmat_list[[x]], stringsAsFactors = F)$hap)), function(y) {
+    mean( as.numeric(
+            data.frame(ABAmat_list[[x]], stringsAsFactors = F)[
+              data.frame(ABAmat_list[[x]], stringsAsFactors = F)$hap == 
+              unique( data.frame(ABAmat_list[[x]], stringsAsFactors = F)$hap )[y],
+            ]$freq
+          )
+    )
   })
+})
+ABAmat_list_ratios <- sapply(seq_along(ABAmat_list), function(x) {
+  if( !is.na(ABAmat_list_frequencies[[x]][1]) &
+      !is.na(ABAmat_list_frequencies[[x]][2]) ) {
+    ABAmat_list_frequencies[[x]][1] /
+    ABAmat_list_frequencies[[x]][2]
+  } else if ( is.na(ABAmat_list_frequencies[[x]][2]) ) {
+    ABAmat_list_frequencies[[x]][1] / 1
+  }
 })
 
 # Plot a haplotype heat map for matches to each noncrossover haplotype
@@ -808,8 +830,8 @@ for(x in 1:13) {
                      name = "Allele",
                      col = c("A" = "red", "B" = "blue",
                              "X" = "goldenrod1", "I" = "green2", "N" = "black", "." = "grey60"),
-                     row_split = factor(hap_match_ABA_patterns_list_df[[x]]$hap,
-                                        levels = unique(as.character(hap_match_ABA_patterns_list_df[[x]]$hap))),
+                     row_split = factor(data.frame(ABAmat_list[[x]], stringsAsFactors = F)$hap,
+                                        levels = unique(as.character(data.frame(ABAmat_list[[x]], stringsAsFactors = F)$hap))),
                      row_gap = unit(1.5, "mm"),
                      row_title = paste0(sprintf('%2.0f', ABAmat_list_frequencies[[x]])),
                      row_title_rot = 0,
@@ -819,9 +841,9 @@ for(x in 1:13) {
                      #column_split = colnames(mat1[ ,1:(dim(tplpHap_quant)[2]-1)]),
                      #column_gap = unit(1.0, "mm"),
                      #column_title = rep("", length(colnames(mat1[ ,1:(dim(tplpHap_quant)[2]-1)]))),
-                     column_title = paste0(ABA_patterns[x],
+                     column_title = paste0(ABAmat_list_patterns[x],
                                            " haplotype matches in ", sample, " ONT (ratio = ",
-                                           round(hap_match_ABA_patterns_ratios[x], digits = 2), ")"),
+                                           round(ABAmat_list_ratios[x], digits = 2), ")"),
                      column_title_gp = gpar(fontsize = 20, fontface = "bold"),
                      show_column_names = T,
                      column_names_side = "bottom",
@@ -839,11 +861,12 @@ for(x in 1:13) {
                                                  ncol = 4, by_row = T),
                      raster_device = "CairoPNG"
                     )
-  pdf(paste0(plotDir, sample, "_ONT_ABA_patterns_", ABA_patterns[x], "_matches_recombo_heatmap_v140120.pdf"), height = 18, width = 10)
+  pdf(paste0(plotDir, sample, "_ONT_ABA_patterns_", ABAmat_list_patterns[x], "_matches_recombo_heatmap_v140120.pdf"), height = 18, width = 10)
   draw(ABAhtmp,
        heatmap_legend_side = "bottom")
   dev.off()
 }
+
 
 # Find matches to BAB_patterns COGC patterns
 # including those containing likely sequencing errors (e.g., "BXB", "BIB")
@@ -883,7 +906,7 @@ hap_match_BAB_patterns_ratios <- sapply(seq_along(BAB_patterns), function(x) {
 
 # Create matrices suitable for plotting as haplotype heat maps
 BABmat_list <- lapply(seq_along(hap_match_BAB_patterns_list_df), function(x) {
-  if( !is.null(hap_match_BAB_patterns_list_df[[x]]$hap) ) {
+  if( !(!length(hap_match_BAB_patterns_list_df[[x]]$hap)) ) {
     BABmatx <- matrix(unlist(strsplit(hap_match_BAB_patterns_list_df[[x]]$hap,
                                       split = "")),
                       ncol = dim(tplpHapVar)[2]-1,
@@ -896,11 +919,15 @@ BABmat_list <- lapply(seq_along(hap_match_BAB_patterns_list_df), function(x) {
     BABmatx
   }
 })
+# Remove NULL elements from list of matrices
+names(BABmat_list) <- seq_along(BABmat_list)
+BABmat_list[sapply(BABmat_list, is.null)] <- NULL
+## Or using some higher-order convenience functions
+#BABmat_list <- Filter(Negate(is.null), BABmat_list)
 
 BABmat_list_patterns <- sapply(seq_along(BABmat_list), function(x) {
   data.frame(BABmat_list[[x]], stringsAsFactors = F)$hap[1]
 })
-
 BABmat_list_row_order <- lapply(seq_along(BABmat_list), function(x) {
   1:dim(BABmat_list[[x]])[1]
   #order(as.numeric(data.frame(BABmat_list[[x]], stringsAsFactors = F)$freq),
@@ -922,8 +949,6 @@ BABmat_list_ratios <- sapply(seq_along(BABmat_list), function(x) {
       !is.na(BABmat_list_frequencies[[x]][2]) ) {
     BABmat_list_frequencies[[x]][1] /
     BABmat_list_frequencies[[x]][2]
-  } else if ( is.na(BABmat_list_frequencies[[x]][1]) ) {
-    1 / 1
   } else if ( is.na(BABmat_list_frequencies[[x]][2]) ) {
     BABmat_list_frequencies[[x]][1] / 1
   }
