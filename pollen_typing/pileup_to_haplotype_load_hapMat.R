@@ -248,8 +248,8 @@ tplpHapVar[factorColumns] <- lapply(tplpHapVar[factorColumns], as.character)
 # that is not within the reverse primer binding site (Chr3:639,370),
 # UNLESS these haplotypes start and end with the same parental allele and they have
 # at least three intervening markers with the alternate parental allele.
-## Many of these apparent noncrossover haplotypes should be rejected due to
-## high sequencing error rates at the markers around which noncrossovers ostensibly occur
+## Many of these apparent COGC haplotypes should be rejected due to
+## high sequencing error rates at the markers around which COGCs ostensibly occur
 tplpHapVar_BAAAB_idx <- which(grepl(pattern = "^B\\w*A{1,}\\w*A{1,}\\w*A{1,}\\w*B$",
                                     x = tplpHapVar$hap,
                                     perl = T))
@@ -542,7 +542,7 @@ tplpHapPar_group_n_quant_prop <- tplpHapPar_group_n_quant$`n()` /
                                  (sum(tplpHapPar_group_n_quant$`n()`))
 
 
-# List all possible noncrossover patterns
+# List all possible COGC patterns
 #ABA_patterns <- c("BA\\w{12}", "ABA\\w{11}", "\\w{1}ABA\\w{10}", "\\w{2}ABA\\w{9}", "\\w{3}ABA\\w{8}",
 #                  "\\w{4}ABA\\w{7}", "\\w{5}ABA\\w{6}", "\\w{6}ABA\\w{5}", "\\w{7}ABA\\w{4}",
 #                  "\\w{8}ABA\\w{3}", "\\w{9}ABA\\w{2}", "\\w{10}ABA\\w{1}", "\\w{11}ABA")
@@ -766,12 +766,31 @@ hap_match_ABA_patterns_ratios <- sapply(seq_along(ABA_patterns), function(x) {
       !is.na(unique(hap_match_ABA_patterns_list_df[[x]]$freq)[2]) ) {
     unique(hap_match_ABA_patterns_list_df[[x]]$freq)[1] /
     unique(hap_match_ABA_patterns_list_df[[x]]$freq)[2]
-  } else if ( is.na(unique(hap_match_ABA_patterns_list_df[[x]]$freq)[1]) ) {
-    1 / (unique(hap_match_ABA_patterns_list_df[[x]]$freq)[2])
   } else if ( is.na(unique(hap_match_ABA_patterns_list_df[[x]]$freq)[2]) ) {
     (unique(hap_match_ABA_patterns_list_df[[x]]$freq)[1]) / 1
   }
 })
+# Where no matches to COGC patterns exist, replace NA ratio with 1
+# If not replaced, NA values will prevent removal of error-prone
+# high-frequency haplotypes
+hap_match_ABA_patterns_ratios[is.na(hap_match_ABA_patterns_ratios)] <- 1
+
+hap_match_ABA_patterns_frequencies <- sapply(seq_along(ABA_patterns), function(x) {
+    unique(hap_match_ABA_patterns_list_df[[x]]$freq)[1] 
+})
+hap_match_AXA_patterns_frequencies <- sapply(seq_along(ABA_patterns), function(x) {
+    unique(hap_match_ABA_patterns_list_df[[x]]$freq)[2] 
+})
+
+# Create and write dataframe of COGC patterns, frequencies and ratios 
+hap_match_ABA_patterns_df <- data.frame(pattern = ABA_patterns,
+                                        ABA_freq = hap_match_ABA_patterns_frequencies,
+					AXA_freq = hap_match_AXA_patterns_frequencies,
+                                        ratio = hap_match_ABA_patterns_ratios,
+                                        stringsAsFactors = F)
+write.table(hap_match_ABA_patterns_df,
+            file = paste0(plotDir, sample, "_ONT_ABAtoAXA_pattern_freq_ratios_v140120.tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
 
 # Create matrices suitable for plotting as haplotype heat maps
 ABAmat_list <- lapply(seq_along(hap_match_ABA_patterns_list_df), function(x) {
@@ -823,7 +842,7 @@ ABAmat_list_ratios <- sapply(seq_along(ABAmat_list), function(x) {
   }
 })
 
-# Plot a haplotype heat map for matches to each noncrossover haplotype
+# Plot a haplotype heat map for matches to each COGC haplotype
 #for(x in seq_along(ABAmat_list)) {
 for(x in 1:13) {
   ABAhtmp <- Heatmap(ABAmat_list[[x]][ ,1:(dim(tplpHapVar)[2]-1)],
@@ -897,12 +916,31 @@ hap_match_BAB_patterns_ratios <- sapply(seq_along(BAB_patterns), function(x) {
       !is.na(unique(hap_match_BAB_patterns_list_df[[x]]$freq)[2]) ) {
     unique(hap_match_BAB_patterns_list_df[[x]]$freq)[1] /
     unique(hap_match_BAB_patterns_list_df[[x]]$freq)[2]
-  } else if ( is.na(unique(hap_match_BAB_patterns_list_df[[x]]$freq)[1]) ) {
-    1 / (unique(hap_match_BAB_patterns_list_df[[x]]$freq)[2])
   } else if ( is.na(unique(hap_match_BAB_patterns_list_df[[x]]$freq)[2]) ) {
     (unique(hap_match_BAB_patterns_list_df[[x]]$freq)[1]) / 1
   }
 })
+# Where no matches to COGC patterns exist, replace NA ratio with 1
+# If not replaced, NA values will prevent removal of error-prone
+# high-frequency haplotypes
+hap_match_BAB_patterns_ratios[is.na(hap_match_BAB_patterns_ratios)] <- 1
+
+hap_match_BAB_patterns_frequencies <- sapply(seq_along(BAB_patterns), function(x) {
+    unique(hap_match_BAB_patterns_list_df[[x]]$freq)[1] 
+})
+hap_match_BXB_patterns_frequencies <- sapply(seq_along(BAB_patterns), function(x) {
+    unique(hap_match_BAB_patterns_list_df[[x]]$freq)[2] 
+})
+
+# Create and write dataframe of COGC patterns, frequencies and ratios 
+hap_match_BAB_patterns_df <- data.frame(pattern = BAB_patterns,
+                                        BAB_freq = hap_match_BAB_patterns_frequencies,
+					BXB_freq = hap_match_BXB_patterns_frequencies,
+                                        ratio = hap_match_BAB_patterns_ratios,
+                                        stringsAsFactors = F)
+write.table(hap_match_BAB_patterns_df,
+            file = paste0(plotDir, sample, "_ONT_BABtoBXB_pattern_freq_ratios_v140120.tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
 
 # Create matrices suitable for plotting as haplotype heat maps
 BABmat_list <- lapply(seq_along(hap_match_BAB_patterns_list_df), function(x) {
@@ -954,7 +992,7 @@ BABmat_list_ratios <- sapply(seq_along(BABmat_list), function(x) {
   }
 })
 
-# Plot a haplotype heat map for matches to each noncrossover haplotype
+# Plot a haplotype heat map for matches to each COGC haplotype
 #for(x in seq_along(BABmat_list)) {
 for(x in 1:13) {
   BABhtmp <- Heatmap(BABmat_list[[x]][ ,1:(dim(tplpHapVar)[2]-1)],
@@ -998,8 +1036,9 @@ for(x in 1:13) {
   dev.off()
 }
 
-# Remove high-frequency haplotypes that match error-prone noncrossover patterns
-threshold_ratio <- 2
+# Remove high-frequency haplotypes that match error-prone COGC patterns
+threshold_ratio <- 10
+tplpHapPar_group_n_quant_below_threshold <- NULL
 for(x in seq_along(ABA_patterns[hap_match_ABA_patterns_ratios < threshold_ratio])) {
   print(ABA_patterns[hap_match_ABA_patterns_ratios < threshold_ratio][x])
   print(which(grepl(pattern = ABA_patterns[hap_match_ABA_patterns_ratios < threshold_ratio][x],
@@ -1008,6 +1047,11 @@ for(x in seq_along(ABA_patterns[hap_match_ABA_patterns_ratios < threshold_ratio]
   print(tplpHapPar_group_n_quant[which(grepl(pattern = ABA_patterns[hap_match_ABA_patterns_ratios < threshold_ratio][x],
                                              x = tplpHapPar_group_n_quant$hap,
                                              perl = T)),])
+  tplpHapPar_group_n_quant_below_threshold_x <- tplpHapPar_group_n_quant[which(grepl(pattern = ABA_patterns[hap_match_ABA_patterns_ratios < threshold_ratio][x],
+                                                                                     x = tplpHapPar_group_n_quant$hap,
+                                                                                     perl = T)),]
+  tplpHapPar_group_n_quant_below_threshold <- rbind(tplpHapPar_group_n_quant_below_threshold,
+                                                    tplpHapPar_group_n_quant_below_threshold_x)
   tplpHapPar_group_n_quant <- tplpHapPar_group_n_quant[which(!grepl(pattern = ABA_patterns[hap_match_ABA_patterns_ratios < threshold_ratio][x],
                                                                     x = tplpHapPar_group_n_quant$hap,
                                                                     perl = T)),]
@@ -1020,10 +1064,21 @@ for(x in seq_along(BAB_patterns[hap_match_BAB_patterns_ratios < threshold_ratio]
   print(tplpHapPar_group_n_quant[which(grepl(pattern = BAB_patterns[hap_match_BAB_patterns_ratios < threshold_ratio][x],
                                              x = tplpHapPar_group_n_quant$hap,
                                              perl = T)),])
+  tplpHapPar_group_n_quant_below_threshold_x <- tplpHapPar_group_n_quant[which(grepl(pattern = BAB_patterns[hap_match_BAB_patterns_ratios < threshold_ratio][x],
+                                                                                     x = tplpHapPar_group_n_quant$hap,
+                                                                                     perl = T)),]
+  tplpHapPar_group_n_quant_below_threshold <- rbind(tplpHapPar_group_n_quant_below_threshold,
+                                                    tplpHapPar_group_n_quant_below_threshold_x)
   tplpHapPar_group_n_quant <- tplpHapPar_group_n_quant[which(!grepl(pattern = BAB_patterns[hap_match_BAB_patterns_ratios < threshold_ratio][x],
                                                                     x = tplpHapPar_group_n_quant$hap,
                                                                     perl = T)),]
 }
+colnames(tplpHapPar_group_n_quant_below_threshold) <- c("haplotype", "freq")
+write.table(tplpHapPar_group_n_quant_below_threshold,
+            file = paste0(plotDir, sample,
+                          "_ONT_removed_error_prone_high_freq_haplotypes_below_ABAtoAXA_or_BABtoBXB_threshold_ratio_of_",
+                          as.character(threshold_ratio), "_v140120.tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
 
 # Get inter-marker distances and midpoints
 #### NOTE CHANGE WIDTH DEFINED BY COLUMN NUMBER
@@ -1101,10 +1156,10 @@ hapRecDF_COs <- hapRecDF[rowSums(hapRecDF) == 2,]
 # extract alignments containing both crossovers and non-crossovers
 hapRecDF_COGCs <- hapRecDF[rowSums(hapRecDF) >= 4,]
 
-# Get haplotypes containing noncrossovers
+# Get haplotypes containing COGCs
 hap_COGCs <- unique(tplpHapPar_quant[which(rowSums(hapRecDF) >= 4),]$hap)
 
-# Find matches to high-frequency apparent noncrossover haplotypes (allowing up to 1 mismatch),
+# Find matches to high-frequency apparent COGC haplotypes (allowing up to 1 mismatch),
 # including those containing nonparental variants (likely sequencing errors)
 # Then get the frequency of occurrence of each of these matching haplotypes
 hap_match_hapCOGC_group_n_list <- lapply(seq_along(hap_COGCs), function(x) {
@@ -1115,13 +1170,13 @@ hap_match_hapCOGC_group_n_list <- lapply(seq_along(hap_COGCs), function(x) {
                                with.indels = F, fixed = T, algorithm = "auto")
   # Get the number of matches to hap_COGC[x] per subject element
   nmatch_per_hap <- elementNROWS(match_index)
-  # Get haplotypes matching the noncrossover haplotype
+  # Get haplotypes matching the COGC haplotype
   tplpHapVar_match_hapCOGCx <- tplpHapVar[which(nmatch_per_hap != 0),]
   # For each matching haplotype, count occurrences
   tplpHapVar_match_hapCOGCx_group_n <- tplpHapVar_match_hapCOGCx %>%
     group_by(hap) %>%
     summarize(n())
-  # Subset haplotypes to include only those that match the noncrossover haplotype exactly,
+  # Subset haplotypes to include only those that match the COGC haplotype exactly,
   # and those that contain either a nonparental SNV ("X"), a nonparental indel ("I"), or missing data ("N")
   tplpHapVar_match_hapCOGCx_group_n[tplpHapVar_match_hapCOGCx_group_n$hap %in% hap_COGCs[x] |
                                     grepl(pattern = "X", x = tplpHapVar_match_hapCOGCx_group_n$hap, fixed = T) |
@@ -1180,7 +1235,7 @@ COGCmat_list_frequencies <- lapply(seq_along(hap_match_hapCOGC_group_n_list_df),
   })
 })
 
-# Plot a haplotype heat map for matches to each noncrossover haplotype
+# Plot a haplotype heat map for matches to each COGC haplotype
 for(x in seq_along(COGCmat_list)) {
   COGChtmp <- Heatmap(COGCmat_list[[x]][ ,1:(dim(tplpHapVar)[2]-1)],
                      name = "Allele",
@@ -1238,16 +1293,15 @@ for(x in seq_along(COGCmat_list)) {
 #                     N = marker_N/marker_total)
 #  af <- rbind(af, af_x)
 #}
-
-# Remove markers within allele-specific primer binding sites
-af <- af[c(-1, -dim(af)[1]), ]
-af_tidy <- gather(data = af,
-                  key = allele,
-                  value = af,
-                  -marker)
-af_tidy$allele <- factor(af_tidy$allele,
-                         levels = unique(af_tidy$allele))
-
+#
+## Remove markers within allele-specific primer binding sites
+#af <- af[c(-1, -dim(af)[1]), ]
+#af_tidy <- gather(data = af,
+#                  key = allele,
+#                  value = af,
+#                  -marker)
+#af_tidy$allele <- factor(af_tidy$allele,
+#                         levels = unique(af_tidy$allele))
 
 
 # For each recombination matrix (complete and subsetted),
