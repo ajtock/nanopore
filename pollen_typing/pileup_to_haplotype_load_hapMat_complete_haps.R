@@ -282,15 +282,14 @@ tplpHapPar_complete <- tplpHapPar[!grepl("-", tplpHapPar$hap),]
 tplpHapPar_group_n <- tplpHapPar_complete %>%
   group_by(hap) %>%
   summarize(n())
-# Extract the top 1% of complete haplotypes in terms
+# Extract the top 5% of complete haplotypes in terms
 # of frequency of occurrence
 tplpHapPar_group_n_quant <- tplpHapPar_group_n %>%
-  filter(`n()` > quantile(`n()`, 0.99))
+  filter(`n()` > quantile(`n()`, 0.95))
 
 # Convert haplotype frequencies into proportions
 tplpHapPar_group_n_quant_prop <- tplpHapPar_group_n_quant$`n()` /
                                  (sum(tplpHapPar_group_n_quant$`n()`))
-
 
 # List all possible COGC patterns
 #ABA_patterns <- c("BA\\w{12}", "ABA\\w{11}", "\\w{1}ABA\\w{10}", "\\w{2}ABA\\w{9}", "\\w{3}ABA\\w{8}",
