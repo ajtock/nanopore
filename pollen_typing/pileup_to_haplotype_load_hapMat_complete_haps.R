@@ -28,6 +28,7 @@ loadfonts()
 library(ComplexHeatmap)
 library(Cairo)
 library(png)
+library(Biostrings)
 library(parallel)
 library(doParallel)
 registerDoParallel(cores = detectCores())
@@ -150,65 +151,707 @@ rownames(alleles) <- 1:dim(alleles)[1]
 #            quote = F, sep = "\t",
 #            row.names = F, col.names = T)
 
-plpHap <- read.table(paste0(hapMatDir, sample, "_ONT_pileup_to_haplotype.tsv"),
-                      header = T, sep = "\t",
-                      stringsAsFactors = F)
-colnames(plpHap) <- c("chr", "pos", "ref", "alt",
-                       seq(1:(dim(plpHap)[2]-4)))
-integerColumns <- sapply(plpHap, is.integer)
-plpHap[integerColumns] <- lapply(plpHap[integerColumns], as.character)
+
+
+
+## Load truncated pileup matrix containing variants
+#plp2 <- read.table(paste0(hapMatDir, sample, "_ONT_pileup_alleles.tsv"),
+#                   header = T, sep = "\t",
+#                   stringsAsFactors = F)
+#colnames(plp2) <- c("chr", "pos", "ref", "alt",
+#                    seq(1:(dim(plp2)[2]-4)))
+#
+## Re-encode haplotypes using genotype naming convention
+## to avoid incorrect encoding of adenosine bases;
+## Col-0 as "AA", Ws-4 as "BB", etc.
+#for(x in 1:(dim(plp2)[1])) {
+#  for(y in 5:(dim(plp2)[2])) {
+#    print(paste0("Marker ", x, " of ", dim(plp2)[1],
+#                 ": Alignment ", y-4, " of ", dim(plp2)[2]-4))
+#    if( plp2[x,y] %in% c(".", ",", "^].", "^],", ".$", ",$") ) {
+#      plp2[x,y] <- "AA"
+#    } else if( plp2[x,y] %in% c(plp2[x,4],
+#                                tolower(plp2[x,4]),
+#                                paste0("^]", plp2[x,4]),
+#                                paste0("^]", tolower(plp2[x,4])),
+#                                paste0(plp2[x,4], "$"),
+#                                paste0(tolower(plp2[x,4]), "$")) ) {
+#      plp2[x,y] <- "BB"
+#    } else if( grepl(pattern = plp2[x,4],
+#                     x = plp2[x,y],
+#                     ignore.case = T,
+#                     perl = T) ) {
+#      plp2[x,y] <- "BB"
+#    } else if( plp2[x,y] %in% c("A", "C", "G", "T",
+#                                "a", "c", "g", "t",
+#                                "^]A", "^]C", "^]G", "^]T",
+#                                "^]a", "^]c", "^]g", "^]t",
+#                                "A$", "C$", "G$", "T$",
+#                                "a$", "c$", "g$", "t$") ) {
+#      plp2[x,y] <- "XX"
+#    } else if( plp2[x,y] %in% c("*", "^]*", "*$") ) {
+#      plp2[x,y] <- "NN"
+#    } else {
+#      plp2[x,y] <- "ID"
+#    }
+#  }
+#}
+## Convert genotype naming convention into
+## haplotype naming convention as we cannot derive
+## each allele from single-molecule sequencing
+#plp2[] <- lapply(plp2, function(x) as.character(gsub("AA", "A", x)))
+#plp2[] <- lapply(plp2, function(x) as.character(gsub("BB", "B", x)))
+#plp2[] <- lapply(plp2, function(x) as.character(gsub("XX", "X", x)))
+#plp2[] <- lapply(plp2, function(x) as.character(gsub("ID", "I", x)))
+#plp2[] <- lapply(plp2, function(x) as.character(gsub("NN", "N", x)))
+#plpHapVar <- plp2
+#write.table(plpHapVar,
+#            file = paste0(hapMatDir, sample, "_ONT_pileup_to_haplotype_incl_nonparental.tsv"),
+#            quote = F, sep = "\t",
+#            row.names = F, col.names = T)
+
+# Load haplotype matrix containing re-encoded parental and nonparental variants
+plpHapVar <- read.table(paste0(hapMatDir, sample, "_ONT_pileup_to_haplotype_incl_nonparental.tsv"),
+                        header = T, sep = "\t",
+                        stringsAsFactors = F)
+colnames(plpHapVar) <- c("chr", "pos", "ref", "alt",
+                         seq(1:(dim(plpHapVar)[2]-4)))
+integerColumns <- sapply(plpHapVar, is.integer)
+plpHapVar[integerColumns] <- lapply(plpHapVar[integerColumns], as.character)
+plp2 <- plpHapVar
 
 # Transpose haplotype matrix for sorting
-tplpHap <- data.frame(t(plpHap[,5:dim(plpHap)[2]]))
-colnames(tplpHap) <- as.integer(plpHap$pos)
+tplpHapVar <- data.frame(t(plpHapVar[,5:dim(plpHapVar)[2]]))
+colnames(tplpHapVar) <- as.integer(plpHapVar$pos)
 
 # As the first (leftmost) and last (rightmost) markers are
 # within the primer binding sites and may be artificially converted
 # into an allele within the allele-specific primer, strip these markers
-# (first and last columns) from tplpHap
-tplpHap <- tplpHap[,2:(dim(tplpHap)[2]-1)]
+# (first and last columns) from tplpHapVar
+tplpHapVar <- tplpHapVar[,2:(dim(tplpHapVar)[2]-1)]
 
 # Add column representing haplotypes as character strings
-stringHap <- sapply(1:(dim(tplpHap)[1]), function(x) {
-  paste0(as.character(as.matrix(tplpHap[x,])), collapse = "")
+stringHapVar <- sapply(1:(dim(tplpHapVar)[1]), function(x) {
+  paste0(as.character(as.matrix(tplpHapVar[x,])), collapse = "")
 })
-tplpHap <- data.frame(tplpHap,
-                      hap = stringHap)
-colnames(tplpHap) <- c(as.integer(plpHap$pos[2:(length(plpHap$pos)-1)]),
-                       "hap")
+tplpHapVar <- data.frame(tplpHapVar,
+                         hap = stringHapVar)
+colnames(tplpHapVar) <- c(as.integer(plpHapVar$pos[2:(length(plpHapVar$pos)-1)]),
+                          "hap")
 # Replace factors with characters
-factorColumns <- sapply(tplpHap, is.factor)
-tplpHap[factorColumns] <- lapply(tplpHap[factorColumns], as.character)
+factorColumns <- sapply(tplpHapVar, is.factor)
+tplpHapVar[factorColumns] <- lapply(tplpHapVar[factorColumns], as.character)
+
+# Discard any haplotypes that have the Ws-4 ("B") allele at the leftmost marker
+# that is not within the forward primer binding site (Chr3:634,938),
+# and any haplotypes that have the Col-0 ("A") allele at the rightmost marker
+# that is not within the reverse primer binding site (Chr3:639,370),
+# UNLESS these haplotypes start and end with the same parental allele and they have
+# at least three intervening markers with the alternate parental allele.
+## Many of these apparent COGC haplotypes should be rejected due to
+## high sequencing error rates at the markers around which COGCs ostensibly occur
+tplpHapVar_BAAAB_idx <- which(grepl(pattern = "^B\\w*A{1,}\\w*A{1,}\\w*A{1,}\\w*B$",
+                                    x = tplpHapVar$hap,
+                                    perl = T))
+tplpHapVar_ABBBA_idx <- which(grepl(pattern = "^A\\w*B{1,}\\w*B{1,}\\w*B{1,}\\w*A$",
+                                    x = tplpHapVar$hap,
+                                    perl = T))
+tplpHapVar_notStartB_idx <- which(!grepl(pattern = "^B",
+                                         x = tplpHapVar$hap))
+tplpHapVar_notEndA_idx <- which(!grepl(pattern = "A$",
+                                       x = tplpHapVar$hap))
+tplpHapVar_notStartB_notEndA_idx <- intersect(tplpHapVar_notStartB_idx,
+                                              tplpHapVar_notEndA_idx)
+tplpHapPar <- tplpHapVar[unique(c(tplpHapVar_BAAAB_idx,
+                                  tplpHapVar_ABBBA_idx,
+                                  tplpHapVar_notStartB_notEndA_idx)),]
 
 # Retain only rows that contain both parental haplotypes
-tplpHap <- tplpHap[grepl("A", tplpHap$hap) &
-                   grepl("B", tplpHap$hap),]
+tplpHapPar <- tplpHapPar[grepl("A", tplpHapPar$hap) &
+                         grepl("B", tplpHapPar$hap),]
+
+# Replace each sequencing error (nonparental SNVs, nonparental indels, and missing base calls)
+# with a dash to enable potential replacement with parental alleles by imputation
+tplpHapPar[] <- lapply(tplpHapPar, function(x) as.character(gsub("X", "-", x)))
+tplpHapPar[] <- lapply(tplpHapPar, function(x) as.character(gsub("I", "-", x)))
+tplpHapPar[] <- lapply(tplpHapPar, function(x) as.character(gsub("N", "-", x)))
 
 # Extract alignments with complete haplotypes
-# Extract the top 5% of complete haplotypes
-# in terms of frequency of occurrence
-tplpHap_complete <- tplpHap[!grepl("-", tplpHap$hap),]
-tplpHap_complete_n <- tplpHap_complete %>%
+tplpHapPar_complete <- tplpHapPar[!grepl("-", tplpHapPar$hap),]
+# Group by  haplotypes
+tplpHapPar_group_n <- tplpHapPar_complete %>%
   group_by(hap) %>%
   summarize(n())
-tplpHap_complete_n_quant <- tplpHap_complete_n %>%
-  filter(`n()` > quantile(`n()`, 0.95))
+# Extract the top 1% of complete haplotypes in terms
+# of frequency of occurrence
+tplpHapPar_group_n_quant <- tplpHapPar_group_n %>%
+  filter(`n()` > quantile(`n()`, 0.99))
 
 # Convert haplotype frequencies into proportions
-tplpHap_complete_n_quant_prop <- tplpHap_complete_n_quant$`n()` /
-                                 (sum(tplpHap_complete_n_quant$`n()`))
+tplpHapPar_group_n_quant_prop <- tplpHapPar_group_n_quant$`n()` /
+                                 (sum(tplpHapPar_group_n_quant$`n()`))
+
+
+# List all possible COGC patterns
+#ABA_patterns <- c("BA\\w{12}", "ABA\\w{11}", "\\w{1}ABA\\w{10}", "\\w{2}ABA\\w{9}", "\\w{3}ABA\\w{8}",
+#                  "\\w{4}ABA\\w{7}", "\\w{5}ABA\\w{6}", "\\w{6}ABA\\w{5}", "\\w{7}ABA\\w{4}",
+#                  "\\w{8}ABA\\w{3}", "\\w{9}ABA\\w{2}", "\\w{10}ABA\\w{1}", "\\w{11}ABA")
+#BAB_patterns <- c("BAB\\w{11}", "\\w{1}BAB\\w{10}", "\\w{2}BAB\\w{9}", "\\w{3}BAB\\w{8}",
+#                  "\\w{4}BAB\\w{7}", "\\w{5}BAB\\w{6}", "\\w{6}BAB\\w{5}", "\\w{7}BAB\\w{4}",
+#                  "\\w{8}BAB\\w{3}", "\\w{9}BAB\\w{2}", "\\w{10}BAB\\w{1}", "\\w{11}BAB", "\\w{12}BA")
+ABA_patterns <- c(
+                  "BA............",
+                  "ABA...........",
+                  ".ABA..........",
+                  "..ABA.........",
+                  "...ABA........",
+                  "....ABA.......",
+                  ".....ABA......",
+                  "......ABA.....",
+                  ".......ABA....",
+                  "........ABA...",
+                  ".........ABA..",
+                  "..........ABA.",
+                  "...........ABA",
+                  "BBA...........",
+                  "BBBA..........",
+                  "BBBBA.........",
+                  "BBBBBA........",
+                  "BBBBBBA.......",
+                  "BBBBBBBA......",
+                  "BBBBBBBBA.....",
+                  "BBBBBBBBBA....",
+                  "BBBBBBBBBBA...",
+                  "BBBBBBBBBBBA..",
+                  "BBBBBBBBBBBBA.",
+                  "BBBBBBBBBBBBBA",
+                  "ABBA..........",
+                  "ABBBA.........",
+                  "ABBBBA........",
+                  "ABBBBBA.......",
+                  "ABBBBBBA......",
+                  "ABBBBBBBA.....",
+                  "ABBBBBBBBA....",
+                  "ABBBBBBBBBA...",
+                  "ABBBBBBBBBBA..",
+                  "ABBBBBBBBBBBA.",
+                  "ABBBBBBBBBBBBA",
+                  ".ABBA.........",
+                  ".ABBBA........",
+                  ".ABBBBA.......",
+                  ".ABBBBBA......",
+                  ".ABBBBBBA.....",
+                  ".ABBBBBBBA....",
+                  ".ABBBBBBBBA...",
+                  ".ABBBBBBBBBA..",
+                  ".ABBBBBBBBBBA.",
+                  ".ABBBBBBBBBBBA",
+                  "..ABBA........",
+                  "..ABBBA.......",
+                  "..ABBBBA......",
+                  "..ABBBBBA.....",
+                  "..ABBBBBBA....",
+                  "..ABBBBBBBA...",
+                  "..ABBBBBBBBA..",
+                  "..ABBBBBBBBBA.",
+                  "..ABBBBBBBBBBA",
+                  "...ABBA.......",
+                  "...ABBBA......",
+                  "...ABBBBA.....",
+                  "...ABBBBBA....",
+                  "...ABBBBBBA...",
+                  "...ABBBBBBBA..",
+                  "...ABBBBBBBBA.",
+                  "...ABBBBBBBBBA",
+                  "....ABBA......",
+                  "....ABBBA.....",
+                  "....ABBBBA....",
+                  "....ABBBBBA...",
+                  "....ABBBBBBA..",
+                  "....ABBBBBBBA.",
+                  "....ABBBBBBBBA",
+                  ".....ABBA.....",
+                  ".....ABBBA....",
+                  ".....ABBBBA...",
+                  ".....ABBBBBA..",
+                  ".....ABBBBBBA.",
+                  ".....ABBBBBBBA",
+                  "......ABBA....",
+                  "......ABBBA...",
+                  "......ABBBBA..",
+                  "......ABBBBBA.",
+                  "......ABBBBBBA",
+                  ".......ABBA...",
+                  ".......ABBBA..",
+                  ".......ABBBBA.",
+                  ".......ABBBBBA",
+                  "........ABBA..",
+                  "........ABBBA.",
+                  "........ABBBBA",
+                  ".........ABBA.",
+                  ".........ABBBA",
+                  "..........ABBA"
+                 )
+
+BAB_patterns <- c(
+                  "BAB...........",
+                  ".BAB..........",
+                  "..BAB.........",
+                  "...BAB........",
+                  "....BAB.......",
+                  ".....BAB......",
+                  "......BAB.....",
+                  ".......BAB....",
+                  "........BAB...",
+                  ".........BAB..",
+                  "..........BAB.",
+                  "...........BAB",
+                  "............BA",
+                  "BAAB..........",
+                  "BAAAB.........",
+                  "BAAAAB........",
+                  "BAAAAAB.......",
+                  "BAAAAAAB......",
+                  "BAAAAAAAB.....",
+                  "BAAAAAAAAB....",
+                  "BAAAAAAAAAB...",
+                  "BAAAAAAAAAAB..",
+                  "BAAAAAAAAAAAB.",
+                  "BAAAAAAAAAAAAB",
+                  ".BAAB.........",
+                  ".BAAAB........",
+                  ".BAAAAB.......",
+                  ".BAAAAAB......",
+                  ".BAAAAAAB.....",
+                  ".BAAAAAAAB....",
+                  ".BAAAAAAAAB...",
+                  ".BAAAAAAAAAB..",
+                  ".BAAAAAAAAAAB.",
+                  ".BAAAAAAAAAAAB",
+                  "..BAAB........",
+                  "..BAAAB.......",
+                  "..BAAAAB......",
+                  "..BAAAAAB.....",
+                  "..BAAAAAAB....",
+                  "..BAAAAAAAB...",
+                  "..BAAAAAAAAB..",
+                  "..BAAAAAAAAAB.",
+                  "..BAAAAAAAAAAB",
+                  "...BAAB.......",
+                  "...BAAAB......",
+                  "...BAAAAB.....",
+                  "...BAAAAAB....",
+                  "...BAAAAAAB...",
+                  "...BAAAAAAAB..",
+                  "...BAAAAAAAAB.",
+                  "...BAAAAAAAAAB",
+                  "....BAAB......",
+                  "....BAAAB.....",
+                  "....BAAAAB....",
+                  "....BAAAAAB...",
+                  "....BAAAAAAB..",
+                  "....BAAAAAAAB.",
+                  "....BAAAAAAAAB",
+                  ".....BAAB.....",
+                  ".....BAAAB....",
+                  ".....BAAAAB...",
+                  ".....BAAAAAB..",
+                  ".....BAAAAAAB.",
+                  ".....BAAAAAAAB",
+                  "......BAAB....",
+                  "......BAAAB...",
+                  "......BAAAAB..",
+                  "......BAAAAAB.",
+                  "......BAAAAAAB",
+                  ".......BAAB...",
+                  ".......BAAAB..",
+                  ".......BAAAAB.",
+                  ".......BAAAAAB",
+                  "........BAAB..",
+                  "........BAAAB.",
+                  "........BAAAAB",
+                  ".........BAAB.",
+                  ".........BAAAB",
+                  "..........BAAB",
+                  "...........BAA",
+                  "..........BAAA",
+                  ".........BAAAA",
+                  "........BAAAAA",
+		  ".......BAAAAAA",
+		  "......BAAAAAAA",
+		  ".....BAAAAAAAA",
+		  "....BAAAAAAAAA",
+		  "...BAAAAAAAAAA",
+		  "..BAAAAAAAAAAA",
+                  ".BAAAAAAAAAAAA",
+                  "BAAAAAAAAAAAAA"
+                 )
+
+# Find matches to ABA_patterns COGC patterns
+# including those containing likely sequencing errors (e.g., "AXA")
+hap_match_ABA_patterns_list_df <- lapply(seq_along(ABA_patterns), function(x) {
+  tplpHapVar_ABA <- tplpHapVar[grepl(pattern = ABA_patterns[x],
+                                     x = tplpHapVar$hap),]
+  tplpHapVar_AXA <- tplpHapVar[grepl(pattern = gsub(pattern = "B",
+                                                    replacement = "X",
+                                                    x = ABA_patterns[x]), 
+                                     x = tplpHapVar$hap),]
+  dfx <- bind_rows(list(
+    data.frame(hap = as.character(rep(ABA_patterns[x],
+                                      dim(tplpHapVar_ABA)[1])),
+               freq = as.numeric(rep(dim(tplpHapVar_ABA)[1],
+                                     dim(tplpHapVar_ABA)[1])),
+               stringsAsFactors = F),
+    data.frame(hap = as.character(rep(gsub(pattern = "B",
+                                           replacement = "X",
+                                           x = ABA_patterns[x]),
+                                      dim(tplpHapVar_AXA)[1])),
+               freq = as.numeric(rep(dim(tplpHapVar_AXA)[1],
+                                     dim(tplpHapVar_AXA)[1])),
+               stringsAsFactors = F)
+  ), .id = "hapNo")
+})
+hap_match_ABA_patterns_ratios <- sapply(seq_along(ABA_patterns), function(x) {
+  if( !is.na(unique(hap_match_ABA_patterns_list_df[[x]]$freq)[1]) &
+      !is.na(unique(hap_match_ABA_patterns_list_df[[x]]$freq)[2]) ) {
+    unique(hap_match_ABA_patterns_list_df[[x]]$freq)[1] /
+    unique(hap_match_ABA_patterns_list_df[[x]]$freq)[2]
+  } else if ( is.na(unique(hap_match_ABA_patterns_list_df[[x]]$freq)[2]) ) {
+    (unique(hap_match_ABA_patterns_list_df[[x]]$freq)[1]) / 1
+  }
+})
+# Where no matches to COGC patterns exist, replace NA ratio with 1
+# If not replaced, NA values will prevent removal of error-prone
+# high-frequency haplotypes
+hap_match_ABA_patterns_ratios[is.na(hap_match_ABA_patterns_ratios)] <- 1
+
+hap_match_ABA_patterns_frequencies <- sapply(seq_along(ABA_patterns), function(x) {
+    unique(hap_match_ABA_patterns_list_df[[x]]$freq)[1] 
+})
+hap_match_AXA_patterns_frequencies <- sapply(seq_along(ABA_patterns), function(x) {
+    unique(hap_match_ABA_patterns_list_df[[x]]$freq)[2] 
+})
+
+# Create and write dataframe of COGC patterns, frequencies and ratios 
+hap_match_ABA_patterns_df <- data.frame(pattern = ABA_patterns,
+                                        ABA_freq = hap_match_ABA_patterns_frequencies,
+					AXA_freq = hap_match_AXA_patterns_frequencies,
+                                        ratio = hap_match_ABA_patterns_ratios,
+                                        stringsAsFactors = F)
+write.table(hap_match_ABA_patterns_df,
+            file = paste0(plotDir, sample, "_ONT_ABAtoAXA_pattern_freq_ratios_v140120.tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+
+# Create matrices suitable for plotting as haplotype heat maps
+ABAmat_list <- lapply(seq_along(hap_match_ABA_patterns_list_df), function(x) {
+  if( !(!length(hap_match_ABA_patterns_list_df[[x]]$hap)) ) {
+    ABAmatx <- matrix(unlist(strsplit(hap_match_ABA_patterns_list_df[[x]]$hap,
+                                      split = "")),
+                      ncol = dim(tplpHapVar)[2]-1,
+                      byrow = T)
+    ABAmatx <- cbind(ABAmatx,
+                     hap_match_ABA_patterns_list_df[[x]]$hap,
+                     hap_match_ABA_patterns_list_df[[x]]$freq)
+    colnames(ABAmatx) <- c(colnames(tplpHapVar)[-length(colnames(tplpHapVar))],
+                           "hap", "freq")
+    ABAmatx
+  }
+})
+# Remove NULL elements from list of matrices
+names(ABAmat_list) <- seq_along(ABAmat_list)
+ABAmat_list[sapply(ABAmat_list, is.null)] <- NULL
+## Or using some higher-order convenience functions
+#ABAmat_list <- Filter(Negate(is.null), ABAmat_list)
+
+ABAmat_list_patterns <- sapply(seq_along(ABAmat_list), function(x) {
+  data.frame(ABAmat_list[[x]], stringsAsFactors = F)$hap[1]
+})
+ABAmat_list_row_order <- lapply(seq_along(ABAmat_list), function(x) {
+  1:dim(ABAmat_list[[x]])[1]
+  #order(as.numeric(data.frame(ABAmat_list[[x]], stringsAsFactors = F)$freq),
+  #      decreasing = T)
+})
+ABAmat_list_frequencies <- lapply(seq_along(ABAmat_list), function(x) {
+  sapply(seq_along(unique(as.data.frame(ABAmat_list[[x]], stringsAsFactors = F)$hap)), function(y) {
+    mean( as.numeric(
+            data.frame(ABAmat_list[[x]], stringsAsFactors = F)[
+              data.frame(ABAmat_list[[x]], stringsAsFactors = F)$hap == 
+              unique( data.frame(ABAmat_list[[x]], stringsAsFactors = F)$hap )[y],
+            ]$freq
+          )
+    )
+  })
+})
+ABAmat_list_ratios <- sapply(seq_along(ABAmat_list), function(x) {
+  if( !is.na(ABAmat_list_frequencies[[x]][1]) &
+      !is.na(ABAmat_list_frequencies[[x]][2]) ) {
+    ABAmat_list_frequencies[[x]][1] /
+    ABAmat_list_frequencies[[x]][2]
+  } else if ( is.na(ABAmat_list_frequencies[[x]][2]) ) {
+    ABAmat_list_frequencies[[x]][1] / 1
+  }
+})
+
+# Plot a haplotype heat map for matches to each COGC haplotype
+#for(x in seq_along(ABAmat_list)) {
+for(x in 1:13) {
+  ABAhtmp <- Heatmap(ABAmat_list[[x]][ ,1:(dim(tplpHapVar)[2]-1)],
+                     name = "Allele",
+                     col = c("A" = "red", "B" = "blue",
+                             "X" = "goldenrod1", "I" = "green2", "N" = "black", "." = "grey60"),
+                     row_split = factor(data.frame(ABAmat_list[[x]], stringsAsFactors = F)$hap,
+                                        levels = unique(as.character(data.frame(ABAmat_list[[x]], stringsAsFactors = F)$hap))),
+                     row_gap = unit(1.5, "mm"),
+                     row_title = paste0(sprintf('%2.0f', ABAmat_list_frequencies[[x]])),
+                     row_title_rot = 0,
+                     row_title_gp = gpar(fontsize = 10),
+                     row_order = ABAmat_list_row_order[[x]],
+                     show_row_names = F,
+                     #column_split = colnames(mat1[ ,1:(dim(tplpHap_quant)[2]-1)]),
+                     #column_gap = unit(1.0, "mm"),
+                     #column_title = rep("", length(colnames(mat1[ ,1:(dim(tplpHap_quant)[2]-1)]))),
+                     column_title = paste0(ABAmat_list_patterns[x],
+                                           " haplotype matches in ", sample, " ONT (ratio = ",
+                                           round(ABAmat_list_ratios[x], digits = 2), ")"),
+                     column_title_gp = gpar(fontsize = 20, fontface = "bold"),
+                     show_column_names = T,
+                     column_names_side = "bottom",
+                     column_names_gp = gpar(fontsize = 16),
+                     heatmap_legend_param = list(title = bquote(bolditalic("3a") ~ bold("marker allele")),
+                                                 title_gp = gpar(fontsize = 16),
+                                                 title_position = "topcenter",
+                                                 grid_height = unit(6, "mm"),
+                                                 grid_width = unit(10, "mm"),
+                                                 at = c("A", "B", "X", "."),
+#                                                        "X", "I", "N", "."),
+                                                 labels = c("Col-0", "Ws-4", "Nonparental SNV", "Any"),
+#                                                            "Nonparental SNV", "Nonparental indel", "Missing", "Any"),
+                                                 labels_gp = gpar(fontsize = 16),
+                                                 ncol = 4, by_row = T),
+                     raster_device = "CairoPNG"
+                    )
+  pdf(paste0(plotDir, sample, "_ONT_ABA_patterns_", ABAmat_list_patterns[x], "_matches_recombo_heatmap_v140120.pdf"), height = 18, width = 10)
+  draw(ABAhtmp,
+       heatmap_legend_side = "bottom")
+  dev.off()
+}
+
+
+# Find matches to BAB_patterns COGC patterns
+# including those containing likely sequencing errors (e.g., "BXB", "BIB")
+hap_match_BAB_patterns_list_df <- lapply(seq_along(BAB_patterns), function(x) {
+  tplpHapVar_BAB <- tplpHapVar[grepl(pattern = BAB_patterns[x],
+                                     x = tplpHapVar$hap),]
+  tplpHapVar_BXB <- tplpHapVar[grepl(pattern = gsub(pattern = "A",
+                                                    replacement = "X",
+                                                    x = BAB_patterns[x]), 
+                                     x = tplpHapVar$hap),]
+  dfx <- bind_rows(list(
+    data.frame(hap = as.character(rep(BAB_patterns[x],
+                                      dim(tplpHapVar_BAB)[1])),
+               freq = as.numeric(rep(dim(tplpHapVar_BAB)[1],
+                                     dim(tplpHapVar_BAB)[1])),
+               stringsAsFactors = F),
+    data.frame(hap = as.character(rep(gsub(pattern = "A",
+                                           replacement = "X",
+                                           x = BAB_patterns[x]),
+                                      dim(tplpHapVar_BXB)[1])),
+               freq = as.numeric(rep(dim(tplpHapVar_BXB)[1],
+                                     dim(tplpHapVar_BXB)[1])),
+               stringsAsFactors = F)
+  ), .id = "hapNo")
+})
+hap_match_BAB_patterns_ratios <- sapply(seq_along(BAB_patterns), function(x) {
+  if( !is.na(unique(hap_match_BAB_patterns_list_df[[x]]$freq)[1]) &
+      !is.na(unique(hap_match_BAB_patterns_list_df[[x]]$freq)[2]) ) {
+    unique(hap_match_BAB_patterns_list_df[[x]]$freq)[1] /
+    unique(hap_match_BAB_patterns_list_df[[x]]$freq)[2]
+  } else if ( is.na(unique(hap_match_BAB_patterns_list_df[[x]]$freq)[2]) ) {
+    (unique(hap_match_BAB_patterns_list_df[[x]]$freq)[1]) / 1
+  }
+})
+# Where no matches to COGC patterns exist, replace NA ratio with 1
+# If not replaced, NA values will prevent removal of error-prone
+# high-frequency haplotypes
+hap_match_BAB_patterns_ratios[is.na(hap_match_BAB_patterns_ratios)] <- 1
+
+hap_match_BAB_patterns_frequencies <- sapply(seq_along(BAB_patterns), function(x) {
+    unique(hap_match_BAB_patterns_list_df[[x]]$freq)[1] 
+})
+hap_match_BXB_patterns_frequencies <- sapply(seq_along(BAB_patterns), function(x) {
+    unique(hap_match_BAB_patterns_list_df[[x]]$freq)[2] 
+})
+
+# Create and write dataframe of COGC patterns, frequencies and ratios 
+hap_match_BAB_patterns_df <- data.frame(pattern = BAB_patterns,
+                                        BAB_freq = hap_match_BAB_patterns_frequencies,
+					BXB_freq = hap_match_BXB_patterns_frequencies,
+                                        ratio = hap_match_BAB_patterns_ratios,
+                                        stringsAsFactors = F)
+write.table(hap_match_BAB_patterns_df,
+            file = paste0(plotDir, sample, "_ONT_BABtoBXB_pattern_freq_ratios_v140120.tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+
+# Create matrices suitable for plotting as haplotype heat maps
+BABmat_list <- lapply(seq_along(hap_match_BAB_patterns_list_df), function(x) {
+  if( !(!length(hap_match_BAB_patterns_list_df[[x]]$hap)) ) {
+    BABmatx <- matrix(unlist(strsplit(hap_match_BAB_patterns_list_df[[x]]$hap,
+                                      split = "")),
+                      ncol = dim(tplpHapVar)[2]-1,
+                      byrow = T)
+    BABmatx <- cbind(BABmatx,
+                     hap_match_BAB_patterns_list_df[[x]]$hap,
+                     hap_match_BAB_patterns_list_df[[x]]$freq)
+    colnames(BABmatx) <- c(colnames(tplpHapVar)[-length(colnames(tplpHapVar))],
+                           "hap", "freq")
+    BABmatx
+  }
+})
+# Remove NULL elements from list of matrices
+names(BABmat_list) <- seq_along(BABmat_list)
+BABmat_list[sapply(BABmat_list, is.null)] <- NULL
+## Or using some higher-order convenience functions
+#BABmat_list <- Filter(Negate(is.null), BABmat_list)
+
+BABmat_list_patterns <- sapply(seq_along(BABmat_list), function(x) {
+  data.frame(BABmat_list[[x]], stringsAsFactors = F)$hap[1]
+})
+BABmat_list_row_order <- lapply(seq_along(BABmat_list), function(x) {
+  1:dim(BABmat_list[[x]])[1]
+  #order(as.numeric(data.frame(BABmat_list[[x]], stringsAsFactors = F)$freq),
+  #      decreasing = T)
+})
+BABmat_list_frequencies <- lapply(seq_along(BABmat_list), function(x) {
+  sapply(seq_along(unique(as.data.frame(BABmat_list[[x]], stringsAsFactors = F)$hap)), function(y) {
+    mean( as.numeric(
+            data.frame(BABmat_list[[x]], stringsAsFactors = F)[
+              data.frame(BABmat_list[[x]], stringsAsFactors = F)$hap == 
+              unique( data.frame(BABmat_list[[x]], stringsAsFactors = F)$hap )[y],
+            ]$freq
+          )
+    )
+  })
+})
+BABmat_list_ratios <- sapply(seq_along(BABmat_list), function(x) {
+  if( !is.na(BABmat_list_frequencies[[x]][1]) &
+      !is.na(BABmat_list_frequencies[[x]][2]) ) {
+    BABmat_list_frequencies[[x]][1] /
+    BABmat_list_frequencies[[x]][2]
+  } else if ( is.na(BABmat_list_frequencies[[x]][2]) ) {
+    BABmat_list_frequencies[[x]][1] / 1
+  }
+})
+
+# Plot a haplotype heat map for matches to each COGC haplotype
+#for(x in seq_along(BABmat_list)) {
+for(x in 1:13) {
+  BABhtmp <- Heatmap(BABmat_list[[x]][ ,1:(dim(tplpHapVar)[2]-1)],
+                     name = "Allele",
+                     col = c("A" = "red", "B" = "blue",
+                             "X" = "goldenrod1", "I" = "green2", "N" = "black", "." = "grey60"),
+                     row_split = factor(data.frame(BABmat_list[[x]], stringsAsFactors = F)$hap,
+                                        levels = unique(as.character(data.frame(BABmat_list[[x]], stringsAsFactors = F)$hap))),
+                     row_gap = unit(1.5, "mm"),
+                     row_title = paste0(sprintf('%2.0f', BABmat_list_frequencies[[x]])),
+                     row_title_rot = 0,
+                     row_title_gp = gpar(fontsize = 10),
+                     row_order = BABmat_list_row_order[[x]],
+                     show_row_names = F,
+                     #column_split = colnames(mat1[ ,1:(dim(tplpHap_quant)[2]-1)]),
+                     #column_gap = unit(1.0, "mm"),
+                     #column_title = rep("", length(colnames(mat1[ ,1:(dim(tplpHap_quant)[2]-1)]))),
+                     column_title = paste0(BABmat_list_patterns[x],
+                                           " haplotype matches in ", sample, " ONT (ratio = ",
+                                           round(BABmat_list_ratios[x], digits = 2), ")"),
+                     column_title_gp = gpar(fontsize = 20, fontface = "bold"),
+                     show_column_names = T,
+                     column_names_side = "bottom",
+                     column_names_gp = gpar(fontsize = 16),
+                     heatmap_legend_param = list(title = bquote(bolditalic("3a") ~ bold("marker allele")),
+                                                 title_gp = gpar(fontsize = 16),
+                                                 title_position = "topcenter",
+                                                 grid_height = unit(6, "mm"),
+                                                 grid_width = unit(10, "mm"),
+                                                 at = c("A", "B", "X", "."),
+#                                                        "X", "I", "N", "."),
+                                                 labels = c("Col-0", "Ws-4", "Nonparental SNV", "Any"),
+#                                                            "Nonparental SNV", "Nonparental indel", "Missing", "Any"),
+                                                 labels_gp = gpar(fontsize = 16),
+                                                 ncol = 4, by_row = T),
+                     raster_device = "CairoPNG"
+                    )
+  pdf(paste0(plotDir, sample, "_ONT_BAB_patterns_", BABmat_list_patterns[x], "_matches_recombo_heatmap_v140120.pdf"), height = 18, width = 10)
+  draw(BABhtmp,
+       heatmap_legend_side = "bottom")
+  dev.off()
+}
+
+# Remove high-frequency haplotypes that match error-prone COGC patterns
+threshold_ratio <- 10
+tplpHapPar_group_n_quant_below_threshold <- NULL
+for(x in seq_along(ABA_patterns[hap_match_ABA_patterns_ratios < threshold_ratio])) {
+  print(ABA_patterns[hap_match_ABA_patterns_ratios < threshold_ratio][x])
+  print(which(grepl(pattern = ABA_patterns[hap_match_ABA_patterns_ratios < threshold_ratio][x],
+                    x = tplpHapPar_group_n_quant$hap,
+                    perl = T)))
+  print(tplpHapPar_group_n_quant[which(grepl(pattern = ABA_patterns[hap_match_ABA_patterns_ratios < threshold_ratio][x],
+                                             x = tplpHapPar_group_n_quant$hap,
+                                             perl = T)),])
+  tplpHapPar_group_n_quant_below_threshold_x <- tplpHapPar_group_n_quant[which(grepl(pattern = ABA_patterns[hap_match_ABA_patterns_ratios < threshold_ratio][x],
+                                                                                     x = tplpHapPar_group_n_quant$hap,
+                                                                                     perl = T)),]
+  tplpHapPar_group_n_quant_below_threshold <- rbind(tplpHapPar_group_n_quant_below_threshold,
+                                                    tplpHapPar_group_n_quant_below_threshold_x)
+  tplpHapPar_group_n_quant <- tplpHapPar_group_n_quant[which(!grepl(pattern = ABA_patterns[hap_match_ABA_patterns_ratios < threshold_ratio][x],
+                                                                    x = tplpHapPar_group_n_quant$hap,
+                                                                    perl = T)),]
+}
+for(x in seq_along(BAB_patterns[hap_match_BAB_patterns_ratios < threshold_ratio])) {
+  print(BAB_patterns[hap_match_BAB_patterns_ratios < threshold_ratio][x])
+  print(which(grepl(pattern = BAB_patterns[hap_match_BAB_patterns_ratios < threshold_ratio][x],
+                    x = tplpHapPar_group_n_quant$hap,
+                    perl = T)))
+  print(tplpHapPar_group_n_quant[which(grepl(pattern = BAB_patterns[hap_match_BAB_patterns_ratios < threshold_ratio][x],
+                                             x = tplpHapPar_group_n_quant$hap,
+                                             perl = T)),])
+  tplpHapPar_group_n_quant_below_threshold_x <- tplpHapPar_group_n_quant[which(grepl(pattern = BAB_patterns[hap_match_BAB_patterns_ratios < threshold_ratio][x],
+                                                                                     x = tplpHapPar_group_n_quant$hap,
+                                                                                     perl = T)),]
+  tplpHapPar_group_n_quant_below_threshold <- rbind(tplpHapPar_group_n_quant_below_threshold,
+                                                    tplpHapPar_group_n_quant_below_threshold_x)
+  tplpHapPar_group_n_quant <- tplpHapPar_group_n_quant[which(!grepl(pattern = BAB_patterns[hap_match_BAB_patterns_ratios < threshold_ratio][x],
+                                                                    x = tplpHapPar_group_n_quant$hap,
+                                                                    perl = T)),]
+}
+colnames(tplpHapPar_group_n_quant_below_threshold) <- c("haplotype", "freq")
+write.table(tplpHapPar_group_n_quant_below_threshold,
+            file = paste0(plotDir, sample,
+                          "_ONT_removed_error_prone_high_freq_haplotypes_below_ABAtoAXA_or_BABtoBXB_threshold_ratio_of_",
+                          as.character(threshold_ratio), "_complete_haplotypes_v140120.tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
 
 # Get inter-marker distances and midpoints
 #### NOTE CHANGE WIDTH DEFINED BY COLUMN NUMBER
+#midpoints <- NULL
+#widths <- NULL
+#for(x in 1:(length(as.integer(colnames(tplpHapPar)[1:(dim(tplpHapPar)[2]-1)]))-1)) {
+#  midpointx <- as.integer(colnames(tplpHapPar)[x]) +
+#    round( ( as.integer(colnames(tplpHapPar)[x+1]) -
+#             as.integer(colnames(tplpHapPar)[x]) ) / 2 )
+#  midpoints <- c(midpoints, midpointx)
+#  widthx <- ( as.integer(colnames(tplpHapPar)[x+1]) -
+#              as.integer(colnames(tplpHapPar)[x]) ) + 1
+#  widths <- c(widths, widthx)
+#}
+#widths <- as.vector(sapply(seq_along(widths), function(x) rep(widths[x], times = 2)))
+
+# Get inter-marker distances and midpoints
 midpoints <- NULL
 widths <- NULL
-for(x in 1:(length(as.integer(colnames(tplpHap)[1:(dim(tplpHap)[2]-1)]))-1)) {
-  midpointx <- as.integer(colnames(tplpHap)[x]) +
-    round( ( as.integer(colnames(tplpHap)[x+1]) -
-             as.integer(colnames(tplpHap)[x]) ) / 2 )
+for(x in 1:(length(alleles$position)-1)) {
+  midpointx <- round( ( alleles$position[x] + alleles$position[x+1] ) / 2 )
   midpoints <- c(midpoints, midpointx)
-  widthx <- ( as.integer(colnames(tplpHap)[x+1]) -
-              as.integer(colnames(tplpHap)[x]) ) + 1
+  widthx <- ( alleles$position[x+1] - alleles$position[x] ) + 1
   widths <- c(widths, widthx)
 }
 widths <- as.vector(sapply(seq_along(widths), function(x) rep(widths[x], times = 2)))
@@ -217,29 +860,199 @@ widths <- as.vector(sapply(seq_along(widths), function(x) rep(widths[x], times =
 # 1 denotes an "A" to "B" or a "B" to "A" transition, and
 # 0 denotes no transition in parental allele from one marker to the next
 # Two "1"s or two "0"s are appended to represent two-marker interval
-tplpHap_quant <- tplpHap[tplpHap$hap %in% tplpHap_complete_n_quant$hap,]
+tplpHapPar_quant <- tplpHapPar[tplpHapPar$hap %in% tplpHapPar_group_n_quant$hap,]
 hapRecDF <- data.frame()
-for(x in 1:(dim(tplpHap_quant)[1])) {
+for(x in 1:(dim(tplpHapPar_quant)[1])) {
   hapRec <- NULL
-  for(i in 1:(length(unlist(strsplit(tplpHap_quant$hap[x], split = "")))-1)) {
-    if( paste0( unlist(strsplit(tplpHap_quant$hap[x], split = ""))[i],
-                unlist(strsplit(tplpHap_quant$hap[x], split = ""))[i+1] )
-        %in% c("AB", "BA") ) {
+  for(i in 1:(length(unlist(strsplit(tplpHapPar_quant$hap[x], split = "")))-1)) {
+    # If a "B" (Ws-4) allele is at the leftmost marker not within the forward primer binding site,
+    # assign "c(1, 1)" to denote the transition from "A" (Col-0) at the leftmost marker within the forward primer binding site
+    if( i == 1 ) {
+      if( paste0( unlist(strsplit(tplpHapPar_quant$hap[x], split = ""))[i] )
+            %in% c("B") ) {
+        hapRec <- c(hapRec, 1, 1)
+      } else {
+        hapRec <- c(hapRec, 0, 0)
+      }
+    }
+    if( paste0( unlist(strsplit(tplpHapPar_quant$hap[x], split = ""))[i],
+                unlist(strsplit(tplpHapPar_quant$hap[x], split = ""))[i+1] )
+          %in% c("AB", "BA") ) {
       hapRec <- c(hapRec, 1, 1)
     } else {
       hapRec <- c(hapRec, 0, 0)
     }
+    # If an "A" (Col-0) allele is at the rightmost marker not within the reverse primer binding site,
+    # assign "c(1, 1)" to denote the transition from "B" (Ws-4) at the rightmost marker within the reverse primer binding site
+    if( i == (length(unlist(strsplit(tplpHapPar_quant$hap[x], split = "")))-1) ) {
+      if( paste0( unlist(strsplit(tplpHapPar_quant$hap[x], split = ""))[i+1] )
+            %in% c("A") ) {
+        hapRec <- c(hapRec, 1, 1)
+      } else {
+        hapRec <- c(hapRec, 0, 0) 
+      }
+    }
   }
   hapRecDF <- rbind(hapRecDF, hapRec)
 }
-colnames(hapRecDF) <- sort(c(alleles$position[2:(length(alleles$position)-2)],
-                             alleles$position[3:(length(alleles$position)-1)]-1))
+colnames(hapRecDF) <- sort(c(alleles$position[1:(length(alleles$position)-1)],
+                             alleles$position[2:(length(alleles$position))]-1))
+#colnames(hapRecDF) <- sort(c(alleles$position[2:(length(alleles$position)-2)],
+#                             alleles$position[3:(length(alleles$position)-1)]-1))
 
 # From the above complete recombination matrix:
 # extract alignments containing only crossovers
 hapRecDF_COs <- hapRecDF[rowSums(hapRecDF) == 2,]
 # extract alignments containing both crossovers and non-crossovers
-hapRecDF_NCOs <- hapRecDF[rowSums(hapRecDF) >= 4,]
+hapRecDF_COGCs <- hapRecDF[rowSums(hapRecDF) >= 4,]
+
+# Get haplotypes containing COGCs
+hap_COGCs <- unique(tplpHapPar_quant[which(rowSums(hapRecDF) >= 4),]$hap)
+
+# Find matches to high-frequency apparent COGC haplotypes (allowing up to 1 mismatch),
+# including those containing nonparental variants (likely sequencing errors)
+# Then get the frequency of occurrence of each of these matching haplotypes
+hap_match_hapCOGC_group_n_list <- lapply(seq_along(hap_COGCs), function(x) {
+  match_index <- vmatchPattern(pattern = hap_COGCs[x],
+                               subject = BStringSet(tplpHapVar$hap),
+                               max.mismatch = 1,
+                               min.mismatch = 0,
+                               with.indels = F, fixed = T, algorithm = "auto")
+  # Get the number of matches to hap_COGC[x] per subject element
+  nmatch_per_hap <- elementNROWS(match_index)
+  # Get haplotypes matching the COGC haplotype
+  tplpHapVar_match_hapCOGCx <- tplpHapVar[which(nmatch_per_hap != 0),]
+  # For each matching haplotype, count occurrences
+  tplpHapVar_match_hapCOGCx_group_n <- tplpHapVar_match_hapCOGCx %>%
+    group_by(hap) %>%
+    summarize(n())
+  # Subset haplotypes to include only those that match the COGC haplotype exactly,
+  # and those that contain either a nonparental SNV ("X"), a nonparental indel ("I"), or missing data ("N")
+  tplpHapVar_match_hapCOGCx_group_n[tplpHapVar_match_hapCOGCx_group_n$hap %in% hap_COGCs[x] |
+                                    grepl(pattern = "X", x = tplpHapVar_match_hapCOGCx_group_n$hap, fixed = T) |
+                                    grepl(pattern = "I", x = tplpHapVar_match_hapCOGCx_group_n$hap, fixed = T) |
+                                    grepl(pattern = "N", x = tplpHapVar_match_hapCOGCx_group_n$hap, fixed = T) &
+                                    tplpHapVar_match_hapCOGCx_group_n$'n()' > 0,]
+})
+
+# Convert haplotype frequencies into proportions and percentages
+hap_match_hapCOGC_group_n_list_prop <- lapply(seq_along(hap_match_hapCOGC_group_n_list), function(x) {
+  ceiling( ( hap_match_hapCOGC_group_n_list[[x]]$'n()' /
+             (sum(hap_match_hapCOGC_group_n_list[[x]]$'n()')) ) * 100000 )
+})
+
+hap_match_hapCOGC_group_n_list_df <- lapply(seq_along(hap_match_hapCOGC_group_n_list), function(x) {
+  dfx <- bind_rows(lapply(seq_along(hap_match_hapCOGC_group_n_list_prop[[x]]), function(y) {
+    data.frame(hap = as.character(rep(hap_match_hapCOGC_group_n_list[[x]]$hap[y],
+                                      hap_match_hapCOGC_group_n_list[[x]]$'n()'[y])),
+               freq = as.numeric(rep(hap_match_hapCOGC_group_n_list[[x]]$'n()'[y],
+                                     hap_match_hapCOGC_group_n_list[[x]]$'n()'[y])),
+               prop = as.numeric(rep(hap_match_hapCOGC_group_n_list_prop[[x]][y],
+                                     hap_match_hapCOGC_group_n_list[[x]]$'n()'[y])),
+               perc = as.numeric(rep(hap_match_hapCOGC_group_n_list_prop[[x]][y]/1000,
+                                     hap_match_hapCOGC_group_n_list[[x]]$'n()'[y])),
+               stringsAsFactors = F)
+  }), .id = "hapNo")
+  dfx[sort.int(dfx$freq,
+               decreasing = T,
+               index.return = T)$ix,]
+})
+
+# Create matrices suitable for plotting as haplotype heat maps
+COGCmat_list <- lapply(seq_along(hap_match_hapCOGC_group_n_list_df), function(x) {
+  COGCmatx <- matrix(unlist(strsplit(hap_match_hapCOGC_group_n_list_df[[x]]$hap,
+                                    split = "")),
+                    ncol = dim(tplpHapVar)[2]-1,
+                    byrow = T)
+  COGCmatx <- cbind(COGCmatx,
+                   hap_match_hapCOGC_group_n_list_df[[x]]$hap,
+                   hap_match_hapCOGC_group_n_list_df[[x]]$freq,
+                   hap_match_hapCOGC_group_n_list_df[[x]]$prop,
+                   hap_match_hapCOGC_group_n_list_df[[x]]$perc)
+  colnames(COGCmatx) <- c(colnames(tplpHapVar)[-length(colnames(tplpHapVar))],
+                         "hap", "freq", "prop", "perc")
+  COGCmatx
+})
+
+COGCmat_list_row_order <- lapply(seq_along(hap_match_hapCOGC_group_n_list_df), function(x) {
+  order(hap_match_hapCOGC_group_n_list_df[[x]]$freq,
+        decreasing = T)
+})
+COGCmat_list_frequencies <- lapply(seq_along(hap_match_hapCOGC_group_n_list_df), function(x) {
+  sapply(seq_along(unique(hap_match_hapCOGC_group_n_list_df[[x]]$hap)), function(y) {
+    mean( hap_match_hapCOGC_group_n_list_df[[x]][hap_match_hapCOGC_group_n_list_df[[x]]$hap ==
+            unique(hap_match_hapCOGC_group_n_list_df[[x]]$hap)[y],]$freq )
+  })
+})
+
+# Plot a haplotype heat map for matches to each COGC haplotype
+for(x in seq_along(COGCmat_list)) {
+  COGChtmp <- Heatmap(COGCmat_list[[x]][ ,1:(dim(tplpHapVar)[2]-1)],
+                     name = "Allele",
+                     col = c("A" = "red", "B" = "blue",
+                             "X" = "goldenrod1", "I" = "green2", "N" = "grey40"),
+                     row_split = factor(hap_match_hapCOGC_group_n_list_df[[x]]$hap,
+                                        levels = unique(as.character(hap_match_hapCOGC_group_n_list_df[[x]]$hap))),
+                     row_gap = unit(1.5, "mm"),
+                     row_title = paste0(sprintf('%2.0f', COGCmat_list_frequencies[[x]])),
+                     row_title_rot = 0,
+                     row_title_gp = gpar(fontsize = 10),
+                     row_order = COGCmat_list_row_order[[x]],
+                     show_row_names = F,
+                     #column_split = colnames(mat1[ ,1:(dim(tplpHapPar_quant)[2]-1)]),
+                     #column_gap = unit(1.0, "mm"),
+                     #column_title = rep("", length(colnames(mat1[ ,1:(dim(tplpHapPar_quant)[2]-1)]))),
+                     column_title = paste0("COGC haplotype ", hap_COGCs[x],
+                                           " matches in ", sample, " ONT"),
+                     column_title_gp = gpar(fontsize = 20, fontface = "bold"),
+                     show_column_names = T,
+                     column_names_side = "bottom",
+                     column_names_gp = gpar(fontsize = 16),
+                     heatmap_legend_param = list(title = bquote(bolditalic("3a") ~ bold("marker allele")),
+                                                 title_gp = gpar(fontsize = 16),
+                                                 title_position = "topcenter",
+                                                 grid_height = unit(6, "mm"),
+                                                 grid_width = unit(10, "mm"),
+                                                 labels = c("Col-0", "Ws-4",
+                                                            "Nonparental SNV", "Nonparental indel", "Missing"),
+                                                 labels_gp = gpar(fontsize = 16),
+                                                 ncol = 2, by_row = T),
+                     raster_device = "CairoPNG"
+                    )
+  pdf(paste0(plotDir, sample, "_ONT_COGC_haplotype_", hap_COGCs[x], "_matches_recombo_heatmap_complete_haplotypes_v140120.pdf"), height = 18, width = 10)
+  draw(COGChtmp,
+       heatmap_legend_side = "bottom")
+  dev.off()
+}
+
+#af <- data.frame()
+#for(x in 1:dim(plp2)[1]) {
+#  marker_total <- length( plp2[x,5:dim(plp2)[2]] )
+#  marker_A <- sum( ( plp2[x,5:dim(plp2)[2]] %in% c("A") ) )
+#  marker_B <- sum( ( plp2[x,5:dim(plp2)[2]] %in% c("B") ) )
+#  marker_X <- sum( ( plp2[x,5:dim(plp2)[2]] %in% c("X") ) )
+#  marker_N <- sum( ( plp2[x,5:dim(plp2)[2]] %in% c("*") ) )
+#  marker_I <- sum(!( plp2[x,5:dim(plp2)[2]] %in% c("A", "B", "X", "*") ) )
+#  stopifnot(marker_total ==
+#            sum(marker_A, marker_B, marker_X, marker_N, marker_I))
+#  af_x <- data.frame(marker = alleles$pos[x],
+#                     A = marker_A/marker_total,
+#                     B = marker_B/marker_total,
+#                     X = marker_X/marker_total,
+#                     I = marker_I/marker_total,
+#                     N = marker_N/marker_total)
+#  af <- rbind(af, af_x)
+#}
+#
+## Remove markers within allele-specific primer binding sites
+#af <- af[c(-1, -dim(af)[1]), ]
+#af_tidy <- gather(data = af,
+#                  key = allele,
+#                  value = af,
+#                  -marker)
+#af_tidy$allele <- factor(af_tidy$allele,
+#                         levels = unique(af_tidy$allele))
+
 
 # For each recombination matrix (complete and subsetted),
 # calculate cM/Mb in each marker interval
@@ -248,7 +1061,7 @@ cMMb <- data.frame(window = as.integer(colnames(hapRecDF)),
                                       (widths/1e6) ) * cMscale ),
                    COs = as.vector( ( (colSums(hapRecDF_COs)/dim(hapRecDF)[1]) /
                                       (widths/1e6) ) * cMscale ),
-                   NCOs = as.vector( ( (colSums(hapRecDF_NCOs)/dim(hapRecDF)[1]) /
+                   COGCs = as.vector( ( (colSums(hapRecDF_COGCs)/dim(hapRecDF)[1]) /
                                        (widths/1e6) ) * cMscale )
                   )
 cMMb_tidy <- gather(data = cMMb,
@@ -261,7 +1074,7 @@ cMMb_tidy$aln <- factor(cMMb_tidy$aln,
 cM <- data.frame(window = as.integer(colnames(hapRecDF)),
                  All = as.vector( ( (colSums(hapRecDF)/dim(hapRecDF)[1]) * 100 ) * cMscale ),
                  COs = as.vector( ( (colSums(hapRecDF_COs)/dim(hapRecDF)[1]) * 100 ) * cMscale ),
-                 NCOs = as.vector( ( (colSums(hapRecDF_NCOs)/dim(hapRecDF)[1]) * 100 ) * cMscale ))
+                 COGCs = as.vector( ( (colSums(hapRecDF_COGCs)/dim(hapRecDF)[1]) * 100 ) * cMscale ))
 cM_tidy <- gather(data = cM,
                   key = aln,
                   value = cM,
@@ -269,23 +1082,23 @@ cM_tidy <- gather(data = cM,
 cM_tidy$aln <- factor(cM_tidy$aln,
                       levels = unique(cM_tidy$aln))
 
-# Generate more complete summary (including CO and NCO recombination event counts)
+# Generate more complete summary (including CO and COGC recombination event counts)
 rec_summary <- data.frame(window = as.integer(colnames(hapRecDF)),
                           width = widths,
                           total_alignments = dim(hapRecDF)[1],
                           cMscale = cMscale,
                           All_rec_events = as.vector( colSums(hapRecDF) ),
                           COs_rec_events = as.vector( colSums(hapRecDF_COs) ),
-                          NCOs_COs_rec_events = as.vector( colSums(hapRecDF_NCOs) ),
+                          COGCs_COs_rec_events = as.vector( colSums(hapRecDF_COGCs) ),
                           All_cMMb = as.vector( ( (colSums(hapRecDF)/dim(hapRecDF)[1]) /
                                                   (widths/1e6) ) * cMscale ),
                           COs_cMMb = as.vector( ( (colSums(hapRecDF_COs)/dim(hapRecDF)[1]) /
                                                   (widths/1e6) ) * cMscale ),
-                          NCOs_COs_cMMb = as.vector( ( (colSums(hapRecDF_NCOs)/dim(hapRecDF)[1]) /
+                          COGCs_COs_cMMb = as.vector( ( (colSums(hapRecDF_COGCs)/dim(hapRecDF)[1]) /
                                                        (widths/1e6) ) * cMscale )
                          )
 write.table(rec_summary,
-            file = paste0(plotDir, sample, "_ONT_recombo_summary_complete_haplotypes_v201219.tsv"),
+            file = paste0(plotDir, sample, "_ONT_recombo_summary_complete_haplotypes_v140120.tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
 
 # Complete amplicon extends from 634089 (20 nt upstream of 634109)
@@ -300,8 +1113,8 @@ alnNames <- c(paste0("All (",
                      prettyNum(dim(hapRecDF_COs)[1],
                                big.mark = ",", trim = T),
                      ")"),
-              paste0("NCOs & COs (",
-                     prettyNum(dim(hapRecDF_NCOs)[1],
+              paste0("CO-GCs (",
+                     prettyNum(dim(hapRecDF_COGCs)[1],
                                big.mark = ",", trim = T),
                      ")"))
 alnColours <- c("dodgerblue2", "purple", "green2")
@@ -323,7 +1136,7 @@ legendLabs <- lapply(seq_along(alnNames), function(x) {
 })  
 
 # Plot recombination rates for group of alignments
-# (all, COs only, both NCOs and COs)
+# (all, COs only, both COGCs and COs)
 ggObj_cMMb <- ggplot(data = cMMb_tidy,
                      mapping = aes(x = window,
                                    y = cMMb,
@@ -332,11 +1145,11 @@ ggObj_cMMb <- ggplot(data = cMMb_tidy,
             mapping = aes(colour = aln),
             size = 2) +
   scale_colour_manual(values = alnColours) +
-  scale_x_continuous(breaks = c(alleles$position[2:(length(alleles$position)-1)]),
-                     labels = c(as.character(alleles$position[2:(length(alleles$position)-1)]))) +
+  scale_x_continuous(breaks = c(alleles$position[1:(length(alleles$position))]),
+                     labels = c(as.character(alleles$position[1:(length(alleles$position))]))) +
   scale_y_continuous(limits = c(-50, 500),
                      labels = function(x) sprintf("%3.0f", as.numeric(x))) +
-  geom_vline(xintercept = c(alleles$position[2:(length(alleles$position)-1)]),
+  geom_vline(xintercept = c(alleles$position[1:(length(alleles$position))]),
              linetype = "dashed",
              size = 0.5) +
   # Add genes within 3a hotspot
@@ -379,11 +1192,11 @@ ggObj_cM <- ggplot(data = cM_tidy,
             mapping = aes(colour = aln),
             size = 2) +
   scale_colour_manual(values = alnColours) +
-  scale_x_continuous(breaks = c(alleles$position[2:(length(alleles$position)-1)]),
-                     labels = c(as.character(alleles$position[2:(length(alleles$position)-1)]))) +
+  scale_x_continuous(breaks = c(alleles$position[1:(length(alleles$position))]),
+                     labels = c(as.character(alleles$position[1:(length(alleles$position))]))) +
   scale_y_continuous(limits = c(-0.6, 6.5),
 		     labels = function(x) sprintf("%1.1f", as.numeric(x))) +
-  geom_vline(xintercept = c(alleles$position[2:(length(alleles$position)-1)]),
+  geom_vline(xintercept = c(alleles$position[1:(length(alleles$position))]),
              linetype = "dashed",
              size = 0.5) +
   geom_segment(mapping = aes(x = 634653, y = -0.4,
@@ -418,61 +1231,60 @@ ggObjGA_combined <- grid.arrange(ggObj_cMMb,
                                  ggObj_cM,
                                  nrow = 2, as.table = F)
                                                     
-ggsave(paste0(plotDir, sample, "_ONT_cMMb_cM_complete_haplotypes_v201219.pdf"),
+ggsave(paste0(plotDir, sample, "_ONT_cMMb_cM_complete_haplotypes_v140120.pdf"),
        plot = ggObjGA_combined,
        height = 6.5*2, width = 20, limitsize = F)
 
 
-
 # Convert haplotype frequencies into proportions
 # for heat map plotting
-tplpHap_complete_n_quant_prop <- ceiling( ( tplpHap_complete_n_quant$`n()` /
-                                            (sum(tplpHap_complete_n_quant$`n()`)) ) * 100000 )
+tplpHapPar_group_n_quant_prop <- ceiling( ( tplpHapPar_group_n_quant$`n()` /
+                                          (sum(tplpHapPar_group_n_quant$`n()`)) ) * 100000 )
 
-tplpHap_complete_n_quant_prop_hap <- bind_rows(lapply(seq_along(tplpHap_complete_n_quant_prop), function(x) {
-  data.frame(hap = as.character(rep(tplpHap_complete_n_quant$hap[x],
-                                    tplpHap_complete_n_quant_prop[x])),
-             prop = as.numeric(rep(tplpHap_complete_n_quant_prop[x],
-                                   tplpHap_complete_n_quant_prop[x])),
-             perc = as.numeric(rep(tplpHap_complete_n_quant_prop[x]/1000,
-                                   tplpHap_complete_n_quant_prop[x])),
+tplpHapPar_group_n_quant_prop_hap <- bind_rows(lapply(seq_along(tplpHapPar_group_n_quant_prop), function(x) {
+  data.frame(hap = as.character(rep(tplpHapPar_group_n_quant$hap[x],
+                                    tplpHapPar_group_n_quant_prop[x])),
+             prop = as.numeric(rep(tplpHapPar_group_n_quant_prop[x],
+                                   tplpHapPar_group_n_quant_prop[x])),
+             perc = as.numeric(rep(tplpHapPar_group_n_quant_prop[x]/1000,
+                                   tplpHapPar_group_n_quant_prop[x])),
              stringsAsFactors = F)
 }), .id = "hapNo")
 
-tplpHap_complete_n_quant_prop_hap_sort <- tplpHap_complete_n_quant_prop_hap[sort.int(tplpHap_complete_n_quant_prop_hap$prop,
-                                                                                     decreasing = T,
-                                                                                     index.return = T)$ix,]
-mat1 <- matrix(unlist(strsplit(tplpHap_complete_n_quant_prop_hap_sort$hap,
+tplpHapPar_group_n_quant_prop_hap_sort <- tplpHapPar_group_n_quant_prop_hap[sort.int(tplpHapPar_group_n_quant_prop_hap$prop,
+                                                                               decreasing = T,
+                                                                               index.return = T)$ix,]
+mat1 <- matrix(unlist(strsplit(tplpHapPar_group_n_quant_prop_hap_sort$hap,
                                split = "")),
-               ncol = dim(tplpHap_quant)[2]-1,
+               ncol = dim(tplpHapPar_quant)[2]-1,
                byrow = T)
 mat1 <- cbind(mat1,
-              tplpHap_complete_n_quant_prop_hap_sort$hap,
-              tplpHap_complete_n_quant_prop_hap_sort$prop,
-              tplpHap_complete_n_quant_prop_hap_sort$perc)
-colnames(mat1) <- c(colnames(tplpHap_quant)[-length(colnames(tplpHap_quant))],
+              tplpHapPar_group_n_quant_prop_hap_sort$hap,
+              tplpHapPar_group_n_quant_prop_hap_sort$prop,
+              tplpHapPar_group_n_quant_prop_hap_sort$perc)
+colnames(mat1) <- c(colnames(tplpHapPar_quant)[-length(colnames(tplpHapPar_quant))],
                     "hap", "prop", "perc")
-row_order <- order(tplpHap_complete_n_quant_prop_hap_sort$perc,
+row_order <- order(tplpHapPar_group_n_quant_prop_hap_sort$perc,
                    decreasing = T)
-proportions <- sapply(seq_along(unique(tplpHap_complete_n_quant_prop_hap_sort$hap)), function(x) {
-  mean(tplpHap_complete_n_quant_prop_hap_sort[tplpHap_complete_n_quant_prop_hap_sort$hap ==
-         unique(tplpHap_complete_n_quant_prop_hap_sort$hap)[x],]$perc)
+proportions <- sapply(seq_along(unique(tplpHapPar_group_n_quant_prop_hap_sort$hap)), function(x) {
+  mean(tplpHapPar_group_n_quant_prop_hap_sort[tplpHapPar_group_n_quant_prop_hap_sort$hap ==
+         unique(tplpHapPar_group_n_quant_prop_hap_sort$hap)[x],]$perc)
 })
 
-htmp <- Heatmap(mat1[ ,1:(dim(tplpHap_quant)[2]-1)],
+htmp <- Heatmap(mat1[ ,1:(dim(tplpHapPar_quant)[2]-1)],
                 name = "Allele",
                 col = c("A" = "red", "B" = "blue", "-" = "grey40"),
-                row_split = factor(tplpHap_complete_n_quant_prop_hap_sort$hap,
-                                   levels = unique(as.character(tplpHap_complete_n_quant_prop_hap_sort$hap))),
+                row_split = factor(tplpHapPar_group_n_quant_prop_hap_sort$hap,
+                                   levels = unique(as.character(tplpHapPar_group_n_quant_prop_hap_sort$hap))),
                 row_gap = unit(1.5, "mm"),
                 row_title = paste0(sprintf('%.3f', proportions), "%"),
                 row_title_rot = 0,
                 row_title_gp = gpar(fontsize = 10),
                 row_order = row_order,
                 show_row_names = F,
-                #column_split = colnames(mat1[ ,1:(dim(tplpHap_quant)[2]-1)]),
+                #column_split = colnames(mat1[ ,1:(dim(tplpHapPar_quant)[2]-1)]),
                 #column_gap = unit(1.0, "mm"),
-                #column_title = rep("", length(colnames(mat1[ ,1:(dim(tplpHap_quant)[2]-1)]))),
+                #column_title = rep("", length(colnames(mat1[ ,1:(dim(tplpHapPar_quant)[2]-1)]))),
                 column_title = paste0(sample, " ONT (",
                                       prettyNum(dim(hapRecDF)[1],
                                                 big.mark = ",", trim = T),
@@ -491,7 +1303,7 @@ htmp <- Heatmap(mat1[ ,1:(dim(tplpHap_quant)[2]-1)],
                                             ncol = 2, by_row = T),
                 raster_device = "CairoPNG"
                )
-pdf(paste0(plotDir, sample, "_ONT_recombo_heatmap_complete_haplotypes_v201219.pdf"), height = 18, width = 10)
+pdf(paste0(plotDir, sample, "_ONT_recombo_heatmap_complete_haplotypes_v140120.pdf"), height = 18, width = 10)
 draw(htmp,
      heatmap_legend_side = "bottom")
 dev.off()
