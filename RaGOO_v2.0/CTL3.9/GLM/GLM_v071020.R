@@ -63,7 +63,7 @@ dev.off()
 
 # Plot with offset of +1e-06
 # "non-positive values not allowed for the 'Gamma' family"
-pdf(paste0(plotDir, "CTL3.9_wt_cMMb_plus1eNeg6_plotdist.pdf"))
+pdf(paste0(plotDir, "CTL3.9_wt_cMMb_plus1_plotdist.pdf"))
 fitdistrplus::plotdist(winDF$wt_cMMb+1e-06, histo = T, demp = T)
 dev.off()
 
@@ -104,7 +104,7 @@ dev.off()
 #estimated sd:  4.750273 
 #estimated skewness:  1.301378 
 #estimated kurtosis:  4.201431
-pdf(paste0(plotDir, "CTL3.9_wt_cMMb_plus1eNeg6_descdistPlot.pdf"))
+pdf(paste0(plotDir, "CTL3.9_wt_cMMb_plus1_descdistPlot.pdf"))
 fitdistrplus::descdist(winDF$wt_cMMb+1e-06, discrete = F,
                        obs.col = "darkblue", boot = 1000, boot.col = "red")
 dev.off()
@@ -130,18 +130,18 @@ dev.off()
 #estimated kurtosis:  4.201431
 
 # Based on CTL3.9_wt_cMMb_descdistPlot.pdf, inspect fit to distributions
-# Quantile-quantile (qq) plot for gamma distribution, with offset of +1e-06
+# Quantile-quantile (qq) plot for gamma distribution, with offset of +1
 pdf(paste0(plotDir, "CTL3.9_wt_cMMb_plus1_qqPlot_gamma.pdf"))
 qualityTools::qqPlot(x = winDF$wt_cMMb+1, y = "gamma")
 dev.off()
-pdf(paste0(plotDir, "CTL3.9_wt_cMMb_plus1eNeg6_qqPlot_gamma.pdf"))
+pdf(paste0(plotDir, "CTL3.9_wt_cMMb_plus1_qqPlot_gamma.pdf"))
 qualityTools::qqPlot(x = winDF$wt_cMMb+1e-06, y = "gamma")
 dev.off()
-pdf(paste0(plotDir, "CTL3.9_wt_cMMb_plus1eNeg6_qqPlot_weibull.pdf"))
-qualityTools::qqPlot(x = winDF$wt_cMMb+1e-06, y = "weibull")
+pdf(paste0(plotDir, "CTL3.9_wt_cMMb_plus1_qqPlot_weibull.pdf"))
+qualityTools::qqPlot(x = winDF$wt_cMMb+1, y = "weibull")
 dev.off()
-pdf(paste0(plotDir, "CTL3.9_wt_cMMb_qqPlot_plus1eNeg6_exponential.pdf"))
-qualityTools::qqPlot(x = winDF$wt_cMMb+1e-06, y = "exponential")
+pdf(paste0(plotDir, "CTL3.9_wt_cMMb_qqPlot_plus1_exponential.pdf"))
+qualityTools::qqPlot(x = winDF$wt_cMMb+1, y = "exponential")
 dev.off()
 pdf(paste0(plotDir, "CTL3.9_wt_cMMb_qqPlot_exponential.pdf"))
 qualityTools::qqPlot(x = winDF$wt_cMMb, y = "exponential")
@@ -149,27 +149,27 @@ dev.off()
 
 # On the gamma distribution, see https://bookdown.org/probability/beta/beta-and-gamma.html
 
-# Inspect fit of distribution using maximum likelihood estimation (MLE) within fitdistrplus, with offset of +1e-06
+# Inspect fit of distribution using maximum likelihood estimation (MLE) within fitdistrplus, with offset of +1
 # See https://cran.r-project.org/web/packages/fitdistrplus/vignettes/paper2JSS.pdf
-wt_cMMb_plus1eNeg6_fitdist_gamma <- fitdistrplus::fitdist(data = winDF$wt_cMMb+1e-06,
+wt_cMMb_plus1_fitdist_gamma <- fitdistrplus::fitdist(data = winDF$wt_cMMb+1,
                                                           distr = "gamma",
                                                           method = "mle")
-wt_cMMb_plus1eNeg6_fitdist_lnorm <- fitdistrplus::fitdist(data = winDF$wt_cMMb+1e-06,
+wt_cMMb_plus1_fitdist_lnorm <- fitdistrplus::fitdist(data = winDF$wt_cMMb+1,
                                                           distr = "lnorm",
                                                           method = "mle")
-wt_cMMb_plus1eNeg6_fitdist_weibull <- fitdistrplus::fitdist(data = winDF$wt_cMMb+1e-06,
+wt_cMMb_plus1_fitdist_weibull <- fitdistrplus::fitdist(data = winDF$wt_cMMb+1,
                                                             distr = "weibull",
                                                             method = "mle")
-wt_cMMb_plus1eNeg6_fitdist_exp <- fitdistrplus::fitdist(data = winDF$wt_cMMb+1e-06,
+wt_cMMb_plus1_fitdist_exp <- fitdistrplus::fitdist(data = winDF$wt_cMMb+1,
                                                         distr = "exp",
                                                         method = "mle")
 wt_cMMb_fitdist_exp <- fitdistrplus::fitdist(data = winDF$wt_cMMb,
                                              distr = "exp",
                                              method = "mle")
-print(summary(wt_cMMb_plus1eNeg6_fitdist_gamma))
-print(summary(wt_cMMb_plus1eNeg6_fitdist_lnorm))
-print(summary(wt_cMMb_plus1eNeg6_fitdist_weibull))
-print(summary(wt_cMMb_plus1eNeg6_fitdist_exp))
+print(summary(wt_cMMb_plus1_fitdist_gamma))
+print(summary(wt_cMMb_plus1_fitdist_lnorm))
+print(summary(wt_cMMb_plus1_fitdist_weibull))
+print(summary(wt_cMMb_plus1_fitdist_exp))
 print(summary(wt_cMMb_fitdist_exp))
 
 # Generate goodness-of-fit plots:
@@ -186,20 +186,20 @@ print(summary(wt_cMMb_fitdist_exp))
 # Load modified denscomp and cdfcomp functions (allowing line widths to be changed)
 load("fitdistrplus_denscomp_mod.RData")
 load("fitdistrplus_cdfcomp_mod.RData")
-pdf(paste0(plotDir, "CTL3.9_wt_cMMb_plus1eNeg6_GoFplots.pdf"))
+pdf(paste0(plotDir, "CTL3.9_wt_cMMb_plus1_GoFplots.pdf"))
 par(mfrow = c(2, 2))
 plot.legend <- c("Log-normal", "Weibull", "Exponential", "Gamma")
-denscomp(list(wt_cMMb_plus1eNeg6_fitdist_lnorm, wt_cMMb_plus1eNeg6_fitdist_weibull,
-              wt_cMMb_plus1eNeg6_fitdist_exp, wt_cMMb_plus1eNeg6_fitdist_gamma),
+denscomp(list(wt_cMMb_plus1_fitdist_lnorm, wt_cMMb_plus1_fitdist_weibull,
+              wt_cMMb_plus1_fitdist_exp, wt_cMMb_plus1_fitdist_gamma),
          legendtext = plot.legend, fitlwd = 2)
-qqcomp(list(wt_cMMb_plus1eNeg6_fitdist_lnorm, wt_cMMb_plus1eNeg6_fitdist_weibull,
-            wt_cMMb_plus1eNeg6_fitdist_exp, wt_cMMb_plus1eNeg6_fitdist_gamma),
+qqcomp(list(wt_cMMb_plus1_fitdist_lnorm, wt_cMMb_plus1_fitdist_weibull,
+            wt_cMMb_plus1_fitdist_exp, wt_cMMb_plus1_fitdist_gamma),
        legendtext = plot.legend, fitpch = 20)
-cdfcomp(list(wt_cMMb_plus1eNeg6_fitdist_lnorm, wt_cMMb_plus1eNeg6_fitdist_weibull,
-             wt_cMMb_plus1eNeg6_fitdist_exp, wt_cMMb_plus1eNeg6_fitdist_gamma),
+cdfcomp(list(wt_cMMb_plus1_fitdist_lnorm, wt_cMMb_plus1_fitdist_weibull,
+             wt_cMMb_plus1_fitdist_exp, wt_cMMb_plus1_fitdist_gamma),
         legendtext = plot.legend, fitlwd = 2)
-ppcomp(list(wt_cMMb_plus1eNeg6_fitdist_lnorm, wt_cMMb_plus1eNeg6_fitdist_weibull,
-            wt_cMMb_plus1eNeg6_fitdist_exp, wt_cMMb_plus1eNeg6_fitdist_gamma),
+ppcomp(list(wt_cMMb_plus1_fitdist_lnorm, wt_cMMb_plus1_fitdist_weibull,
+            wt_cMMb_plus1_fitdist_exp, wt_cMMb_plus1_fitdist_gamma),
        legendtext = plot.legend, fitpch = 20)
 dev.off()
 pdf(paste0(plotDir, "CTL3.9_wt_cMMb_plus1eNeg6_GoFplots.pdf"))
