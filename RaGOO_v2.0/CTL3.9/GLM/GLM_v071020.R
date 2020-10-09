@@ -240,25 +240,21 @@ dat <- data.frame(covMat,
 
 # First fit model using the gamma distribution,
 # which will enable model fitting using the exponential distribution
-glmGamma <- glm2(formula = cMMb+1 ~ (CENH3_Rep1 + H2A_Set1 + H2AW6_Set1 + H2AX_Set1 +
-                                     H2AZ_Set1 + H3_Set1 + H2AW7_Set2 + H3_Set2 +
-                                     H3K27me3_Set2 + H3K4me1_Set2 + H3K4me3_Set2 + H4K20me1_Set2 +
-                                     H1_Set3 + H3_Set3 + H3_Set5 + H3K27me1_Set5 +
-                                     H3K36me3_Set5 + H3K9me1_Set5 + H3K9me2_Set5 + H3_Set7 +
-                                     HTB1_Set7 + HTB2_Set7 + HTB3_Set7 + HTB4_Set7 +
+#glmGamma <- glm2(formula = cMMb+1 ~ (CENH3_Rep1 + H2A_Set1 + H2AW6_Set1 + H2AX_Set1 +
+#                                     H2AZ_Set1 + H3_Set1 + H2AW7_Set2 + H3_Set2 +
+#                                     H3K27me3_Set2 + H3K4me1_Set2 + H3K4me3_Set2 + H4K20me1_Set2 +
+#                                     H1_Set3 + H3_Set3 + H3_Set5 + H3K27me1_Set5 +
+#                                     H3K36me3_Set5 + H3K9me1_Set5 + H3K9me2_Set5 + H3_Set7 +
+#                                     HTB1_Set7 + HTB2_Set7 + HTB3_Set7 + HTB4_Set7 +
+#                                     H3K9me2_Rep1 + REC8_HA_Rep2 + ASY1_Rep1 + MSH4_HA_Rep1 +
+#                                     DMC1_V5_Rep1 + MTOPVIB_HA_Rep1 + MTOPVIB_HA_Rep2 + SPO11oligos_Rep1 +
+#                                     width)^2,
+#                 data = dat,
+#                 family = Gamma(link="inverse"),
+#                 control = glm.control(maxit = 100000))
+glmGamma <- glm2(formula = cMMb+1 ~ (CENH3_Rep1 + H2AW6_Set1 + H2AZ_Set1 + H3K4me1_Set2 + H3K4me3_Set2 +
                                      H3K9me2_Rep1 + REC8_HA_Rep2 + ASY1_Rep1 + MSH4_HA_Rep1 +
-                                     DMC1_V5_Rep1 + MTOPVIB_HA_Rep1 + MTOPVIB_HA_Rep2 + SPO11oligos_Rep1 +
-                                     width)^2,
-                 data = dat,
-                 family = Gamma(link="inverse"),
-                 control = glm.control(maxit = 100000))
-glmGamma <- glm2(formula = cMMb+1 ~ (CENH3_Rep1 +
-                                     H2AZ_Set1 +
-                                     H3K9me2_Rep1 + REC8_HA_Rep2 + ASY1_Rep1 + MSH4_HA_Rep1 +
-                                     DMC1_V5_Rep1 +
-                                     MTOPVIB_HA_Rep1 +
-                                     MTOPVIB_HA_Rep2 +
-                                     SPO11oligos_Rep1)^2,
+                                     DMC1_V5_Rep1 + MTOPVIB_HA_Rep1 + MTOPVIB_HA_Rep2 + SPO11oligos_Rep1)^2,
                  data = dat,
                  family = Gamma(link="inverse"),
                  control = glm.control(maxit = 100000))
@@ -283,666 +279,88 @@ summary(glmGamma, dispersion = 1)
 
 glmGamma_stepAIC <- stepAIC(object = glmGamma, direction = "both")
 print("stepAIC-selected model formula:")
-print(formula(glmGamma_stepAIC)) # ????
+print(formula(glmGamma_stepAIC))
 #print(glmGamma_stepAIC$formula)
+glmGamma_formula <- formula(glmGamma_stepAIC)
 glmGamma_select <- glm2(formula = formula(glmGamma_stepAIC),
                         data = dat,
                         family = Gamma(link="inverse"),
                         control = glm.control(maxit = 100000))
-glmGamma_summary <- summary(glmGamma_select)
-glmGamma_coeffs <- glmGamma_summary$coefficients
-glmGamma_predict <- predict(glmGamma_select, type = "response")
-glmGamma_formula <- glmGamma_select$formula
-
 # Estimate the shape parameter and adjust GLM coefficient estimates and predictions
 # See https://stats.stackexchange.com/questions/58497/using-r-for-glm-with-gamma-distribution
-glmGamma_shape <- gamma.shape(glmGamma)
-glmGamma_predict <- predict(glmGamma, type = "response",
+glmGamma_shape <- gamma.shape(glmGamma_select)
+glmGamma_predict <- predict(glmGamma_select, type = "response",
                             se = T, dispersion = 1/glmGamma_shape$alpha)
-glmExp_predict <- predict(glmGamma, type = "response",
+glmGamma_summary <- summary(glmGamma_select, dispersion = 1/glmGamma_shape$alpha)
+glmGamma_coeffs <- glmGamma_summary$coefficients
+glmExp_predict <- predict(glmGamma_select, type = "response",
                           se = T, dispersion = 1)
-summary(glmGamma, dispersion = 1/glmGamma_shape$alpha)
+glmExp_summary <- summary(glmGamma_select, dispersion = 1)
+glmExp_coeffs <- glmExp_summary$coefficients
 
-pdf(paste0(plotDir, "CTL3.9_wt_cMMb_plus1_empirical_gamma_exp_predict.pdf"))
-plot(x = 1:length(glmGamma$y), y = glmGamma$y, type = "l", col = "red")
-lines(x = 1:length(glmGamma$y), y = glmGamma_predict$fit, type = "l", col = "blue")
-lines(x = 1:length(glmGamma$y), y = glmExp_predict$fit, type = "l", col = "green", lty = 2)
-dev.off()
+save(glmGamma_stepAIC, file = "CTL3.9_wt_cMMb_glmGamma_stepAIC.RData")
+save(glmGamma_formula, file = "CTL3.9_wt_cMMb_glmGamma_formula.RData")
+save(glmGamma_select, file = "CTL3.9_wt_cMMb_glmGamma_select.RData")
+save(glmGamma_shape, file = "CTL3.9_wt_cMMb_glmGamma_shape.RData")
+save(glmGamma_predict, file = "CTL3.9_wt_cMMb_glmGamma_predict.RData")
+save(glmGamma_summary, file = "CTL3.9_wt_cMMb_glmGamma_summary.RData")
+save(glmGamma_coeffs, file = "CTL3.9_wt_cMMb_glmGamma_coeffs.RData")
+save(glmExp_predict, file = "CTL3.9_wt_cMMb_glmExp_predict.RData")
+save(glmExp_summary, file = "CTL3.9_wt_cMMb_glmExp_summary.RData")
+save(glmExp_coeffs, file = "CTL3.9_wt_cMMb_glmExp_coeffs.RData")
 
-save(glmGamma_stepAIC, file = paste0(outDir, "GLM_binomial_logit_",
-                                winSize/1e3, "kbWin_", stepSize, "bpStep_stepAIC.RData"))
-save(glmGamma_select, file = paste0(outDir, "GLM_binomial_logit_",
-                               winSize/1e3, "kbWin_", stepSize, "bpStep.RData"))
-save(glmGamma_summary, file = paste0(outDir, "GLM_binomial_logit_",
-                                winSize/1e3, "kbWin_", stepSize, "bpStep_summary.RData"))
-write.csv(glmGamma_coeffs, file = paste0(outDir, "GLM_binomial_logit_",
-                                    winSize/1e3, "kbWin_", stepSize, "bpStep_coeff.csv"))
-save(glmGamma_predict, file = paste0(outDir, "GLM_binomial_logit_",
-                                winSize/1e3, "kbWin_", stepSize, "bpStep_predict.RData"))
-save(glmGamma_formula, file = paste0(outDir, "GLM_binomial_logit_",
-                                winSize/1e3, "kbWin_", stepSize, "bpStep_stepAIC_selected_formula.RData"))
 # Evaluate model goodness-of-fit using chi-squared test based on the
 # residual deviance and degrees of freedom
 # P-value > 0.05 indicates failure to reject the null hypothesis
 # that the model fits the data
-1 - pchisq(q = summary(glmGamma, dispersion = 1)$deviance,
-           df = summary(glmGamma, dispersion = 1)$df.residual)
-            
+1 - pchisq(q = summary(glmGamma_select, dispersion = 1/glmGamma_shape$alpha)$deviance,
+           df = summary(glmGamma_select, dispersion = 1/glmGamma_shape$alpha)$df.residual)
+#[1] 1
+1 - pchisq(q = summary(glmGamma_select, dispersion = 1)$deviance,
+           df = summary(glmGamma_select, dispersion = 1)$df.residual)
+#[1] 1
 
+# Disable scientific notation for plotting
+options("scipen"=100)
 
-
-# For modelling CO counts, would need to use log2(sum ChIP/sum input) coverage,
-# rather than log2(mean ChIP/mean input) coverage in each windows
-# COs data show overdispersion with unequal means and variances
-# Therefore, build negative binomial GLM with "log" link function
-nbinom <- glm.nb(formula = COs ~ (CENH3_Rep1 +
-                                  H2AZ_Set1 +
-                                  H3K9me2_Rep1 + REC8_HA_Rep2 + ASY1_Rep1 + MSH4_HA_Rep1 +
-                                  DMC1_V5_Rep1 +
-#                                  MTOPVIB_HA_Rep1 +
-                                  MTOPVIB_HA_Rep2 +
-                                  SPO11oligos_Rep1)^2,
-                 data = dat,
-                 control = glm.control(maxit = 100000),
-                 link = log)
-nbinom <- glm.nb(formula = COs ~ (CENH3_Rep1 + H2A_Set1 + H2AW6_Set1 + H2AX_Set1 +
-                                  H2AZ_Set1 + H3_Set1 + H2AW7_Set2 + H3_Set2 +
-                                  H3K27me3_Set2 + H3K4me1_Set2 + H3K4me3_Set2 + H4K20me1_Set2 +
-                                  H1_Set3 + H3_Set3 + H3_Set5 + H3K27me1_Set5 +
-                                  H3K36me3_Set5 + H3K9me1_Set5 + H3K9me2_Set5 + H3_Set7 +
-                                  HTB1_Set7 + HTB2_Set7 + HTB3_Set7 + HTB4_Set7 +
-                                  H3K9me2_Rep1 + REC8_HA_Rep2 + ASY1_Rep1 + MSH4_HA_Rep1 +
-                                  DMC1_V5_Rep1 + MTOPVIB_HA_Rep1 + MTOPVIB_HA_Rep2 + SPO11oligos_Rep1 +
-                                  width)^2,
-                 data = dat,
-                 control = glm.control(maxit = 100000),
-                 link = log)
-print(warnings())
-nbinom_stepAIC <- stepAIC(object = nbinom, direction = "both")
-print(warnings())
-print("stepAIC-selected model formula:")
-print(formula(nbinom_stepAIC)) # ????
-#print(nbinom_stepAIC$formula)
-nbinom_select <- glm.nb(formula = formula(nbinom_stepAIC),
-                        data = dat,
-                        control = glm.control(maxit = 100000),
-                        link = log)
-nbinom_summary <- summary(nbinom_select)
-nbinom_coeffs <- nbinom_summary$coefficients
-nbinom_predict <- predict(nbinom_select, type = "response")
-nbinom_formula <- nbinom_select$formula
-save(nbinom_stepAIC, file = paste0(outDir, "GLM_binomial_logit_",
-                                winSize/1e3, "kbWin_", stepSize, "bpStep_stepAIC.RData"))
-save(nbinom_select, file = paste0(outDir, "GLM_binomial_logit_",
-                               winSize/1e3, "kbWin_", stepSize, "bpStep.RData"))
-save(nbinom_summary, file = paste0(outDir, "GLM_binomial_logit_",
-                                winSize/1e3, "kbWin_", stepSize, "bpStep_summary.RData"))
-write.csv(nbinom_coeffs, file = paste0(outDir, "GLM_binomial_logit_",
-                                    winSize/1e3, "kbWin_", stepSize, "bpStep_coeff.csv"))
-save(nbinom_predict, file = paste0(outDir, "GLM_binomial_logit_",
-                                winSize/1e3, "kbWin_", stepSize, "bpStep_predict.RData"))
-save(nbinom_formula, file = paste0(outDir, "GLM_binomial_logit_",
-                                winSize/1e3, "kbWin_", stepSize, "bpStep_stepAIC_selected_formula.RData"))
-
-
-## Zero-inflated negative binomial regression:
-#ZINB <- lapply(seq_along(pops_winIndCOs_list), function(x) {
-#  zeroinfl(formula = pops_winIndCOs_list[[x]] ~ genotype | 1,
-#           dist = "negbin")
-#})
-
-# Build binomial GLM with "logit" link function
-glmCO <- glm2(formula = CO ~ (meanSPO11 + meanMNase + meanH3K4me3 + meanDNAmeth + meanSNPsPB + width)^2,
-              family = binomial(link="logit"),
-              control = glm.control(maxit = 100000),
-              data = dat)
-
-glm_stepAIC <- stepAIC(object = glmCO, direction = "both")
-print("stepAIC-selected model formula:")
-print(glm_stepAIC$formula)
-glm_select <- glm2(formula = glm_stepAIC$formula, 
-                   family = binomial(link="logit"),
-                   control = glm.control(maxit = 100000),
-                   data = dat)
-glm_summary <- summary(glm_select)
-glm_coeffs <- glm_summary$coefficients
-glm_predict <- predict(glm_select, type = "response")
-glm_formula <- glm_select$formula
-save(glm_stepAIC, file = paste0(outDir, "GLM_binomial_logit_",
-                                winSize/1e3, "kbWin_", stepSize, "bpStep_stepAIC.RData"))
-save(glm_select, file = paste0(outDir, "GLM_binomial_logit_",
-                               winSize/1e3, "kbWin_", stepSize, "bpStep.RData"))
-save(glm_summary, file = paste0(outDir, "GLM_binomial_logit_",
-                                winSize/1e3, "kbWin_", stepSize, "bpStep_summary.RData"))
-write.csv(glm_coeffs, file = paste0(outDir, "GLM_binomial_logit_",
-                                    winSize/1e3, "kbWin_", stepSize, "bpStep_coeff.csv"))
-save(glm_predict, file = paste0(outDir, "GLM_binomial_logit_",
-                                winSize/1e3, "kbWin_", stepSize, "bpStep_predict.RData"))
-save(glm_formula, file = paste0(outDir, "GLM_binomial_logit_",
-                                winSize/1e3, "kbWin_", stepSize, "bpStep_stepAIC_selected_formula.RData"))
-
-# Plot observed and predicted crossovers for regionsGR grouped into hexiles
-
-# ylims 0 to max
-# meanSNPsPB hexiles
-sort(dat$meanSNPsPB)[round(1:6*(nrow(dat)/6))]
-#[1] 0.002005495 0.004004255 0.006650165 0.010117647 0.015663462 0.062791667
-levels(cut(x = dat$meanSNPsPB,
-           breaks = c(min(dat$meanSNPsPB, na.rm = T),
-                      sort(dat$meanSNPsPB)[round(1:6*(nrow(dat)/6))])))
-#[1] "(1.04e-07,0.00201]" "(0.00201,0.004]"    "(0.004,0.00665]"
-#[4] "(0.00665,0.0101]"   "(0.0101,0.0157]"    "(0.0157,0.0628]"
-ssID <- split(x = 1:nrow(dat),
-              f = cut(x = dat$meanSNPsPB,
-                      breaks = c(min(dat$meanSNPsPB, na.rm = T),
-                                 sort(dat$meanSNPsPB)[round(1:6*(nrow(dat)/6))])))
-pco <- lapply(ssID, function(x) {
-  sapply(1:100, function(ii) {
-    sum( rbinom(n = length(x), size = 1, prob = glm_predict[x]) ) /
-    sum( dat$width[x] ) * 1e6
-  })
-})
-tco <- sapply(ssID, function(x) {
-  sum(dat$CO[x]) /
-  sum(dat$width[x]) * 1e6
-})
-pdf(paste0(plotDir, "GLM_binomial_logit_",
-           winSize/1e3, "kbWin_", stepSize, "bpStep_SNPsPerBase_hexiles_CO_boxplot_ymin0.pdf"))
-boxplot(
-  pco,
-  ylim = c(0, max(c(unlist(pco), tco), na.rm = T)),
-  main = "CO~(SPO11-1+nucleosomes+H3K4me3+DNAmeth+SNPsPB+width)^2",
-  xlab = "SNPs per base hexiles",
-  ylab = "Crossovers per Mb",
-  cex.axis = 0.5
-#  names = as.character(6:1)
-)
-points(x = 1:length(ssID),
-       y = tco,
-       col = "red", pch = 19)
+# Plot observed cM/Mb and predicted cM/Mb by GLM (glmGamma_select)
+pdf(paste0(plotDir, "CTL3.9_wt_cMMb_observed_predicted_gamma_GLM.pdf"),
+    height = 5, width = 10)
+plot(x = round((winDF$start+winDF$end)/2),
+     y = glmGamma_select$y-1,
+     xlab = "", ylab = "",
+     xaxt = "n", yaxt = "n",
+     type = "l", lwd = 2, col = "red")
+lines(x = round((winDF$start+winDF$end)/2),
+      y = glmGamma_predict$fit-1,
+      lty = 2, lwd = 2, col = "black")
+axis(side = 1, cex.axis = 1, lwd.tick = 1.5,
+     at = round((winDF$start+winDF$end)/2),
+     labels = round(round((winDF$start+winDF$end)/2)/1e6, digits = 3))
+axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
+mtext(side = 1, line = 2, cex = 1, text = "Coordinates (Mb)")
+mtext(side = 2, line = 2, cex = 1, text = "cM/Mb")
+mtext(side = 3, line = 2, cex = 0.75,
+      text = "Gamma GLM: cM/Mb~(CENH3+H2A.W6+H2A.Z+H3K4me1+H3K4me3+H3K9me2+REC8+ASY1+MSH4+DMC1+MTOPVIBr1+MTOPVIBr2+SPO11-1)^2")
+box(lwd = 1.5)
 legend("topleft",
        legend = c("Observed", "Predicted"),
-       text.col = c("red", "black"), bty = "n")
+       text.col = c("red", "black"),
+       col = "white",
+       ncol = 1, cex = 1, lwd = 1.5, bty = "n")
 dev.off()
 
-# width hexiles
-sort(dat$width)[round(1:6*(nrow(dat)/6))]
-#[1]     53     99    168    292    595 127250
-levels(cut(x = dat$width,
-           breaks = c(min(dat$width, na.rm = T),
-                      sort(dat$width)[round(1:6*(nrow(dat)/6))])))
-#[1] "(4,53]"         "(53,99]"        "(99,168]"       "(168,292]"
-#[5] "(292,595]"      "(595,1.27e+05]"
-ssID <- split(x = 1:nrow(dat),
-              f = cut(x = dat$width,
-                      breaks = c(min(dat$width, na.rm = T),
-                                 sort(dat$width)[round(1:6*(nrow(dat)/6))])))
-pco <- lapply(ssID, function(x) {
-  sapply(1:100, function(ii) {
-    sum( rbinom(n = length(x), size = 1, prob = glm_predict[x]) ) /
-    sum( dat$width[x] ) * 1e6
-  })
-})
-tco <- sapply(ssID, function(x) {
-  sum(dat$CO[x]) /
-  sum(dat$width[x]) * 1e6
-})
-pdf(paste0(plotDir, "GLM_binomial_logit_", winSize/1e3, "kbWin_", stepSize, "bpStep_width_hexiles_CO_boxplot_ymin0.pdf"))
-boxplot(
-  pco,
-  ylim = c(0, max(c(unlist(pco), tco), na.rm = T)),
-  main = "CO~(SPO11-1+nucleosomes+H3K4me3+DNAmeth+SNPsPB+width)^2",
-  xlab = "Width hexiles",
-  ylab = "Crossovers per Mb",
-  cex.axis = 0.5
-#  names = as.character(6:1)
-)
-tco <- sapply(ssID, function(x) {
-  sum(dat$CO[x]) /
-  sum(dat$width[x]) * 1e6
-})
-points(x = 1:length(ssID),
-       y = tco,
-       col = "red", pch = 19)
-legend("topright",
-       legend = c("Observed", "Predicted"),
-       text.col = c("red", "black"), bty = "n")
-dev.off()
-
-# meanSPO11 hexiles
-sort(dat$meanSPO11)[round(1:6*(nrow(dat)/6))]
-#[1] -1.231059665 -0.740196379 -0.383552660 -0.004741569  0.465551989 [6]  4.399179154
-levels(cut(x = dat$meanSPO11,
-           breaks = c(min(dat$meanSPO11, na.rm = T),
-                      sort(dat$meanSPO11)[round(1:6*(nrow(dat)/6))])))
-#[1] "(-4.47,-1.23]"     "(-1.23,-0.74]"     "(-0.74,-0.384]"
-#[4] "(-0.384,-0.00474]" "(-0.00474,0.466]"  "(0.466,4.4]"
-ssID <- split(x = 1:nrow(dat),
-              f = cut(x = dat$meanSPO11,
-                      breaks = c(min(dat$meanSPO11, na.rm = T),
-                                 sort(dat$meanSPO11)[round(1:6*(nrow(dat)/6))])))
-pco <- lapply(ssID, function(x) {
-  sapply(1:100, function(ii) {
-    sum( rbinom(n = length(x), size = 1, prob = glm_predict[x]) ) /
-    sum( dat$width[x] ) * 1e6
-  })
-})
-tco <- sapply(ssID, function(x) {
-  sum(dat$CO[x]) /
-  sum(dat$width[x]) * 1e6
-})
-pdf(paste0(plotDir, "GLM_binomial_logit_", winSize/1e3, "kbWin_", stepSize, "bpStep_SPO11_hexiles_CO_boxplot_ymin0.pdf"))
-boxplot(
-  pco,
-  ylim = c(0, max(c(unlist(pco), tco), na.rm = T)),
-  main = "CO~(SPO11-1+nucleosomes+H3K4me3+DNAmeth+SNPsPB+width)^2",
-  xlab = "SPO11-1-oligo hexiles",
-  ylab = "Crossovers per Mb",
-  cex.axis = 0.5
-#  names = as.character(6:1)
-)
-tco <- sapply(ssID, function(x) {
-  sum(dat$CO[x]) /
-  sum(dat$width[x]) * 1e6
-})
-points(x = 1:length(ssID),
-       y = tco,
-       col = "red", pch = 19)
-legend("topleft",
-       legend = c("Observed", "Predicted"),
-       text.col = c("red", "black"), bty = "n")
-dev.off()
-
-# meanMNase hexiles
-sort(dat$meanMNase)[round(1:6*(nrow(dat)/6))]
-#[1] -1.16445198 -0.50423235 -0.01477396  0.39903072  0.82942352  3.26628143
-levels(cut(x = dat$meanMNase,
-           breaks = c(min(dat$meanMNase, na.rm = T),
-                      sort(dat$meanMNase)[round(1:6*(nrow(dat)/6))])))
-#[1] "(-4.76,-1.16]"    "(-1.16,-0.504]"   "(-0.504,-0.0148]" "(-0.0148,0.399]"
-#[5] "(0.399,0.829]"    "(0.829,3.27]"
-ssID <- split(x = 1:nrow(dat),
-              f = cut(x = dat$meanMNase,
-                      breaks = c(min(dat$meanMNase, na.rm = T),
-                                 sort(dat$meanMNase)[round(1:6*(nrow(dat)/6))])))
-pco <- lapply(ssID, function(x) {
-  sapply(1:100, function(ii) {
-    sum( rbinom(n = length(x), size = 1, prob = glm_predict[x]) ) /
-    sum( dat$width[x] ) * 1e6
-  })
-})
-tco <- sapply(ssID, function(x) {
-  sum(dat$CO[x]) /
-  sum(dat$width[x]) * 1e6
-})
-pdf(paste0(plotDir, "GLM_binomial_logit_", winSize/1e3, "kbWin_", stepSize, "bpStep_MNase_hexiles_CO_boxplot_ymin0.pdf"))
-boxplot(
-  pco,
-  ylim = c(0, max(c(unlist(pco), tco), na.rm = T)),
-  main = "CO~(SPO11-1+nucleosomes+H3K4me3+DNAmeth+SNPsPB+width)^2",
-  xlab = "Nucleosomes hexiles",
-  ylab = "Crossovers per Mb",
-  cex.axis = 0.5
-#  names = as.character(6:1)
-)
-tco <- sapply(ssID, function(x) {
-  sum(dat$CO[x]) /
-  sum(dat$width[x]) * 1e6
-})
-points(x = 1:length(ssID),
-       y = tco,
-       col = "red", pch = 19)
-legend("topright",
-       legend = c("Observed", "Predicted"),
-       text.col = c("red", "black"), bty = "n")
-dev.off()
-
-# meanH3K4me3 hexiles
-sort(dat$meanH3K4me3)[round(1:6*(nrow(dat)/6))]
-#[1] -1.8795789 -1.3227856 -0.7459590 -0.1397163  0.5624519  4.1235247
-levels(cut(x = dat$meanH3K4me3,
-           breaks = c(min(dat$meanH3K4me3, na.rm = T),
-                      sort(dat$meanH3K4me3)[round(1:6*(nrow(dat)/6))])))
-#[1] "(-5.03,-1.88]"  "(-1.88,-1.32]"  "(-1.32,-0.746]" "(-0.746,-0.14]"
-#[5] "(-0.14,0.562]"  "(0.562,4.12]"
-ssID <- split(x = 1:nrow(dat),
-              f = cut(x = dat$meanH3K4me3,
-                      breaks = c(min(dat$meanH3K4me3, na.rm = T),
-                                 sort(dat$meanH3K4me3)[round(1:6*(nrow(dat)/6))])))
-pco <- lapply(ssID, function(x) {
-  sapply(1:100, function(ii) {
-    sum( rbinom(n = length(x), size = 1, prob = glm_predict[x]) ) /
-    sum( dat$width[x] ) * 1e6
-  })
-})
-tco <- sapply(ssID, function(x) {
-  sum(dat$CO[x]) /
-  sum(dat$width[x]) * 1e6
-})
-pdf(paste0(plotDir, "GLM_binomial_logit_", winSize/1e3, "kbWin_", stepSize, "bpStep_H3K4me3_hexiles_CO_boxplot_ymin0.pdf"))
-boxplot(
-  pco,
-  ylim = c(0, max(c(unlist(pco), tco), na.rm = T)),
-  main = "CO~(SPO11-1+nucleosomes+H3K4me3+DNAmeth+SNPsPB+width)^2",
-  xlab = "H3K4me3 hexiles",
-  ylab = "Crossovers per Mb",
-  cex.axis = 0.5
-#  names = as.character(6:1)
-)
-tco <- sapply(ssID, function(x) {
-  sum(dat$CO[x]) /
-  sum(dat$width[x]) * 1e6
-})
-points(x = 1:length(ssID),
-       y = tco,
-       col = "red", pch = 19)
-legend("topright",
-       legend = c("Observed", "Predicted"),
-       text.col = c("red", "black"), bty = "n")
-dev.off()
-
-# meanDNAmeth quintiles
-sort(dat$meanDNAmeth)[round(1:6*(nrow(dat)/6))]
-#[1] 0.000000000 0.002380967 0.014949459 0.204084944 0.450664333 1.000000000
-levels(cut(x = dat$meanDNAmeth,
-           breaks = c(
-                      sort(dat$meanDNAmeth)[round(1:6*(nrow(dat)/6))])))
-#[1] "(0,0.00238]"      "(0.00238,0.0149]" "(0.0149,0.204]"   "(0.204,0.451]"
-#[5] "(0.451,1]"
-ssID <- split(x = 1:nrow(dat),
-              f = cut(x = dat$meanDNAmeth,
-                      breaks = c(
-                                 sort(dat$meanDNAmeth)[round(1:6*(nrow(dat)/6))])))
-pco <- lapply(ssID, function(x) {
-  sapply(1:100, function(ii) {
-    sum( rbinom(n = length(x), size = 1, prob = glm_predict[x]) ) /
-    sum( dat$width[x] ) * 1e6
-  })
-})
-tco <- sapply(ssID, function(x) {
-  sum(dat$CO[x]) /
-  sum(dat$width[x]) * 1e6
-})
-pdf(paste0(plotDir, "GLM_binomial_logit_", winSize/1e3, "kbWin_", stepSize, "bpStep_DNAmeth_quintiles_CO_boxplot_ymin0.pdf"))
-boxplot(
-  pco,
-  ylim = c(0, max(c(unlist(pco), tco), na.rm = T)),
-  main = "CO~(SPO11-1+nucleosomes+H3K4me3+DNAmeth+SNPsPB+width)^2",
-  xlab = "DNA methylation quintiles",
-  ylab = "Crossovers per Mb",
-  cex.axis = 0.5
-#  names = as.character(6:1)
-)
-tco <- sapply(ssID, function(x) {
-  sum(dat$CO[x]) /
-  sum(dat$width[x]) * 1e6
-})
-points(x = 1:length(ssID),
-       y = tco,
-       col = "red", pch = 19)
-legend("topright",
-       legend = c("Observed", "Predicted"),
-       text.col = c("red", "black"), bty = "n")
-dev.off()
-
-# ylims 0 to 60
-# meanSNPsPB hexiles
-sort(dat$meanSNPsPB)[round(1:6*(nrow(dat)/6))]
-#[1] 0.002005495 0.004004255 0.006650165 0.010117647 0.015663462 0.062791667
-levels(cut(x = dat$meanSNPsPB,
-           breaks = c(min(dat$meanSNPsPB, na.rm = T),
-                      sort(dat$meanSNPsPB)[round(1:6*(nrow(dat)/6))])))
-#[1] "(1.04e-07,0.00201]" "(0.00201,0.004]"    "(0.004,0.00665]"
-#[4] "(0.00665,0.0101]"   "(0.0101,0.0157]"    "(0.0157,0.0628]"
-ssID <- split(x = 1:nrow(dat),
-              f = cut(x = dat$meanSNPsPB,
-                      breaks = c(min(dat$meanSNPsPB, na.rm = T),
-                                 sort(dat$meanSNPsPB)[round(1:6*(nrow(dat)/6))])))
-pco <- lapply(ssID, function(x) {
-  sapply(1:100, function(ii) {
-    sum( rbinom(n = length(x), size = 1, prob = glm_predict[x]) ) /
-    sum( dat$width[x] ) * 1e6
-  })
-})
-tco <- sapply(ssID, function(x) {
-  sum(dat$CO[x]) /
-  sum(dat$width[x]) * 1e6
-})
-pdf(paste0(plotDir, "GLM_binomial_logit_",
-           winSize/1e3, "kbWin_", stepSize, "bpStep_SNPsPerBase_hexiles_CO_boxplot_ymin0_ymax60.pdf"))
-boxplot(
-  pco,
-  ylim = c(0, 60),
-  main = "CO~(SPO11-1+nucleosomes+H3K4me3+DNAmeth+SNPsPB+width)^2",
-  xlab = "SNPs per base hexiles",
-  ylab = "Crossovers per Mb",
-  cex.axis = 0.5
-#  names = as.character(6:1)
-)
-points(x = 1:length(ssID),
-       y = tco,
-       col = "red", pch = 19)
-legend("topleft",
-       legend = c("Observed", "Predicted"),
-       text.col = c("red", "black"), bty = "n")
-dev.off()
-
-# width hexiles
-sort(dat$width)[round(1:6*(nrow(dat)/6))]
-#[1]     53     99    168    292    595 127250
-levels(cut(x = dat$width,
-           breaks = c(min(dat$width, na.rm = T),
-                      sort(dat$width)[round(1:6*(nrow(dat)/6))])))
-#[1] "(4,53]"         "(53,99]"        "(99,168]"       "(168,292]"
-#[5] "(292,595]"      "(595,1.27e+05]"
-ssID <- split(x = 1:nrow(dat),
-              f = cut(x = dat$width,
-                      breaks = c(min(dat$width, na.rm = T),
-                                 sort(dat$width)[round(1:6*(nrow(dat)/6))])))
-pco <- lapply(ssID, function(x) {
-  sapply(1:100, function(ii) {
-    sum( rbinom(n = length(x), size = 1, prob = glm_predict[x]) ) /
-    sum( dat$width[x] ) * 1e6
-  })
-})
-tco <- sapply(ssID, function(x) {
-  sum(dat$CO[x]) /
-  sum(dat$width[x]) * 1e6
-})
-pdf(paste0(plotDir, "GLM_binomial_logit_", winSize/1e3, "kbWin_", stepSize, "bpStep_width_hexiles_CO_boxplot_ymin0_ymax60.pdf"))
-boxplot(
-  pco,
-  ylim = c(0, 60),
-  main = "CO~(SPO11-1+nucleosomes+H3K4me3+DNAmeth+SNPsPB+width)^2",
-  xlab = "Width hexiles",
-  ylab = "Crossovers per Mb",
-  cex.axis = 0.5
-#  names = as.character(6:1)
-)
-tco <- sapply(ssID, function(x) {
-  sum(dat$CO[x]) /
-  sum(dat$width[x]) * 1e6
-})
-points(x = 1:length(ssID),
-       y = tco,
-       col = "red", pch = 19)
-legend("topright",
-       legend = c("Observed", "Predicted"),
-       text.col = c("red", "black"), bty = "n")
-dev.off()
-
-# meanSPO11 hexiles
-sort(dat$meanSPO11)[round(1:6*(nrow(dat)/6))]
-#[1] -1.231059665 -0.740196379 -0.383552660 -0.004741569  0.465551989 [6]  4.399179154
-levels(cut(x = dat$meanSPO11,
-           breaks = c(min(dat$meanSPO11, na.rm = T),
-                      sort(dat$meanSPO11)[round(1:6*(nrow(dat)/6))])))
-#[1] "(-4.47,-1.23]"     "(-1.23,-0.74]"     "(-0.74,-0.384]"
-#[4] "(-0.384,-0.00474]" "(-0.00474,0.466]"  "(0.466,4.4]"
-ssID <- split(x = 1:nrow(dat),
-              f = cut(x = dat$meanSPO11,
-                      breaks = c(min(dat$meanSPO11, na.rm = T),
-                                 sort(dat$meanSPO11)[round(1:6*(nrow(dat)/6))])))
-pco <- lapply(ssID, function(x) {
-  sapply(1:100, function(ii) {
-    sum( rbinom(n = length(x), size = 1, prob = glm_predict[x]) ) /
-    sum( dat$width[x] ) * 1e6
-  })
-})
-tco <- sapply(ssID, function(x) {
-  sum(dat$CO[x]) /
-  sum(dat$width[x]) * 1e6
-})
-pdf(paste0(plotDir, "GLM_binomial_logit_", winSize/1e3, "kbWin_", stepSize, "bpStep_SPO11_hexiles_CO_boxplot_ymin0_ymax60.pdf"))
-boxplot(
-  pco,
-  ylim = c(0, 60),
-  main = "CO~(SPO11-1+nucleosomes+H3K4me3+DNAmeth+SNPsPB+width)^2",
-  xlab = "SPO11-1-oligo hexiles",
-  ylab = "Crossovers per Mb",
-  cex.axis = 0.5
-#  names = as.character(6:1)
-)
-tco <- sapply(ssID, function(x) {
-  sum(dat$CO[x]) /
-  sum(dat$width[x]) * 1e6
-})
-points(x = 1:length(ssID),
-       y = tco,
-       col = "red", pch = 19)
-legend("topleft",
-       legend = c("Observed", "Predicted"),
-       text.col = c("red", "black"), bty = "n")
-dev.off()
-
-# meanMNase hexiles
-sort(dat$meanMNase)[round(1:6*(nrow(dat)/6))]
-#[1] -1.16445198 -0.50423235 -0.01477396  0.39903072  0.82942352  3.26628143
-levels(cut(x = dat$meanMNase,
-           breaks = c(min(dat$meanMNase, na.rm = T),
-                      sort(dat$meanMNase)[round(1:6*(nrow(dat)/6))])))
-#[1] "(-4.76,-1.16]"    "(-1.16,-0.504]"   "(-0.504,-0.0148]" "(-0.0148,0.399]"
-#[5] "(0.399,0.829]"    "(0.829,3.27]"
-ssID <- split(x = 1:nrow(dat),
-              f = cut(x = dat$meanMNase,
-                      breaks = c(min(dat$meanMNase, na.rm = T),
-                                 sort(dat$meanMNase)[round(1:6*(nrow(dat)/6))])))
-pco <- lapply(ssID, function(x) {
-  sapply(1:100, function(ii) {
-    sum( rbinom(n = length(x), size = 1, prob = glm_predict[x]) ) /
-    sum( dat$width[x] ) * 1e6
-  })
-})
-tco <- sapply(ssID, function(x) {
-  sum(dat$CO[x]) /
-  sum(dat$width[x]) * 1e6
-})
-pdf(paste0(plotDir, "GLM_binomial_logit_", winSize/1e3, "kbWin_", stepSize, "bpStep_MNase_hexiles_CO_boxplot_ymin0_ymax60.pdf"))
-boxplot(
-  pco,
-  ylim = c(0, 60),
-  main = "CO~(SPO11-1+nucleosomes+H3K4me3+DNAmeth+SNPsPB+width)^2",
-  xlab = "Nucleosomes hexiles",
-  ylab = "Crossovers per Mb",
-  cex.axis = 0.5
-#  names = as.character(6:1)
-)
-tco <- sapply(ssID, function(x) {
-  sum(dat$CO[x]) /
-  sum(dat$width[x]) * 1e6
-})
-points(x = 1:length(ssID),
-       y = tco,
-       col = "red", pch = 19)
-legend("topright",
-       legend = c("Observed", "Predicted"),
-       text.col = c("red", "black"), bty = "n")
-dev.off()
-
-# meanH3K4me3 hexiles
-sort(dat$meanH3K4me3)[round(1:6*(nrow(dat)/6))]
-#[1] -1.8795789 -1.3227856 -0.7459590 -0.1397163  0.5624519  4.1235247
-levels(cut(x = dat$meanH3K4me3,
-           breaks = c(min(dat$meanH3K4me3, na.rm = T),
-                      sort(dat$meanH3K4me3)[round(1:6*(nrow(dat)/6))])))
-#[1] "(-5.03,-1.88]"  "(-1.88,-1.32]"  "(-1.32,-0.746]" "(-0.746,-0.14]"
-#[5] "(-0.14,0.562]"  "(0.562,4.12]"
-ssID <- split(x = 1:nrow(dat),
-              f = cut(x = dat$meanH3K4me3,
-                      breaks = c(min(dat$meanH3K4me3, na.rm = T),
-                                 sort(dat$meanH3K4me3)[round(1:6*(nrow(dat)/6))])))
-pco <- lapply(ssID, function(x) {
-  sapply(1:100, function(ii) {
-    sum( rbinom(n = length(x), size = 1, prob = glm_predict[x]) ) /
-    sum( dat$width[x] ) * 1e6
-  })
-})
-tco <- sapply(ssID, function(x) {
-  sum(dat$CO[x]) /
-  sum(dat$width[x]) * 1e6
-})
-pdf(paste0(plotDir, "GLM_binomial_logit_", winSize/1e3, "kbWin_", stepSize, "bpStep_H3K4me3_hexiles_CO_boxplot_ymin0_ymax60.pdf"))
-boxplot(
-  pco,
-  ylim = c(0, 60),
-  main = "CO~(SPO11-1+nucleosomes+H3K4me3+DNAmeth+SNPsPB+width)^2",
-  xlab = "H3K4me3 hexiles",
-  ylab = "Crossovers per Mb",
-  cex.axis = 0.5
-#  names = as.character(6:1)
-)
-tco <- sapply(ssID, function(x) {
-  sum(dat$CO[x]) /
-  sum(dat$width[x]) * 1e6
-})
-points(x = 1:length(ssID),
-       y = tco,
-       col = "red", pch = 19)
-legend("topright",
-       legend = c("Observed", "Predicted"),
-       text.col = c("red", "black"), bty = "n")
-dev.off()
-
-# meanDNAmeth quintiles
-sort(dat$meanDNAmeth)[round(1:6*(nrow(dat)/6))]
-#[1] 0.000000000 0.002380967 0.014949459 0.204084944 0.450664333 1.000000000
-levels(cut(x = dat$meanDNAmeth,
-           breaks = c(
-                      sort(dat$meanDNAmeth)[round(1:6*(nrow(dat)/6))])))
-#[1] "(0,0.00238]"      "(0.00238,0.0149]" "(0.0149,0.204]"   "(0.204,0.451]"
-#[5] "(0.451,1]"
-ssID <- split(x = 1:nrow(dat),
-              f = cut(x = dat$meanDNAmeth,
-                      breaks = c(
-                                 sort(dat$meanDNAmeth)[round(1:6*(nrow(dat)/6))])))
-pco <- lapply(ssID, function(x) {
-  sapply(1:100, function(ii) {
-    sum( rbinom(n = length(x), size = 1, prob = glm_predict[x]) ) /
-    sum( dat$width[x] ) * 1e6
-  })
-})
-tco <- sapply(ssID, function(x) {
-  sum(dat$CO[x]) /
-  sum(dat$width[x]) * 1e6
-})
-pdf(paste0(plotDir, "GLM_binomial_logit_", winSize/1e3, "kbWin_", stepSize, "bpStep_DNAmeth_quintiles_CO_boxplot_ymin0_ymax60.pdf"))
-boxplot(
-  pco,
-  ylim = c(0, 60),
-  main = "CO~(SPO11-1+nucleosomes+H3K4me3+DNAmeth+SNPsPB+width)^2",
-  xlab = "DNA methylation quintiles",
-  ylab = "Crossovers per Mb",
-  cex.axis = 0.5
-#  names = as.character(6:1)
-)
-tco <- sapply(ssID, function(x) {
-  sum(dat$CO[x]) /
-  sum(dat$width[x]) * 1e6
-})
-points(x = 1:length(ssID),
-       y = tco,
-       col = "red", pch = 19)
-legend("topright",
-       legend = c("Observed", "Predicted"),
-       text.col = c("red", "black"), bty = "n")
-dev.off()
+## For modelling CO counts, we would need to use log2(sum ChIP/sum input) coverage,
+## rather than log2(mean ChIP/mean input) coverage in each windows
+## COs data show overdispersion with unequal means and variances
+## Therefore, evaluate fit of negative binomial GLM with "log" link function
+#nbinom <- glm.nb(formula = COs ~ (CENH3_Rep1 +
+#                                  H2AZ_Set1 +
+#                                  H3K9me2_Rep1 + REC8_HA_Rep2 + ASY1_Rep1 + MSH4_HA_Rep1 +
+#                                  DMC1_V5_Rep1 +
+##                                  MTOPVIB_HA_Rep1 +
+#                                  MTOPVIB_HA_Rep2 +
+#                                  SPO11oligos_Rep1)^2,
+#                 data = dat,
+#                 control = glm.control(maxit = 100000),
+#                 link = log)
