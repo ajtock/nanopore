@@ -72,6 +72,10 @@ do
   samtools view -bh > aln/MM2_TAIR10_${sample}_sorted_primary_MAPQ${MAPQ}_aln_${counter}.bam
 done < <(samtools view bam/MM2_TAIR10_${sample}_sorted_primary_MAPQ${MAPQ}.bam)
 
+# Sanity check to ensure that the number of alignments in the original BAM file
+# is the same as the number of separate per-alignment BAM files in aln/
+[[ $(( ${aln} )) == $( ls aln/ | wc -l ) ]] || { echo >&2 "number of alignments in bam/MM2_TAIR10_${sample}_sorted_primary_MAPQ${MAPQ}.bam is NOT equal to the number of separate per-alignment BAM files in aln/ !"; exit 1; }
+
 # Extract the total number of mismatches and gaps (NM:i:# SAM field)
 # and the number of ambiguous bases in each alignment (nn:i:# SAM field)
 counter=0
@@ -82,7 +86,6 @@ do
   awk 'BEGIN {OFS="\t"}; {print $12, $15}' - \
   >> bam/MM2_TAIR10_${sample}_sorted_primary_MAPQ${MAPQ}_NM_nn.txt
 done < <(samtools view bam/MM2_TAIR10_${sample}_sorted_primary_MAPQ${MAPQ}.bam)
-
 
 ## Generate indexed BAM file for each alignment
 ## Method 2
@@ -109,11 +112,14 @@ done
 # Change limit on number of open files from 1024 to 1048576
 ulimit -Sn 1048576
 
+# Create variant pileup directory if it doesn't already exist
+[[ -d plp ]] || mkdir plp
+
 # Generate textual pileup matrix with columns (info in columns 4-6
 # is output for each BAM file supplied via the --bam_list option):
 # 1. Sequence name (e.g., chromosome)
 # 2. 1-based coordinate
-# 3. Reference base
+# 3. Reference genome base
 # 4. BAM file 1: Number of reads covering this position
 # 5. BAM file 1: Read bases at this position
 ## ("." denotes a match to the reference base on the positive strand,
@@ -126,14 +132,14 @@ ulimit -Sn 1048576
 # 6. BAM file 1: Phred-scaled base qualities
 ## see https://davetang.org/muse/2015/08/26/samtools-mpileup/
 ## http://www.htslib.org/doc/1.9/samtools.html
-[[ -f MM2_TAIR10_${sample}_sorted_primary_MAPQ${MAPQ}.plp ]] && \
-echo "ERROR: MM2_TAIR10_${sample}_sorted_primary_MAPQ${MAPQ}.plp EXISTS; NOT OVERWRITTEN" || \
+[[ -f plp/MM2_TAIR10_${sample}_sorted_primary_MAPQ${MAPQ}.plp ]] && \
+echo "ERROR: plp/MM2_TAIR10_${sample}_sorted_primary_MAPQ${MAPQ}.plp EXISTS; NOT OVERWRITTEN" || \
 samtools mpileup --bam-list MM2_TAIR10_${sample}_sorted_primary_MAPQ${MAPQ}_BAM_list.txt \
                  --fasta-ref TAIR10_chr_all.fa \
-                 --positions 3a_SNPs_indels_in_Col_and_Ws.bed \
+                 --positions 3a_polymorphisms/3a_SNPs_indels_in_Col_and_Ws.bed \
 		 --ignore-RG \
                  --min-BQ 0 \
-                 > MM2_TAIR10_${sample}_sorted_primary_MAPQ${MAPQ}.plp
+                 > plp/MM2_TAIR10_${sample}_sorted_primary_MAPQ${MAPQ}.plp
 
 ## Provide each aligment in BAM as input to longshot
 #for x in $(seq 1 3606)
