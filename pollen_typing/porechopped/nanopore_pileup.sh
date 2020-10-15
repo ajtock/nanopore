@@ -72,6 +72,18 @@ do
   samtools view -bh > aln/MM2_TAIR10_${sample}_sorted_primary_MAPQ${MAPQ}_aln_${counter}.bam
 done < <(samtools view bam/MM2_TAIR10_${sample}_sorted_primary_MAPQ${MAPQ}.bam)
 
+# Extract the total number of mismatches and gaps (NM:i:# SAM field)
+# and the number of ambiguous bases in each alignment (nn:i:# SAM field)
+counter=0
+while IFS="" read -r line || [[ -n "$LINE" ]]
+do
+  ((counter++))
+  printf '%s\n' "${line}" | \
+  awk 'BEGIN {OFS="\t"}; {print $12, $15}' - \
+  >> bam/MM2_TAIR10_${sample}_sorted_primary_MAPQ${MAPQ}_NM_nn.txt
+done < <(samtools view bam/MM2_TAIR10_${sample}_sorted_primary_MAPQ${MAPQ}.bam)
+
+
 ## Generate indexed BAM file for each alignment
 ## Method 2
 ## ${x} in this for loop decreases from ${aln} to 1
