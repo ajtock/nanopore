@@ -1,0 +1,25 @@
+THREADS: 48
+SAMPLE: ["map_K40_E2",
+         "map_K45_E2",
+         "map_K50_E2",
+         "map_K150_E4",
+         "map_K200_E4",
+         "map_K300_E4"]
+FEATURES:
+      chrName: ["Chr1",
+                "Chr2",
+                "Chr3",
+                "Chr4",
+                "Chr5"]
+MAPPING:
+      reference: "data/index/Athaliana_ONT_RaGOO_v2.0"
+COVERAGE:
+      regionBodyLength: 180
+      startLabel: "Start"
+      endLabel: "End"
+      upstream: 1000
+      downstream: 1000
+      flankName: "1kb"
+      binSize: 10
+      binName: "10bp"
+      sortRegions: "keep"
