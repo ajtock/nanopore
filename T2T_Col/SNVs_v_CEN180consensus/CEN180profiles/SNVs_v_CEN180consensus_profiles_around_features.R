@@ -6,7 +6,7 @@
 # Usage:
 # /applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features.R Chr1 180 1000 1kb 10 10bp genomewide CEN180
 # /applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features.R Chr1 180 1000 1kb 10 10bp genomewide CENgap
-# /applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features.R Chr1 11000 1000 1kb 200 10bp genomewide CENAthila
+# /applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features.R Chr1 500 1000 1kb 10 10bp genomewide CENAthila
 
 #chrName <- "Chr1"
 #regionBodyLength <- 180
@@ -252,7 +252,7 @@ if(!(featureName %in% c("CENgap", "CENAthila"))) {
                                           mean_mode = "w0",
                                           w = winSize,
                                           background = 0,
-                                          smooth = TRUE,
+                                          smooth = FALSE,
                                           include_target = TRUE,
                                           target_ratio = featureSize/(featureSize+(flankSize*2)))
     print("feature_smoothed")
@@ -278,7 +278,7 @@ if(!(featureName %in% c("CENgap", "CENAthila"))) {
                                          mean_mode = "w0",
                                          w = winSize,
                                          background = 0,
-                                         smooth = TRUE,
+                                         smooth = FALSE,
                                          include_target = TRUE,
                                          target_ratio = featureSize/(featureSize+(flankSize*2)))
     print("ranLoc_smoothed")
@@ -343,7 +343,7 @@ if(!(featureName %in% c("CENgap", "CENAthila"))) {
                                           mean_mode = "w0",
                                           w = winSize,
                                           background = 0,
-                                          smooth = TRUE,
+                                          smooth = FALSE,
                                           include_target = TRUE,
                                           target_ratio = featureSize/(featureSize+(flankSize*2)))
     print("feature_smoothed")
