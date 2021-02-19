@@ -1,18 +1,19 @@
 #!/applications/R/R-4.0.0/bin/Rscript
 
-# Profile CEN180 SNV (vs CEN180 consensus) frequency around CEN180, random loci,
+# Profile CEN180 SNV (vs CEN180 consensus) frequency around CEN180, CENrandom loci,
 # gaps in CEN180, and centromeric Athila Gypsy LTR elements
 
 # Usage:
-# /applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features.R Chr1 180 1000 1kb 10 10bp genomewide CEN180
-# /applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features.R Chr1 180 1000 1kb 10 10bp genomewide CENgap
-# /applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features.R Chr1 500 1000 1kb 10 10bp genomewide CENAthila
+# /applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features.R Chr1 180 2000 2kb 10 10bp genomewide CEN180
+# /applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features.R Chr1 2000 2000 2kb 10 10bp genomewide CENgap
+# /applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features.R Chr1 2000 2000 2kb 10 10bp genomewide CENAthila
+# /applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features.R Chr1 2000 2000 2kb 10 10bp genomewide CENsoloLTR
 
 #chrName <- "Chr1"
 #regionBodyLength <- 180
-#upstream <- 1000
-#downstream <- 1000
-#flankName <- "1kb"
+#upstream <- 2000
+#downstream <- 2000
+#flankName <- "2kb"
 #binSize <- 10
 #binName <- "10bp"
 #interval <- "genomewide"
@@ -117,9 +118,9 @@ print(length(featuresGR))
 
 # Load ranLoc in BED format and convert into GRanges
 # Note addition of 1 to 0-based BED start coordinates
-if(!(featureName %in% c("CENgap", "CENAthila"))) {
+if(featureName == "CEN180") {
   ranLoc <- read.table(paste0("/home/ajt200/analysis/repeats/CEN180_in_T2T_Col/",
-                              featureName, "_in_T2T_Col_", chrName, "_randomLoci.bed"),
+                              featureName, "_in_T2T_Col_", chrName, "_CENrandomLoci.bed"),
                        header = F)
   colnames(ranLoc) <- c("chr", "start", "end", "name", "score", "strand")
   ranLocGR <- GRanges(seqnames = ranLoc$chr,
@@ -213,7 +214,7 @@ SNVclassNames <- c(
                    "transversion"
                   )
 
-if(!(featureName %in% c("CENgap", "CENAthila"))) {
+if(featureName == "CEN180") {
   # Define matrix and column mean outfiles
   outDF <- lapply(seq_along(SNVclassNames), function(x) {
     list(paste0(matDir, SNVclassNames[x],
@@ -221,7 +222,7 @@ if(!(featureName %in% c("CENgap", "CENAthila"))) {
                 "_matrix_bin", binName, "_flank", flankName, ".tab"),
          paste0(matDir, SNVclassNames[x],
                 "_CEN180_consensus_variants_MappedOn_T2T_Col_around_", featureName, "_in_", chrName,
-                "_ranLoc_matrix_bin", binName, "_flank", flankName, ".tab"))
+                "_CENranLoc_matrix_bin", binName, "_flank", flankName, ".tab"))
   })
   outDFcolMeans <- lapply(seq_along(SNVclassNames), function(x) {
     list(paste0(matDir, SNVclassNames[x],
@@ -229,7 +230,7 @@ if(!(featureName %in% c("CENgap", "CENAthila"))) {
                 "_matrix_bin", binName, "_flank", flankName, "_colMeans.tab"),
          paste0(matDir, SNVclassNames[x],
                 "_CEN180_consensus_variants_MappedOn_T2T_Col_around_", featureName, "_in_", chrName,
-                "_ranLoc_matrix_bin", binName, "_flank", flankName, "_colMeans.tab"))
+                "_CENranLoc_matrix_bin", binName, "_flank", flankName, "_colMeans.tab"))
   })
   
   # Function to create SNV frequency matrices for
