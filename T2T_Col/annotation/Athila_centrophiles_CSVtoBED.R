@@ -19,22 +19,20 @@ library(GenomicRanges)
 AthilaDir <- "CENAthila/"
 gapDir <- "CENgap/"
 soloLTRDir <- "CENsoloLTR/"
-ranLocDir <- "CENranLoc/"
 system(paste0("[ -d ", AthilaDir, " ] || mkdir -p ", AthilaDir))
 system(paste0("[ -d ", gapDir, " ] || mkdir -p ", gapDir))
 system(paste0("[ -d ", soloLTRDir, " ] || mkdir -p ", soloLTRDir))
-system(paste0("[ -d ", ranLocDir, " ] || mkdir -p ", ranLocDir))
 
 # Genomic definitions
 fai <- read.table("/home/ajt200/analysis/nanopore/T2T_Col/T2T_Col.fa.fai", header = F)
-chrs <- fai$V1[fai$V1 %in% chrName]
-chrLens <- fai$V2[fai$V1 %in% chrName]
+chrs <- fai$V1[which(fai$V1 %in% chrName)]
+chrLens <- fai$V2[which(fai$V1 %in% chrName)]
 regionGR <- GRanges(seqnames = chrs,
-                    ranges = IRanges(start = rep(1, length(chrs)),
+                    ranges = IRanges(start = 1,
                                      end = chrLens),
                     strand = "*")
-CENstart <- c(14840750, 3724530, 13597090, 4203495, 11783990)
-CENend <- c(17558182, 5946091, 15733029, 6977107, 14551874)
+CENstart <- c(14840750, 3724530, 13597090, 4203495, 11783990)[which(fai$V1 %in% chrName)]
+CENend <- c(17558182, 5946091, 15733029, 6977107, 14551874)[which(fai$V1 %in% chrName)]
 CENGR <- GRanges(seqnames = chrs,
                  ranges = IRanges(start = CENstart,
                                   end = CENend),
@@ -76,7 +74,6 @@ write.table(Athila_bed,
             file = paste0(AthilaDir, "CENAthila_in_T2T_Col_",
                           paste0(chrName, collapse = "_"), ".bed"),
             quote = F, sep = "\t", row.names = F, col.names = F)
-
 
 # Convert gap into GRanges
 gapGR <- GRanges(seqnames = gap_rows$chr,
