@@ -20,6 +20,9 @@ library(rtracklayer)
 library(parallel)
 library(data.table)
 
+outDir <- "genes/"
+system(paste0("[ -d ", outDir, " ] || mkdir -p ", outDir))
+
 # Genomic definitions
 fai <- read.table("/home/ajt200/analysis/nanopore/T2T_Col/T2T_Col.fa.fai", header = F)
 chrs <- fai$V1[1:5]
@@ -82,7 +85,7 @@ mRNA_rep <- mRNA_rep[ order(mRNA_rep$seqid,
                             mRNA_rep$start,
                             mRNA_rep$end), ]
 write.table(mRNA_rep[,1:9],
-            file = paste0("T2T_Col_representative_mRNA_",
+            file = paste0(outDir, "T2T_Col_representative_mRNA_",
                           paste0(chrName, collapse = "_"), ".gff3"),
             quote = F, sep = "\t", row.names = F, col.names = F)
 mRNA_rep_bed <- data.frame(chr = as.character(mRNA_rep[,1]),
@@ -92,7 +95,7 @@ mRNA_rep_bed <- data.frame(chr = as.character(mRNA_rep[,1]),
                            score = as.numeric(mRNA_rep[,6]),
                            strand = as.character(mRNA_rep[,7]))
 write.table(mRNA_rep_bed,
-            file = paste0("T2T_Col_representative_mRNA_",
+            file = paste0(outDir, "T2T_Col_representative_mRNA_",
                           paste0(chrName, collapse = "_"), ".bed"),
             quote = F, sep = "\t", row.names = F, col.names = F)
 
@@ -144,6 +147,6 @@ ranLoc_bed <- data.frame(chr = as.character(seqnames(ranLocGR)),
                          score = rep("NA", length(ranLocGR)),
                          strand = as.character(strand(ranLocGR)))
 write.table(ranLoc_bed,
-            file = paste0("T2T_Col_representative_mRNA_",
+            file = paste0(outDir, "T2T_Col_representative_mRNA_",
                           paste0(chrName, collapse = "_"), "_randomLoci.bed"),
             quote = F, sep = "\t", row.names = F, col.names = F)
