@@ -7,18 +7,14 @@
 # Calculate windowed TE frequencies along each T2T_Col chromosome
 
 # Usage:
-# /applications/R/R-4.0.0/bin/Rscript TEsuperfam_frequency_chrProfiles.R 'Chr1,Chr2,Chr3,Chr4,Chr5' 10000 101
+# /applications/R/R-4.0.0/bin/Rscript TEsuperfam_frequency_chrProfiles.R 10000 101
 
-#chrName <- unlist(strsplit("Chr1,Chr2,Chr3,Chr4,Chr5",
-#                           split = ","))
 #genomeBinSize <- 10000
 #maPeriod <- 101
 
 args <- commandArgs(trailingOnly = T)
-chrName <- unlist(strsplit(args[1],
-                           split = ","))
-genomeBinSize <- as.integer(args[2])
-maPeriod <- as.integer(args[3])
+genomeBinSize <- as.integer(args[1])
+maPeriod <- as.integer(args[2])
 
 if(floor(log10(genomeBinSize)) + 1 < 4) {
   genomeBinName <- paste0(genomeBinSize, "bp")
@@ -48,19 +44,25 @@ CENGR <- GRanges(seqnames = chrs,
                                   end = CENend),
                  strand = "*")
 
+# Make chromosomal coordinates cumulative
+# such that the first coordinate of Chr2 is
+# equal to the last coordinate of Chr1 + 1
+sumchr <- cumsum(c(0, chrLens))
+print(sumchr)
+
 # Get TE superfamNames
-superfamNames <- system(paste0("ls *", paste0(chrName, collapse = "_"), ".bed"), intern = T)
+superfamNames <- system("ls T2T_Col_TEs*Chr1_Chr2_Chr3_Chr4_Chr5.bed", intern = T)
 superfamNames <- gsub("T2T_Col_TEs_", "", superfamNames)
-superfamNames <- gsub(paste0("_", paste0(chrName, collapse = "_"), ".bed"), "", superfamNames)
+superfamNames <- gsub("_Chr1_Chr2_Chr3_Chr4_Chr5.bed", "", superfamNames)
 
 superfamNames <- sort(unique(superfamNames))
 
 superfamDFlist <- lapply(seq_along(superfamNames), function(x) {
   tmp <- read.table(paste0("T2T_Col_TEs_", superfamNames[x], "_",
-                           paste0(chrName, collapse = "_"), ".bed"),
+                           "Chr1_Chr2_Chr3_Chr4_Chr5.bed"),
                     header = F)
   colnames(tmp) <- c("chr", "start0based", "end", "name", "featureID", "strand")
-  tmp 
+  return(tmp) 
 })
 
 # Define windows as GRanges object
@@ -100,14 +102,14 @@ for(k in seq_along(superfamNames)) {
                                  ignore.strand = T)
     profileChr <- data.frame(chr = as.character(chrs[i]),
                              window = as.integer(start(windowsChrGR)),
+                             cumwindow = as.integer(start(windowsChrGR)+sumchr[i]),
                              features = as.integer(winfeatures),
                              stringsAsFactors = F)
     superfamkProfile <- rbind(superfamkProfile, profileChr)
   }
   write.table(superfamkProfile,
               file = paste0("T2T_Col_TEs_", superfamNames[k],
-                            "_frequency_per_", genomeBinName, "_in_T2T_Col_",
-                            paste0(chrName, collapse = "_"), "_unsmoothed.tsv"),
+                            "_frequency_per_", genomeBinName, "_unsmoothed.tsv"),
               row.names = F, col.names = T, quote = F, sep = "\t")
   
   # Calculate moving average of current window,
@@ -127,34 +129,23 @@ for(k in seq_along(superfamNames)) {
   }, mc.cores = length(chrs))
   
   filt_chrProfiles <- mclapply(seq_along(chrProfiles), function(x) {
-    filt_superfamkProfile <- NULL
-    for(k in seq_along(superfamNames)) {
-      filt_chrProfilek <- stats::filter(x = chrProfiles[[x]][,k+2],
-                                        filter = f,
-                                        sides = 2)
-      filt_chrProfilek[1:flank] <- filt_chrProfilek[flank+1]
-      filt_chrProfilek[(length(filt_chrProfilek)-flank+1):length(filt_chrProfilek)] <- filt_chrProfilek[(length(filt_chrProfilek)-flank)]
-      filt_superfamkProfile <- data.frame(chr = as.character(chrProfiles[[x]]$chr),
-                                          window = as.integer(chrProfiles[[x]]$window),
-                                          filt_features = as.numeric(filt_chrProfilek),
-                                          stringsAsFactors = F)
-      filt_superfamkProfile <- cbind(filt_superfamkProfile, filt_superfamkProfile[,3])
-    }
-    filt_superfamkProfile <- data.frame(filt_superfamkProfile[,1:2],
-                                        filt_superfamkProfile,
+    filt_chrProfilek <- stats::filter(x = chrProfiles[[x]]$features,
+                                      filter = f,
+                                      sides = 2)
+    filt_chrProfilek[1:flank] <- filt_chrProfilek[flank+1]
+    filt_chrProfilek[(length(filt_chrProfilek)-flank+1):length(filt_chrProfilek)] <- filt_chrProfilek[(length(filt_chrProfilek)-flank)]
+    filt_superfamkProfile <- data.frame(chr = as.character(chrProfiles[[x]]$chr),
+                                        window = as.integer(chrProfiles[[x]]$window),
+                                        cumwindow = as.integer(chrProfiles[[x]]$cumwindow),
+                                        filt_features = as.numeric(filt_chrProfilek),
                                         stringsAsFactors = F)
-    colnames(filt_superfamkProfile) <- c("chr", "window",
-                                         paste0("filt_quantile", 1:quantiles))
     return(filt_superfamkProfile)
   }, mc.cores = length(chrProfiles))
   
   # Combine list of 1 data.frame per chromosome into one data.frame
   filt_superfamkProfile <- do.call(rbind, filt_chrProfiles)
   write.table(filt_superfamkProfile,
-              file = paste0(outDir,
-                            "CEN180_frequency_per_", genomeBinName,
-                            "_", quantiles, "quantiles_",
-                            "_by_", orderingFactor,
-                            "_of_CEN180_in_T2T_Col_",
-                            paste0(chrName, collapse = "_"), "_smoothed.tsv"),
+              file = paste0("T2T_Col_TEs_", superfamNames[k],
+                            "_frequency_per_", genomeBinName, "_smoothed.tsv"),
               row.names = F, col.names = T, quote = F, sep = "\t")
+}
