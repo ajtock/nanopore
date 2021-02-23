@@ -72,6 +72,11 @@ TEs <- TEs[TEs$seqid %in% chrName,]
 print(dim(TEs))
 #[1] 42770    22
 
+# Order by chromosome, start coordinates and end coordinates
+TEs <- TEs[ order(TEs$seqid,
+                  TEs$start,
+                  TEs$end), ]
+
 TEsGR <- GRanges(seqnames = TEs$seqid,
                  ranges = IRanges(start = TEs$start,
                                   end = TEs$end),
@@ -90,7 +95,7 @@ if(length(TEs_CEN_overlaps) > 0) {
   nonCEN_TEsGR <- TEsGR
 }
 
-# Order by chromosome, start coordinates and end coordinates
+# Convert into BED format
 nonCEN_TEs_bed <- data.frame(chr = as.character(seqnames(nonCEN_TEsGR)),
                              start = as.integer(start(nonCEN_TEsGR)-1),
                              end = as.integer(end(nonCEN_TEsGR)),
@@ -103,51 +108,7 @@ write.table(nonCEN_TEs_bed,
             quote = F, sep = "\t", row.names = F, col.names = F)
 
 
-# Define function to select randomly positioned loci of the same
-# width distribution as nonCEN_TEsGR
-ranLocStartSelect <- function(coordinates, n) {
-  sample(x = coordinates,
-         size = n,
-         replace = FALSE)
-}
-
-# Disable scientific notation (e.g., 59000000 rather than 5.9e+07)
-options(scipen = 100)
-
-# Apply ranLocStartSelect() on a per-chromosome basis so that
-# ranLocGR contains the same number of loci per chromosome as TEsGR
-ranLocGR <- GRanges()
-for(i in 1:length(chrs)) {
-  nonCEN_TEsChrGR <- nonCEN_TEsGR[seqnames(nonCEN_TEsGR) == chrs[i]]
-  regionChrGR <- regionGR[seqnames(regionGR) == chrs[i]]
-  # Contract regionChrGR so that random loci and 2-kb flanking regions
-  # do not extend beyond chromosome ends
-  end(regionChrGR) <- end(regionChrGR)-max(width(nonCEN_TEsChrGR))-2000
-  start(regionChrGR) <- start(regionChrGR)+2000
-  # Define seed so that random selections are reproducible
-  set.seed(93750174)
-  ranLocChrStart <- ranLocStartSelect(coordinates = unlist(lapply(seq_along(regionChrGR), function(x) {           
-                                                             start(regionChrGR[x]) : end(regionChrGR[x])          
-                                                           })),
-                                      n = length(nonCEN_TEsChrGR))
-  ranLocChrGR <- GRanges(seqnames = chrs[i],
-                         ranges = IRanges(start = ranLocChrStart,
-                                          width = width(nonCEN_TEsChrGR)),
-                         strand = strand(nonCEN_TEsChrGR))
-  ranLocGR <- append(ranLocGR, ranLocChrGR)
-}
-
-ranLoc_bed <- data.frame(chr = as.character(seqnames(ranLocGR)),
-                         start = as.integer(start(ranLocGR)-1),
-                         end = as.integer(end(ranLocGR)),
-                         name = as.integer(1:length(ranLocGR)),
-                         score = rep("NA", length(ranLocGR)),
-                         strand = as.character(strand(ranLocGR)))
-write.table(ranLoc_bed,
-            file = paste0("T2T_Col_TEs_All_",
-                          paste0(chrName, collapse = "_"), "_randomLoci.bed"),
-            quote = F, sep = "\t", row.names = F, col.names = F)
-
+# Extract noncentromeric TEs for each superfamily or a given superfamily
 
 if(superfamName != "All") {
   superfamNames <- superfamName
@@ -169,144 +130,34 @@ foreach(h = seq_along(superfamNames)) %dopar% {
   TEssf <- TEssf[ order(TEssf$seqid,
                         TEssf$start,
                         TEssf$end), ]
-  write.table(TEssf,
-              file = paste0("T2T_Col_TEs_", superfamNames[h], "_",
-                            paste0(chrName, collapse = "_"), ".tsv"),
-              quote = F, sep = "\t", row.names = F, col.names = T)
-  TEssf_bed <- data.frame(chr = as.character(TEssf[,1]),
-                          start = as.integer(TEssf[,4]-1),
-                          end = as.integer(TEssf[,5]),
-                          name = paste0(1:dim(TEssf)[1], "_", TEssf[,10]),
-                          score = as.character(TEssf[,6]),
-                          strand = as.character(TEssf[,7]))
-  write.table(TEssf_bed,
-              file = paste0("T2T_Col_TEs_", superfamNames[h], "_",
-                            paste0(chrName, collapse = "_"), ".bed"),
-              quote = F, sep = "\t", row.names = F, col.names = F)
   
   TEssfGR <- GRanges(seqnames = TEssf$seqid,
-                     ranges = IRanges(start = TEssf$start,
-                                      end = TEssf$end),
-                     strand = TEssf$strand)
+                   ranges = IRanges(start = TEssf$start,
+                                    end = TEssf$end),
+                   strand = TEssf$strand,
+                   name = paste0(1:dim(TEssf)[1], "_", TEssf[,10]),
+                   score = as.character(TEssf[,6]))
   
-  # Define function to select randomly positioned loci of the same
-  # width distribution as TEssfGR
-  ranLocStartSelect <- function(coordinates, n) {
-    sample(x = coordinates,
-           size = n,
-           replace = FALSE)
+  TEssf_CEN_overlaps <- findOverlaps(query = CENGR,
+                                   subject = TEssfGR,
+                                   type = "any",
+                                   select = "all",
+                                   ignore.strand = TRUE)
+  if(length(TEssf_CEN_overlaps) > 0) {
+    nonCEN_TEssfGR <- TEssfGR[-subjectHits(TEssf_CEN_overlaps)]
+  } else {
+    nonCEN_TEssfGR <- TEssfGR
   }
   
-  # Disable scientific notation (e.g., 59000000 rather than 5.9e+07)
-  options(scipen = 100)
-  
-  # Apply ranLocStartSelect() on a per-chromosome basis so that
-  # ranLocGR contains the same number of loci per chromosome as TEssfGR
-  ranLocGR <- GRanges()
-  for(i in 1:length(chrs)) {
-    TEssfChrGR <- TEssfGR[seqnames(TEssfGR) == chrs[i]]
-    regionChrGR <- regionGR[seqnames(regionGR) == chrs[i]]
-    # Contract regionChrGR so that random loci and 2-kb flanking regions
-    # do not extend beyond chromosome ends
-    end(regionChrGR) <- end(regionChrGR)-max(width(TEssfChrGR))-2000
-    start(regionChrGR) <- start(regionChrGR)+2000
-    # Define seed so that random selections are reproducible
-    set.seed(93750174)
-    ranLocChrStart <- ranLocStartSelect(coordinates = unlist(lapply(seq_along(regionChrGR), function(x) {           
-                                                               start(regionChrGR[x]) : end(regionChrGR[x])          
-                                                             })),
-                                        n = length(TEssfChrGR))
-    ranLocChrGR <- GRanges(seqnames = chrs[i],
-                           ranges = IRanges(start = ranLocChrStart,
-                                            width = width(TEssfChrGR)),
-                           strand = strand(TEssfChrGR))
-    ranLocGR <- append(ranLocGR, ranLocChrGR)
-  }
-  
-  ranLoc_bed <- data.frame(chr = as.character(seqnames(ranLocGR)),
-                           start = as.integer(start(ranLocGR)-1),
-                           end = as.integer(end(ranLocGR)),
-                           name = as.integer(1:length(ranLocGR)),
-                           score = rep("NA", length(ranLocGR)),
-                           strand = as.character(strand(ranLocGR)))
-  write.table(ranLoc_bed,
-              file = paste0("T2T_Col_TEs_", superfamNames[h], "_",
-                            paste0(chrName, collapse = "_"), "_randomLoci.bed"),
-              quote = F, sep = "\t", row.names = F, col.names = F)
-}
-
-superfamDNARNAUnclass <- sort(unique(TEs$DNA_RNA))
-foreach(h = seq_along(superfamDNARNAUnclass)) %dopar% {
-#for(h in seq_along(superfamDNARNAUnclass)) {
-  print(superfamDNARNAUnclass[h])
-  TEssf <- TEs[TEs$DNA_RNA == superfamDNARNAUnclass[h],]
-
-  # Order by chromosome, start coordinates and end coordinates
-  TEssf <- TEssf[ order(TEssf$seqid,
-                        TEssf$start,
-                        TEssf$end), ]
-  write.table(TEssf,
-              file = paste0("T2T_Col_TEs_", superfamDNARNAUnclass[h], "_",
-                            paste0(chrName, collapse = "_"), ".tsv"),
-              quote = F, sep = "\t", row.names = F, col.names = T)
-  TEssf_bed <- data.frame(chr = as.character(TEssf[,1]),
-                          start = as.integer(TEssf[,4]-1),
-                          end = as.integer(TEssf[,5]),
-                          name = paste0(1:dim(TEssf)[1], "_", TEssf[,10]),
-                          score = as.character(TEssf[,6]),
-                          strand = as.character(TEssf[,7]))
-  write.table(TEssf_bed,
-              file = paste0("T2T_Col_TEs_", superfamDNARNAUnclass[h], "_",
+  # Convert into BED format
+  nonCEN_TEssf_bed <- data.frame(chr = as.character(seqnames(nonCEN_TEssfGR)),
+                               start = as.integer(start(nonCEN_TEssfGR)-1),
+                               end = as.integer(end(nonCEN_TEssfGR)),
+                               name = as.character(nonCEN_TEssfGR$name),
+                               score = as.character(nonCEN_TEssfGR$score),
+                               strand = as.character(strand(nonCEN_TEssfGR)))
+  write.table(nonCEN_TEssf_bed,
+              file = paste0("T2T_Col_nonCEN_TEs_", superfamNames[h], "_",
                             paste0(chrName, collapse = "_"), ".bed"),
-              quote = F, sep = "\t", row.names = F, col.names = F)
-  
-  TEssfGR <- GRanges(seqnames = TEssf$seqid,
-                     ranges = IRanges(start = TEssf$start,
-                                      end = TEssf$end),
-                     strand = TEssf$strand)
-  
-  # Define function to select randomly positioned loci of the same
-  # width distribution as TEssfGR
-  ranLocStartSelect <- function(coordinates, n) {
-    sample(x = coordinates,
-           size = n,
-           replace = FALSE)
-  }
-  
-  # Disable scientific notation (e.g., 59000000 rather than 5.9e+07)
-  options(scipen = 100)
-  
-  # Apply ranLocStartSelect() on a per-chromosome basis so that
-  # ranLocGR contains the same number of loci per chromosome as TEssfGR
-  ranLocGR <- GRanges()
-  for(i in 1:length(chrs)) {
-    TEssfChrGR <- TEssfGR[seqnames(TEssfGR) == chrs[i]]
-    regionChrGR <- regionGR[seqnames(regionGR) == chrs[i]]
-    # Contract regionChrGR so that random loci and 2-kb flanking regions
-    # do not extend beyond chromosome ends
-    end(regionChrGR) <- end(regionChrGR)-max(width(TEssfChrGR))-2000
-    start(regionChrGR) <- start(regionChrGR)+2000
-    # Define seed so that random selections are reproducible
-    set.seed(93750174)
-    ranLocChrStart <- ranLocStartSelect(coordinates = unlist(lapply(seq_along(regionChrGR), function(x) {           
-                                                               start(regionChrGR[x]) : end(regionChrGR[x])          
-                                                             })),
-                                        n = length(TEssfChrGR))
-    ranLocChrGR <- GRanges(seqnames = chrs[i],
-                           ranges = IRanges(start = ranLocChrStart,
-                                            width = width(TEssfChrGR)),
-                           strand = strand(TEssfChrGR))
-    ranLocGR <- append(ranLocGR, ranLocChrGR)
-  }
-  
-  ranLoc_bed <- data.frame(chr = as.character(seqnames(ranLocGR)),
-                           start = as.integer(start(ranLocGR)-1),
-                           end = as.integer(end(ranLocGR)),
-                           name = as.integer(1:length(ranLocGR)),
-                           score = rep("NA", length(ranLocGR)),
-                           strand = as.character(strand(ranLocGR)))
-  write.table(ranLoc_bed,
-              file = paste0("T2T_Col_TEs_", superfamDNARNAUnclass[h], "_",
-                            paste0(chrName, collapse = "_"), "_randomLoci.bed"),
               quote = F, sep = "\t", row.names = F, col.names = F)
 }
