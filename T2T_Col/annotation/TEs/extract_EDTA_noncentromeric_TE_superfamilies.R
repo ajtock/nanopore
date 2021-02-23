@@ -68,9 +68,12 @@ print(tmp)
 
 stopifnot(identical(dim(TEs)[1], as.integer(tmp)))
 
+# Remove features shorter than 100 bp
+TEs <- TEs[which((TEs$end - TEs$start) + 1 >= 100),]
+
 TEs <- TEs[TEs$seqid %in% chrName,]
 print(dim(TEs))
-#[1] 42770    22
+#[1] 39034    22
 
 # Order by chromosome, start coordinates and end coordinates
 TEs <- TEs[ order(TEs$seqid,
@@ -126,23 +129,26 @@ foreach(h = seq_along(superfamNames)) %dopar% {
   print(superfamNames[h])
   TEssf <- TEs[TEs$superfamName == superfamNames[h],]
 
+  # Remove features shorter than 100 bp
+  TEssf <- TEssf[which((TEssf$end - TEssf$start) + 1 >= 100),]
+
   # Order by chromosome, start coordinates and end coordinates
   TEssf <- TEssf[ order(TEssf$seqid,
                         TEssf$start,
                         TEssf$end), ]
   
   TEssfGR <- GRanges(seqnames = TEssf$seqid,
-                   ranges = IRanges(start = TEssf$start,
-                                    end = TEssf$end),
-                   strand = TEssf$strand,
-                   name = paste0(1:dim(TEssf)[1], "_", TEssf[,10]),
-                   score = as.character(TEssf[,6]))
+                     ranges = IRanges(start = TEssf$start,
+                                      end = TEssf$end),
+                     strand = TEssf$strand,
+                     name = paste0(1:dim(TEssf)[1], "_", TEssf[,10]),
+                     score = as.character(TEssf[,6]))
   
   TEssf_CEN_overlaps <- findOverlaps(query = CENGR,
-                                   subject = TEssfGR,
-                                   type = "any",
-                                   select = "all",
-                                   ignore.strand = TRUE)
+                                     subject = TEssfGR,
+                                     type = "any",
+                                     select = "all",
+                                     ignore.strand = TRUE)
   if(length(TEssf_CEN_overlaps) > 0) {
     nonCEN_TEssfGR <- TEssfGR[-subjectHits(TEssf_CEN_overlaps)]
   } else {
@@ -151,11 +157,11 @@ foreach(h = seq_along(superfamNames)) %dopar% {
   
   # Convert into BED format
   nonCEN_TEssf_bed <- data.frame(chr = as.character(seqnames(nonCEN_TEssfGR)),
-                               start = as.integer(start(nonCEN_TEssfGR)-1),
-                               end = as.integer(end(nonCEN_TEssfGR)),
-                               name = as.character(nonCEN_TEssfGR$name),
-                               score = as.character(nonCEN_TEssfGR$score),
-                               strand = as.character(strand(nonCEN_TEssfGR)))
+                                 start = as.integer(start(nonCEN_TEssfGR)-1),
+                                 end = as.integer(end(nonCEN_TEssfGR)),
+                                 name = as.character(nonCEN_TEssfGR$name),
+                                 score = as.character(nonCEN_TEssfGR$score),
+                                 strand = as.character(strand(nonCEN_TEssfGR)))
   write.table(nonCEN_TEssf_bed,
               file = paste0("T2T_Col_nonCEN_TEs_", superfamNames[h], "_",
                             paste0(chrName, collapse = "_"), ".bed"),
