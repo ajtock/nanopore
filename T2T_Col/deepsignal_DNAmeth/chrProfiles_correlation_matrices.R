@@ -8,11 +8,11 @@
 # DNA methylation proportions derived from BS-seq, nanopolish or deepsignal
 
 # Usage:
-# ./chrProfiles_correlation_matrices.R T2T_Col 10000 genomewide 'Chr1,Chr2,Chr3,Chr4,Chr5' unsmoothed
+# ./chrProfiles_correlation_matrices.R T2T_Col 10000 chromwide 'Chr1,Chr2,Chr3,Chr4,Chr5' unsmoothed
 
 #genomeBinSize <- 10000
 #refbase <- "T2T_Col"
-#region <- "genomewide"
+#region <- "chromwide"
 #chrName <- unlist(strsplit("Chr1,Chr2,Chr3,Chr4,Chr5",
 #                           split = ","))
 #smoothing <- "unsmoothed"
@@ -56,40 +56,40 @@ CENstart <- c(14840750, 3724530, 13597090, 4203495, 11783990)[which(fai$V1 %in% 
 CENend <- c(17558182, 5946091, 15733029, 6977107, 14551874)[which(fai$V1 %in% chrName)]
 
 # Define region to be analysed
-if(region == "armperi") {
+if(region == "nonCEN") {
   regionGR <- GRanges(seqnames = rep(chrs, 2),
                       ranges = IRanges(start = c(rep(1, length(chrs)), CENend+1),
                                        end = c(CENstart-1, chrLens)),
                       strand = "*")
-} else if(region == "centromeric") {
+} else if(region == "CEN") {
   regionGR <- GRanges(seqnames = chrs,
                       ranges = IRanges(start = CENstart,
                                        end = CENend),
                       strand = "*")
-} else if(region == "genomewide") {
+} else if(region == "chromwide") {
   regionGR <- GRanges(seqnames = chrs,
                       ranges = IRanges(start = rep(1, length(chrs)),
                                        end = chrLens),
                       strand = "*")
 } else {
-  stop("region is not armperi, centromeric, or genomewide")
+  stop("region is not nonCEN, CEN, or chromwide")
 }
 
 # Define region to be masked out of analysis
-if(region == "armperi") {
+if(region == "nonCEN") {
   maskGR <- GRanges(seqnames = chrs,
                     ranges = IRanges(start = CENstart,
                                      end = CENend),
                     strand = "*")
-} else if(region == "centromeric") {
+} else if(region == "CEN") {
   maskGR <- GRanges(seqnames = rep(chrs, 2),
                     ranges = IRanges(start = c(rep(1, length(chrs)), CENend+1),
                                      end = c(CENstart-1, chrLens)),
                     strand = "*")
-} else if(region == "genomewide") {
+} else if(region == "chromwide") {
   maskGR <- GRanges()
 } else {
-  stop("region is not armperi, centromeric, or genomewide")
+  stop("region is not nonCEN, CEN, or chromwide")
 }
 
 paths <- c(
@@ -153,16 +153,12 @@ profilesNew <- lapply(seq_along(profiles), function(x) {
 
 # DNAmethList in each case is one list of 2 or 3 elements within the 4-element list profilesNew
 # To make each of these 2 or 3 elements its own element within a 9-element list profilesNew2:
-profilesNew2 <- profilesNew
+profilesNew2 <- NULL
 for(x in seq_along(profilesNew)) {
   if(class(profilesNew[[x]]) == "list") {
-    listLength <- length(profilesNew[[x]])
-    for( z in (length(profilesNew2) + listLength - 1) : (length(profilesNew2) + listLength - x) ) {
-      profilesNew2[[z]] <- profilesNew[[z - listLength + 1]]
-    }
-    for(y in 1:listLength) {
-      profilesNew2[[x + y - 1]] <- profilesNew[[x]][[y]]
-    }
+    profilesNew2 <- c(profilesNew2, lapply(profilesNew[[x]], function(y) { return(y) }))
+  } else {
+    profilesNew2 <- c(profilesNew2, list(profilesNew[[x]]))
   }
 }
 
@@ -171,7 +167,7 @@ profiles <- profilesNew2
 profilesGR <- lapply(seq_along(profiles), function(x) {
   GRanges(seqnames = profiles[[x]]$chr,
           ranges = IRanges(start = profiles[[x]]$window,
-                           end = profiles[[x]]$window+winSize-1),
+                           end = profiles[[x]]$window+genomeBinSize-1),
           strand = "*",
           value = profiles[[x]]$value)
 }) 
@@ -192,14 +188,7 @@ profilesGR <- lapply(seq_along(profilesGR_chrs), function(x) {
   do.call(c, profilesGR_chrs[[x]])
 })
 
-# Subset to include only those windows within the genomeName-subgenome
-if(length(genomeName) == 1) {
-  profilesGR <- lapply(seq_along(profilesGR), function(x) {
-    profilesGR[[x]][grep(genomeName,
-                         seqnames(profilesGR[[x]]))@values]
-  })
-}
-# Subset to include only those windows not overlapping masked region (e.g., heterochromatin)
+# Subset to include only those windows not overlapping masked region (e.g., "nonCEN")
 profilesGR <- lapply(seq_along(profilesGR), function(x) {
   mask_profilesGRx_overlap <- findOverlaps(query = maskGR,
                                            subject = profilesGR[[x]],
@@ -314,13 +303,13 @@ ggObj <- ggplot(data = corDat,
         legend.position = c(0.65, 0.05),
         legend.direction = "horizontal",
         legend.background = element_rect(fill = "transparent"),
-        plot.margin = unit(c(5.5, 70.5, 5.5, 5.5), "pt"),
+        plot.margin = unit(c(5.5, 200.5, 5.5, 5.5), "pt"),
         plot.title = element_text(hjust = 0.5, size = 30, colour = "black")) +
-  ggtitle(bquote(.(winSize/1e6) * "-Mb Spearman's" ~ italic(r[s]) ~ "for" ~
-          .(paste0(genomeName, collapse = "-, ")) * "-genome" ~
+  ggtitle(bquote(.(genomeBinSize/1e3) * "-kb Spearman's" ~ italic(r[s]) ~ "for" ~
+          .(paste0(chrName, collapse = ",")) ~
           .(region) ~ "regions (" * .(smoothing) * ")"))
 ggsave(paste0(plotDir,
-              "Spearman_correlation_matrix_", winName,
-              "_log2ChIPcontrol_cMMb_MNase_DNAmeth_genes_TEsuperfams_in_",
-              paste0(genomeName, collapse = "_"), "_genome_", region, "_", smoothing, "_qVals.pdf"),
-       plot = ggObj, height = 20, width = 20)
+              "Spearman_correlation_matrix_", refbase, "_", genomeBinName,
+              "_DNAmeth_Nanopolish_DeepSignal_Rigal2016PNASpeBSseq_",
+              paste0(chrName, collapse = "_"), "_", region, "_", smoothing, "_qVals.pdf"),
+       plot = ggObj, height = 20, width = 22)
