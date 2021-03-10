@@ -157,7 +157,7 @@ profilesNew2 <- profilesNew
 for(x in seq_along(profilesNew)) {
   if(class(profilesNew[[x]]) == "list") {
     listLength <- length(profilesNew[[x]])
-    for(z in (length(profilesNew) + listLength - 1) : (x+listLength) ) {
+    for( z in (length(profilesNew2) + listLength - 1) : (length(profilesNew2) + listLength - x) ) {
       profilesNew2[[z]] <- profilesNew[[z - listLength + 1]]
     }
     for(y in 1:listLength) {
