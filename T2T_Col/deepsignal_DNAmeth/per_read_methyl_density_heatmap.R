@@ -23,6 +23,8 @@ library(segmentSeq)
 library(ComplexHeatmap)
 library(dplyr)
 library(RColorBrewer)
+library(viridis)
+library(scales)
 
 plotDir <- paste0("plots/")
 system(paste0("[ -d ", plotDir, " ] || mkdir -p ", plotDir))
@@ -59,12 +61,19 @@ colnames(tab) <- c("chr", "midpoint", "per_read_mProp")
 tab[,2] <- round(tab[,2])
 tab <- tab[with(tab, order(chr, midpoint, decreasing = FALSE)),]
 
+# Define heatmap colours
+rich12 <- function() {manual_pal(values = c("#000040","#000093","#0020E9","#0076FF","#00B8C2","#04E466","#49FB25","#E7FD09","#FEEA02","#FFC200","#FF8500","#FF3300"))}
+rich10 <- function() {manual_pal(values = c("#000041","#0000A9","#0049FF","#00A4DE","#03E070","#5DFC21","#F6F905","#FFD701","#FF9500","#FF3300"))}
+rich8 <- function() {manual_pal(values = c("#000041","#0000CB","#0081FF","#02DA81","#80FE1A","#FDEE02","#FFAB00","#FF3300"))}
+rich6 <- function() {manual_pal(values = c("#000043","#0033FF","#01CCA4","#BAFF12","#FFCC00","#FF3300"))}
+revSpectralScale11 <- rev(brewer.pal(11, "Spectral"))
+viridisScale <- viridis_pal()(6)
+#htmpColour <- rich6()(6)
+htmpColour <- revSpectralScale11
+
 # For each genomeBinSize-bp adjacent window, calculate the mean of the genomeBinSize
 # per-base DNA methylation proportions within that window
 print(genomeBinName)
-# Define heatmap colours
-revSpectralScale11 <- rev(brewer.pal(11, "Spectral"))
-htmpColour <- revSpectralScale11 
 htmps <- NULL
 for(i in seq_along(chrs)) {
   # Define adjacent windows
@@ -119,8 +128,8 @@ for(i in seq_along(chrs)) {
   # Convert into matrix in which each column corresponds to a genomic window
   win_mProp_matrix <- t(as.matrix(x = bind_rows(win_mProp_list)))
   colnames(win_mProp_matrix) <- round(start(winGR)/1e6, digits = 1)
-  # Remove columns containing only NA
-  win_mProp_matrix <- win_mProp_matrix[,colSums(is.na(win_mProp_matrix)) != nrow(win_mProp_matrix)]  
+  # Remove columns where less than 2 rows are not NA
+  win_mProp_matrix <- win_mProp_matrix[,colSums(is.na(win_mProp_matrix)) < nrow(win_mProp_matrix) - 1]  
 
   # Define ylim depending on context
   if(context == "CpG") {
@@ -140,11 +149,11 @@ for(i in seq_along(chrs)) {
                            rep("NonCEN", length(which(as.numeric(colnames(win_mProp_matrix))*1e6 > CENend[i])))),
                            col = list(Region = c("NonCEN" = "grey70", "CEN" = "red")),
                            annotation_legend_param = list(title = "Region",
-                                                          title_position = "topcenter",
+                                                          title_position = "topleft",
                                                           title_gp = gpar(font = 2, fontsize = 12),
                                                           labels_gp = gpar(font = 3, fontize = 10),
-                                                          legend_direction = "horizontal",
-                                                          nrow = 1,
+                                                          legend_direction = "vertical",
+                                                          nrow = 2,
                                                           labels_gp = gpar(fontsize = 10)),
                            show_annotation_name = FALSE)
 
@@ -169,9 +178,9 @@ for(i in seq_along(chrs)) {
                          column_names_centered = TRUE,
                          column_gap = unit(0, "mm"),
                          heatmap_legend_param = list(title = "Density",
-                                                     title_position = "topcenter",
+                                                     title_position = "topleft",
                                                      title_gp = gpar(font = 2, fontsize = 12),
-                                                     legend_direction = "horizontal",
+                                                     legend_direction = "vertical",
                                                      labels_gp = gpar(fontsize = 10)),
                          border = FALSE,
                          # If converting into png with pdfTotiffTopng.sh,
@@ -186,7 +195,7 @@ pdf(paste0(plotDir,
            context, "_prop_per_read_midpoint_density_heatmap_binSize", genomeBinName, ".pdf"), 
     height = 4, width = 12 * length(htmps))
 draw(htmps,
-     heatmap_legend_side = "bottom",
-     annotation_legend_side = "top",
+     heatmap_legend_side = "right",
+     annotation_legend_side = "right",
      gap = unit(c(1), "mm"))
 dev.off()
