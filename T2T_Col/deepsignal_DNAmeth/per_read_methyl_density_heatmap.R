@@ -1,7 +1,7 @@
 #!/applications/R/R-4.0.0/bin/Rscript
 
 # Usage:
-# /applications/R/R-4.0.0/bin/Rscript per_read_methyl_density_heatmap.R WT_deepsignalDNAmeth_95_30kb T2T_Col 100000 CpG
+# /applications/R/R-4.0.0/bin/Rscript per_read_methyl_density_heatmap.R WT_deepsignalDNAmeth_95_30kb T2T_Col 500000 CpG
 
 args <- commandArgs(trailingOnly = T)
 sampleName <- args[1]
@@ -22,6 +22,25 @@ options(stringsAsFactors = F)
 library(segmentSeq)
 library(ComplexHeatmap)
 library(dplyr)
+library(RColorBrewer)
+library(viridis)
+#library(scales)
+
+#densityHeatmap_ajtEdit <- densityHeatmap
+#dump("densityHeatmap_ajtEdit", file = "densityHeatmap_ajtEdit.R") # Edited (name = NULL)
+#source("densityHeatmap_ajtEdit.R")
+
+plotDir <- paste0("plots/")
+system(paste0("[ -d ", plotDir, " ] || mkdir -p ", plotDir))
+
+# Define heatmap colours
+rich8to6equal <- c("#0000CB", "#0081FF", "#87CEFA", "#FDEE02", "#FFAB00", "#FF3300")
+rich8 <- function() {manual_pal(values = c("#000041","#0000CB","#0081FF","#02DA81","#80FE1A","#FDEE02","#FFAB00","#FF3300"))}
+rich10 <- function() {manual_pal(values = c("#000041","#0000A9","#0049FF","#00A4DE","#03E070","#5DFC21","#F6F905","#FFD701","#FF9500","#FF3300"))}
+rich12 <- function() {manual_pal(values = c("#000040","#000093","#0020E9","#0076FF","#00B8C2","#04E466","#49FB25","#E7FD09","#FEEA02","#FFC200","#FF8500","#FF3300"))}
+viridisScale11 <- viridis_pal()(11)
+revSpectralScale11 <- rev(brewer.pal(11, "Spectral"))
+htmpColour <- revSpectralScale11 
 
 # Genomic definitions
 fai <- read.table(paste0("/home/ajt200/analysis/nanopore/T2T_Col/", refbase, ".fa.fai"), header = F)
@@ -31,6 +50,12 @@ if(!grepl("Chr", fai[,1][1])) {
   chrs <- fai[,1][1:5]
 }
 chrLens <- fai[,2][1:5]
+CENstart <- c(14840750, 3724530, 13597090, 4203495, 11783990)
+CENend <- c(17558182, 5946091, 15733029, 6977107, 14551874)
+CENGR <- GRanges(seqnames = chrs,
+                 ranges = IRanges(start = CENstart,
+                                  end = CENend),
+                 strand = "*")
 
 # Make chromosomal coordinates cumulative
 # such that the first coordinate of Chr2 is
@@ -42,7 +67,7 @@ print(sumchr)
 # each coordinate corresponds to the midpoint between the
 # first and last cytosine position with methylation info in the read
 tab <- read.table(paste0("/home/ajt200/analysis/nanopore/T2T_Col/deepsignal_DNAmeth/",
-                         "WT_deepsignalDNAmeth_95_30kb_MappedOn_T2T_Col_",
+                         sampleName, "_MappedOn_", refbase, "_",
                          context, "_per_read_midpoint.tsv"),
                   header = T)
 colnames(tab) <- c("chr", "midpoint", "per_read_mProp")
@@ -95,25 +120,55 @@ for(i in seq_along(chrs)) {
   win_mProp_list <- lapply(fOverlapsList, function(x) {
                       data.frame(matrix(data = chr_tab[,3][x], nrow = 1))
                     })
+  # Convert into matrix in which each column corresponds to a genomic window
   win_mProp_matrix <- t(as.matrix(x = bind_rows(win_mProp_list)))
   colnames(win_mProp_matrix) <- round(start(winGR)/1e6, digits = 1)
+  
+  # Define ylim depending on context
+  if(context == "CpG") {
+    ylimContext <- c(0, 1)
+  } else if(context == "CHG") {
+    ylimContext <- c(0, 0.6)
+  } else if(context == "CHH") {
+    ylimContext <- c(0, 0.4)
+  }
+
+  # Make heatmap for chromosome
+  ha1 <- HeatmapAnnotation(Region = c(
+                           rep("NonCEN", length(which(as.numeric(colnames(win_mProp_matrix))*1e6 < CENstart[i] &
+                                                       as.numeric(colnames(win_mProp_matrix))*1e6 < CENend[i]))),
+                           rep("CEN", length(which(as.numeric(colnames(win_mProp_matrix))*1e6 > CENstart[i] &
+                                                   as.numeric(colnames(win_mProp_matrix))*1e6 < CENend[i]))),
+                           rep("NonCEN", length(which(as.numeric(colnames(win_mProp_matrix))*1e6 > CENend[i])))),
+                           col = list(Region = c("NonCEN" = "grey70", "CEN" = "red")),
+                           annotation_legend_param = list(title = "Region",
+                                                          title_position = "topcenter",
+                                                          title_gp = gpar(font = 2, fontsize = 12),
+                                                          labels_gp = gpar(font = 3, fontize = 10),
+                                                          legend_direction = "horizontal",
+                                                          nrow = 1,
+                                                          labels_gp = gpar(fontsize = 10)),
+                           show_annotation_name = FALSE)
 
   htmp <- densityHeatmap(data = win_mProp_matrix,
+                         col = htmpColour,
                          density_param = list(na.rm = TRUE),
-                         col = rev(brewer.pal(11, "Spectral")),
-                         column_title = paste0(chrs[i]),
-                         title_gp = gpar(fontsize = 14),
+                         top_annotation = ha1,
+                         column_title = paste0(chrs[i], " ",
+                                               gsub(pattern = "[A-z]", replacement = "", x = genomeBinName),
+                                               "-", gsub(pattern = "[0-9]", replacement = "", x = genomeBinName),
+                                               " window (Mb)"),
+                         column_title_side = "bottom",
+                         column_title_rot = 0,
+                         title_gp = gpar(fontsize = 12),
                          show_quantiles = FALSE,
                          ylab = paste0("Per-read m", context, " proportion"),
                          ylab_gp = gpar(fontsize = 12),
+                         ylim = ylimContext, 
                          column_names_side = "bottom",
                          column_names_gp = gpar(fontsize = 6),
                          column_names_rot = 90,
                          column_names_centered = TRUE,
-#                         column_title = "Genomic window start coordinate (Mb)",
-#                         column_title_side = "bottom",
-#                         column_title_gp = gpar(fontsize = 12),
-#                         column_title_rot = 0,
                          column_gap = unit(0, "mm"),
                          heatmap_legend_param = list(title = "Density",
                                                      title_position = "topcenter",
@@ -127,21 +182,13 @@ for(i in seq_along(chrs)) {
                          #use_raster = TRUE, raster_device = "png", raster_quality = 4)
   htmps <- htmps + htmp
 }
-  pdf("test.pdf")
+
+pdf(paste0(plotDir,
+           sampleName, "_MappedOn_", refbase, "_",
+           context, "_prop_per_read_midpoint_density_heatmap.pdf"), 
+    height = 4, width = 12 * length(htmps))
+draw(htmps,
      heatmap_legend_side = "bottom",
-     gap = unit(c(12), "mm"))
-
-  draw(htmps)
-  dev.off()
-
-#pdf(paste0(plotDir,
-#           "CEN180_frequency_per_", genomeBinName,
-#           "_", quantileDef, "_", quantiles, "quantiles",
-#           "_of_CEN180_in_T2T_Col_",
-#           paste0(chrName, collapse = "_"), "_circlize_zoom_v", date, ".pdf"))
-#circlize_plot()
-#draw(lgd_list2, x = unit(4, "mm"), y = unit(4, "mm"), just = c("left", "bottom"))
-#draw(lgd_list1, x = unit(1, "npc") - unit(2, "mm"), y = unit(4, "mm"), just = c("right", "bottom"))
-#dev.off()
-
-
+     annotation_legend_side = "top",
+     gap = unit(c(1), "mm"))
+dev.off()
