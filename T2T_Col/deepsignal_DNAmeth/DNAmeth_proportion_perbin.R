@@ -36,6 +36,10 @@ CHG <- read.table(paste0(sampleName,
                          "_MappedOn_", refbase, "_CHG.tsv"),
                   colClasses = c(rep(NA, 2), rep("NULL", 7), NA, "NULL"),
                   header = F)
+CHH <- read.table(paste0(sampleName,
+                         "_MappedOn_", refbase, "_CHH.tsv"),
+                  colClasses = c(rep(NA, 2), rep("NULL", 7), NA, "NULL"),
+                  header = F)
 
 # Genomic definitions
 fai <- read.table(paste0("/home/ajt200/analysis/nanopore/T2T_Col/", refbase, ".fa.fai"), header = F)
@@ -97,21 +101,21 @@ for(i in seq_along(chrs)) {
                              whichOverlaps = TRUE,
                              ignoreStrand = TRUE)
   CHGwinVals <- sapply(CHGoverlaps, function(x) mean(as.numeric(chrCHG[,3][x])))
-#  # CHH
-#  chrCHH <- CHH[CHH[,1] == chrs[i],]
-#  chrCHH_GR <- GRanges(seqnames = chrs[i],
-#                       ranges = IRanges(start = chrCHH[,2],
-#                                        width = 1),
-#                       strand = "*")
-#  CHHoverlaps <- getOverlaps(coordinates = winGR,
-#                             segments = chrCHH_GR,
-#                             overlapType = "overlapping",
-#                             whichOverlaps = TRUE,
-#                             ignoreStrand = TRUE)
-#  CHHwinVals <- sapply(CHHoverlaps, function(x) mean(as.numeric(chrCHH[,3][x])))
+  # CHH
+  chrCHH <- CHH[CHH[,1] == chrs[i],]
+  chrCHH_GR <- GRanges(seqnames = chrs[i],
+                       ranges = IRanges(start = chrCHH[,2],
+                                        width = 1),
+                       strand = "*")
+  CHHoverlaps <- getOverlaps(coordinates = winGR,
+                             segments = chrCHH_GR,
+                             overlapType = "overlapping",
+                             whichOverlaps = TRUE,
+                             ignoreStrand = TRUE)
+  CHHwinVals <- sapply(CHHoverlaps, function(x) mean(as.numeric(chrCHH[,3][x])))
   # Mean of all 3 contexts
   CwinVals <- sapply(seq_along(CGwinVals), function(x) {
-                      mean(c(CGwinVals[x], CHGwinVals[x]))
+                      mean(c(CGwinVals[x], CHGwinVals[x], CHHwinVals[x]))
                     })
   # Combine in data frame
   methDat <- data.frame(chr = as.character(chrs[i]),
@@ -119,7 +123,7 @@ for(i in seq_along(chrs)) {
                         cumwindow = as.integer(start(winGR) + sumchr[i]),
                         mCG  = as.numeric(CGwinVals),
                         mCHG = as.numeric(CHGwinVals),
-#                        mCHH = as.numeric(CHHwinVals),
+                        mCHH = as.numeric(CHHwinVals),
                         mC   = as.numeric(CwinVals))
   cumMethDat <- rbind(cumMethDat, methDat)
 }
@@ -159,12 +163,12 @@ for(i in seq_along(chrs)) {
                                  sides = 2)
   filt_chr_mCHG[1:flank] <- filt_chr_mCHG[flank+1]
   filt_chr_mCHG[(length(filt_chr_mCHG)-flank+1):length(filt_chr_mCHG)] <- filt_chr_mCHG[(length(filt_chr_mCHG)-flank)]
-#  # mCHH
-#  filt_chr_mCHH <- stats::filter(chrMethDat[[i]]$mCHH,
-#                                 filter = f,
-#                                 sides = 2)
-#  filt_chr_mCHH[1:flank] <- filt_chr_mCHH[flank+1]
-#  filt_chr_mCHH[(length(filt_chr_mCHH)-flank+1):length(filt_chr_mCHH)] <- filt_chr_mCHH[(length(filt_chr_mCHH)-flank)]
+  # mCHH
+  filt_chr_mCHH <- stats::filter(chrMethDat[[i]]$mCHH,
+                                 filter = f,
+                                 sides = 2)
+  filt_chr_mCHH[1:flank] <- filt_chr_mCHH[flank+1]
+  filt_chr_mCHH[(length(filt_chr_mCHH)-flank+1):length(filt_chr_mCHH)] <- filt_chr_mCHH[(length(filt_chr_mCHH)-flank)]
   # mC
   filt_chr_mC <- stats::filter(chrMethDat[[i]]$mC,
                                filter = f,
@@ -177,7 +181,7 @@ for(i in seq_along(chrs)) {
                                 cumwindow = as.integer(chrMethDat[[i]]$cumwindow),
                                 filt_mCG  = as.numeric(filt_chr_mCG),
                                 filt_mCHG = as.numeric(filt_chr_mCHG),
-#                                filt_mCHH = as.numeric(filt_chr_mCHH),
+                                filt_mCHH = as.numeric(filt_chr_mCHH),
                                 filt_mC   = as.numeric(filt_chr_mC))
   filt_methDat <- rbind(filt_methDat, filt_chrMethDat)
 }
