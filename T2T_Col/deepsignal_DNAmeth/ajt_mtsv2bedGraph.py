@@ -157,7 +157,7 @@ def summarizeMeth(args):
     csv_reader = csv.DictReader(in_fh,
         delimiter='\t',
         fieldnames=['chromosome','start','strand','pos_in_strand','read_name','read_strand','prob_0','prob_1','called_label','sequence'])
-    csv_reader = sorted(csv_reader, key=lambda d: (str(d['chromosome']), int(d['start'])))
+    csv_reader = sorted(csv_reader, key=lambda d: (str(d['read_name']), str(d['chromosome']), int(d['start'])))
     if args.verbose : print("processing calls",file = sys.stderr)
     if args.mod != "CpGGpC" :
         for record in csv_reader:

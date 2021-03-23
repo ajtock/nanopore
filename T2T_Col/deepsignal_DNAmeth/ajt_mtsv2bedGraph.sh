@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Usage on node7:
-# csmit -m 50G -c 1 "bash ./ajt_mtsv2bedGraph.sh head_WT_deepsignalDNAmeth_95_30kb_MappedOn_T2T_Col CpG" 
+# Usage on node7 (must be allocated to node10 as requires > 300 GB RAM):
+# csmit -m 400G -c 1 "bash ./ajt_mtsv2bedGraph.sh WT_deepsignalDNAmeth_95_30kb_MappedOn_T2T_Col CpG" 
 
 prefix=$1
 context=$2
