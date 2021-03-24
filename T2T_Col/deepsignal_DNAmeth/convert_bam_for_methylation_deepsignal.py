@@ -141,13 +141,13 @@ def convert_cpg(bam,cpg,gpc) :
     # only cpg
     return change_sequence(bam,cpg,"cpg")
 
-def convert_chg(bam,chg,gpc) :
+def convert_chg(bam,cpg,gpc) :
     # only chg
-    return change_sequence(bam,chg,"chg")
+    return change_sequence(bam,cpg,"chg")
 
-def convert_chg(bam,chh,gpc) :
+def convert_chg(bam,cpg,gpc) :
     # only chh
-    return change_sequence(bam,chh,"chh")
+    return change_sequence(bam,cpg,"chh")
 
 def convert_nome(bam,cpg,gpc) :
     # cpg and gpc
@@ -171,7 +171,7 @@ def reset_bam(bam,genome_seq) :
     bam.cigarstring = ''.join([str(len(refseq)),"M"])
     return bam
 
-def change_sequence(bam,calls,mod="cpg") :
+def change_sequence(bam,calls,mod="chg") :
     start = bam.reference_start
     pos = bam.get_reference_positions(True)
     if bam.is_reverse == True : 
