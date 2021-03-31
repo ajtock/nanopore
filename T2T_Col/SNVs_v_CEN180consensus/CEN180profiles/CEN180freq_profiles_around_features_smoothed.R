@@ -3,10 +3,10 @@
 # Profile CEN180 frequency around a given feature set
 
 # Usage:
-# /applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features.R Chr1 180 2000 2kb 10 10bp genomewide CEN180
-# /applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features.R Chr1 2000 2000 2kb 10 10bp genomewide CENgap
-# /applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features.R Chr1 2000 2000 2kb 10 10bp genomewide CENAthila
-# /applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features.R Chr1 2000 2000 2kb 10 10bp genomewide CENsoloLTR
+## /applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr1 180 2000 2kb 10 10bp genomewide CEN180
+# /applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr1 2000 2000 2kb 10 10bp genomewide CENgap
+# /applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr1 2000 2000 2kb 10 10bp genomewide CENAthila
+# /applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr1 2000 2000 2kb 10 10bp genomewide CENsoloLTR
 
 #chrName <- "Chr1"
 #regionBodyLength <- 180
@@ -33,7 +33,7 @@ options(stringsAsFactors = F)
 library(EnrichedHeatmap)
 library(parallel)
 
-matDir <- paste0("matrices_unsmoothed/")
+matDir <- paste0("matrices_smoothed/")
 system(paste0("[ -d ", matDir, " ] || mkdir ", matDir))
 
 # Genomic definitions
@@ -187,7 +187,7 @@ if(featureName == "CEN180") {
                                           mean_mode = "w0",
                                           w = winSize,
                                           background = 0,
-                                          smooth = FALSE,
+                                          smooth = TRUE,
                                           include_target = TRUE,
                                           target_ratio = featureSize/(featureSize+(flankSize*2)))
     print("feature_smoothed")
@@ -213,7 +213,7 @@ if(featureName == "CEN180") {
                                          mean_mode = "w0",
                                          w = winSize,
                                          background = 0,
-                                         smooth = FALSE,
+                                         smooth = TRUE,
                                          include_target = TRUE,
                                          target_ratio = featureSize/(featureSize+(flankSize*2)))
     print("ranLoc_smoothed")
@@ -272,7 +272,7 @@ if(featureName == "CEN180") {
                                           mean_mode = "w0",
                                           w = winSize,
                                           background = 0,
-                                          smooth = FALSE,
+                                          smooth = TRUE,
                                           include_target = TRUE,
                                           target_ratio = featureSize/(featureSize+(flankSize*2)))
     print("feature_smoothed")

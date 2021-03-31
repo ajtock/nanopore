@@ -1,12 +1,13 @@
 #!/applications/R/R-4.0.0/bin/Rscript
 
-# Profile CEN180 frequency around a given feature set
+# Profile CEN180 SNV (vs CEN180 consensus) frequency around CEN180, CENrandom loci,
+# gaps in CEN180, and centromeric Athila Gypsy LTR elements
 
 # Usage:
-# /applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features.R Chr1 180 2000 2kb 10 10bp genomewide CEN180
-# /applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features.R Chr1 2000 2000 2kb 10 10bp genomewide CENgap
-# /applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features.R Chr1 2000 2000 2kb 10 10bp genomewide CENAthila
-# /applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features.R Chr1 2000 2000 2kb 10 10bp genomewide CENsoloLTR
+# /applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr1 180 2000 2kb 10 10bp genomewide CEN180
+# /applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr1 2000 2000 2kb 10 10bp genomewide CENgap
+# /applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr1 2000 2000 2kb 10 10bp genomewide CENAthila
+# /applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr1 2000 2000 2kb 10 10bp genomewide CENsoloLTR
 
 #chrName <- "Chr1"
 #regionBodyLength <- 180
@@ -33,7 +34,7 @@ options(stringsAsFactors = F)
 library(EnrichedHeatmap)
 library(parallel)
 
-matDir <- paste0("matrices_unsmoothed/")
+matDir <- paste0("matrices_smoothed/")
 system(paste0("[ -d ", matDir, " ] || mkdir ", matDir))
 
 # Genomic definitions
@@ -140,34 +141,99 @@ if(featureName == "CEN180") {
 #  print(length(ranLocGR))
 }
 
-# Load genomic physical coordinates of CEN180 sequences
-# Note addition of 1 to 0-based BED start coordinates
-CEN180 <- read.table(paste0("/home/ajt200/analysis/repeats/CEN180_in_T2T_Col/",
-                            "CEN180_in_T2T_Col_", chrName, ".bed"),
-                       header = F)
-colnames(CEN180) <- c("chr", "start", "end", "name", "score", "strand", "HORlengthsSum", "HORcount")
-CEN180GR <- GRanges(seqnames = CEN180$chr,
-                    ranges = IRanges(start = CEN180$start+1,
-                                     end = CEN180$end),
-                    strand = "*",
-                    coverage = rep(1, dim(CEN180)[1]))
+# Load genomic physical coordinates of CEN180 SNVs relative to CEN180 consensus
+SNVs <- read.csv("/home/ajt200/analysis/nanopore/T2T_Col/SNVs_v_CEN180consensus/SNVcoordinates.csv",
+                 header = T)
+SNVs <- data.frame(chr = paste0("Chr", SNVs$chromosome),
+                   pos = SNVs$chromosome_coordinate,
+                   ref = toupper(SNVs$consensus_nucleotide),
+                   alt = toupper(SNVs$variant_nucleotide),
+                   type = NA)
+SNVs[SNVs$ref == "-" & SNVs$alt != "-",]$type <- "A_insertion"
+SNVs[SNVs$ref != "-" & SNVs$alt == "-",]$type <- "A_deletion"
+SNVs[SNVs$ref != "-" & SNVs$alt != "-",]$type <- "A_SNV"
+
+## all SNVs
+SNVsGR <- GRanges(seqnames = SNVs$chr,
+                  ranges = IRanges(start = SNVs$pos,
+                                   end = SNVs$pos),
+                  strand = "*",
+                  coverage = rep(1, dim(SNVs)[1]))
+
+# Subset SNVs by class (grep-ing for "A" within VCF "type" field returns all SNVs)
+SNVclass <- c(
+              "A",
+              "SNV",
+              "insertion",
+              "deletion",
+              "tion"
+             )
+SNVsListGR <- mclapply(seq_along(SNVclass), function(x) {
+  classSNVs <- SNVs[grep(SNVclass[x], SNVs$type),]
+  GRanges(seqnames = classSNVs$chr,
+          ranges = IRanges(start = classSNVs$pos,
+                           end = classSNVs$pos),
+          strand = "*",
+          coverage = rep(1, dim(classSNVs)[1]))
+}, mc.cores = length(SNVclass))
+stopifnot(length(SNVsListGR[[5]]) ==
+          length(SNVsListGR[[4]]) + length(SNVsListGR[[3]]))
+
+## transition
+SNVs_transition <- SNVs[(SNVs$ref == "A" | SNVs$ref == "G") & (SNVs$alt == "G" | SNVs$alt == "A") |
+                        (SNVs$ref == "C" | SNVs$ref == "T") & (SNVs$alt == "T" | SNVs$alt == "C"),]
+SNVs_transition_GR <- GRanges(seqnames = SNVs_transition$chr,
+                              ranges = IRanges(start = SNVs_transition$pos,
+                                               end = SNVs_transition$pos),
+                              strand = "*",
+                              coverage = rep(1, dim(SNVs_transition)[1]))
+
+## transversion
+SNVs_transversion <- SNVs[(SNVs$ref == "A" | SNVs$ref == "G") & (SNVs$alt == "C" | SNVs$alt == "T") |
+                          (SNVs$ref == "C" | SNVs$ref == "T") & (SNVs$alt == "A" | SNVs$alt == "G"),]
+stopifnot((dim(SNVs_transition)[1] +
+          dim(SNVs_transversion)[1]) ==
+          dim(SNVs[SNVs$type == "A_SNV",])[1])
+SNVs_transversion_GR <- GRanges(seqnames = SNVs_transversion$chr,
+                                ranges = IRanges(start = SNVs_transversion$pos,
+                                                 end = SNVs_transversion$pos),
+                                strand = "*",
+                                coverage = rep(1, dim(SNVs_transversion)[1]))
+
+# Add transitions and transversions GRanges to SNVsListGR
+SNVsListGR <- c(SNVsListGR,
+                SNVs_transition_GR,
+                SNVs_transversion_GR)
+SNVclassNames <- c(
+                   "all",
+                   "SNV",
+                   "insertion",
+                   "deletion",
+                   "indel",
+                   "transition",
+                   "transversion"
+                  )
 
 if(featureName == "CEN180") {
   # Define matrix and column mean outfiles
-  outDF <- list(paste0(matDir,
-                       "CEN180freq_MappedOn_T2T_Col_around_", featureName, "_in_", chrName,
-                       "_matrix_bin", binName, "_flank", flankName, ".tab"),
-                paste0(matDir,
-                       "CEN180freq_MappedOn_T2T_Col_around_", featureName, "_in_", chrName,
-                       "_CENranLoc_matrix_bin", binName, "_flank", flankName, ".tab"))
-  outDFcolMeans <- list(paste0(matDir,
-                               "CEN180freq_MappedOn_T2T_Col_around_", featureName, "_in_", chrName,
-                               "_matrix_bin", binName, "_flank", flankName, "_colMeans.tab"),
-                        paste0(matDir,
-                               "CEN180freq_MappedOn_T2T_Col_around_", featureName, "_in_", chrName,
-                               "_CENranLoc_matrix_bin", binName, "_flank", flankName, "_colMeans.tab"))
+  outDF <- lapply(seq_along(SNVclassNames), function(x) {
+    list(paste0(matDir, SNVclassNames[x],
+                "_CEN180_consensus_variants_MappedOn_T2T_Col_around_", featureName, "_in_", chrName,
+                "_matrix_bin", binName, "_flank", flankName, ".tab"),
+         paste0(matDir, SNVclassNames[x],
+                "_CEN180_consensus_variants_MappedOn_T2T_Col_around_", featureName, "_in_", chrName,
+                "_CENranLoc_matrix_bin", binName, "_flank", flankName, ".tab"))
+  })
+  outDFcolMeans <- lapply(seq_along(SNVclassNames), function(x) {
+    list(paste0(matDir, SNVclassNames[x],
+                "_CEN180_consensus_variants_MappedOn_T2T_Col_around_", featureName, "_in_", chrName,
+                "_matrix_bin", binName, "_flank", flankName, "_colMeans.tab"),
+         paste0(matDir, SNVclassNames[x],
+                "_CEN180_consensus_variants_MappedOn_T2T_Col_around_", featureName, "_in_", chrName,
+                "_CENranLoc_matrix_bin", binName, "_flank", flankName, "_colMeans.tab"))
+  })
   
-  # Function to create CEN180 frequency matrices for
+  # Function to create SNV frequency matrices for
   # feature loci and random loci (incl. flanking regions)
   # and to calculate mean profiles across all feature loci and random loci
   covMatrix <- function(signal,
@@ -187,7 +253,7 @@ if(featureName == "CEN180") {
                                           mean_mode = "w0",
                                           w = winSize,
                                           background = 0,
-                                          smooth = FALSE,
+                                          smooth = TRUE,
                                           include_target = TRUE,
                                           target_ratio = featureSize/(featureSize+(flankSize*2)))
     print("feature_smoothed")
@@ -213,7 +279,7 @@ if(featureName == "CEN180") {
                                          mean_mode = "w0",
                                          w = winSize,
                                          background = 0,
-                                         smooth = FALSE,
+                                         smooth = TRUE,
                                          include_target = TRUE,
                                          target_ratio = featureSize/(featureSize+(flankSize*2)))
     print("ranLoc_smoothed")
@@ -233,27 +299,33 @@ if(featureName == "CEN180") {
   
   # Run covMatrix() function on each feature GRanges object to obtain matrices
   # containing normalised feature density values around target and random loci
-  covMatrix(signal = CEN180GR,
-            feature = featuresGR,
-            ranLoc = ranLocGR,
-            featureSize = regionBodyLength,
-            flankSize = upstream,
-            winSize = binSize,
-            outDF = outDF,
-            outDFcolMeans = outDFcolMeans)
-  print(paste0(
-               "CEN180 frequency around ", featureName, " in ", chrName,
-               " profile calculation complete"))
+  mclapply(seq_along(SNVclassNames), function(x) {
+    covMatrix(signal = SNVsListGR[[x]],
+              feature = featuresGR,
+              ranLoc = ranLocGR,
+              featureSize = regionBodyLength,
+              flankSize = upstream,
+              winSize = binSize,
+              outDF = outDF[[x]],
+              outDFcolMeans = outDFcolMeans[[x]])
+    print(paste0(SNVclassNames[x],
+                 " CEN180 consensus variants frequency around ", featureName, " in ", chrName,
+                 " profile calculation complete"))
+  }, mc.cores = length(SNVclassNames))
 } else {
   # Define matrix and column mean outfiles
-  outDF <- list(paste0(matDir,
-                       "CEN180freq_MappedOn_T2T_Col_around_", featureName, "_in_", chrName,
-                       "_matrix_bin", binName, "_flank", flankName, ".tab"))
-  outDFcolMeans <- list(paste0(matDir,
-                               "CEN180freq_MappedOn_T2T_Col_around_", featureName, "_in_", chrName,
-                               "_matrix_bin", binName, "_flank", flankName, "_colMeans.tab"))
+  outDF <- lapply(seq_along(SNVclassNames), function(x) {
+    list(paste0(matDir, SNVclassNames[x],
+                "_CEN180_consensus_variants_MappedOn_T2T_Col_around_", featureName, "_in_", chrName,
+                "_matrix_bin", binName, "_flank", flankName, ".tab"))
+  })
+  outDFcolMeans <- lapply(seq_along(SNVclassNames), function(x) {
+    list(paste0(matDir, SNVclassNames[x],
+                "_CEN180_consensus_variants_MappedOn_T2T_Col_around_", featureName, "_in_", chrName,
+                "_matrix_bin", binName, "_flank", flankName, "_colMeans.tab"))
+  })
   
-  # Function to create CEN180 frequency matrices for
+  # Function to create SNV frequency matrices for
   # feature loci and random loci (incl. flanking regions)
   # and to calculate mean profiles across all feature loci and random loci
   covMatrix <- function(signal,
@@ -272,7 +344,7 @@ if(featureName == "CEN180") {
                                           mean_mode = "w0",
                                           w = winSize,
                                           background = 0,
-                                          smooth = FALSE,
+                                          smooth = TRUE,
                                           include_target = TRUE,
                                           target_ratio = featureSize/(featureSize+(flankSize*2)))
     print("feature_smoothed")
@@ -292,14 +364,16 @@ if(featureName == "CEN180") {
   
   # Run covMatrix() function on each feature GRanges object to obtain matrices
   # containing normalised feature density values around target and random loci
-  covMatrix(signal = CEN180GR,
-            feature = featuresGR,
-            featureSize = regionBodyLength,
-            flankSize = upstream,
-            winSize = binSize,
-            outDF = outDF,
-            outDFcolMeans = outDFcolMeans)
-  print(paste0(
-               "CEN180 frequency around ", featureName, " in ", chrName,
-               " profile calculation complete"))
+  mclapply(seq_along(SNVclassNames), function(x) {
+    covMatrix(signal = SNVsListGR[[x]],
+              feature = featuresGR,
+              featureSize = regionBodyLength,
+              flankSize = upstream,
+              winSize = binSize,
+              outDF = outDF[[x]],
+              outDFcolMeans = outDFcolMeans[[x]])
+    print(paste0(SNVclassNames[x],
+                 " CEN180 consensus variants frequency around ", featureName, " in ", chrName,
+                 " profile calculation complete"))
+  }, mc.cores = length(SNVclassNames))
 }

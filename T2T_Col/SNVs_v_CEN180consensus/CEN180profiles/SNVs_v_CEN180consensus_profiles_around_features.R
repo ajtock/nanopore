@@ -34,7 +34,7 @@ options(stringsAsFactors = F)
 library(EnrichedHeatmap)
 library(parallel)
 
-matDir <- paste0("matrices/")
+matDir <- paste0("matrices_unsmoothed/")
 system(paste0("[ -d ", matDir, " ] || mkdir ", matDir))
 
 # Genomic definitions
@@ -102,7 +102,7 @@ colnames(features) <- c("chr", "start", "end", "name", "score", "strand")
 featuresGR <- GRanges(seqnames = features$chr,
                       ranges = IRanges(start = features$start+1,
                                        end = features$end),
-                      strand = "*",
+                      strand = features$strand,
                       number = features$name)
 print(length(featuresGR))
 # Subset to include only those not overlapping masked interval
@@ -126,7 +126,7 @@ if(featureName == "CEN180") {
   ranLocGR <- GRanges(seqnames = ranLoc$chr,
                       ranges = IRanges(start = ranLoc$start+1,
                                        end = ranLoc$end),
-                      strand = "*",
+                      strand = ranLoc$strand,
                       number = ranLoc$name)
   print(length(ranLocGR))
 #  # Subset to include only those not overlapping masked interval
@@ -344,7 +344,7 @@ if(featureName == "CEN180") {
                                           mean_mode = "w0",
                                           w = winSize,
                                           background = 0,
-                                          smooth = TRUE,
+                                          smooth = FALSE,
                                           include_target = TRUE,
                                           target_ratio = featureSize/(featureSize+(flankSize*2)))
     print("feature_smoothed")
