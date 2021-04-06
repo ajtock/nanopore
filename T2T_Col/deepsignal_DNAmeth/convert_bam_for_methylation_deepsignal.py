@@ -145,7 +145,7 @@ def convert_chg(bam,cpg,gpc) :
     # only chg
     return change_sequence(bam,cpg,"chg")
 
-def convert_chg(bam,cpg,gpc) :
+def convert_chh(bam,cpg,gpc) :
     # only chh
     return change_sequence(bam,cpg,"chh")
 
