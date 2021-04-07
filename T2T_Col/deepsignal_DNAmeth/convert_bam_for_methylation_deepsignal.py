@@ -183,10 +183,10 @@ def change_sequence(bam,calls,mod="chg") :
             dinuc = "NC"
         elif mod == "chg" :
             offset=2
-            trinuc="CDN"
+            trinuc = "CDN"
         elif mod == "chh" :
             offset=2
-            trinuc="DDN"
+            trinuc = "DDN"
         m="G"
         u="A"
     else : 
@@ -198,10 +198,12 @@ def change_sequence(bam,calls,mod="chg") :
             dinuc = "GN"
         elif mod == "chg" :
             offset=0
-            trinuc="NHG"
+            trinucf = "C([ACT])G"
+            trinucr = "N\1G"
         elif mod == "chh" :
             offset=0
-            trinuc="NHH"
+            trinucf = "C([ACT][ACT])"
+            trinucr = "N\1"
         m="C"
         u="T"
     if mod == "cpg" :
@@ -209,9 +211,16 @@ def change_sequence(bam,calls,mod="chg") :
     elif mod == "gpc" :
         seq = np.array(list(bam.query_sequence.replace("GC",dinuc)))
     elif mod == "chg" :
-        seq = np.array(list(bam.query_sequence.replace("CHG",trinuc)))
+        tmp = re.sub(r"C([ACT])G", r"N\1G", bam.query_sequence)
+        while len(re.findall(r"C([ACT])G", tmp)) > 0 :
+            tmp = re.sub(r"C([ACT])G", r"N\1G", tmp)
+        seq = np.array(list(tmp))
+#        seq = np.array(list(re.sub(r"C([ACT])G", r"N\1G", bam.query_sequence)))
     elif mod == "chh" :
-        seq = np.array(list(bam.query_sequence.replace("CHH",trinuc)))
+        tmp = re.sub(r"C([ACT][ACT])", r"N\1", bam.query_sequence)
+        while len(re.findall("C[ACT][ACT]", tmp)) > 0 :
+            tmp = re.sub(r"C([ACT][ACT])", r"N\1", tmp)
+        seq = np.array(list(tmp))
 #    seq[gsites-offset] = g
     changed = False # whether valid calls were recorded in this read
     if calls is not 0 :
