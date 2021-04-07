@@ -47,10 +47,9 @@ convert_bam_for_methylation_deepsignal.py --threads ${threads} \
                                           --verbose \
                                           --fasta /home/ajt200/analysis/nanopore/T2T_Col/T2T_Col.fa \
                                           --bam ${prefix_substr}_minimap2_sorted.bam \
-                                          --regions regions.bed \
                                           --mbed ${prefix}_${context}.bed.gz \
                                           --mod ${context_lower} | \
-#  /applications/samtools/samtools-1.9/samtools view -h - |\
+#  /applications/samtools/samtools-1.9/samtools view -h - | \
   /applications/samtools/samtools-1.9/samtools sort -@ ${threads} -m ${sortMem} -o ${prefix}_${context}_minimap2_sorted_BSconverted_sorted.bam
 /applications/samtools/samtools-1.9/samtools index ${prefix}_${context}_minimap2_sorted_BSconverted_sorted.bam
 
