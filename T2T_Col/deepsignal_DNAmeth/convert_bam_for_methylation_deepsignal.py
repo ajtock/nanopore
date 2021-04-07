@@ -199,11 +199,12 @@ def change_sequence(bam,calls,mod="chg") :
         elif mod == "chg" :
             offset=0
             trinucf = "C([ACT])G"
-            trinucr = "N\1G"
+            trinucr = "N\\1G"
+#            trinucr = N\g<1>G"
         elif mod == "chh" :
             offset=0
             trinucf = "C([ACT][ACT])"
-            trinucr = "N\1"
+            trinucr = "N\\1"
         m="C"
         u="T"
     if mod == "cpg" :
@@ -211,9 +212,10 @@ def change_sequence(bam,calls,mod="chg") :
     elif mod == "gpc" :
         seq = np.array(list(bam.query_sequence.replace("GC",dinuc)))
     elif mod == "chg" :
-        tmp = re.sub(r"C([ACT])G", r"N\1G", bam.query_sequence)
-        while len(re.findall(r"C([ACT])G", tmp)) > 0 :
-            tmp = re.sub(r"C([ACT])G", r"N\1G", tmp)
+        tmp = re.sub(r"{}".format(trinucf), r"{}".format(trinucr), bam.query_sequence)
+#        tmp = re.sub(r"C([ACT])G", r"N\1G", bam.query_sequence)
+#        while len(re.findall(r"C([ACT])G", tmp)) > 0 :
+#            tmp = re.sub(r"C([ACT])G", r"N\1G", tmp)
         seq = np.array(list(tmp))
 #        seq = np.array(list(re.sub(r"C([ACT])G", r"N\1G", bam.query_sequence)))
     elif mod == "chh" :
