@@ -51,17 +51,16 @@ CENAthila <- tab[tab$position == "in_centr",]
 nonCENAthila <- tab[tab$position == "out_centr",]
 CENgap <- tab[tab$position == "in_centr",]
 
-# Convert Athila into GRanges
+# Convert CENAthila into GRanges
 # Use genome_left_coord_FL and genome_right_coord_FL as
 # element boundaries so that start and end coordinates shown in meta-profiles
 # correspond to 5' LTR start and 3' LTR end coordinates
-# (with the exception of 4 elements without LTR coordinates)
 CENAthilaGR <- GRanges(seqnames = CENAthila$chr,
-                    ranges = IRanges(start = CENAthila$genome_left_coord_FL,
-                                     end = CENAthila$genome_right_coord_FL),
-                    strand = CENAthila$direction,
-                    name = CENAthila$name,
-                    class = CENAthila$class_v290321)
+                       ranges = IRanges(start = CENAthila$genome_left_coord_FL,
+                                        end = CENAthila$genome_right_coord_FL),
+                       strand = CENAthila$direction,
+                       name = CENAthila$gap_name,
+                       class = CENAthila$phylo)
 CENAthilaGR <- CENAthilaGR[seqnames(CENAthilaGR) %in% chrName]
 CENAthila_bed <- data.frame(chr = as.character(seqnames(CENAthilaGR)),
                          start = as.integer(start(CENAthilaGR)-1),
@@ -73,14 +72,47 @@ write.table(CENAthila_bed,
             file = paste0(CENAthilaDir, "CENAthila_in_T2T_Col_",
                           paste0(chrName, collapse = "_"), ".bed"),
             quote = F, sep = "\t", row.names = F, col.names = F)
+# Write BED without family information, for use with pyGenomeTracks (BED specified in *.ini file)
+CENAthila_bed <- data.frame(chr = as.character(seqnames(CENAthilaGR)),
+                         start = as.integer(start(CENAthilaGR)-1),
+                         end = as.integer(end(CENAthilaGR)),
+                         name = as.character(CENAthilaGR$name),
+                         score = as.integer(0),
+                         strand = as.character(strand(CENAthilaGR)))
+write.table(CENAthila_bed,
+            file = paste0(CENAthilaDir, "CENAthila_in_T2T_Col_",
+                          paste0(chrName, collapse = "_"), "_nofamily.bed"),
+            quote = F, sep = "\t", row.names = F, col.names = F)
+
+# Convert nonCENAthila into GRanges
+# Use genome_left_coord_FL and genome_right_coord_FL as
+# element boundaries so that start and end coordinates shown in meta-profiles
+# correspond to 5' LTR start and 3' LTR end coordinates
+nonCENAthilaGR <- GRanges(seqnames = nonCENAthila$chr,
+                          ranges = IRanges(start = nonCENAthila$genome_left_coord_FL,
+                                           end = nonCENAthila$genome_right_coord_FL),
+                          strand = nonCENAthila$direction,
+                          name = nonCENAthila$TE_ID,
+                          class = nonCENAthila$phylo)
+nonCENAthilaGR <- nonCENAthilaGR[seqnames(nonCENAthilaGR) %in% chrName]
+nonCENAthila_bed <- data.frame(chr = as.character(seqnames(nonCENAthilaGR)),
+                               start = as.integer(start(nonCENAthilaGR)-1),
+                               end = as.integer(end(nonCENAthilaGR)),
+                               name = as.character(nonCENAthilaGR$name),
+                               score = as.character(nonCENAthilaGR$class),
+                               strand = as.character(strand(nonCENAthilaGR)))
+write.table(nonCENAthila_bed,
+            file = paste0(nonCENAthilaDir, "nonCENAthila_in_T2T_Col_",
+                          paste0(chrName, collapse = "_"), ".bed"),
+            quote = F, sep = "\t", row.names = F, col.names = F)
 
 # Convert CENgap into GRanges and then BED format
 CENgapGR <- GRanges(seqnames = CENgap$chr,
-                 ranges = IRanges(start = CENgap$start,
-                                  end = CENgap$stop),
-                 strand = CENgap$direction,
-                 name = CENgap$name,
-                 class = CENgap$class_v290321)
+                    ranges = IRanges(start = CENgap$gap_start,
+                                     end = CENgap$gap_stop),
+                    strand = CENgap$direction,
+                    name = CENgap$gap_name,
+                    class = CENgap$phylo)
 CENgapGR <- CENgapGR[seqnames(CENgapGR) %in% chrName]
 CENgap_bed <- data.frame(chr = as.character(seqnames(CENgapGR)),
                       start = as.integer(start(CENgapGR)-1),
