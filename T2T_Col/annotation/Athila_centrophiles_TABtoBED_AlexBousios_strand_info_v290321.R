@@ -53,7 +53,6 @@ tab$class_v290321 <- tab$class2
 tab$class_v290321[grep("_v2", tab$class_v290321)] <- "Athila6B"
 tab$class_v290321[grep("6A", tab$class_v290321)] <- "Athila6A"
 tab$class_v290321 <- toupper(tab$class_v290321)
-tab$class_v290321 <- gsub("ATHILA1", "ATHILA", tab$class_v290321)
 
 # Get row indices for elements rejected or identified as soloLTRs by Alex;
 # Alex: "I have rejected 4 [now 5] elements that are a mosaic of stuff or non-TE sequence that just add noise.
@@ -63,6 +62,9 @@ reject_rowIndices <- which(is.na(tab$genome_5LTR_start))
 
 Athila <- tab[-reject_rowIndices,]
 soloLTR <- tab[tab$class == "soloLTR",]
+# Remove full-length Athila erroneously identified as soloLTRs from soloLTR
+soloLTR <- soloLTR[soloLTR$genome_left_coord_FL != 12617002 &
+                   soloLTR$genome_left_coord_FL != 12739533,]
 gap <- tab
 
 # Convert Athila into GRanges
