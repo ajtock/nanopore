@@ -16,6 +16,10 @@ chrName <- unlist(strsplit(args[1],
 
 options(stringsAsFactors = F)
 library(GenomicRanges)
+library(RColorBrewer)
+revSpectralScale11 <- rev(brewer.pal(11, "Spectral"))
+rich10 <- function() {manual_pal(values = c("#000041","#0000A9","#0049FF","#00A4DE","#03E070","#5DFC21","#F6F905","#FFD701","#FF9500","#FF3300"
+))}
 
 CENAthilaDir <- "CENAthila/"
 nonCENAthilaDir <- "nonCENAthila/"
@@ -73,16 +77,30 @@ write.table(CENAthila_bed,
                           paste0(chrName, collapse = "_"), ".bed"),
             quote = F, sep = "\t", row.names = F, col.names = F)
 # Write BED without family information, for use with pyGenomeTracks (BED specified in *.ini file)
-CENAthila_bed <- data.frame(chr = as.character(seqnames(CENAthilaGR)),
-                         start = as.integer(start(CENAthilaGR)-1),
-                         end = as.integer(end(CENAthilaGR)),
-                         name = as.character(CENAthilaGR$name),
-                         score = as.integer(0),
-                         strand = as.character(strand(CENAthilaGR)))
-write.table(CENAthila_bed,
+CENAthila_nofamily_bed <- data.frame(chr = as.character(seqnames(CENAthilaGR)),
+                                     start = as.integer(start(CENAthilaGR)-1),
+                                     end = as.integer(end(CENAthilaGR)),
+                                     name = as.character(CENAthilaGR$name),
+                                     score = as.integer(0),
+                                     strand = as.character(strand(CENAthilaGR)))
+write.table(CENAthila_nofamily_bed,
             file = paste0(CENAthilaDir, "CENAthila_in_T2T_Col_",
                           paste0(chrName, collapse = "_"), "_nofamily.bed"),
             quote = F, sep = "\t", row.names = F, col.names = F)
+# Write BED with colour-coded family information, for use with pyGenomeTracks (BED specified in *.ini file)
+CENfams <- sort(unique(CENAthila_bed$score))
+print(CENfams)
+CENAthila_colofamily_bed <- CENAthila_bed
+CENAthila_colofamily_bed[CENAthila_colofamily_bed$score == "ATHILA1",]$score <- rich10()(10)[9]
+CENAthila_colofamily_bed[CENAthila_colofamily_bed$score == "ATHILA2",]$score <- rich10()(10)[8]
+CENAthila_colofamily_bed[CENAthila_colofamily_bed$score == "ATHILA5",]$score <- rich10()(10)[4]
+CENAthila_colofamily_bed[CENAthila_colofamily_bed$score == "ATHILA6A",]$score <- rich10()(10)[3]
+CENAthila_colofamily_bed[CENAthila_colofamily_bed$score == "ATHILA6B",]$score <- rich10()(10)[2]
+write.table(CENAthila_colofamily_bed,
+            file = paste0(CENAthilaDir, "CENAthila_in_T2T_Col_",
+                          paste0(chrName, collapse = "_"), "_colofamily.bed"),
+            quote = F, sep = "\t", row.names = F, col.names = F)
+
 
 # Convert nonCENAthila into GRanges
 # Use genome_left_coord_FL and genome_right_coord_FL as
@@ -104,6 +122,35 @@ nonCENAthila_bed <- data.frame(chr = as.character(seqnames(nonCENAthilaGR)),
 write.table(nonCENAthila_bed,
             file = paste0(nonCENAthilaDir, "nonCENAthila_in_T2T_Col_",
                           paste0(chrName, collapse = "_"), ".bed"),
+            quote = F, sep = "\t", row.names = F, col.names = F)
+# Write BED without family information, for use with pyGenomeTracks (BED specified in *.ini file)
+nonCENAthila_nofamily_bed <- data.frame(chr = as.character(seqnames(nonCENAthilaGR)),
+                                        start = as.integer(start(nonCENAthilaGR)-1),
+                                        end = as.integer(end(nonCENAthilaGR)),
+                                        name = as.character(nonCENAthilaGR$name),
+                                        score = as.integer(0),
+                                        strand = as.character(strand(nonCENAthilaGR)))
+write.table(nonCENAthila_nofamily_bed,
+            file = paste0(nonCENAthilaDir, "nonCENAthila_in_T2T_Col_",
+                          paste0(chrName, collapse = "_"), "_nofamily.bed"),
+            quote = F, sep = "\t", row.names = F, col.names = F)
+# Write BED with colour-coded family information, for use with pyGenomeTracks (BED specified in *.ini file)
+nonCENfams <- sort(unique(nonCENAthila_bed$score))
+print(nonCENfams)
+nonCENAthila_colofamily_bed <- nonCENAthila_bed
+nonCENAthila_colofamily_bed[nonCENAthila_colofamily_bed$score == "nonCENATHILA0_I",]$score <- rich10()(10)[10]
+nonCENAthila_colofamily_bed[nonCENAthila_colofamily_bed$score == "ATHILA1",]$score <- rich10()(10)[9]
+nonCENAthila_colofamily_bed[nonCENAthila_colofamily_bed$score == "ATHILA2",]$score <- rich10()(10)[8]
+nonCENAthila_colofamily_bed[nonCENAthila_colofamily_bed$score == "ATHILA3",]$score <- rich10()(10)[7]
+nonCENAthila_colofamily_bed[nonCENAthila_colofamily_bed$score == "ATHILA4",]$score <- rich10()(10)[6]
+nonCENAthila_colofamily_bed[nonCENAthila_colofamily_bed$score == "ATHILA4C",]$score <- rich10()(10)[5]
+nonCENAthila_colofamily_bed[nonCENAthila_colofamily_bed$score == "ATHILA5",]$score <- rich10()(10)[4]
+nonCENAthila_colofamily_bed[nonCENAthila_colofamily_bed$score == "ATHILA6A",]$score <- rich10()(10)[3]
+nonCENAthila_colofamily_bed[nonCENAthila_colofamily_bed$score == "ATHILA6B",]$score <- rich10()(10)[2]
+nonCENAthila_colofamily_bed[nonCENAthila_colofamily_bed$score == "ATHILA7A",]$score <- rich10()(10)[1]
+write.table(nonCENAthila_colofamily_bed,
+            file = paste0(nonCENAthilaDir, "nonCENAthila_in_T2T_Col_",
+                          paste0(chrName, collapse = "_"), "_colofamily.bed"),
             quote = F, sep = "\t", row.names = F, col.names = F)
 
 # Convert CENgap into GRanges and then BED format
