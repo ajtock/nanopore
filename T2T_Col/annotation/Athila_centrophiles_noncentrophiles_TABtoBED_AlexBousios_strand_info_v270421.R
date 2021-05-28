@@ -90,12 +90,23 @@ write.table(CENAthila_nofamily_bed,
 # Write BED with colour-coded family information, for use with pyGenomeTracks (BED specified in *.ini file)
 CENfams <- sort(unique(CENAthila_bed$score))
 print(CENfams)
-CENAthila_colofamily_bed <- CENAthila_bed
-CENAthila_colofamily_bed[CENAthila_colofamily_bed$score == "ATHILA1",]$score <- rich10()(10)[9]
-CENAthila_colofamily_bed[CENAthila_colofamily_bed$score == "ATHILA2",]$score <- rich10()(10)[8]
-CENAthila_colofamily_bed[CENAthila_colofamily_bed$score == "ATHILA5",]$score <- rich10()(10)[4]
-CENAthila_colofamily_bed[CENAthila_colofamily_bed$score == "ATHILA6A",]$score <- rich10()(10)[3]
-CENAthila_colofamily_bed[CENAthila_colofamily_bed$score == "ATHILA6B",]$score <- rich10()(10)[2]
+CENAthila_colofamily_bed <- data.frame(CENAthila_bed,
+                                       thickStart = as.integer(0),
+                                       thichEnd = as.integer(0),
+                                       itemRgb = ".")
+CENAthila_colofamily_bed[CENAthila_colofamily_bed$score == "ATHILA1",]$itemRgb <- rich10()(10)[9]
+CENAthila_colofamily_bed[CENAthila_colofamily_bed$score == "ATHILA2",]$itemRgb <- rich10()(10)[8]
+CENAthila_colofamily_bed[CENAthila_colofamily_bed$score == "ATHILA5",]$itemRgb <- rich10()(10)[4]
+CENAthila_colofamily_bed[CENAthila_colofamily_bed$score == "ATHILA6A",]$itemRgb <- rich10()(10)[3]
+CENAthila_colofamily_bed[CENAthila_colofamily_bed$score == "ATHILA6B",]$itemRgb <- rich10()(10)[2]
+
+CENAthila_colofamily_bed[CENAthila_colofamily_bed$itemRgb == rich10()(10)[9],]$itemRgb <- paste(as.vector(col2rgb(rich10()(10)[9])), collapse = ",")
+CENAthila_colofamily_bed[CENAthila_colofamily_bed$itemRgb == rich10()(10)[8],]$itemRgb <- paste(as.vector(col2rgb(rich10()(10)[8])), collapse = ",")
+CENAthila_colofamily_bed[CENAthila_colofamily_bed$itemRgb == rich10()(10)[4],]$itemRgb <- paste(as.vector(col2rgb(rich10()(10)[4])), collapse = ",")
+CENAthila_colofamily_bed[CENAthila_colofamily_bed$itemRgb == rich10()(10)[3],]$itemRgb <- paste(as.vector(col2rgb(rich10()(10)[3])), collapse = ",")
+CENAthila_colofamily_bed[CENAthila_colofamily_bed$itemRgb == rich10()(10)[2],]$itemRgb <- paste(as.vector(col2rgb(rich10()(10)[2])), collapse = ",")
+
+CENAthila_colofamily_bed$score <- as.integer(0)
 write.table(CENAthila_colofamily_bed,
             file = paste0(CENAthilaDir, "CENAthila_in_T2T_Col_",
                           paste0(chrName, collapse = "_"), "_colofamily.bed"),
@@ -137,17 +148,24 @@ write.table(nonCENAthila_nofamily_bed,
 # Write BED with colour-coded family information, for use with pyGenomeTracks (BED specified in *.ini file)
 nonCENfams <- sort(unique(nonCENAthila_bed$score))
 print(nonCENfams)
-nonCENAthila_colofamily_bed <- nonCENAthila_bed
-nonCENAthila_colofamily_bed[nonCENAthila_colofamily_bed$score == "nonCENATHILA0_I",]$score <- rich10()(10)[10]
-nonCENAthila_colofamily_bed[nonCENAthila_colofamily_bed$score == "ATHILA1",]$score <- rich10()(10)[9]
-nonCENAthila_colofamily_bed[nonCENAthila_colofamily_bed$score == "ATHILA2",]$score <- rich10()(10)[8]
-nonCENAthila_colofamily_bed[nonCENAthila_colofamily_bed$score == "ATHILA3",]$score <- rich10()(10)[7]
-nonCENAthila_colofamily_bed[nonCENAthila_colofamily_bed$score == "ATHILA4",]$score <- rich10()(10)[6]
-nonCENAthila_colofamily_bed[nonCENAthila_colofamily_bed$score == "ATHILA4C",]$score <- rich10()(10)[5]
-nonCENAthila_colofamily_bed[nonCENAthila_colofamily_bed$score == "ATHILA5",]$score <- rich10()(10)[4]
-nonCENAthila_colofamily_bed[nonCENAthila_colofamily_bed$score == "ATHILA6A",]$score <- rich10()(10)[3]
-nonCENAthila_colofamily_bed[nonCENAthila_colofamily_bed$score == "ATHILA6B",]$score <- rich10()(10)[2]
-nonCENAthila_colofamily_bed[nonCENAthila_colofamily_bed$score == "ATHILA7A",]$score <- rich10()(10)[1]
+nonCENAthila_colofamily_bed <- data.frame(nonCENAthila_bed,
+                                          thickStart = as.integer(0),
+                                          thichEnd = as.integer(0),
+                                          itemRgb = ".",
+                                          blockCount = as.integer(0),
+                                          blockSizes = as.integer(0),
+                                          blockStarts = as.integer(0))
+nonCENAthila_colofamily_bed[nonCENAthila_colofamily_bed$score == "nonCENATHILA0_I",]$itemRgb <- rich10()(10)[10]
+nonCENAthila_colofamily_bed[nonCENAthila_colofamily_bed$score == "ATHILA1",]$itemRgb <- rich10()(10)[9]
+nonCENAthila_colofamily_bed[nonCENAthila_colofamily_bed$score == "ATHILA2",]$itemRgb <- rich10()(10)[8]
+nonCENAthila_colofamily_bed[nonCENAthila_colofamily_bed$score == "ATHILA3",]$itemRgb <- rich10()(10)[7]
+nonCENAthila_colofamily_bed[nonCENAthila_colofamily_bed$score == "ATHILA4",]$itemRgb <- rich10()(10)[6]
+nonCENAthila_colofamily_bed[nonCENAthila_colofamily_bed$score == "ATHILA4C",]$itemRgb <- rich10()(10)[5]
+nonCENAthila_colofamily_bed[nonCENAthila_colofamily_bed$score == "ATHILA5",]$itemRgb <- rich10()(10)[4]
+nonCENAthila_colofamily_bed[nonCENAthila_colofamily_bed$score == "ATHILA6A",]$itemRgb <- rich10()(10)[3]
+nonCENAthila_colofamily_bed[nonCENAthila_colofamily_bed$score == "ATHILA6B",]$itemRgb <- rich10()(10)[2]
+nonCENAthila_colofamily_bed[nonCENAthila_colofamily_bed$score == "ATHILA7A",]$itemRgb <- rich10()(10)[1]
+nonCENAthila_colofamily_bed$score <- as.integer(0)
 write.table(nonCENAthila_colofamily_bed,
             file = paste0(nonCENAthilaDir, "nonCENAthila_in_T2T_Col_",
                           paste0(chrName, collapse = "_"), "_colofamily.bed"),
