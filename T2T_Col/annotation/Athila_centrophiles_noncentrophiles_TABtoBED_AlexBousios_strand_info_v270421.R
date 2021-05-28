@@ -145,10 +145,7 @@ print(nonCENfams)
 nonCENAthila_colofamily_bed <- data.frame(nonCENAthila_bed,
                                           thickStart = as.integer(0),
                                           thichEnd = as.integer(0),
-                                          itemRgb = ".",
-                                          blockCount = as.integer(0),
-                                          blockSizes = as.integer(0),
-                                          blockStarts = as.integer(0))
+                                          itemRgb = ".")
 nonCENAthila_colofamily_bed[nonCENAthila_colofamily_bed$score == "nonCENATHILA0_I",]$itemRgb <- paste(as.vector(col2rgb(rich10()(10)[10])), collapse = ",")
 nonCENAthila_colofamily_bed[nonCENAthila_colofamily_bed$score == "ATHILA1",]$itemRgb <- paste(as.vector(col2rgb(rich10()(10)[9])), collapse = ",")
 nonCENAthila_colofamily_bed[nonCENAthila_colofamily_bed$score == "ATHILA2",]$itemRgb <- paste(as.vector(col2rgb(rich10()(10)[8])), collapse = ",")
