@@ -1,0 +1,1 @@
+/data/public_data/arabidopsis/t2t-col.20210610/genmap_mappability/genmap_map.sh
