@@ -96,7 +96,7 @@ if(interval == "centromeres") {
 # Note addition of 1 to 0-based BED start coordinates
 features <- read.table(paste0("/home/ajt200/analysis/nanopore/t2t-col.20210610/annotation/", featureName, "/",
                               featureName, "_in_t2t-col.20210610_", chrName, ".bed"),
-                       header = F)
+                       header = F, sep = "\t")
 colnames(features) <- c("chr", "start", "end", "name", "score", "strand")
 featuresGR <- GRanges(seqnames = features$chr,
                       ranges = IRanges(start = features$start+1,
