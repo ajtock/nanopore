@@ -118,7 +118,7 @@ print(length(featuresGR))
 
 # Load ranLoc in BED format and convert into GRanges
 # Note addition of 1 to 0-based BED start coordinates
-if(featureName == "CEN180") {
+if(featureName %in% c("CEN180", "CENgapAll")) {
   ranLoc <- read.table(paste0("/home/ajt200/analysis/nanopore/t2t-col.20210610/annotation/", featureName, "/",
                               featureName, "_in_t2t-col.20210610_", chrName, "_CENrandomLoci.bed"),
                        header = F)
@@ -214,7 +214,7 @@ SNVclassNames <- c(
                    "transversion"
                   )
 
-if(featureName == "CEN180") {
+if(featureName %in% c("CEN180", "CENgapAll")) {
   # Define matrix and column mean outfiles
   outDF <- lapply(seq_along(SNVclassNames), function(x) {
     list(paste0(matDir, SNVclassNames[x],
