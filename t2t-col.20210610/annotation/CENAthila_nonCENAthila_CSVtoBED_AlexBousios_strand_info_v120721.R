@@ -91,7 +91,7 @@ CENAthilaGR <- GRanges(seqnames = CENAthila$chr,
 CENAthilaGR <- unique(CENAthilaGR)
 CENAthilaGR <- CENAthilaGR[seqnames(CENAthilaGR) %in% chrName]
 CENAthilaGR <- sortSeqlevels(CENAthilaGR)
-CENAthilaGR <- sort(CENAthilaGR)
+CENAthilaGR <- sort(CENAthilaGR, ignore.strand = TRUE)
 CENAthila_bed <- data.frame(chr = as.character(seqnames(CENAthilaGR)),
                             start = as.integer(start(CENAthilaGR)-1),
                             end = as.integer(end(CENAthilaGR)),
@@ -148,7 +148,7 @@ nonCENAthilaGR <- GRanges(seqnames = nonCENAthila$chr,
 nonCENAthilaGR <- unique(nonCENAthilaGR)
 nonCENAthilaGR <- nonCENAthilaGR[seqnames(nonCENAthilaGR) %in% chrName]
 nonCENAthilaGR <- sortSeqlevels(nonCENAthilaGR)
-nonCENAthilaGR <- sort(nonCENAthilaGR)
+nonCENAthilaGR <- sort(nonCENAthilaGR, ignore.strand = TRUE)
 nonCENAthila_bed <- data.frame(chr = as.character(seqnames(nonCENAthilaGR)),
                                start = as.integer(start(nonCENAthilaGR)-1),
                                end = as.integer(end(nonCENAthilaGR)),
@@ -207,7 +207,7 @@ CENgapGR <- GRanges(seqnames = CENgap$chr,
 CENgapGR <- unique(CENgapGR)
 CENgapGR <- CENgapGR[seqnames(CENgapGR) %in% chrName]
 CENgapGR <- sortSeqlevels(CENgapGR)
-CENgapGR <- sort(CENgapGR)
+CENgapGR <- sort(CENgapGR, ignore.strand = TRUE)
 CENgap_bed <- data.frame(chr = as.character(seqnames(CENgapGR)),
                          start = as.integer(start(CENgapGR)-1),
                          end = as.integer(end(CENgapGR)),
@@ -229,7 +229,7 @@ CENgapAllGR <- GRanges(seqnames = CENgapAll$chr,
 CENgapAllGR <- unique(CENgapAllGR)
 CENgapAllGR <- CENgapAllGR[seqnames(CENgapAllGR) %in% chrName]
 CENgapAllGR <- sortSeqlevels(CENgapAllGR)
-CENgapAllGR <- sort(CENgapAllGR)
+CENgapAllGR <- sort(CENgapAllGR, ignore.strand = TRUE)
 CENgapAll_bed <- data.frame(chr = as.character(seqnames(CENgapAllGR)),
                             start = as.integer(start(CENgapAllGR)-1),
                             end = as.integer(end(CENgapAllGR)),
@@ -251,7 +251,7 @@ CENgapAllAthilaGR <- GRanges(seqnames = CENgapAllAthila$chr,
 CENgapAllAthilaGR <- unique(CENgapAllAthilaGR)
 CENgapAllAthilaGR <- CENgapAllAthilaGR[seqnames(CENgapAllAthilaGR) %in% chrName]
 CENgapAllAthilaGR <- sortSeqlevels(CENgapAllAthilaGR)
-CENgapAllAthilaGR <- sort(CENgapAllAthilaGR)
+CENgapAllAthilaGR <- sort(CENgapAllAthilaGR, ignore.strand = TRUE)
 CENgapAllAthila_bed <- data.frame(chr = as.character(seqnames(CENgapAllAthilaGR)),
                                   start = as.integer(start(CENgapAllAthilaGR)-1),
                                   end = as.integer(end(CENgapAllAthilaGR)),
@@ -273,7 +273,7 @@ CENgapAllNotAthilaGR <- GRanges(seqnames = CENgapAllNotAthila$chr,
 CENgapAllNotAthilaGR <- unique(CENgapAllNotAthilaGR)
 CENgapAllNotAthilaGR <- CENgapAllNotAthilaGR[seqnames(CENgapAllNotAthilaGR) %in% chrName]
 CENgapAllNotAthilaGR <- sortSeqlevels(CENgapAllNotAthilaGR)
-CENgapAllNotAthilaGR <- sort(CENgapAllNotAthilaGR)
+CENgapAllNotAthilaGR <- sort(CENgapAllNotAthilaGR, ignore.strand = TRUE)
 CENgapAllNotAthila_bed <- data.frame(chr = as.character(seqnames(CENgapAllNotAthilaGR)),
                                      start = as.integer(start(CENgapAllNotAthilaGR)-1),
                                      end = as.integer(end(CENgapAllNotAthilaGR)),
