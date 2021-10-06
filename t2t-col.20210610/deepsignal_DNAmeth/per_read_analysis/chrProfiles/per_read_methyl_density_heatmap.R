@@ -46,18 +46,20 @@ plotDir <- paste0("plots/")
 system(paste0("[ -d ", plotDir, " ] || mkdir -p ", plotDir))
 
 # Genomic definitions
-fai <- read.table(paste0("/home/ajt200/analysis/nanopore/T2T_Col/", refbase, ".fa.fai"), header = F)
+fai <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase, "/", refbase, ".fa.fai"), header = F)
 if(!grepl("Chr", fai[,1][1])) {
-  chrs <- paste0("Chr", fai[,1][1:5])
+  chrs <- paste0("Chr", fai[,1])[1:5]
 } else {
   chrs <- fai[,1][1:5]
 }
 chrLens <- fai[,2][1:5]
-CENstart <- c(14840750, 3724530, 13597090, 4203495, 11783990)
-CENend <- c(17558182, 5946091, 15733029, 6977107, 14551874)
-CENGR <- GRanges(seqnames = chrs,
-                 ranges = IRanges(start = CENstart,
-                                  end = CENend),
+
+CEN <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase, "/", refbase, ".fa.centromeres"), header = T)
+CENstart <- CEN$start
+CENend <- CEN$end
+CENGR <- GRanges(seqnames = CEN$chr,
+                 ranges = IRanges(start = CEN$start,
+                                  end = CEN$end),
                  strand = "*")
 
 # Make chromosomal coordinates cumulative
