@@ -1,12 +1,19 @@
 #!/applications/R/R-4.0.0/bin/Rscript
 
 # Usage:
-# /applications/R/R-4.0.0/bin/Rscript per_read_methyl_density_heatmap.R WT_deepsignalDNAmeth_95_30kb T2T_Col 500000 CpG
+# /applications/R/R-4.0.0/bin/Rscript per_read_methyl_density_heatmap.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 1000 200000 CpG
+
+#sampleName <- "Col_0_deepsignalDNAmeth_30kb_90pc"
+#refbase <- "t2t-col.20210610"
+#readBinSize <- 1000
+#genomeBinSize <- 200000
+#context <- "CpG"
 
 args <- commandArgs(trailingOnly = T)
 sampleName <- args[1]
 refbase <- args[2]
-genomeBinSize <- as.integer(args[3])
+readBinSize <- as.integer(args[3])
+genomeBinSize <- as.integer(args[4])
 context <- args[4]
 
 if(floor(log10(genomeBinSize)) + 1 < 4) {
@@ -16,6 +23,15 @@ if(floor(log10(genomeBinSize)) + 1 < 4) {
   genomeBinName <- paste0(genomeBinSize/1e3, "kb")
 } else if(floor(log10(genomeBinSize)) + 1 >= 7) {
   genomeBinName <- paste0(genomeBinSize/1e6, "Mb")
+}
+
+if(floor(log10(readBinSize)) + 1 < 4) {
+  readBinName <- paste0(readBinSize, "bp")
+} else if(floor(log10(readBinSize)) + 1 >= 4 &
+          floor(log10(readBinSize)) + 1 <= 6) {
+  readBinName <- paste0(readBinSize/1e3, "kb")
+} else if(floor(log10(readBinSize)) + 1 >= 7) {
+  readBinName <- paste0(readBinSize/1e6, "Mb")
 }
 
 options(stringsAsFactors = F)
@@ -53,9 +69,8 @@ print(sumchr)
 # Load table of per-read methylation proportions, in which
 # each coordinate corresponds to the midpoint between the
 # first and last cytosine position with methylation info in the read
-tab <- read.table(paste0("/home/ajt200/analysis/nanopore/T2T_Col/deepsignal_DNAmeth/",
-                         sampleName, "_MappedOn_", refbase, "_",
-                         context, "_per_read_midpoint.tsv"),
+tab <- read.table(paste0(sampleName, "_MappedOn_", refbase, "_", context,
+                         "_raw_winSize", readBinName, "_per_read_midpoint.tsv"),
                   header = T)
 colnames(tab) <- c("chr", "midpoint", "per_read_mProp")
 tab[,2] <- round(tab[,2])
@@ -191,8 +206,8 @@ for(i in seq_along(chrs)) {
 }
 
 pdf(paste0(plotDir,
-           sampleName, "_MappedOn_", refbase, "_",
-           context, "_prop_per_read_midpoint_density_heatmap_binSize", genomeBinName, ".pdf"), 
+           sampleName, "_MappedOn_", refbase, "_", context,
+           "_prop_raw_readBinSize", readBinName, "_per_read_midpoint_density_heatmap_genomeBinSize", genomeBinName, ".pdf"), 
     height = 4, width = 12 * length(htmps))
 draw(htmps,
      heatmap_legend_side = "right",
