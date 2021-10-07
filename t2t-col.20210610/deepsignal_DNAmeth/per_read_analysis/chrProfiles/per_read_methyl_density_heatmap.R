@@ -14,7 +14,7 @@ sampleName <- args[1]
 refbase <- args[2]
 readBinSize <- as.integer(args[3])
 genomeBinSize <- as.integer(args[4])
-context <- args[4]
+context <- args[5]
 
 if(floor(log10(genomeBinSize)) + 1 < 4) {
   genomeBinName <- paste0(genomeBinSize, "bp")
