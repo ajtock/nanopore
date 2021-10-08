@@ -36,26 +36,30 @@ per_read_DNAmeth_DF <- do.call(rbind, mclapply(readIDs, function(x) {
   Chr <- c(y$V1[1])                    # Get the chromosome that read x aligned to
   y <- y[order(y$V2),]                 # Order the rows by ascending position in the chromosome
   
-  # Define window start and end coordinates within read
+  # Define window start coordinates within read
   winStarts <- seq(from = 1,
                    to = nrow(y),
                    by = noOfCs)
+  # Remove the last winStart value if is the same as the number of rows (total number of Cs in read)
   if(winStarts[length(winStarts)] == nrow(y)) {
     winStarts <- winStarts[-length(winStarts)]
-  } 
+  }
+  # Remove the last winStart value if there are fewer than noOfCs Cs from
+  # this value to the last C in the read (the last row)
   if(nrow(y) - winStarts[length(winStarts)] + 1 < noOfCs) {
     winStarts <- winStarts[-length(winStarts)]
   }
 
+  # Define window end coordinates within read
   if(nrow(y) - winStarts[1] >= noOfCs) {
-    winEnds <- seq(from = winStarts[1] +  - 1,
-                   to = max(y[,2]),
-                   by = winSize)
-    if(winEnds[length(winEnds)] != max(y[,2])) {
-      winEnds <- c(winEnds, max(y[,2]))
+    winEnds <- seq(from = winStarts[1] + noOfCs - 1,
+                   to = nrow(y),
+                   by = noOfCs)
+    if(winEnds[length(winEnds)] != nrow(y)) {
+      winEnds <- c(winEnds, nrow(y))
     }
   } else {
-    winEnds <- max(y[,2])
+    winEnds <- nrow(y)
   }
 
   filt_methDat <- NULL
