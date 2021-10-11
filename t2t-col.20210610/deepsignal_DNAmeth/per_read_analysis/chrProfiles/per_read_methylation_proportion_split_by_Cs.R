@@ -33,7 +33,6 @@ readIDs <- unique(tab$V5)
 # across sequential adjacent noOfCs-Cs-containing windows along each read
 per_read_DNAmeth_DF <- do.call(rbind, mclapply(readIDs, function(x) {
   y <- tab[tab[,5] == x,]              # Get rows (cytosine positions) for read x
-  Chr <- c(y[,1][1])                   # Get the chromosome that read x aligned to
   y <- y[order(y$V2, decreasing = F),] # Order the rows by ascending position in the chromosome
   
   # Define window start coordinates within read
@@ -56,6 +55,9 @@ per_read_DNAmeth_DF <- do.call(rbind, mclapply(readIDs, function(x) {
     winEnds <- seq(from = winStarts[1] + noOfCs - 1,
                    to = nrow(y),
                    by = noOfCs)
+    if(nrow(y) - winEnds[length(winEnds)] + 1 < noOfCs) {
+      winEnds <- winEnds[-length(winEnds)]
+    }
     if(winEnds[length(winEnds)] != nrow(y)) {
       winEnds <- c(winEnds, nrow(y))
     }
@@ -63,25 +65,25 @@ per_read_DNAmeth_DF <- do.call(rbind, mclapply(readIDs, function(x) {
     winEnds <- nrow(y)
   }
 
-  filt_methDat <- NULL
+  methDat <- NULL
   for(i in 1:length(winStarts)) {
-    chunk <- y[y[,2] >= winStarts[i] &
-               y[,2] <= winEnds[i],]
+    chunk <- y[winStarts[i] : winEnds[i],]
     # Proceed only if chunk contains rows (cytosine positions)
     if(dim(chunk)[1] > 0) {
-      midpoint <- c((max(chunk[,2])+min(chunk[,2]))/2)
-      per_read_methyl_freq <- mean(chunk[,9])
-      methDat_freq <- data.frame(chr = Chr,
+      midpoint <- c( ( max(chunk[,2]) + min(chunk[,2]) ) / 2 )
+      per_chunk_methyl_freq <- mean(chunk[,9])
+      methDat_freq <- data.frame(chr = chunk[,1][1],
                                  midpoint = midpoint,
-                                 per_read_methyl_freq = per_read_methyl_freq,
+                                 per_chunk_methyl_freq = per_chunk_methyl_freq,
                                  stringsAsFactors = F)
-      filt_methDat <- rbind(filt_methDat, methDat_freq) 
+      methDat <- rbind(methDat, methDat_freq)
     }
   }
  
-  # Andy to Matt: Removed return(filt_methDat) as return() works only within a function (this may be the source of the issue you mentioned);
-  #               Replaced with filt_methDat :
-  filt_methDat
+  # Andy to Matt: Removed return(methDat) as return() works only within a function
+  #               (this may be the source of the issue you mentioned);
+  #               Replaced with methDat :
+  methDat
 }, mc.cores = detectCores()))
 print("I'm done!")
 
