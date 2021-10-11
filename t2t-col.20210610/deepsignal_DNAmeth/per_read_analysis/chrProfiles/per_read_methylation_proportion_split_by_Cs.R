@@ -84,7 +84,7 @@ per_read_DNAmeth_DF <- do.call(rbind, mclapply(readIDs, function(x) {
   #               (this may be the source of the issue you mentioned);
   #               Replaced with methDat :
   methDat
-}, mc.cores = detectCores()))
+}, mc.cores = detectCores(), mc.preschedule = T))
 print("I'm done!")
 
 per_read_DNAmeth_DF <- per_read_DNAmeth_DF[
