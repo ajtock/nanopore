@@ -93,8 +93,8 @@ per_read_DNAmeth_DF <- do.call(rbind, mclapply(readIDs, function(x) {
   methDat
   # Due to the large numbers of reads that are forked to each CPU, these are
   # RAM-heavy combined processes, which calls for using fewer CPUs than are
-  # available on a given node (e.g., 75% of the available CPUs)
-}, mc.cores = detectCores()*0.75, mc.preschedule = T))
+  # available on a given node (e.g., 50% of the available CPUs)
+}, mc.cores = detectCores()*0.50, mc.preschedule = T))
 
 print("I'm done!")
 
