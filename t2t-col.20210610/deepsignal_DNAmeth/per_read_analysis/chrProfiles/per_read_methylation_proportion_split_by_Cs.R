@@ -33,8 +33,8 @@ readIDs <- unique(tab$V5)
 # across sequential adjacent noOfCs-Cs-containing windows along each read
 per_read_DNAmeth_DF <- do.call(rbind, mclapply(readIDs, function(x) {
   y <- tab[tab[,5] == x,]              # Get rows (cytosine positions) for read x
-  Chr <- c(y$V1[1])                    # Get the chromosome that read x aligned to
-  y <- y[order(y$V2),]                 # Order the rows by ascending position in the chromosome
+  Chr <- c(y[,1][1])                   # Get the chromosome that read x aligned to
+  y <- y[order(y$V2, decreasing = F),] # Order the rows by ascending position in the chromosome
   
   # Define window start coordinates within read
   winStarts <- seq(from = 1,
@@ -45,13 +45,14 @@ per_read_DNAmeth_DF <- do.call(rbind, mclapply(readIDs, function(x) {
     winStarts <- winStarts[-length(winStarts)]
   }
   # Remove the last winStart value if there are fewer than noOfCs Cs from
-  # this value to the last C in the read (the last row)
+  # this value to the last C in the read (the last row), so that the last window
+  # always has as much or more methylation state information than the other windows
   if(nrow(y) - winStarts[length(winStarts)] + 1 < noOfCs) {
     winStarts <- winStarts[-length(winStarts)]
   }
 
   # Define window end coordinates within read
-  if(nrow(y) - winStarts[1] >= noOfCs) {
+  if(nrow(y) - winStarts[1] + 1 >= noOfCs) {
     winEnds <- seq(from = winStarts[1] + noOfCs - 1,
                    to = nrow(y),
                    by = noOfCs)
