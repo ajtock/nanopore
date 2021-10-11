@@ -2,7 +2,7 @@
 
 # Usage on hydrogen node7:
 # chmod +x per_read_methylation_proportion_winByCs.R
-# csmit -m 300G -c 48 "/applications/R/R-4.0.0/bin/Rscript per_read_methylation_proportion_winByCs.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 10 CHG"
+# csmit -m 300G -c 47 "/applications/R/R-4.0.0/bin/Rscript per_read_methylation_proportion_winByCs.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 10 CHG"
 # csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript per_read_methylation_proportion_winByCs.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 10 CpG"
 
 # Divide each read into adjacent segments each consisting of a given number of consecutive cytosines,
@@ -24,7 +24,8 @@ library(parallel)
  
 # Read in the raw output .tsv file from Deepsignal methylation model
 tab <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase, "/deepsignal_DNAmeth/",
-                         sampleName, "_MappedOn_", refbase, "_", context, "_raw_head100000000.tsv"))
+                         sampleName, "_MappedOn_", refbase, "_", context, "_raw.tsv"),
+                  header = F)
  
 # Generate a character vector of the unique readIDs in the file
 readIDs <- unique(tab$V5)
@@ -32,10 +33,9 @@ readIDs <- unique(tab$V5)
 # Loop within parallelised loop to calculate the per-read methylation proportion
 # across sequential adjacent noOfCs-Cs-containing windows along each read
 per_read_DNAmeth_DF <- do.call(rbind, mclapply(readIDs, function(x) {
-  print(x)
   y <- tab[tab[,5] == x,]              # Get rows (cytosine positions) for read x
   y <- y[order(y$V2, decreasing = F),] # Order the rows by ascending position in the chromosome
-  
+ 
   # Define window start coordinates within read
   winStarts <- seq(from = 1,
                    to = nrow(y),
@@ -74,14 +74,14 @@ per_read_DNAmeth_DF <- do.call(rbind, mclapply(readIDs, function(x) {
     chunk <- y[winStarts[i] : winEnds[i],]
     # Proceed only if chunk contains rows (cytosine positions)
     if(dim(chunk)[1] > 0) {
-      midpoint <- c( ( max(chunk[,2]) + min(chunk[,2]) ) / 2 )
+      midpoint <- ( min(chunk[,2]) + max(chunk[,2]) ) / 2
       per_chunk_methyl_mean <- mean(chunk[,9])
       methDat_mean <- data.frame(chr = chunk[,1][1],
-                                 start = min(chunk[,2]),
-                                 end = max(chunk[,2]),
-                                 read = chunk[,5],
                                  midpoint = midpoint,
                                  per_chunk_methyl_mean = per_chunk_methyl_mean,
+                                 start = min(chunk[,2]),
+                                 end = max(chunk[,2]),
+                                 read = chunk[,5][1],
                                  stringsAsFactors = F)
       methDat <- rbind(methDat, methDat_mean)
     }
@@ -93,8 +93,8 @@ per_read_DNAmeth_DF <- do.call(rbind, mclapply(readIDs, function(x) {
   methDat
   # Due to the large numbers of reads that are forked to each CPU, these are
   # RAM-heavy combined processes, which calls for using fewer CPUs than are
-  # available on a given node (e.g., half of the available CPUs)
-}, mc.cores = detectCores()/2, mc.preschedule = T))
+  # available on a given node (e.g., 75% of the available CPUs)
+}, mc.cores = detectCores()*0.75, mc.preschedule = T))
 
 print("I'm done!")
 
@@ -104,5 +104,5 @@ per_read_DNAmeth_DF <- per_read_DNAmeth_DF[
 
 write.table(per_read_DNAmeth_DF,
             file = paste0(sampleName, "_MappedOn_", refbase, "_", context,
-                          "_raw_winSize", noOfCs, "Cs_per_readwin_midpoint.tsv"),
+                          "_raw_readWinSize", noOfCs, "Cs_per_readWin_midpoint.tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
