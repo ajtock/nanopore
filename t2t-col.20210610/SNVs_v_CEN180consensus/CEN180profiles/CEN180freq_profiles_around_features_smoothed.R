@@ -117,7 +117,7 @@ print(length(featuresGR))
 
 # Load ranLoc in BED format and convert into GRanges
 # Note addition of 1 to 0-based BED start coordinates
-if(featureName %in% c("CEN180", "CENgapAll")) {
+if(featureName %in% c("CEN180", "CENgapAllAthila")) {
   ranLoc <- read.table(paste0("/home/ajt200/analysis/nanopore/t2t-col.20210610/annotation/", featureName, "/",
                               featureName, "_in_t2t-col.20210610_", chrName, "_CENrandomLoci.bed"),
                        header = F)
@@ -152,7 +152,7 @@ CEN180GR <- GRanges(seqnames = CEN180$chr,
                     strand = "*",
                     coverage = rep(1, dim(CEN180)[1]))
 
-if(featureName %in% c("CEN180", "CENgapAll")) {
+if(featureName %in% c("CEN180", "CENgapAllAthila")) {
   # Define matrix and column mean outfiles
   outDF <- list(paste0(matDir,
                        "CEN180freq_MappedOn_t2t-col.20210610_around_", featureName, "_in_", chrName,

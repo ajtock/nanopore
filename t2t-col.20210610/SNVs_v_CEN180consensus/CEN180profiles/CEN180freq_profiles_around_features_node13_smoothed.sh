@@ -1,28 +1,28 @@
 #!/bin/bash
 
-/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr1 2000 2000 2kb 10 10bp genomewide CENAthila;
-/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr2 2000 2000 2kb 10 10bp genomewide CENAthila;
-/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr3 2000 2000 2kb 10 10bp genomewide CENAthila;
-/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr4 2000 2000 2kb 10 10bp genomewide CENAthila;
-/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr5 2000 2000 2kb 10 10bp genomewide CENAthila;
+#/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr1 2000 2000 2kb 10 10bp genomewide CENAthila;
+#/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr2 2000 2000 2kb 10 10bp genomewide CENAthila;
+#/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr3 2000 2000 2kb 10 10bp genomewide CENAthila;
+#/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr4 2000 2000 2kb 10 10bp genomewide CENAthila;
+#/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr5 2000 2000 2kb 10 10bp genomewide CENAthila;
+#
+#/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr1 2000 2000 2kb 10 10bp genomewide nonCENAthila;
+#/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr2 2000 2000 2kb 10 10bp genomewide nonCENAthila;
+#/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr3 2000 2000 2kb 10 10bp genomewide nonCENAthila;
+#/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr4 2000 2000 2kb 10 10bp genomewide nonCENAthila;
+#/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr5 2000 2000 2kb 10 10bp genomewide nonCENAthila;
+#
+#/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr1 2000 2000 2kb 10 10bp genomewide CENgap;
+#/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr2 2000 2000 2kb 10 10bp genomewide CENgap;
+#/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr3 2000 2000 2kb 10 10bp genomewide CENgap;
+#/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr4 2000 2000 2kb 10 10bp genomewide CENgap;
+#/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr5 2000 2000 2kb 10 10bp genomewide CENgap;
 
-/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr1 2000 2000 2kb 10 10bp genomewide nonCENAthila;
-/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr2 2000 2000 2kb 10 10bp genomewide nonCENAthila;
-/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr3 2000 2000 2kb 10 10bp genomewide nonCENAthila;
-/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr4 2000 2000 2kb 10 10bp genomewide nonCENAthila;
-/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr5 2000 2000 2kb 10 10bp genomewide nonCENAthila;
-
-/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr1 2000 2000 2kb 10 10bp genomewide CENgap;
-/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr2 2000 2000 2kb 10 10bp genomewide CENgap;
-/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr3 2000 2000 2kb 10 10bp genomewide CENgap;
-/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr4 2000 2000 2kb 10 10bp genomewide CENgap;
-/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr5 2000 2000 2kb 10 10bp genomewide CENgap;
-
-/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr1 2000 2000 2kb 10 10bp genomewide CENgapAll;
-/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr2 2000 2000 2kb 10 10bp genomewide CENgapAll;
-/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr3 2000 2000 2kb 10 10bp genomewide CENgapAll;
-/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr4 2000 2000 2kb 10 10bp genomewide CENgapAll;
-/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr5 2000 2000 2kb 10 10bp genomewide CENgapAll;
+#/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr1 2000 2000 2kb 10 10bp genomewide CENgapAll;
+#/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr2 2000 2000 2kb 10 10bp genomewide CENgapAll;
+#/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr3 2000 2000 2kb 10 10bp genomewide CENgapAll;
+#/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr4 2000 2000 2kb 10 10bp genomewide CENgapAll;
+#/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr5 2000 2000 2kb 10 10bp genomewide CENgapAll;
 
 /applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr1 2000 2000 2kb 10 10bp genomewide CENgapAllAthila;
 /applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr2 2000 2000 2kb 10 10bp genomewide CENgapAllAthila;
@@ -30,35 +30,35 @@
 /applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr4 2000 2000 2kb 10 10bp genomewide CENgapAllAthila;
 /applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr5 2000 2000 2kb 10 10bp genomewide CENgapAllAthila;
 
-/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr1 2000 2000 2kb 10 10bp genomewide CENgapAllNotAthila;
-/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr2 2000 2000 2kb 10 10bp genomewide CENgapAllNotAthila;
-/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr3 2000 2000 2kb 10 10bp genomewide CENgapAllNotAthila;
-/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr4 2000 2000 2kb 10 10bp genomewide CENgapAllNotAthila;
-/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr5 2000 2000 2kb 10 10bp genomewide CENgapAllNotAthila;
+#/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr1 2000 2000 2kb 10 10bp genomewide CENgapAllNotAthila;
+#/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr2 2000 2000 2kb 10 10bp genomewide CENgapAllNotAthila;
+#/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr3 2000 2000 2kb 10 10bp genomewide CENgapAllNotAthila;
+#/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr4 2000 2000 2kb 10 10bp genomewide CENgapAllNotAthila;
+#/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr5 2000 2000 2kb 10 10bp genomewide CENgapAllNotAthila;
 
-/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr1 2000 2000 2kb 10 10bp genomewide CENAthila;
-/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr2 2000 2000 2kb 10 10bp genomewide CENAthila;
-/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr3 2000 2000 2kb 10 10bp genomewide CENAthila;
-/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr4 2000 2000 2kb 10 10bp genomewide CENAthila;
-/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr5 2000 2000 2kb 10 10bp genomewide CENAthila;
+#/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr1 2000 2000 2kb 10 10bp genomewide CENAthila;
+#/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr2 2000 2000 2kb 10 10bp genomewide CENAthila;
+#/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr3 2000 2000 2kb 10 10bp genomewide CENAthila;
+#/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr4 2000 2000 2kb 10 10bp genomewide CENAthila;
+#/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr5 2000 2000 2kb 10 10bp genomewide CENAthila;
+#
+#/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr1 2000 2000 2kb 10 10bp genomewide nonCENAthila;
+#/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr2 2000 2000 2kb 10 10bp genomewide nonCENAthila;
+#/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr3 2000 2000 2kb 10 10bp genomewide nonCENAthila;
+#/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr4 2000 2000 2kb 10 10bp genomewide nonCENAthila;
+#/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr5 2000 2000 2kb 10 10bp genomewide nonCENAthila;
+#
+#/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr1 2000 2000 2kb 10 10bp genomewide CENgap;
+#/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr2 2000 2000 2kb 10 10bp genomewide CENgap;
+#/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr3 2000 2000 2kb 10 10bp genomewide CENgap;
+#/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr4 2000 2000 2kb 10 10bp genomewide CENgap;
+#/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr5 2000 2000 2kb 10 10bp genomewide CENgap;
 
-/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr1 2000 2000 2kb 10 10bp genomewide nonCENAthila;
-/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr2 2000 2000 2kb 10 10bp genomewide nonCENAthila;
-/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr3 2000 2000 2kb 10 10bp genomewide nonCENAthila;
-/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr4 2000 2000 2kb 10 10bp genomewide nonCENAthila;
-/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr5 2000 2000 2kb 10 10bp genomewide nonCENAthila;
-
-/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr1 2000 2000 2kb 10 10bp genomewide CENgap;
-/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr2 2000 2000 2kb 10 10bp genomewide CENgap;
-/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr3 2000 2000 2kb 10 10bp genomewide CENgap;
-/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr4 2000 2000 2kb 10 10bp genomewide CENgap;
-/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr5 2000 2000 2kb 10 10bp genomewide CENgap;
-
-/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr1 2000 2000 2kb 10 10bp genomewide CENgapAll;
-/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr2 2000 2000 2kb 10 10bp genomewide CENgapAll;
-/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr3 2000 2000 2kb 10 10bp genomewide CENgapAll;
-/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr4 2000 2000 2kb 10 10bp genomewide CENgapAll;
-/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr5 2000 2000 2kb 10 10bp genomewide CENgapAll;
+#/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr1 2000 2000 2kb 10 10bp genomewide CENgapAll;
+#/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr2 2000 2000 2kb 10 10bp genomewide CENgapAll;
+#/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr3 2000 2000 2kb 10 10bp genomewide CENgapAll;
+#/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr4 2000 2000 2kb 10 10bp genomewide CENgapAll;
+#/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr5 2000 2000 2kb 10 10bp genomewide CENgapAll;
 
 /applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr1 2000 2000 2kb 10 10bp genomewide CENgapAllAthila;
 /applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr2 2000 2000 2kb 10 10bp genomewide CENgapAllAthila;
@@ -66,11 +66,11 @@
 /applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr4 2000 2000 2kb 10 10bp genomewide CENgapAllAthila;
 /applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr5 2000 2000 2kb 10 10bp genomewide CENgapAllAthila;
 
-/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr1 2000 2000 2kb 10 10bp genomewide CENgapAllNotAthila;
-/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr2 2000 2000 2kb 10 10bp genomewide CENgapAllNotAthila;
-/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr3 2000 2000 2kb 10 10bp genomewide CENgapAllNotAthila;
-/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr4 2000 2000 2kb 10 10bp genomewide CENgapAllNotAthila;
-/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr5 2000 2000 2kb 10 10bp genomewide CENgapAllNotAthila;
+#/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr1 2000 2000 2kb 10 10bp genomewide CENgapAllNotAthila;
+#/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr2 2000 2000 2kb 10 10bp genomewide CENgapAllNotAthila;
+#/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr3 2000 2000 2kb 10 10bp genomewide CENgapAllNotAthila;
+#/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr4 2000 2000 2kb 10 10bp genomewide CENgapAllNotAthila;
+#/applications/R/R-4.0.0/bin/Rscript ./SNVs_v_CEN180consensus_profiles_around_features_smoothed.R Chr5 2000 2000 2kb 10 10bp genomewide CENgapAllNotAthila;
 
 #/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr1 2000 2000 2kb 10 10bp genomewide CENgapSNVT;
 #/applications/R/R-4.0.0/bin/Rscript ./CEN180freq_profiles_around_features_smoothed.R Chr1 2000 2000 2kb 10 10bp genomewide CENgapSNVF;
