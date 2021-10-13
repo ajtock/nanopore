@@ -97,7 +97,7 @@ viridisScale <- viridis_pal()(6)
 htmpColour <- revSpectralScale11
 
 CEN180_col_fun <- colorRamp2(quantile(CEN180[,4],
-                                      c(0.90, 0.92, 0.94, 0.96, 0.98, 0.99),
+                                      c(0.90, 0.91, 0.92, 0.93, 0.94, 0.95),
                                       na.rm = T),
                              viridis_pal()(6))
 
@@ -116,6 +116,7 @@ lgd_Region <- Legend(title = "Region",
                      labels_gp = gpar(fontface = "italic", fontsize = 10),
                      direction = "vertical",
                      nrow = 2, ncol = 1)
+
 lgd_CEN180 <- Legend(title = "CEN180",
                      type = "grid",
                      col_fun = CEN180_col_fun,
@@ -123,6 +124,7 @@ lgd_CEN180 <- Legend(title = "CEN180",
                      title_gp = gpar(fontface = "bold.italic", fontsize = 12),
                      labels_gp = gpar(fontface = "plain", fontsize = 10),
                      direction = "vertical")
+
 lgd_WT_CENH3_1 <- Legend(title = "CENH3",
                          type = "grid",
                          col_fun = WT_CENH3_1_col_fun,
