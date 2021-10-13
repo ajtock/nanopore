@@ -64,10 +64,15 @@ print(sumchr)
 # each coordinate corresponds to the midpoint between the
 # first and last cytosine position with methylation info in the read
 tab <- read.table(paste0(sampleName, "_MappedOn_", refbase, "_", context,
-                         "_raw_readWinSize", readBinSize, "Cs_per_readWin_midpoint.tsv"),
+                         "_raw_readWinSize", readBinCs, "Cs_per_readWin_midpoint.tsv"),
                   header = T)
-######
-colnames(tab) <- c("chr", "midpoint", "per_read_mProp")
+      methDat_mean <- data.frame(chr = chunk[,1][1],
+                                 midpoint = midpoint,
+                                 per_chunk_methyl_mean = per_chunk_methyl_mean,
+                                 start = min(chunk[,2]),
+                                 end = max(chunk[,2]),
+                                 read = chunk[,5][1],
+colnames(tab) <- c("chr", "midpoint", "per_readwin_methyl_mean", "start", "end", "read")
 tab[,2] <- round(tab[,2])
 tab <- tab[with(tab, order(chr, midpoint, decreasing = FALSE)),]
 
@@ -78,7 +83,7 @@ CEN180 <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase, "/annota
 WT_CENH3_1 <- read.table(paste0("/home/ajt200/analysis/CENH3_seedlings_Maheshwari_Comai_2017_GenomeRes/snakemake_ChIPseq_",
                                 refbase, "/mapped/both/tsv/log2ChIPcontrol/",
                                 "WT_CENH3_Rep1_ChIP_SRR4430537_WT_CENH3_Rep1_input_SRR4430555_MappedOn_",
-                                refbase, "_lowXM_both_sort_norm_binSize", genomeBinName, "_smoothed.tsv"),
+                                refbase, "_lowXM_both_sort_norm_binSize", genomeBinName, "_unsmoothed.tsv"),
                          header = T)
 
 # Define heatmap colours
@@ -97,10 +102,35 @@ CEN180_col_fun <- colorRamp2(quantile(CEN180[,4],
                              viridis_pal()(6))
 
 WT_CENH3_1_col_fun <- colorRamp2(quantile(WT_CENH3_1[,6],
-                                          c(0.05, 0.2, 0.4, 0.6, 0.8, 0.95),
+                                          c(0.5, 0.6, 0.7, 0.8, 0.9, 0.95),
                                           na.rm = T),
                                  plasma(6))
 
+lgd_Region <- Legend(title = "Region",
+                     type = "grid",
+                     at = c("NonCEN", "CEN"),
+                     legend_gp = gpar(fill = c("grey70", "red")),
+                     background = NULL,
+                     title_position = "topleft",
+                     title_gp = gpar(fontface = "bold", fontsize = 12),
+                     labels_gp = gpar(fontface = "italic", fontsize = 10),
+                     direction = "vertical",
+                     nrow = 2, ncol = 1)
+lgd_CEN180 <- Legend(title = "CEN180",
+                     type = "grid",
+                     col_fun = CEN180_col_fun,
+                     title_position = "topleft",
+                     title_gp = gpar(fontface = "bold", fontsize = 12),
+                     labels_gp = gpar(fontface = "italic", fontsize = 10),
+                     direction = "vertical")
+lgd_WT_CENH3_1 <- Legend(title = "CENH3",
+                         type = "grid",
+                         col_fun = WT_CENH3_1_col_fun,
+                         title_position = "topleft",
+                         title_gp = gpar(fontface = "bold", fontsize = 12),
+                         labels_gp = gpar(fontface = "plain", fontsize = 10),
+                         direction = "vertical")
+ 
 
 # For each genomeBinSize-bp adjacent window,
 # profile as a density heatmap per-read-window methylation mean values,
@@ -174,34 +204,28 @@ for(i in seq_along(chrs)) {
   }
 
   # Make heatmap for chromosome
-  ha1 <- HeatmapAnnotation(Region = c(
-                           rep("NonCEN", length(which(as.numeric(colnames(win_mProp_matrix))*1e6 < CENstart[i] &
-                                                       as.numeric(colnames(win_mProp_matrix))*1e6 < CENend[i]))),
-                           rep("CEN", length(which(as.numeric(colnames(win_mProp_matrix))*1e6 > CENstart[i] &
-                                                   as.numeric(colnames(win_mProp_matrix))*1e6 < CENend[i]))),
-                           rep("NonCEN", length(which(as.numeric(colnames(win_mProp_matrix))*1e6 > CENend[i])))),
-                           col = list(Region = c("NonCEN" = "grey70", "CEN" = "red")),
-                           annotation_legend_param = list(title = "Region",
-                                                          title_position = "topleft",
-                                                          title_gp = gpar(font = 2, fontsize = 12),
-                                                          labels_gp = gpar(font = 3, fontize = 10),
-                                                          legend_direction = "vertical",
-                                                          nrow = 2,
-                                                          labels_gp = gpar(fontsize = 10)),
-                           show_annotation_name = FALSE)
-
   chr_CEN180 <- CEN180[CEN180[,1] == chrs[i],]
   chr_WT_CENH3_1 <- WT_CENH3_1[WT_CENH3_1[,1] == chrs[i],]
-  ha2 <- HeatmapAnnotation(CEN180 = anno_simple(chr_CEN180[,4],
+
+  ha1 <- HeatmapAnnotation(
+#                           Region = anno_simple(c(
+#                                                  rep("NonCEN", length(which(as.numeric(colnames(win_mProp_matrix))*1e6 < CENstart[i] &
+#                                                                              as.numeric(colnames(win_mProp_matrix))*1e6 < CENend[i]))),
+#                                                  rep("CEN", length(which(as.numeric(colnames(win_mProp_matrix))*1e6 > CENstart[i] &
+#                                                                          as.numeric(colnames(win_mProp_matrix))*1e6 < CENend[i]))),
+#                                                  rep("NonCEN", length(which(as.numeric(colnames(win_mProp_matrix))*1e6 > CENend[i])))),
+#                                                col = c("NonCEN" = "grey70", "CEN" = "red")),
+                           CEN180 = anno_simple(chr_CEN180[,4],
                                                 col = CEN180_col_fun),
                            CENH3 = anno_simple(chr_WT_CENH3_1[,6],
                                                col = WT_CENH3_1_col_fun),
-                           annotation_name_side = "left")
+                           show_annotation_name = c(T),
+                           annotation_name_side = "right")
 
   htmp <- densityHeatmap(data = win_mProp_matrix,
                          col = htmpColour,
                          density_param = list(na.rm = TRUE),
-                         top_annotation = ha2,
+                         top_annotation = ha1,
                          column_title = paste0(chrs[i], " ",
                                                gsub(pattern = "[A-z]", replacement = "", x = genomeBinName),
                                                "-", gsub(pattern = "[0-9]", replacement = "", x = genomeBinName),
@@ -210,7 +234,7 @@ for(i in seq_along(chrs)) {
                          column_title_rot = 0,
                          title_gp = gpar(fontsize = 12),
                          show_quantiles = FALSE,
-                         ylab = paste0("Per-read m", context, " proportion"),
+                         ylab = paste0("Per-read-window m", context, " proportion"),
                          ylab_gp = gpar(fontsize = 12),
                          ylim = ylimContext, 
                          column_names_side = "bottom",
@@ -231,15 +255,13 @@ for(i in seq_along(chrs)) {
   htmps <- htmps + htmp
 }
 
-tab <- read.table(paste0(sampleName, "_MappedOn_", refbase, "_", context,
-                         "_raw_readWinSize", readBinSize, "Cs_per_readWin_midpoint.tsv"),
-
 pdf(paste0(plotDir,
            sampleName, "_MappedOn_", refbase, "_", context,
-           "_prop_raw_readBinSize", readBinName, "_per_read_midpoint_density_heatmap_genomeBinSize", genomeBinName, ".pdf"), 
+           "_prop_raw_readBinSize", readBinCs, "Cs_per_readWin_midpoint_density_heatmap_genomeBinSize", genomeBinName, ".pdf"), 
     height = 4, width = 12 * length(htmps))
 draw(htmps,
      heatmap_legend_side = "right",
+     annotation_legend_list = list(lgd_CEN180, lgd_WT_CENH3_1),
      annotation_legend_side = "right",
      gap = unit(c(1), "mm"))
 dev.off()
