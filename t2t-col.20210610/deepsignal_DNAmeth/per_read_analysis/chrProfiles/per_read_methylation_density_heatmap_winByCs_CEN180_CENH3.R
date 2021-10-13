@@ -66,12 +66,6 @@ print(sumchr)
 tab <- read.table(paste0(sampleName, "_MappedOn_", refbase, "_", context,
                          "_raw_readWinSize", readBinCs, "Cs_per_readWin_midpoint.tsv"),
                   header = T)
-      methDat_mean <- data.frame(chr = chunk[,1][1],
-                                 midpoint = midpoint,
-                                 per_chunk_methyl_mean = per_chunk_methyl_mean,
-                                 start = min(chunk[,2]),
-                                 end = max(chunk[,2]),
-                                 read = chunk[,5][1],
 colnames(tab) <- c("chr", "midpoint", "per_readwin_methyl_mean", "start", "end", "read")
 tab[,2] <- round(tab[,2])
 tab <- tab[with(tab, order(chr, midpoint, decreasing = FALSE)),]
