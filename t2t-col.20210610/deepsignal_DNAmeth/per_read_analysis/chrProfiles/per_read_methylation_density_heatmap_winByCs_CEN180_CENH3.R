@@ -65,8 +65,10 @@ print(sumchr)
 # first and last cytosine position with methylation info in the read
 tab <- read.table(paste0(sampleName, "_MappedOn_", refbase, "_", context,
                          "_raw_readWinSize", readBinCs, "Cs_per_readWin_midpoint.tsv"),
-                  header = T)
-colnames(tab) <- c("chr", "midpoint", "per_readwin_methyl_mean", "start", "end", "read")
+                  header = T, colClasses = c(rep(NA, 3), rep("NULL", 3)))
+print("Done reading per-read-window methylation table")
+#colnames(tab) <- c("chr", "midpoint", "per_readwin_methyl_mean", "start", "end", "read")
+colnames(tab) <- c("chr", "midpoint", "per_readwin_methyl_mean")
 tab[,2] <- round(tab[,2])
 tab <- tab[with(tab, order(chr, midpoint, decreasing = FALSE)),]
 
@@ -217,7 +219,7 @@ for(i in seq_along(chrs)) {
                                                col = WT_CENH3_1_col_fun),
                            show_annotation_name = c(T, T),
                            annotation_name_gp = gpar(fontface = c("italic", "plain")),
-                           annotation_name_side = "right")
+                           annotation_name_side = "left")
 
   htmp <- densityHeatmap(data = win_mProp_matrix,
                          col = htmpColour,
