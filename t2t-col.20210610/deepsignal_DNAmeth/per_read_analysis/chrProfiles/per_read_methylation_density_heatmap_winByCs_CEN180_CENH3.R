@@ -26,6 +26,7 @@ if(floor(log10(genomeBinSize)) + 1 < 4) {
 }
 
 options(stringsAsFactors = F)
+library(data.table)
 library(segmentSeq)
 library(ComplexHeatmap)
 library(dplyr)
@@ -63,9 +64,12 @@ print(sumchr)
 # Load table of per-read methylation proportions, in which
 # each coordinate corresponds to the midpoint between the
 # first and last cytosine position with methylation info in the read
-tab <- read.table(paste0(sampleName, "_MappedOn_", refbase, "_", context,
-                         "_raw_readWinSize", readBinCs, "Cs_per_readWin_midpoint.tsv"),
-                  header = T, colClasses = c(rep(NA, 3), rep("NULL", 3)))
+#tab <- read.table(paste0(sampleName, "_MappedOn_", refbase, "_", context,
+#                         "_raw_readWinSize", readBinCs, "Cs_per_readWin_midpoint.tsv"),
+#                  header = T, colClasses = c(rep(NA, 3), rep("NULL", 3)))
+tab <- fread(paste0(sampleName, "_MappedOn_", refbase, "_", context,
+                    "_raw_readWinSize", readBinCs, "Cs_per_readWin_midpoint.tsv"),
+             sep = "\t", data.table = FALSE, colClasses = c(rep(NA, 3), rep("NULL", 3)))
 print("Done reading per-read-window methylation table")
 #colnames(tab) <- c("chr", "midpoint", "per_readwin_methyl_mean", "start", "end", "read")
 colnames(tab) <- c("chr", "midpoint", "per_readwin_methyl_mean")
