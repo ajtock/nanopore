@@ -24,7 +24,7 @@ library(parallel)
  
 # Read in the raw output .tsv file from Deepsignal methylation model
 tab <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase, "/deepsignal_DNAmeth/",
-                         sampleName, "_MappedOn_", refbase, "_", context, "_raw.tsv"),
+                         sampleName, "_MappedOn_", refbase, "_", context, "_raw_tail100000000.tsv"),
                   header = F)
  
 # Generate a character vector of the unique readIDs in the file
@@ -33,6 +33,8 @@ readIDs <- unique(tab$V5)
 # Loop within parallelised loop to calculate the per-read methylation proportion
 # across sequential adjacent noOfCs-Cs-containing windows along each read
 per_read_DNAmeth_DF <- do.call(rbind, mclapply(readIDs, function(x) {
+#mclapply(readIDs, function(x) {
+#  y <- tab[tab[,5] == x,c(1,2)]
   y <- tab[tab[,5] == x,]              # Get rows (cytosine positions) for read x
   y <- y[order(y$V2, decreasing = F),] # Order the rows by ascending position in the chromosome
  
@@ -47,9 +49,20 @@ per_read_DNAmeth_DF <- do.call(rbind, mclapply(readIDs, function(x) {
   # Remove the last winStart value if there are fewer than noOfCs Cs from
   # this value to the last C in the read (the last row), so that the last window
   # always has as much or more methylation-state information than the other windows
-  if(nrow(y) - winStarts[length(winStarts)] + 1 < noOfCs) {
-    winStarts <- winStarts[-length(winStarts)]
-  }
+  tryCatch(
+    {
+      if(nrow(y) - winStarts[length(winStarts)] + 1 < noOfCs) {
+        winStarts <- winStarts[-length(winStarts)]
+      }
+    },
+    error=function(cond) {
+      message(paste(x, "read is problematic"))
+      message("Here's the original error message:")
+      message(cond)
+      # Choose a return value in case of error
+      return(NA)
+    }
+  )
 
   # Define window end coordinates within read
   if(nrow(y) - winStarts[1] + 1 >= noOfCs) {
@@ -94,7 +107,8 @@ per_read_DNAmeth_DF <- do.call(rbind, mclapply(readIDs, function(x) {
   # Due to the large numbers of reads that are forked to each CPU, these are
   # RAM-heavy combined processes, which calls for using fewer CPUs than are
   # available on a given node (e.g., 30% of the available CPUs)
-}, mc.cores = detectCores()*0.30, mc.preschedule = T))
+#}, mc.cores = detectCores()*1.00, mc.preschedule = T)
+}, mc.cores = detectCores()*0.20, mc.preschedule = T))
 
 print("I'm done!")
 
