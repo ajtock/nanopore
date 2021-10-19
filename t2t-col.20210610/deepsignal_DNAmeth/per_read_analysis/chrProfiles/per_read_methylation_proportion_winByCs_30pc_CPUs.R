@@ -24,7 +24,7 @@ library(parallel)
  
 # Read in the raw output .tsv file from Deepsignal methylation model
 tab <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase, "/deepsignal_DNAmeth/",
-                         sampleName, "_MappedOn_", refbase, "_", context, "_raw_tail100000000.tsv"),
+                         sampleName, "_MappedOn_", refbase, "_", context, "_raw.tsv"),
                   header = F)
  
 # Generate a character vector of the unique readIDs in the file
@@ -33,8 +33,6 @@ readIDs <- unique(tab$V5)
 # Loop within parallelised loop to calculate the per-read methylation proportion
 # across sequential adjacent noOfCs-Cs-containing windows along each read
 per_read_DNAmeth_DF <- do.call(rbind, mclapply(readIDs, function(x) {
-#mclapply(readIDs, function(x) {
-#  y <- tab[tab[,5] == x,c(1,2)]
   y <- tab[tab[,5] == x,]              # Get rows (cytosine positions) for read x
   y <- y[order(y$V2, decreasing = F),] # Order the rows by ascending position in the chromosome
  
@@ -56,7 +54,7 @@ per_read_DNAmeth_DF <- do.call(rbind, mclapply(readIDs, function(x) {
       }
     },
     error=function(cond) {
-      message(paste(x, "read is problematic"))
+      message(paste(x, "read is problematic for winStarts"))
       message("Here's the original error message:")
       message(cond)
       # Choose a return value in case of error
@@ -65,37 +63,52 @@ per_read_DNAmeth_DF <- do.call(rbind, mclapply(readIDs, function(x) {
   )
 
   # Define window end coordinates within read
-  if(nrow(y) - winStarts[1] + 1 >= noOfCs) {
-    winEnds <- seq(from = winStarts[1] + noOfCs - 1,
-                   to = nrow(y),
-                   by = noOfCs)
-    # Remove the last winEnd value if there are fewer than noOfCs Cs from
-    # this value to the last C in the read (the last row), so that the last window
-    # always has as much or more methylation-state information than the other windows
-    if(nrow(y) - winEnds[length(winEnds)] + 1 < noOfCs) {
-      winEnds <- winEnds[-length(winEnds)]
+  tryCatch(
+    {
+      if(nrow(y) >= noOfCs) {
+        winEnds <- seq(from = noOfCs,
+                       to = nrow(y),
+                       by = noOfCs)
+        if(winEnds[length(winEnds)] != nrow(y)) {
+          winEnds <- c(winEnds, nrow(y))
+        }
+        # Remove the penultimate winEnd value if there are fewer than noOfCs Cs from
+        # this value to the last C in the read (the last row), so that the last window
+        # always has as much methylation-state information as, or more than, the other windows
+        if(nrow(y) - winEnds[(length(winEnds) - 1)] < noOfCs) {
+          winEnds <- winEnds[-(length(winEnds) - 1)]
+        }
+      } else {
+        winEnds <- nrow(y)
+      }
+    },
+    error=function(cond) {
+      message(paste(x, "read is problematic for winEnds"))
+      message("Here's the original error message:")
+      message(cond)
+      # Choose a return value in case of error
+      return(NA)
     }
-    if(winEnds[length(winEnds)] != nrow(y)) {
-      winEnds <- c(winEnds, nrow(y))
-    }
-  } else {
-    winEnds <- nrow(y)
-  }
+  )
+
+  # Ensure same number of window starts and ends
+  stopifnot(length(winStarts) == length(winEnds))
 
   methDat <- NULL
   for(i in 1:length(winStarts)) {
-    chunk <- y[winStarts[i] : winEnds[i],]
-    # Proceed only if chunk contains rows (cytosine positions)
-    if(dim(chunk)[1] > 0) {
-      midpoint <- ( min(chunk[,2]) + max(chunk[,2]) ) / 2
-      per_chunk_methyl_mean <- mean(chunk[,9])
-      methDat_mean <- data.frame(chr = chunk[,1][1],
+    readwin <- y[winStarts[i] : winEnds[i],]
+    # Proceed only if readwin contains rows (cytosine positions)
+    if(dim(readwin)[1] > 0) {
+      midpoint <- ( min(readwin[,2]) + max(readwin[,2]) ) / 2
+      per_readwin_methyl_mean <- mean(readwin[,9])
+      methDat_mean <- data.frame(chr = readwin[,1][1],
                                  midpoint = midpoint,
-                                 per_chunk_methyl_mean = per_chunk_methyl_mean,
-                                 start = min(chunk[,2]),
-                                 end = max(chunk[,2]),
-                                 read = chunk[,5][1],
+                                 per_readwin_methyl_mean = per_readwin_methyl_mean,
+                                 start = min(readwin[,2]),
+                                 end = max(readwin[,2]),
+                                 read = readwin[,5][1],
                                  stringsAsFactors = F)
+
       methDat <- rbind(methDat, methDat_mean)
     }
   }
@@ -107,10 +120,9 @@ per_read_DNAmeth_DF <- do.call(rbind, mclapply(readIDs, function(x) {
   # Due to the large numbers of reads that are forked to each CPU, these are
   # RAM-heavy combined processes, which calls for using fewer CPUs than are
   # available on a given node (e.g., 30% of the available CPUs)
-#}, mc.cores = detectCores()*0.30, mc.preschedule = T)
 }, mc.cores = detectCores()*0.30, mc.preschedule = T))
 
-print("I'm done!")
+print("Done")
 
 per_read_DNAmeth_DF <- per_read_DNAmeth_DF[
                          order(per_read_DNAmeth_DF[,1], per_read_DNAmeth_DF[,2]),
@@ -118,5 +130,5 @@ per_read_DNAmeth_DF <- per_read_DNAmeth_DF[
 
 write.table(per_read_DNAmeth_DF,
             file = paste0(sampleName, "_MappedOn_", refbase, "_", context,
-                          "_raw_readWinSize", noOfCs, "Cs_per_readWin_midpoint.tsv"),
+                          "_raw_readBinSize", noOfCs, "Cs_per_readWin_midpoint.tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
