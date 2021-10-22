@@ -91,8 +91,18 @@ per_read_DNAmeth_DF <- do.call(rbind, mclapply(readIDs, function(x) {
     }
   )
 
-  # Ensure same number of window starts and ends
-  stopifnot(length(winStarts) == length(winEnds))
+  tryCatch(
+    {
+      stopifnot(length(winStarts) == length(winEnds))
+    },
+    error = function(cond) {
+      message(paste(x, "read: length of winStarts is not equal to length of winEnds"))
+      message("Here's the original error message:")
+      message(cond)
+      # Choose a return value in case of error
+      return(NA)
+    }
+  )
 
   methDat <- NULL
   for(i in 1:length(winStarts)) {
