@@ -114,9 +114,11 @@ per_read_DNAmeth_DF <- do.call(rbind, mclapply(readIDs, function(x) {
     if(dim(readwin)[1] > 0) {
       midpoint <- ( min(readwin[,2]) + max(readwin[,2]) ) / 2
       per_readwin_methyl_mean <- mean(readwin[,9])
+      per_readwin_methyl_sd <- sd(readwin[,9])
       methDat_mean <- data.frame(chr = readwin[,1][1],
                                  midpoint = midpoint,
                                  per_readwin_methyl_mean = per_readwin_methyl_mean,
+                                 per_readwin_methyl_sd = per_readwin_methyl_sd,
                                  start = min(readwin[,2]),
                                  end = max(readwin[,2]),
                                  read = readwin[,5][1],
