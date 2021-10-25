@@ -2,7 +2,7 @@
 
 # Usage on hydrogen node7:
 # chmod +x per_read_methylation_proportion_winByCs.R
-# csmit -m 300G -c 47 "/applications/R/R-4.0.0/bin/Rscript per_read_methylation_proportion_winByCs_CPUpc_CPUs.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 20 CHG 0.20"
+# csmit -m 300G -c 47 "/applications/R/R-4.0.0/bin/Rscript per_read_methylation_proportion_winByCs_CPUpc_CPUs.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 20 CHG 0.30"
 # csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript per_read_methylation_proportion_winByCs_CPUpc_CPUs.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 20 CpG 0.20"
 
 # Divide each read into adjacent segments each consisting of a given number of consecutive cytosines,
@@ -52,7 +52,7 @@ per_read_DNAmeth_DF <- do.call(rbind, mclapply(readIDs, function(x) {
   # always has as much or more methylation-state information than the other windows
   tryCatch(
     {
-      if(nrow(y) - winStarts[length(winStarts)] + 1 < noOfCs) {
+      if(length(winStarts) > 1 && nrow(y) - winStarts[length(winStarts)] + 1 < noOfCs) {
         winStarts <- winStarts[-length(winStarts)]
       }
     },

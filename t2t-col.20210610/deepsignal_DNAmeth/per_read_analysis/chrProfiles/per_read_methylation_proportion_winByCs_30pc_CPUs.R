@@ -49,7 +49,7 @@ per_read_DNAmeth_DF <- do.call(rbind, mclapply(readIDs, function(x) {
   # always has as much or more methylation-state information than the other windows
   tryCatch(
     {
-      if(nrow(y) - winStarts[length(winStarts)] + 1 < noOfCs) {
+      if(length(winStarts) > 1 && nrow(y) - winStarts[length(winStarts)] + 1 < noOfCs) {
         winStarts <- winStarts[-length(winStarts)]
       }
     },
