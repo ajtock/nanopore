@@ -2,8 +2,8 @@
 
 # Usage on hydrogen node7:
 # chmod +x per_read_methylation_proportion_winByCs.R
-# csmit -m 300G -c 47 "/applications/R/R-4.0.0/bin/Rscript among_read_variation_scoring.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 10000 CHG 0.30 Chr1"
-# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript among_read_variation_scoring.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 10000 CpG 0.20 Chr1"
+# csmit -m 300G -c 47 "/applications/R/R-4.0.0/bin/Rscript among_read_variation_scoring.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 1000 1 CHG 0.30 Chr1"
+# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript among_read_variation_scoring.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 1000 1 CpG 0.20 Chr1" 
 
 # Divide each read into adjacent segments each consisting of a given number of consecutive cytosines,
 # and calculate the methylation proportion for each segment of each read
@@ -11,7 +11,8 @@
 #sampleName <- "Col_0_deepsignalDNAmeth_30kb_90pc"
 #refbase <- "t2t-col.20210610"
 #readBinCs <- 20
-#genomeBinSize <- 10000
+#genomeBinSize <- 1000
+#genomeStepSize <- 1
 #context <- "CpG"
 #CPUpc <- 0.20
 #chrName <- unlist(strsplit("Chr4", split = ","))
@@ -20,9 +21,10 @@ args <- commandArgs(trailingOnly = T)
 sampleName <- args[1]
 refbase <- args[2]
 genomeBinSize <- as.integer(args[3])
-context <- args[4]
-CPUpc <- as.numeric(args[5])
-chrName <- unlist(strsplit(args[6], split = ","))
+genomeStepSize <- as.integer(args[4])
+context <- args[5]
+CPUpc <- as.numeric(args[6])
+chrName <- unlist(strsplit(args[7], split = ","))
 
 print(paste0("Proportion of CPUs:", CPUpc))
 options(stringsAsFactors = F)
@@ -48,7 +50,17 @@ if(floor(log10(genomeBinSize)) + 1 < 4) {
   genomeBinName <- paste0(genomeBinSize/1e6, "Mb")
 }
 
-plotDir <- paste0("plots_genomeBinBySize/")
+if(floor(log10(genomeStepSize)) + 1 < 4) {
+  genomeStepName <- paste0(genomeStepSize, "bp")
+} else if(floor(log10(genomeStepSize)) + 1 >= 4 &
+          floor(log10(genomeStepSize)) + 1 <= 6) {
+  genomeStepName <- paste0(genomeStepSize/1e3, "kb")
+} else if(floor(log10(genomeStepSize)) + 1 >= 7) {
+  genomeStepName <- paste0(genomeStepSize/1e6, "Mb")
+}
+
+outDir <- paste0("genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName, "/")
+plotDir <- paste0(outDir, "plots/")
 system(paste0("[ -d ", plotDir, " ] || mkdir -p ", plotDir))
 
 # Genomic definitions
@@ -65,12 +77,40 @@ tab <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase, "/deepsigna
                          sampleName, "_MappedOn_", refbase, "_", context, "_raw_", chrName, ".tsv"),
                   header = F)
  
-# For each genomeBinSize-bp adjacent window,
-# profile as a density heatmap per-read-window methylation mean values,
-# profile as a heatmap windowed CEN180 frequency,
-# and profile as a line graph windowed CENH3 ChIP-seq signal
+# For each genomeBinSize-bp window with a step of genomeStepSize-bp,
+# calculate Fleiss' kappa statistic as a measure of among-read variation
+# in methylation state
 print(genomeBinName)
+print(genomeStepName)
 for(i in seq_along(chrs)) {
+#  # Define sliding windows of width genomeBinSize bp,
+#  # with a step of genomeStepSize vp
+#  ## Note: the active code creates windows of genomeBinSize bp only,
+#  ## whereas the commented-out code creates windows decreasing from genomeBinSize bp to genomeStepSize bp
+#  ## at the right-hand end of each chromosome ( from chrLens[x]-genomeBinSize to chrLens[x] ),
+#  winStarts <- seq(from = 1,
+##                   to = chrLens[i],
+#                   to = chrLens[i]-genomeBinSize,
+#                   by = genomeStepSize)
+##  stopifnot(winStarts[length(winStarts)] == chrLens[i])
+#  if(chrLens[i] - winStarts[length(winStarts)] >= genomeBinSize) {
+#    winStarts <- c(winStarts,
+#                   winStarts[length(winStarts)]+genomeStepSize)
+#  }
+#  winEnds <- seq(from = winStarts[1]+genomeBinSize-1,
+#                 to = chrLens[i],
+#                 by = genomeStepSize)
+#  stopifnot(winEnds[length(winEnds)] == chrLens[i])
+#  winEnds <- c(winEnds,
+#               rep(chrLens[i], times = length(winStarts)-length(winEnds)))
+#  stopifnot(length(winStarts) == length(winEnds))
+#
+#  winGR <- GRanges(seqnames = chrs[i],
+#                   ranges = IRanges(start = winStarts,
+#                                    end = winEnds),
+#                   strand = "*")
+#  print(winGR)
+
   # Define adjacent windows
   winSeq <- seq(from = 1, to = chrLens[i], by = genomeBinSize)
   winIR <- IRanges(start = winSeq,
@@ -124,8 +164,16 @@ for(i in seq_along(chrs)) {
 #                                                 names_prefix = "read_",
                                                  values_from = call))
     pwider_x <- pwider_x[ with(data = pwider_x, expr = order(pos)), ]
+    rownames(pwider_x) <- pwider_x[,1]
+    pwider_x <- pwider_x[,-1]
+    
 #    rownames(pwider_x) <- rownames(spread_x)
 #    stopifnot(all.equal(pwider_x, spread_x, check.attributes=F))
+    which(colSums(is.na(pwider_x)) == 0)
+
+    
+    kappam.fleiss(pwider_x)
+
 
 #  # Convert fOverlaps into list object equivalent to that
 #  # generated by segmentSeq::getOverlaps(), in which each
