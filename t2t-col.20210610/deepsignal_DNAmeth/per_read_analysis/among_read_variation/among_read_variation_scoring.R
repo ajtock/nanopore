@@ -7,8 +7,8 @@
 
 # Usage on hydrogen node7:
 # chmod +x per_read_methylation_proportion_winByCs.R
-# csmit -m 300G -c 47 "/applications/R/R-4.0.0/bin/Rscript among_read_variation_scoring.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 10000 500 CHG 0.50 0.30 Chr1"
-# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript among_read_variation_scoring.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 10000 500 CpG 0.50 1.00 Chr1" 
+# csmit -m 300G -c 47 "/applications/R/R-4.0.0/bin/Rscript among_read_variation_scoring.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 10000 500 CHG 0.50 0.66 Chr1"
+# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript among_read_variation_scoring.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 10000 500 CpG 0.50 0.66 Chr1"
 
 # Divide each read into adjacent segments each consisting of a given number of consecutive cytosines,
 # and calculate the methylation proportion for each segment of each read
@@ -20,7 +20,7 @@
 #genomeStepSize <- 500
 #context <- "CpG"
 #NAmax <- 0.50
-#CPUpc <- 1.00
+#CPUpc <- 0.66
 #chrName <- unlist(strsplit("Chr4", split = ","))
 
 args <- commandArgs(trailingOnly = T)
