@@ -8,7 +8,7 @@
 # Usage on hydrogen node7:
 # chmod +x per_read_methylation_proportion_winByCs.R
 # csmit -m 300G -c 47 "/applications/R/R-4.0.0/bin/Rscript among_read_variation_scoring.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 10000 500 CHG 0.50 0.30 Chr1"
-# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript among_read_variation_scoring.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 10000 500 CpG 0.50 0.20 Chr1" 
+# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript among_read_variation_scoring.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 10000 500 CpG 0.50 1.00 Chr1" 
 
 # Divide each read into adjacent segments each consisting of a given number of consecutive cytosines,
 # and calculate the methylation proportion for each segment of each read
@@ -20,7 +20,7 @@
 #genomeStepSize <- 500
 #context <- "CpG"
 #NAmax <- 0.50
-#CPUpc <- 0.20
+#CPUpc <- 1.00
 #chrName <- unlist(strsplit("Chr4", split = ","))
 
 args <- commandArgs(trailingOnly = T)
@@ -162,7 +162,10 @@ for(i in seq_along(chrs)) {
                                 select = "all",
                                 ignore.strand = TRUE)
 
-  for(x in seq_along(winGR)) {
+  fk_df_win_list <- mclapply(seq_along(winGR), function(x) {
+
+    # Analyse each strand separately
+    # fwd
     chr_tab_GR_fwd_x <- chr_tab_GR_fwd[subjectHits(fOverlaps_fwd[queryHits(fOverlaps_fwd) == x])]
     chr_tab_GR_fwd_x <- sortSeqlevels(chr_tab_GR_fwd_x)
     chr_tab_GR_fwd_x <- sort(chr_tab_GR_fwd_x, by = ~ read + start)
@@ -171,12 +174,13 @@ for(i in seq_along(chrs)) {
                            read = chr_tab_GR_fwd_x$read,
                            call = chr_tab_GR_fwd_x$call)
 
-#    spread_x <- tidyr::spread(data = df_fwd_x,
-#                              key = read,
-#                              value = call)
-##                              sep = "_")
-#    spread_x <- spread_x[ with(data = spread_x, expr = order(pos)), ]
-   
+#    # tidyr::spread() is deprecated; use tidyr::pivot_wider() instead 
+#    spread_fwd_x <- tidyr::spread(data = df_fwd_x,
+#                                  key = read,
+#                                  value = call)
+##                                  sep = "_")
+#    spread_fwd_x <- spread_x[ with(data = spread_x, expr = order(pos)), ]
+ 
     pwider_fwd_x <- as.data.frame(tidyr::pivot_wider(data = df_fwd_x,
                                                      names_from = read,
 #                                                     names_prefix = "read_",
@@ -184,31 +188,134 @@ for(i in seq_along(chrs)) {
     pwider_fwd_x <- pwider_fwd_x[ with(data = pwider_fwd_x, expr = order(pos)), ]
     rownames(pwider_fwd_x) <- pwider_fwd_x[,1]
     pwider_fwd_x <- pwider_fwd_x[,-1]
-    df <- pwider_fwd_x
+
     # kappam.fleiss() uses only rows (cytosines) with complete information
     # across all columns (reads) considered
-    # Therefore, remove columns (reads) with > threshold missingness to
+    # Therefore, remove columns (reads) containing > NAmax proportion NAs to
     # to retain more cytosines in the data.frame for kappa calculation
 
-    cond1 <- sapply(df, function(col) sum(is.na(col)) >= nrow(df) * NAmax)    
-    df <- df[ , !(cond1), drop = F]
+    mask_cols <- apply(pwider_fwd_x, MARGIN = 2, FUN = function(col) sum(is.na(col)) >= nrow(pwider_fwd_x) * NAmax)    
+    # Report proportion of columns (reads) to be retained:
+    prop_reads_retained_fwd_x <- sum(!(mask_cols)) / ncol(pwider_fwd_x)
+    # Report number of columns (reads) to be retained:
+    num_reads_retained_fwd_x <- sum(!(mask_cols)) 
+    # Conditionally remove columns (reads) containing > NAmax proportion NAs
+    if(sum(mask_cols) > 0) {
+      pwider_fwd_x <- pwider_fwd_x[ , !(mask_cols), drop = F]
+    }
 
-    pwider_fwd_x <- pwider_fwd_x[ , -which( colSums(is.na(pwider_fwd_x)) >= nrow(pwider_fwd_x) * NAmax ) ]
-    pwider_fwd_x_cr <- pwider_fwd_x[ -which( rowSums(is.na(pwider_fwd_x)) > 0 ) , ]
-    kappam.fleiss(pwider_fwd_x)
-    kappam.fleiss(pwider_fwd_x_cr)
+    # Remove rows (cytosines) containing any NAs across the retained columns (reads),
+    # as these will not be used by kappam.fleiss() in any case
+    mask_rows <- apply(pwider_fwd_x, MARGIN = 1, FUN = function(row) sum(is.na(row)) > 0)
+    # Report proportion of rows (cytosines) to be retained:
+    prop_Cs_retained_fwd_x <- sum(!(mask_rows)) / nrow(pwider_fwd_x) 
+    # Report number of rows (cytosines) to be retained:
+    num_Cs_retained_fwd_x <- sum(!(mask_rows))
+    # Conditionally remove rows (cytosines) containing any NAs
+    if(sum(mask_rows) > 0) {
+      pwider_fwd_x <- pwider_fwd_x[ !(mask_rows), , drop = F]
+    }
+
+    # Calculate Fleiss' kappa
+    fkappa_pwider_fwd_x <- kappam.fleiss(pwider_fwd_x, detail = F)
+
+    # Sanity checks
+    stopifnot(fkappa_pwider_fwd_x$raters == num_reads_retained_fwd_x)
+    stopifnot(fkappa_pwider_fwd_x$subjects == num_Cs_retained_fwd_x)
+
+
+    # Analyse each strand separately
+    # rev
+    chr_tab_GR_rev_x <- chr_tab_GR_rev[subjectHits(fOverlaps_rev[queryHits(fOverlaps_rev) == x])]
+    chr_tab_GR_rev_x <- sortSeqlevels(chr_tab_GR_rev_x)
+    chr_tab_GR_rev_x <- sort(chr_tab_GR_rev_x, by = ~ read + start)
+
+    df_rev_x <- data.frame(pos = start(chr_tab_GR_rev_x),
+                           read = chr_tab_GR_rev_x$read,
+                           call = chr_tab_GR_rev_x$call)
+
+#    # tidyr::spread() is deprecated; use tidyr::pivot_wider() instead 
+#    spread_rev_x <- tidyr::spread(data = df_rev_x,
+#                                  key = read,
+#                                  value = call)
+##                                  sep = "_")
+#    spread_rev_x <- spread_x[ with(data = spread_x, expr = order(pos)), ]
  
-    
-#    rownames(pwider_fwd_x) <- rownames(spread_x)
-#    stopifnot(all.equal(pwider_fwd_x, spread_x, check.attributes=F))
-    which(colSums(is.na(pwider_fwd_x)) == 0)
-    which(rowSums(is.na(pwider_fwd_x)) == 0)
+    pwider_rev_x <- as.data.frame(tidyr::pivot_wider(data = df_rev_x,
+                                                     names_from = read,
+#                                                     names_prefix = "read_",
+                                                     values_from = call))
+    pwider_rev_x <- pwider_rev_x[ with(data = pwider_rev_x, expr = order(pos)), ]
+    rownames(pwider_rev_x) <- pwider_rev_x[,1]
+    pwider_rev_x <- pwider_rev_x[,-1]
+
+    # kappam.fleiss() uses only rows (cytosines) with complete information
+    # across all columns (reads) considered
+    # Therefore, remove columns (reads) containing > NAmax proportion NAs to
+    # to retain more cytosines in the data.frame for kappa calculation
+
+    mask_cols <- apply(pwider_rev_x, MARGIN = 2, FUN = function(col) sum(is.na(col)) >= nrow(pwider_rev_x) * NAmax)    
+    # Report proportion of columns (reads) to be retained:
+    prop_reads_retained_rev_x <- sum(!(mask_cols)) / ncol(pwider_rev_x)
+    # Report number of columns (reads) to be retained:
+    num_reads_retained_rev_x <- sum(!(mask_cols)) 
+    # Conditionally remove columns (reads) containing > NAmax proportion NAs
+    if(sum(mask_cols) > 0) {
+      pwider_rev_x <- pwider_rev_x[ , !(mask_cols), drop = F]
+    }
+
+    # Remove rows (cytosines) containing any NAs across the retained columns (reads),
+    # as these will not be used by kappam.fleiss() in any case
+    mask_rows <- apply(pwider_rev_x, MARGIN = 1, FUN = function(row) sum(is.na(row)) > 0)
+    # Report proportion of rows (cytosines) to be retained:
+    prop_Cs_retained_rev_x <- sum(!(mask_rows)) / nrow(pwider_rev_x) 
+    # Report number of rows (cytosines) to be retained:
+    num_Cs_retained_rev_x <- sum(!(mask_rows))
+    # Conditionally remove rows (cytosines) containing any NAs
+    if(sum(mask_rows) > 0) {
+      pwider_rev_x <- pwider_rev_x[ !(mask_rows), , drop = F]
+    }
+
+    # Calculate Fleiss' kappa
+    fkappa_pwider_rev_x <- kappam.fleiss(pwider_rev_x, detail = F)
+
+    # Sanity checks
+    stopifnot(fkappa_pwider_rev_x$raters == num_reads_retained_rev_x)
+    stopifnot(fkappa_pwider_rev_x$subjects == num_Cs_retained_rev_x)
 
 
-    tmp <- pwider_fwd_x[ , -which(colSums(is.na(pwider_fwd_x)) > nrow(pwider_fwd_x)*0.5) ]
-    which(rowSums(is.na(tmp)) == 0)
+    # Make data.frame with relevant info for genomic window
+    fk_df_win_x <- data.frame(chr = seqnames(winGR[x]),
+                              start = start(winGR[x]),
+                              end = end(winGR[x]),
+                              midpoint = round(start(winGR[x])+end(winGR[x])/2),
+                              fk_kappa_fwd = fkappa_pwider_fwd_x$value,
+                              fk_pval_fwd = fkappa_pwider_fwd_x$p.value,
+                              fk_zstat_fwd = fkappa_pwider_fwd_x$statistic,
+                              fk_num_reads_fwd = fkappa_pwider_fwd_x$raters,
+                              fk_num_Cs_fwd = fkappa_pwider_fwd_x$subjects,
+                              fk_prop_reads_fwd = prop_reads_retained_fwd_x,
+                              fk_prop_Cs_fwd = prop_Cs_retained_fwd_x,
+                              fk_kappa_rev = fkappa_pwider_rev_x$value,
+                              fk_pval_rev = fkappa_pwider_rev_x$p.value,
+                              fk_zstat_rev = fkappa_pwider_rev_x$statistic,
+                              fk_num_reads_rev = fkappa_pwider_rev_x$raters,
+                              fk_num_Cs_rev = fkappa_pwider_rev_x$subjects,
+                              fk_prop_reads_rev = prop_reads_retained_rev_x,
+                              fk_prop_Cs_rev = prop_Cs_retained_rev_x,
+                              fk_kappa_all = mean(c(fkappa_pwider_fwd_x$value, fkappa_pwider_rev_x$value)),
+                              fk_pval_all = mean(c(fkappa_pwider_fwd_x$p.value, fkappa_pwider_rev_x$p.value)),
+                              fk_zstat_all = mean(c(fkappa_pwider_fwd_x$statistic, fkappa_pwider_rev_x$statistic)),
+                              fk_num_reads_all = mean(c(fkappa_pwider_fwd_x$raters, fkappa_pwider_rev_x$raters)),
+                              fk_num_Cs_all = mean(c(fkappa_pwider_fwd_x$subjects, fkappa_pwider_rev_x$subjects)),
+                              fk_prop_reads_all = mean(c(prop_reads_retained_fwd_x, prop_reads_retained_rev_x)),
+                              fk_prop_Cs_all = mean(c(prop_Cs_retained_fwd_x, prop_Cs_retained_rev_x)))
+
+    fk_df_win_x
+  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
+                               
     
-    kappam.fleiss(tmp)
+
 
 
 #  # Convert fOverlaps into list object equivalent to that
