@@ -314,7 +314,7 @@ for(i in seq_along(chrs)) {
     fk_df_win_x
   }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
                                
-    
+  fk_df <- dplyr::bind_rows(fk_df_win_list, .id = "column_label")
 
 
 
