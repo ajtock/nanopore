@@ -134,6 +134,12 @@ for(i in seq_along(chrs)) {
                         strand = chr_tab[,3],
                         read = chr_tab[,5],
                         call = chr_tab[,9])
+  chr_tab_GR <- sort(chr_tab_GR, by = ~ seqnames + read + start + end + strand)
+
+  chr_tab_GR_fwd <- chr_tab_GR[strand(chr_tab_GR) == "+"]
+  chr_tab_GR_fwd <- sort(chr_tab_GR_fwd, by = ~ read + start)
+  chr_tab_GR_rev <- chr_tab_GR[strand(chr_tab_GR) == "-"]
+  chr_tab_GR_rev <- sort(chr_tab_GR_rev, by = ~ read + start)
 
   ## Note: findOverlaps() approach does not work where a window does not overlap
   ##       any positions in chr_tab_GR, which can occur with smaller genomeBinSize
@@ -170,9 +176,12 @@ for(i in seq_along(chrs)) {
 #    rownames(pwider_x) <- rownames(spread_x)
 #    stopifnot(all.equal(pwider_x, spread_x, check.attributes=F))
     which(colSums(is.na(pwider_x)) == 0)
+    which(rowSums(is.na(pwider_x)) == 0)
 
+    tmp <- pwider_x[ , -which(colSums(is.na(pwider_x)) > nrow(pwider_x)*0.5) ]
+    which(rowSums(is.na(tmp)) == 0)
     
-    kappam.fleiss(pwider_x)
+    kappam.fleiss(tmp)
 
 
 #  # Convert fOverlaps into list object equivalent to that
