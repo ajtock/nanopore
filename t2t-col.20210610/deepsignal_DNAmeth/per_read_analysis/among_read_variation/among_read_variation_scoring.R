@@ -1,9 +1,14 @@
 #!/applications/R/R-4.0.0/bin/Rscript
 
+# Analysis:
+# 1. Among-read variation/agreement (Fleiss' kappa) [this script]
+# 2. Variance of read stochasticity (variance of per-read, per-window proportion of inter-C intervals that represent a methylation state change [variance across all reads that overlap window examined])
+# 3. Per-read autocorrelation, but could be hard to derive a general measure across reads overlapping a given region (maybe look at variance of pairwise read correlation coefficients between autocorrelation values, either standardised to e.g. 100 autocorrelation values per read, or use only reads with info across the same Cs) 
+
 # Usage on hydrogen node7:
 # chmod +x per_read_methylation_proportion_winByCs.R
-# csmit -m 300G -c 47 "/applications/R/R-4.0.0/bin/Rscript among_read_variation_scoring.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 1000 1 CHG 0.30 Chr1"
-# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript among_read_variation_scoring.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 1000 1 CpG 0.20 Chr1" 
+# csmit -m 300G -c 47 "/applications/R/R-4.0.0/bin/Rscript among_read_variation_scoring.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 10000 500 CHG 0.50 0.30 Chr1"
+# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript among_read_variation_scoring.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 10000 500 CpG 0.50 0.20 Chr1" 
 
 # Divide each read into adjacent segments each consisting of a given number of consecutive cytosines,
 # and calculate the methylation proportion for each segment of each read
@@ -11,9 +16,10 @@
 #sampleName <- "Col_0_deepsignalDNAmeth_30kb_90pc"
 #refbase <- "t2t-col.20210610"
 #readBinCs <- 20
-#genomeBinSize <- 1000
-#genomeStepSize <- 1
+#genomeBinSize <- 10000
+#genomeStepSize <- 500
 #context <- "CpG"
+#NAmax <- 0.50
 #CPUpc <- 0.20
 #chrName <- unlist(strsplit("Chr4", split = ","))
 
@@ -23,8 +29,9 @@ refbase <- args[2]
 genomeBinSize <- as.integer(args[3])
 genomeStepSize <- as.integer(args[4])
 context <- args[5]
-CPUpc <- as.numeric(args[6])
-chrName <- unlist(strsplit(args[7], split = ","))
+NAmax <- as.numeric(args[6])
+CPUpc <- as.numeric(args[7])
+chrName <- unlist(strsplit(args[8], split = ","))
 
 print(paste0("Proportion of CPUs:", CPUpc))
 options(stringsAsFactors = F)
@@ -83,58 +90,57 @@ tab <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase, "/deepsigna
 print(genomeBinName)
 print(genomeStepName)
 for(i in seq_along(chrs)) {
-#  # Define sliding windows of width genomeBinSize bp,
-#  # with a step of genomeStepSize vp
-#  ## Note: the active code creates windows of genomeBinSize bp only,
-#  ## whereas the commented-out code creates windows decreasing from genomeBinSize bp to genomeStepSize bp
-#  ## at the right-hand end of each chromosome ( from chrLens[x]-genomeBinSize to chrLens[x] ),
-#  winStarts <- seq(from = 1,
-##                   to = chrLens[i],
-#                   to = chrLens[i]-genomeBinSize,
-#                   by = genomeStepSize)
-##  stopifnot(winStarts[length(winStarts)] == chrLens[i])
-#  if(chrLens[i] - winStarts[length(winStarts)] >= genomeBinSize) {
-#    winStarts <- c(winStarts,
-#                   winStarts[length(winStarts)]+genomeStepSize)
-#  }
-#  winEnds <- seq(from = winStarts[1]+genomeBinSize-1,
-#                 to = chrLens[i],
-#                 by = genomeStepSize)
-#  stopifnot(winEnds[length(winEnds)] == chrLens[i])
-#  winEnds <- c(winEnds,
-#               rep(chrLens[i], times = length(winStarts)-length(winEnds)))
-#  stopifnot(length(winStarts) == length(winEnds))
-#
-#  winGR <- GRanges(seqnames = chrs[i],
-#                   ranges = IRanges(start = winStarts,
-#                                    end = winEnds),
-#                   strand = "*")
-#  print(winGR)
+  # Define sliding windows of width genomeBinSize bp,
+  # with a step of genomeStepSize vp
+  ## Note: the active code creates windows of genomeBinSize bp only,
+  ## whereas the commented-out code creates windows decreasing from genomeBinSize bp to genomeStepSize bp
+  ## at the right-hand end of each chromosome ( from chrLens[x]-genomeBinSize to chrLens[x] ),
+  winStarts <- seq(from = 1,
+#                   to = chrLens[i],
+                   to = chrLens[i]-genomeBinSize,
+                   by = genomeStepSize)
+#  stopifnot(winStarts[length(winStarts)] == chrLens[i])
+  if(chrLens[i] - winStarts[length(winStarts)] >= genomeBinSize) {
+    winStarts <- c(winStarts,
+                   winStarts[length(winStarts)]+genomeStepSize)
+  }
+  winEnds <- seq(from = winStarts[1]+genomeBinSize-1,
+                 to = chrLens[i],
+                 by = genomeStepSize)
+  winEnds <- c(winEnds,
+               rep(chrLens[i], times = length(winStarts)-length(winEnds)))
+  stopifnot(winEnds[length(winEnds)] == chrLens[i])
+  stopifnot(length(winStarts) == length(winEnds))
 
-  # Define adjacent windows
-  winSeq <- seq(from = 1, to = chrLens[i], by = genomeBinSize)
-  winIR <- IRanges(start = winSeq,
-                   width = genomeBinSize)
-  winIR <- winIR[-length(winIR)]
-  winIR <- append(winIR,
-                  IRanges(start = winSeq[length(winSeq)],
-                          end = chrLens[i]))
   winGR <- GRanges(seqnames = chrs[i],
-                   ranges = winIR,
+                   ranges = IRanges(start = winStarts,
+                                    end = winEnds),
                    strand = "*")
   print(winGR)
 
+#  # Define adjacent windows
+#  winSeq <- seq(from = 1, to = chrLens[i], by = genomeBinSize)
+#  winIR <- IRanges(start = winSeq,
+#                   width = genomeBinSize)
+#  winIR <- winIR[-length(winIR)]
+#  winIR <- append(winIR,
+#                  IRanges(start = winSeq[length(winSeq)],
+#                          end = chrLens[i]))
+#  winGR <- GRanges(seqnames = chrs[i],
+#                   ranges = winIR,
+#                   strand = "*")
+#  print(winGR)
+
   # Define per-read-window midpoint coordinates as GRanges objects
   # and get corresponding DNA methylation proportions that overlap genomic windows
-#  chr_tab <- tab[tab[,1] == chrs[i],]
-  chr_tab <- tab
+  chr_tab <- tab[tab[,1] == chrs[i],]
+#  chr_tab <- tab
   chr_tab_GR <- GRanges(seqnames = chrs[i],
                         ranges = IRanges(start = chr_tab[,2],
                                          width = 1),
                         strand = chr_tab[,3],
                         read = chr_tab[,5],
                         call = chr_tab[,9])
-  chr_tab_GR <- sort(chr_tab_GR, by = ~ seqnames + read + start + end + strand)
 
   chr_tab_GR_fwd <- chr_tab_GR[strand(chr_tab_GR) == "+"]
   chr_tab_GR_fwd <- sort(chr_tab_GR_fwd, by = ~ read + start)
@@ -144,41 +150,63 @@ for(i in seq_along(chrs)) {
   ## Note: findOverlaps() approach does not work where a window does not overlap
   ##       any positions in chr_tab_GR, which can occur with smaller genomeBinSize
   # Identify overlapping windows and midpoint coordinates
-  fOverlaps <- findOverlaps(query = winGR,
-                            subject = chr_tab_GR,
-                            type = "any",
-                            select = "all",
-                            ignore.strand = TRUE)
+  fOverlaps_fwd <- findOverlaps(query = winGR,
+                                subject = chr_tab_GR_fwd,
+                                type = "any",
+                                select = "all",
+                                ignore.strand = TRUE)
+
+  fOverlaps_rev <- findOverlaps(query = winGR,
+                                subject = chr_tab_GR_rev,
+                                type = "any",
+                                select = "all",
+                                ignore.strand = TRUE)
 
   for(x in seq_along(winGR)) {
-    chr_tab_GR_x <- chr_tab_GR[subjectHits(fOverlaps[queryHits(fOverlaps) == x])]
-    chr_tab_GR_x <- sortSeqlevels(chr_tab_GR_x)
-    chr_tab_GR_x <- sort(chr_tab_GR_x, by = ~ seqnames + read + start + end + strand)
+    chr_tab_GR_fwd_x <- chr_tab_GR_fwd[subjectHits(fOverlaps_fwd[queryHits(fOverlaps_fwd) == x])]
+    chr_tab_GR_fwd_x <- sortSeqlevels(chr_tab_GR_fwd_x)
+    chr_tab_GR_fwd_x <- sort(chr_tab_GR_fwd_x, by = ~ read + start)
 
-    df_x <- data.frame(pos = start(chr_tab_GR_x),
-                       read = chr_tab_GR_x$read,
-                       call = chr_tab_GR_x$call)
+    df_fwd_x <- data.frame(pos = start(chr_tab_GR_fwd_x),
+                           read = chr_tab_GR_fwd_x$read,
+                           call = chr_tab_GR_fwd_x$call)
 
-#    spread_x <- tidyr::spread(data = df_x,
+#    spread_x <- tidyr::spread(data = df_fwd_x,
 #                              key = read,
 #                              value = call)
 ##                              sep = "_")
 #    spread_x <- spread_x[ with(data = spread_x, expr = order(pos)), ]
    
-    pwider_x <- as.data.frame(tidyr::pivot_wider(data = df_x,
-                                                 names_from = read,
-#                                                 names_prefix = "read_",
-                                                 values_from = call))
-    pwider_x <- pwider_x[ with(data = pwider_x, expr = order(pos)), ]
-    rownames(pwider_x) <- pwider_x[,1]
-    pwider_x <- pwider_x[,-1]
-    
-#    rownames(pwider_x) <- rownames(spread_x)
-#    stopifnot(all.equal(pwider_x, spread_x, check.attributes=F))
-    which(colSums(is.na(pwider_x)) == 0)
-    which(rowSums(is.na(pwider_x)) == 0)
+    pwider_fwd_x <- as.data.frame(tidyr::pivot_wider(data = df_fwd_x,
+                                                     names_from = read,
+#                                                     names_prefix = "read_",
+                                                     values_from = call))
+    pwider_fwd_x <- pwider_fwd_x[ with(data = pwider_fwd_x, expr = order(pos)), ]
+    rownames(pwider_fwd_x) <- pwider_fwd_x[,1]
+    pwider_fwd_x <- pwider_fwd_x[,-1]
+    df <- pwider_fwd_x
+    # kappam.fleiss() uses only rows (cytosines) with complete information
+    # across all columns (reads) considered
+    # Therefore, remove columns (reads) with > threshold missingness to
+    # to retain more cytosines in the data.frame for kappa calculation
 
-    tmp <- pwider_x[ , -which(colSums(is.na(pwider_x)) > nrow(pwider_x)*0.5) ]
+    cond1 <- sapply(df, function(col) sum(is.na(col)) >= nrow(df) * NAmax)    
+    dfF <- df[ , !(cond1), drop = F]
+    dfT <- df[ , !(cond1), drop = T]
+
+    pwider_fwd_x <- pwider_fwd_x[ , -which( colSums(is.na(pwider_fwd_x)) >= nrow(pwider_fwd_x) * NAmax ) ]
+    pwider_fwd_x_cr <- pwider_fwd_x[ -which( rowSums(is.na(pwider_fwd_x)) > 0 ) , ]
+    kappam.fleiss(pwider_fwd_x)
+    kappam.fleiss(pwider_fwd_x_cr)
+ 
+    
+#    rownames(pwider_fwd_x) <- rownames(spread_x)
+#    stopifnot(all.equal(pwider_fwd_x, spread_x, check.attributes=F))
+    which(colSums(is.na(pwider_fwd_x)) == 0)
+    which(rowSums(is.na(pwider_fwd_x)) == 0)
+
+
+    tmp <- pwider_fwd_x[ , -which(colSums(is.na(pwider_fwd_x)) > nrow(pwider_fwd_x)*0.5) ]
     which(rowSums(is.na(tmp)) == 0)
     
     kappam.fleiss(tmp)
