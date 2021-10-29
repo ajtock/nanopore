@@ -191,8 +191,7 @@ for(i in seq_along(chrs)) {
     # to retain more cytosines in the data.frame for kappa calculation
 
     cond1 <- sapply(df, function(col) sum(is.na(col)) >= nrow(df) * NAmax)    
-    dfF <- df[ , !(cond1), drop = F]
-    dfT <- df[ , !(cond1), drop = T]
+    df <- df[ , !(cond1), drop = F]
 
     pwider_fwd_x <- pwider_fwd_x[ , -which( colSums(is.na(pwider_fwd_x)) >= nrow(pwider_fwd_x) * NAmax ) ]
     pwider_fwd_x_cr <- pwider_fwd_x[ -which( rowSums(is.na(pwider_fwd_x)) > 0 ) , ]
