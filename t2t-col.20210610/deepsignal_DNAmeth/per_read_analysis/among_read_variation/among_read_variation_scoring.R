@@ -39,9 +39,10 @@ library(GenomicRanges)
 library(irr)
 library(dplyr)
 library(tidyr)
+library(fpc)
 #library(data.table)
 #library(segmentSeq)
-#library(ComplexHeatmap)
+library(ComplexHeatmap)
 #library(RColorBrewer)
 #library(viridis)
 #library(scales)
@@ -222,6 +223,41 @@ for(i in seq_along(chrs)) {
     stopifnot(fkappa_pwider_fwd_x$raters == num_reads_retained_fwd_x)
     stopifnot(fkappa_pwider_fwd_x$subjects == num_Cs_retained_fwd_x)
 
+    # Define clusters of reads within each window using fpc::pamk()
+    # ("partitioning around medoids with estimation of number of clusters")
+    set.seed(20000)
+    pamk_pwider_fwd_x <- pamk(t(pwider_fwd_x),
+                              krange = 1:20,
+                              criterion = "multiasw",
+                              usepam = FALSE,
+                              scaling = FALSE,
+                              alpha = 0.001,
+                              ns = 2,
+                              seed = 100000,
+                              diss = FALSE)
+   
+#    htmp <- Heatmap(t(as.matrix(pwider_fwd_x)),
+#                    col = c("0" = "blue", "1" = "red"),
+#                    row_split = paste0("Cluster", pamk_pwider_fwd_x$pamobject$clustering),
+#                    show_column_dend = FALSE, 
+#                    cluster_columns = FALSE,
+#                    heatmap_legend_param = list(title = context,
+#                                                title_position = "topcenter",
+#                                                title_gp = gpar(font = 2, fontsize = 12),
+#                                                legend_direction = "horizontal",
+#                                                labels_gp = gpar(fontsize = 10)),
+#                    column_title = paste0(chrName, ":", start(winGR[x]), "-" , end(winGR[x])))
+#    pdf(paste0(plotDir,
+#               sampleName, "_MappedOn_", refbase, "_", context,
+#               "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
+#               "_NAmax", NAmax, "_", chrName, "_", start(winGR[x]), "_", end(winGR[x]), "_fwd",
+#               ".pdf"),
+#        height = 10, width = 50)
+#    draw(htmp,
+#         heatmap_legend_side = "bottom",
+#         gap = unit(c(1), "mm"))
+#    dev.off()
+
 
     # Analyse each strand separately
     # rev
@@ -282,6 +318,41 @@ for(i in seq_along(chrs)) {
     stopifnot(fkappa_pwider_rev_x$raters == num_reads_retained_rev_x)
     stopifnot(fkappa_pwider_rev_x$subjects == num_Cs_retained_rev_x)
 
+    # Define clusters of reads within each window using fpc::pamk()
+    # ("partitioning around medoids with estimation of number of clusters")
+    set.seed(20000)
+    pamk_pwider_rev_x <- pamk(t(pwider_rev_x),
+                              krange = 1:20,
+                              criterion = "multiasw",
+                              usepam = FALSE,
+                              scaling = FALSE,
+                              alpha = 0.001,
+                              ns = 2,
+                              seed = 100000,
+                              diss = FALSE)
+   
+#    htmp <- Heatmap(t(as.matrix(pwider_rev_x)),
+#                    col = c("0" = "blue", "1" = "red"),
+#                    row_split = paste0("Cluster", pamk_pwider_rev_x$pamobject$clustering),
+#                    show_column_dend = FALSE, 
+#                    cluster_columns = FALSE,
+#                    heatmap_legend_param = list(title = context,
+#                                                title_position = "topcenter",
+#                                                title_gp = gpar(font = 2, fontsize = 12),
+#                                                legend_direction = "horizontal",
+#                                                labels_gp = gpar(fontsize = 10)),
+#                    column_title = paste0(chrName, ":", start(winGR[x]), "-" , end(winGR[x])))
+#    pdf(paste0(plotDir,
+#               sampleName, "_MappedOn_", refbase, "_", context,
+#               "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
+#               "_NAmax", NAmax, "_", chrName, "_", start(winGR[x]), "_", end(winGR[x]), "_rev",
+#               ".pdf"),
+#        height = 10, width = 50)
+#    draw(htmp,
+#         heatmap_legend_side = "bottom",
+#         gap = unit(c(1), "mm"))
+#    dev.off()
+
 
     # Make data.frame with relevant info for genomic window
     fk_df_win_x <- data.frame(chr = seqnames(winGR[x]),
@@ -308,7 +379,10 @@ for(i in seq_along(chrs)) {
                               fk_num_reads_all = mean(c(fkappa_pwider_fwd_x$raters, fkappa_pwider_rev_x$raters)),
                               fk_num_Cs_all = mean(c(fkappa_pwider_fwd_x$subjects, fkappa_pwider_rev_x$subjects)),
                               fk_prop_reads_all = mean(c(prop_reads_retained_fwd_x, prop_reads_retained_rev_x)),
-                              fk_prop_Cs_all = mean(c(prop_Cs_retained_fwd_x, prop_Cs_retained_rev_x)))
+                              fk_prop_Cs_all = mean(c(prop_Cs_retained_fwd_x, prop_Cs_retained_rev_x)),
+                              pamk_pwider_fwd_nc = pamk_pwider_fwd_x$nc,
+                              pamk_pwider_rev_nc = pamk_pwider_rev_x$nc,
+                              pamk_pwider_all_nc = mean(c(pamk_pwider_fwd_x$nc, pamk_pwider_rev_x$nc), na.rm = T))
 
     fk_df_win_x
   }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
