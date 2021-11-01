@@ -330,7 +330,7 @@ for(i in seq_along(chrs)) {
   par(mgp = c(3, 1, 0))
 
   plot(x = fk_df$midpoint, y = fk_df$fk_kappa_all, type = "l", lwd = 1.5, col = "red",
-       xaxt = "n", yaxt = "n",
+       yaxt = "n",
        xlab = "", ylab = "",
        main = "")
   mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
@@ -338,15 +338,15 @@ for(i in seq_along(chrs)) {
 #        text = bquote("Fleiss' kappa per-read m"*.(context)))
   axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
 
-  par(new = T)
-  plot(x = fk_df$midpoint, y = fk_df$fk_num_Cs_all, type = "l", lwd = 0.5, col = "skyblue",
-       yaxt = "n",
-       xlab = "", ylab = "",
-       main = "")
-  p <- par('usr')
-  text(p[2], mean(p[3:4]), cex = 1.5, adj = c(0.5, -2.0), xpd = NA, srt = -90, col = "skyblue",
-       labels = bquote(.(context)*" sites per window"))
-  axis(side = 4, cex.axis = 1, lwd.tick = 1.5)
+#  par(new = T)
+#  plot(x = fk_df$midpoint, y = fk_df$fk_num_Cs_all, type = "l", lwd = 0.5, col = "skyblue",
+#       xaxt = "n", yaxt = "n",
+#       xlab = "", ylab = "",
+#       main = "")
+#  p <- par('usr')
+#  text(p[2], mean(p[3:4]), cex = 1.5, adj = c(0.5, -2.0), xpd = NA, srt = -90, col = "skyblue",
+#       labels = bquote(.(context)*" sites per window"))
+#  axis(side = 4, cex.axis = 1, lwd.tick = 1.5)
 
   mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
 
