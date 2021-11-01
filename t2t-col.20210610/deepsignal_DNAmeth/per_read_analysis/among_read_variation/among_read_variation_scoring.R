@@ -15,7 +15,6 @@
 
 #sampleName <- "Col_0_deepsignalDNAmeth_30kb_90pc"
 #refbase <- "t2t-col.20210610"
-#readBinCs <- 20
 #genomeBinSize <- 10000
 #genomeStepSize <- 2000
 #context <- "CpG"
@@ -316,18 +315,78 @@ for(i in seq_along(chrs)) {
                                
   fk_df <- dplyr::bind_rows(fk_df_win_list, .id = "column_label")
 
-  pdf(paste0(plotDir, "tmp.pdf"), height = 10, width = 30)
-  plot(x = fk_df$midpoint, y = fk_df$fk_kappa_all, type = "l", col = "red")
+  fk_df <- data.frame(fk_df,
+                      fk_adj_pval_fwd = p.adjust(fk_df$fk_pval_fwd, method = "BH"),
+                      fk_adj_pval_rev = p.adjust(fk_df$fk_pval_rev, method = "BH"),
+                      fk_adj_pval_all = p.adjust(fk_df$fk_pval_all, method = "BH"))
+
+  pdf(paste0(plotDir,
+             sampleName, "_MappedOn_", refbase, "_", context,
+             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
+             "_NAmax", NAmax, "_", chrName,
+             ".pdf"), height = 5, width = 30)
+  par(mfrow = c(1, 1))
+  par(mar = c(4.1, 4.1, 3.1, 4.1))
+  par(mgp = c(3, 1, 0))
+
+  plot(x = fk_df$midpoint, y = fk_df$fk_kappa_all, type = "l", lwd = 1.5, col = "red",
+       xaxt = "n", yaxt = "n",
+       xlab = "", ylab = "",
+       main = "")
+  mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
+        text = bquote("Fleiss' kappa per-read m"*.(context)))
+#        text = bquote("Fleiss' kappa per-read m"*.(context)))
+  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
+
   par(new = T)
-  plot(x = fk_df$midpoint, y = fk_df$fk_prop_reads_all, type = "l", col = "blue")
-  par(new = T)
-  plot(x = fk_df$midpoint, y = fk_df$fk_num_reads_all, type = "l", col = "navy")
-  par(new = T)
-  plot(x = fk_df$midpoint, y = fk_df$fk_prop_Cs_all, type = "l", col = "green")
-  par(new = T)
-  plot(x = fk_df$midpoint, y = fk_df$fk_num_Cs_all, type = "l", col = "darkgreen")
+  plot(x = fk_df$midpoint, y = fk_df$fk_num_Cs_all, type = "l", lwd = 0.5, col = "skyblue",
+       yaxt = "n",
+       xlab = "", ylab = "",
+       main = "")
+  p <- par('usr')
+  text(p[2], mean(p[3:4]), cex = 1.5, adj = c(0.5, -2.0), xpd = NA, srt = -90, col = "skyblue",
+       labels = bquote(.(context)*" sites per window"))
+  axis(side = 4, cex.axis = 1, lwd.tick = 1.5)
+
+  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
+
   dev.off()
 
+#  par(new = T)
+#  plot(x = fk_df$midpoint, y = -log10(fk_df$fk_adj_pval_all+1e-10), type = "l", lwd = 1.5, col = "blue",
+#       ylim = c(0,
+#                pmax(-log10(0.05), max(-log10(fk_df$fk_adj_pval_all+1e-10), na.rm = T))),
+#       xlab = "", ylab = "",
+#       main = "")
+#  p <- par('usr')
+#  text(p[2], mean(p[3:4]), cex = 1, adj = c(0.5, -3.0), xpd = NA, srt = -90, col = "blue",
+#       labels = bquote("-Log"[10]*"(BH-adjusted "*italic("P")*"-value)"))
+#  abline(h = -log10(0.05), lty = 5, lwd = 1, col = "blue")
+
+
+#  par(new = T)
+#  plot(x = fk_df$midpoint, y = fk_df$fk_prop_reads_all, type = "l", col = "blue")
+#  par(new = T)
+#  plot(x = fk_df$midpoint, y = fk_df$fk_num_reads_all, type = "l", col = "navy")
+#  par(new = T)
+#  plot(x = fk_df$midpoint, y = fk_df$fk_prop_Cs_all, type = "l", col = "green")
+#  par(new = T)
+#  plot(x = fk_df$midpoint, y = fk_df$fk_num_Cs_all, type = "l", col = "darkgreen")
+#  dev.off()
+
+#sampleName <- "Col_0_deepsignalDNAmeth_30kb_90pc"
+#refbase <- "t2t-col.20210610"
+#genomeBinSize <- 10000
+#genomeStepSize <- 2000
+#context <- "CpG"
+#NAmax <- 0.50
+#CPUpc <- 0.20
+#chrName <- unlist(strsplit("Chr4", split = ","))
+
+#write.table(per_read_DNAmeth_DF,
+#            file = paste0(sampleName, "_MappedOn_", refbase, "_", context,
+#                          "_raw_readBinSize", readBinCs, "Cs_per_readWin_midpoint.tsv"),
+#            quote = F, sep = "\t", row.names = F, col.names = T)
 }
 
 ##  # Convert fOverlaps into list object equivalent to that
