@@ -259,21 +259,19 @@ for(i in seq_along(chrs)) {
     }))
     
 
-#    # Define clusters of reads within each window using fpc::pamk()
-#    # ("partitioning around medoids with estimation of number of clusters")
-#    set.seed(20000)
-#    pamk_pwider_fwd_x <- pamk(t(pwider_fwd_x),
-##                              krange = 1:(nrow(t(pwider_fwd_x))-1),
-#                              krange = 1:(round(nrow(t(pwider_fwd_x))/2)),
-#                              criterion = "asw",
-#                              usepam = T,
-#                              scaling = F,
-#                              alpha = 0.001,
-##                              ns = 10,
-##                              seed = 100000,
-#                              diss = F)
-#
-#  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
+    # Define clusters of reads within each window using fpc::pamk()
+    # ("partitioning around medoids with estimation of number of clusters")
+    set.seed(20000)
+    pamk_pwider_fwd_x <- pamk(t(pwider_fwd_x),
+#                              krange = 1:(nrow(t(pwider_fwd_x))-1),
+                              krange = 1:(round(nrow(t(pwider_fwd_x))/2)),
+                              criterion = "asw",
+                              usepam = T,
+                              scaling = F,
+                              alpha = 0.001,
+#                              ns = 10,
+#                              seed = 100000,
+                              diss = F)
 
 #    htmp <- Heatmap(t(as.matrix(pwider_fwd_x)),
 #                    col = c("0" = "blue", "1" = "red"),
@@ -383,21 +381,19 @@ for(i in seq_along(chrs)) {
     }))
     
 
-#    # Define clusters of reads within each window using fpc::pamk()
-#    # ("partitioning around medoids with estimation of number of clusters")
-#    set.seed(20000)
-#    pamk_pwider_rev_x <- pamk(t(pwider_rev_x),
-##                              krange = 1:(nrow(t(pwider_rev_x))-1),
-#                              krange = 1:(round(nrow(t(pwider_rev_x))/2)),
-#                              criterion = "asw",
-#                              usepam = T,
-#                              scaling = F,
-#                              alpha = 0.001,
-##                              ns = 10,
-##                              seed = 100000,
-#                              diss = F)
-#
-#  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
+    # Define clusters of reads within each window using fpc::pamk()
+    # ("partitioning around medoids with estimation of number of clusters")
+    set.seed(20000)
+    pamk_pwider_rev_x <- pamk(t(pwider_rev_x),
+#                              krange = 1:(nrow(t(pwider_rev_x))-1),
+                              krange = 1:(round(nrow(t(pwider_rev_x))/2)),
+                              criterion = "asw",
+                              usepam = T,
+                              scaling = F,
+                              alpha = 0.001,
+#                              ns = 10,
+#                              seed = 100000,
+                              diss = F)
 
 #    htmp <- Heatmap(t(as.matrix(pwider_rev_x)),
 #                    col = c("0" = "blue", "1" = "red"),
@@ -451,9 +447,10 @@ for(i in seq_along(chrs)) {
                               fk_num_Cs_all = mean(c(fkappa_pwider_fwd_x$subjects, fkappa_pwider_rev_x$subjects)),
                               fk_prop_reads_all = mean(c(prop_reads_retained_fwd_x, prop_reads_retained_rev_x)),
                               fk_prop_Cs_all = mean(c(prop_Cs_retained_fwd_x, prop_Cs_retained_rev_x)),
-#                              pamk_pwider_fwd_nc = pamk_pwider_fwd_x$nc,
-#                              pamk_pwider_rev_nc = pamk_pwider_rev_x$nc,
-#                              pamk_pwider_all_nc = mean(c(pamk_pwider_fwd_x$nc, pamk_pwider_rev_x$nc), na.rm = T),
+
+                              pamk_pwider_fwd_nc = pamk_pwider_fwd_x$nc,
+                              pamk_pwider_rev_nc = pamk_pwider_rev_x$nc,
+                              pamk_pwider_all_nc = mean(c(pamk_pwider_fwd_x$nc, pamk_pwider_rev_x$nc), na.rm = T),
 
                               mean_stocha_fwd = mean_stocha_pwider_fwd_x,
                               sd_stocha_fwd = sd_stocha_pwider_fwd_x,
@@ -601,6 +598,32 @@ for(i in seq_along(chrs)) {
   mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
   dev.off()
 
+  pdf(paste0(plotDir,
+             sampleName, "_MappedOn_", refbase, "_", context,
+             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
+             "_NAmax", NAmax, "_pam_clusters_", chrName,
+             ".pdf"), height = 5, width = 30)
+  par(mfrow = c(1, 1))
+  par(mar = c(4.1, 4.1, 3.1, 4.1))
+  par(mgp = c(3, 1, 0))
+  plot(x = fk_df$midpoint, y = fk_df$pamk_pwider_all_nc, type = "l", lwd = 1.5, col = "red",
+       yaxt = "n",
+       xlab = "", ylab = "",
+       main = "")
+  mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
+        text = bquote("PAM clusters per-read m"*.(context)))
+  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
+  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
+  dev.off()
+
+  write.table(fk_df,
+              file = paste0(outDir,
+                            sampleName, "_MappedOn_", refbase, "_", context,
+                            "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
+                            "_NAmax", NAmax, "_per_read_var_df_", chrName, ".tsv"),
+              quote = F, sep = "\t", row.names = F, col.names = T)
+}
+
 #  par(new = T)
 #  plot(x = fk_df$midpoint, y = -log10(fk_df$fk_adj_pval_all+1e-10), type = "l", lwd = 1.5, col = "blue",
 #       ylim = c(0,
@@ -632,11 +655,6 @@ for(i in seq_along(chrs)) {
 #CPUpc <- 0.20
 #chrName <- unlist(strsplit("Chr4", split = ","))
 
-#write.table(per_read_DNAmeth_DF,
-#            file = paste0(sampleName, "_MappedOn_", refbase, "_", context,
-#                          "_raw_readBinSize", readBinCs, "Cs_per_readWin_midpoint.tsv"),
-#            quote = F, sep = "\t", row.names = F, col.names = T)
-}
 
 ##  # Convert fOverlaps into list object equivalent to that
 ##  # generated by segmentSeq::getOverlaps(), in which each
