@@ -227,15 +227,17 @@ for(i in seq_along(chrs)) {
     # ("partitioning around medoids with estimation of number of clusters")
     set.seed(20000)
     pamk_pwider_fwd_x <- pamk(t(pwider_fwd_x),
-                              krange = 1:20,
-                              criterion = "multiasw",
-                              usepam = FALSE,
+                              krange = 1:(nrow(t(pwider_fwd_x))-1),
+                              criterion = "asw",
+                              usepam = TRUE,
                               scaling = FALSE,
                               alpha = 0.001,
-                              ns = 2,
-                              seed = 100000,
+#                              ns = 2,
+#                              seed = 100000,
                               diss = FALSE)
-   
+
+  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
+
 #    htmp <- Heatmap(t(as.matrix(pwider_fwd_x)),
 #                    col = c("0" = "blue", "1" = "red"),
 #                    row_split = paste0("Cluster", pamk_pwider_fwd_x$pamobject$clustering),
@@ -322,7 +324,7 @@ for(i in seq_along(chrs)) {
     # ("partitioning around medoids with estimation of number of clusters")
     set.seed(20000)
     pamk_pwider_rev_x <- pamk(t(pwider_rev_x),
-                              krange = 1:20,
+                              krange = 1:10,
                               criterion = "multiasw",
                               usepam = FALSE,
                               scaling = FALSE,
