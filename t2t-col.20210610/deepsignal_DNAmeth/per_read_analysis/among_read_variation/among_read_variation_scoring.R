@@ -15,8 +15,8 @@
 
 #sampleName <- "Col_0_deepsignalDNAmeth_30kb_90pc"
 #refbase <- "t2t-col.20210610"
-#genomeBinSize <- 10000
-#genomeStepSize <- 2000
+#genomeBinSize <- 30000
+#genomeStepSize <- 30000
 #context <- "CpG"
 #NAmax <- 0.50
 #CPUpc <- 0.20
@@ -227,12 +227,13 @@ for(i in seq_along(chrs)) {
     # ("partitioning around medoids with estimation of number of clusters")
     set.seed(20000)
     pamk_pwider_fwd_x <- pamk(t(pwider_fwd_x),
-                              krange = 1:(nrow(t(pwider_fwd_x))-1),
+#                              krange = 1:(nrow(t(pwider_fwd_x))-1),
+                              krange = 1:(round(nrow(t(pwider_fwd_x))/2)),
                               criterion = "asw",
-                              usepam = TRUE,
+                              usepam = FALSE,
                               scaling = FALSE,
                               alpha = 0.001,
-#                              ns = 2,
+#                              ns = 10,
 #                              seed = 100000,
                               diss = FALSE)
 
