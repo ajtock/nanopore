@@ -427,7 +427,7 @@ for(i in seq_along(chrs)) {
     fk_df_win_x <- data.frame(chr = seqnames(winGR[x]),
                               start = start(winGR[x]),
                               end = end(winGR[x]),
-                              midpoint = round(start(winGR[x])+end(winGR[x])/2),
+                              midpoint = round((start(winGR[x])+end(winGR[x]))/2),
                               fk_kappa_fwd = fkappa_pwider_fwd_x$value,
                               fk_pval_fwd = fkappa_pwider_fwd_x$p.value,
                               fk_zstat_fwd = fkappa_pwider_fwd_x$statistic,
@@ -522,7 +522,6 @@ for(i in seq_along(chrs)) {
   par(mfrow = c(1, 1))
   par(mar = c(4.1, 4.1, 3.1, 4.1))
   par(mgp = c(3, 1, 0))
-
   plot(x = fk_df$midpoint, y = fk_df$mean_stocha_all, type = "l", lwd = 1.5, col = "red",
        yaxt = "n",
        xlab = "", ylab = "",
@@ -530,17 +529,6 @@ for(i in seq_along(chrs)) {
   mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
         text = bquote("Mean stoch. per-read m"*.(context)))
   axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
-
-#  par(new = T)
-#  plot(x = fk_df$midpoint, y = fk_df$fk_num_Cs_all, type = "l", lwd = 0.5, col = "skyblue",
-#       xaxt = "n", yaxt = "n",
-#       xlab = "", ylab = "",
-#       main = "")
-#  p <- par('usr')
-#  text(p[2], mean(p[3:4]), cex = 1.5, adj = c(0.5, -2.0), xpd = NA, srt = -90, col = "skyblue",
-#       labels = bquote(.(context)*" sites per window"))
-#  axis(side = 4, cex.axis = 1, lwd.tick = 1.5)
-
   mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
   dev.off()
 
@@ -552,27 +540,32 @@ for(i in seq_along(chrs)) {
   par(mfrow = c(1, 1))
   par(mar = c(4.1, 4.1, 3.1, 4.1))
   par(mgp = c(3, 1, 0))
-
   plot(x = fk_df$midpoint, y = fk_df$mean_min_acf_all, type = "l", lwd = 1.5, col = "red",
        yaxt = "n",
        xlab = "", ylab = "",
        main = "")
   mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
-        text = bquote("Mean stoch. per-read m"*.(context)))
+        text = bquote("Mean min. ACF per-read m"*.(context)))
   axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
-
-#  par(new = T)
-#  plot(x = fk_df$midpoint, y = fk_df$fk_num_Cs_all, type = "l", lwd = 0.5, col = "skyblue",
-#       xaxt = "n", yaxt = "n",
-#       xlab = "", ylab = "",
-#       main = "")
-#  p <- par('usr')
-#  text(p[2], mean(p[3:4]), cex = 1.5, adj = c(0.5, -2.0), xpd = NA, srt = -90, col = "skyblue",
-#       labels = bquote(.(context)*" sites per window"))
-#  axis(side = 4, cex.axis = 1, lwd.tick = 1.5)
-
   mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
+  dev.off()
 
+  pdf(paste0(plotDir,
+             sampleName, "_MappedOn_", refbase, "_", context,
+             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
+             "_NAmax", NAmax, "_mean_mean_acf_", chrName,
+             ".pdf"), height = 5, width = 30)
+  par(mfrow = c(1, 1))
+  par(mar = c(4.1, 4.1, 3.1, 4.1))
+  par(mgp = c(3, 1, 0))
+  plot(x = fk_df$midpoint, y = fk_df$mean_mean_acf_all, type = "l", lwd = 1.5, col = "red",
+       yaxt = "n",
+       xlab = "", ylab = "",
+       main = "")
+  mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
+        text = bquote("Mean mean ACF per-read m"*.(context)))
+  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
+  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
   dev.off()
 
 #  par(new = T)
