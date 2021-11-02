@@ -532,17 +532,17 @@ for(i in seq_along(chrs)) {
   pdf(paste0(plotDir,
              sampleName, "_MappedOn_", refbase, "_", context,
              "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
-             "_NAmax", NAmax, "_mean_min_acf_", chrName,
+             "_NAmax", NAmax, "_sd_stocha_", chrName,
              ".pdf"), height = 5, width = 30)
   par(mfrow = c(1, 1))
   par(mar = c(4.1, 4.1, 3.1, 4.1))
   par(mgp = c(3, 1, 0))
-  plot(x = fk_df$midpoint, y = fk_df$mean_min_acf_all, type = "l", lwd = 1.5, col = "red",
+  plot(x = fk_df$midpoint, y = fk_df$sd_stocha_all, type = "l", lwd = 1.5, col = "red",
        yaxt = "n",
        xlab = "", ylab = "",
        main = "")
   mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
-        text = bquote("Mean min. ACF per-read m"*.(context)))
+        text = bquote("SD stoch. per-read m"*.(context)))
   axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
   mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
   dev.off()
@@ -561,6 +561,42 @@ for(i in seq_along(chrs)) {
        main = "")
   mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
         text = bquote("Mean mean ACF per-read m"*.(context)))
+  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
+  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
+  dev.off()
+
+  pdf(paste0(plotDir,
+             sampleName, "_MappedOn_", refbase, "_", context,
+             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
+             "_NAmax", NAmax, "_mean_min_acf_", chrName,
+             ".pdf"), height = 5, width = 30)
+  par(mfrow = c(1, 1))
+  par(mar = c(4.1, 4.1, 3.1, 4.1))
+  par(mgp = c(3, 1, 0))
+  plot(x = fk_df$midpoint, y = fk_df$mean_min_acf_all, type = "l", lwd = 1.5, col = "red",
+       yaxt = "n",
+       xlab = "", ylab = "",
+       main = "")
+  mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
+        text = bquote("Mean min. ACF per-read m"*.(context)))
+  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
+  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
+  dev.off()
+
+  pdf(paste0(plotDir,
+             sampleName, "_MappedOn_", refbase, "_", context,
+             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
+             "_NAmax", NAmax, "_mean_max_acf_", chrName,
+             ".pdf"), height = 5, width = 30)
+  par(mfrow = c(1, 1))
+  par(mar = c(4.1, 4.1, 3.1, 4.1))
+  par(mgp = c(3, 1, 0))
+  plot(x = fk_df$midpoint, y = fk_df$mean_max_acf_all, type = "l", lwd = 1.5, col = "red",
+       yaxt = "n",
+       xlab = "", ylab = "",
+       main = "")
+  mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
+        text = bquote("Mean max. ACF per-read m"*.(context)))
   axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
   mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
   dev.off()
