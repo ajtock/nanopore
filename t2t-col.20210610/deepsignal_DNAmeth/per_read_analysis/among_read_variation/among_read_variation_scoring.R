@@ -19,7 +19,7 @@
 #genomeStepSize <- 10000
 #context <- "CpG"
 #NAmax <- 0.50
-#CPUpc <- 0.20
+#CPUpc <- 1.00
 #chrName <- unlist(strsplit("Chr4", split = ","))
 
 args <- commandArgs(trailingOnly = T)
@@ -80,10 +80,19 @@ if(!grepl("Chr", fai[,1][1])) {
 chrLens <- fai[,2][which(fai[,1] %in% chrName)]
 
 # Read in the raw output .tsv file from Deepsignal methylation model
-tab <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase, "/deepsignal_DNAmeth/",
-                         sampleName, "_MappedOn_", refbase, "_", context, "_raw_", chrName, ".tsv"),
-                  header = F)
- 
+tab_list <- mclapply(seq_along(chrName), function(x) {
+  read.table(paste0("/home/ajt200/analysis/nanopore/", refbase, "/deepsignal_DNAmeth/",
+                    sampleName, "_MappedOn_", refbase, "_", context, "_raw_", chrName[x], ".tsv"),
+             header = F)
+}, mc.cores = length(chrName), mc.preschedule = F)
+
+if(length(chrName) > 1) {
+  tab <- dplyr::bind_rows(tab_list)
+} else {
+  tab <- tab_list[[1]]
+}
+rm(tab_list); gc()
+
 # For each genomeBinSize-bp window with a step of genomeStepSize-bp,
 # calculate Fleiss' kappa statistic as a measure of among-read variation
 # in methylation state
@@ -154,13 +163,13 @@ for(i in seq_along(chrs)) {
                                 subject = chr_tab_GR_fwd,
                                 type = "any",
                                 select = "all",
-                                ignore.strand = TRUE)
+                                ignore.strand = T)
 
   fOverlaps_rev <- findOverlaps(query = winGR,
                                 subject = chr_tab_GR_rev,
                                 type = "any",
                                 select = "all",
-                                ignore.strand = TRUE)
+                                ignore.strand = T)
 
   fk_df_win_list <- mclapply(seq_along(winGR), function(x) {
 
@@ -223,27 +232,52 @@ for(i in seq_along(chrs)) {
     stopifnot(fkappa_pwider_fwd_x$raters == num_reads_retained_fwd_x)
     stopifnot(fkappa_pwider_fwd_x$subjects == num_Cs_retained_fwd_x)
 
-    # Define clusters of reads within each window using fpc::pamk()
-    # ("partitioning around medoids with estimation of number of clusters")
-    set.seed(20000)
-    pamk_pwider_fwd_x <- pamk(t(pwider_fwd_x),
-#                              krange = 1:(nrow(t(pwider_fwd_x))-1),
-                              krange = 1:(round(nrow(t(pwider_fwd_x))/2)),
-                              criterion = "asw",
-                              usepam = FALSE,
-                              scaling = FALSE,
-                              alpha = 0.001,
-#                              ns = 10,
-#                              seed = 100000,
-                              diss = FALSE)
 
-  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = F)
+    # Calculate within-read site-to-site stochasticity in methylation status
+    # Get absolute differences in methylation status between Cs for each read
+    absdiff_pwider_fwd_x <- abs(diff(as.matrix(pwider_fwd_x)))
+    # Calculate the mean absolute difference for each read
+    colMeans_absdiff_pwider_fwd_x <- colMeans(absdiff_pwider_fwd_x)
+    # Across all reads overlapping a given window, calculate the mean of mean absolute differences
+    mean_stocha_pwider_fwd_x <- mean(colMeans_absdiff_pwider_fwd_x)
+    # Across all reads overlapping a given window, calculate the sd of mean absolute differences
+    sd_stocha_pwider_fwd_x <- sd(colMeans_absdiff_pwider_fwd_x)
+
+    # Calculate autocorrelations between methylation statuses of neighbouring Cs within each read
+    acf_pwider_fwd_x_list <- apply(pwider_fwd_x, MARGIN = 2,
+                                   FUN = function(col) acf(col, lag.max = 10, plot = F))
+    mean_min_acf_pwider_fwd_x <- mean(sapply(seq_along(acf_pwider_fwd_x_list), function(col) {
+      min(as.vector(acf_pwider_fwd_x_list[[col]]$acf))
+    }))
+    mean_max_acf_pwider_fwd_x <- mean(sapply(seq_along(acf_pwider_fwd_x_list), function(col) {
+      max(as.vector(acf_pwider_fwd_x_list[[col]]$acf))
+    }))
+    mean_mean_acf_pwider_fwd_x <- mean(sapply(seq_along(acf_pwider_fwd_x_list), function(col) {
+      mean(as.vector(acf_pwider_fwd_x_list[[col]]$acf))
+    }))
+    
+
+#    # Define clusters of reads within each window using fpc::pamk()
+#    # ("partitioning around medoids with estimation of number of clusters")
+#    set.seed(20000)
+#    pamk_pwider_fwd_x <- pamk(t(pwider_fwd_x),
+##                              krange = 1:(nrow(t(pwider_fwd_x))-1),
+#                              krange = 1:(round(nrow(t(pwider_fwd_x))/2)),
+#                              criterion = "asw",
+#                              usepam = T,
+#                              scaling = F,
+#                              alpha = 0.001,
+##                              ns = 10,
+##                              seed = 100000,
+#                              diss = F)
+#
+#  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
 
 #    htmp <- Heatmap(t(as.matrix(pwider_fwd_x)),
 #                    col = c("0" = "blue", "1" = "red"),
 #                    row_split = paste0("Cluster", pamk_pwider_fwd_x$pamobject$clustering),
-#                    show_column_dend = FALSE, 
-#                    cluster_columns = FALSE,
+#                    show_column_dend = F, 
+#                    cluster_columns = F,
 #                    heatmap_legend_param = list(title = context,
 #                                                title_position = "topcenter",
 #                                                title_gp = gpar(font = 2, fontsize = 12),
@@ -260,6 +294,7 @@ for(i in seq_along(chrs)) {
 #         heatmap_legend_side = "bottom",
 #         gap = unit(c(1), "mm"))
 #    dev.off()
+
 
 
     # Analyse each strand separately
@@ -321,24 +356,52 @@ for(i in seq_along(chrs)) {
     stopifnot(fkappa_pwider_rev_x$raters == num_reads_retained_rev_x)
     stopifnot(fkappa_pwider_rev_x$subjects == num_Cs_retained_rev_x)
 
-    # Define clusters of reads within each window using fpc::pamk()
-    # ("partitioning around medoids with estimation of number of clusters")
-    set.seed(20000)
-    pamk_pwider_rev_x <- pamk(t(pwider_rev_x),
-                              krange = 1:10,
-                              criterion = "multiasw",
-                              usepam = FALSE,
-                              scaling = FALSE,
-                              alpha = 0.001,
-                              ns = 2,
-                              seed = 100000,
-                              diss = FALSE)
-   
+
+    # Calculate within-read site-to-site stochasticity in methylation status
+    # Get absolute differences in methylation status between Cs for each read
+    absdiff_pwider_rev_x <- abs(diff(as.matrix(pwider_rev_x)))
+    # Calculate the mean absolute difference for each read
+    colMeans_absdiff_pwider_rev_x <- colMeans(absdiff_pwider_rev_x)
+    # Across all reads overlapping a given window, calculate the mean of mean absolute differences
+    mean_stocha_pwider_rev_x <- mean(colMeans_absdiff_pwider_rev_x)
+    # Across all reads overlapping a given window, calculate the sd of mean absolute differences
+    sd_stocha_pwider_rev_x <- sd(colMeans_absdiff_pwider_rev_x)
+
+    # Calculate autocorrelations between methylation statuses of neighbouring Cs within each read
+    acf_pwider_rev_x_list <- apply(pwider_rev_x, MARGIN = 2,
+                                   FUN = function(col) acf(col, lag.max = 10, plot = F))
+    mean_min_acf_pwider_rev_x <- mean(sapply(seq_along(acf_pwider_rev_x_list), function(col) {
+      min(as.vector(acf_pwider_rev_x_list[[col]]$acf))
+    }))
+    mean_max_acf_pwider_rev_x <- mean(sapply(seq_along(acf_pwider_rev_x_list), function(col) {
+      max(as.vector(acf_pwider_rev_x_list[[col]]$acf))
+    }))
+    mean_mean_acf_pwider_rev_x <- mean(sapply(seq_along(acf_pwider_rev_x_list), function(col) {
+      mean(as.vector(acf_pwider_rev_x_list[[col]]$acf))
+    }))
+    
+
+#    # Define clusters of reads within each window using fpc::pamk()
+#    # ("partitioning around medoids with estimation of number of clusters")
+#    set.seed(20000)
+#    pamk_pwider_rev_x <- pamk(t(pwider_rev_x),
+##                              krange = 1:(nrow(t(pwider_rev_x))-1),
+#                              krange = 1:(round(nrow(t(pwider_rev_x))/2)),
+#                              criterion = "asw",
+#                              usepam = T,
+#                              scaling = F,
+#                              alpha = 0.001,
+##                              ns = 10,
+##                              seed = 100000,
+#                              diss = F)
+#
+#  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
+
 #    htmp <- Heatmap(t(as.matrix(pwider_rev_x)),
 #                    col = c("0" = "blue", "1" = "red"),
 #                    row_split = paste0("Cluster", pamk_pwider_rev_x$pamobject$clustering),
-#                    show_column_dend = FALSE, 
-#                    cluster_columns = FALSE,
+#                    show_column_dend = F, 
+#                    cluster_columns = F,
 #                    heatmap_legend_param = list(title = context,
 #                                                title_position = "topcenter",
 #                                                title_gp = gpar(font = 2, fontsize = 12),
@@ -356,6 +419,7 @@ for(i in seq_along(chrs)) {
 #         gap = unit(c(1), "mm"))
 #    dev.off()
 
+   
 
     # Make data.frame with relevant info for genomic window
     fk_df_win_x <- data.frame(chr = seqnames(winGR[x]),
@@ -369,6 +433,7 @@ for(i in seq_along(chrs)) {
                               fk_num_Cs_fwd = fkappa_pwider_fwd_x$subjects,
                               fk_prop_reads_fwd = prop_reads_retained_fwd_x,
                               fk_prop_Cs_fwd = prop_Cs_retained_fwd_x,
+
                               fk_kappa_rev = fkappa_pwider_rev_x$value,
                               fk_pval_rev = fkappa_pwider_rev_x$p.value,
                               fk_zstat_rev = fkappa_pwider_rev_x$statistic,
@@ -376,6 +441,7 @@ for(i in seq_along(chrs)) {
                               fk_num_Cs_rev = fkappa_pwider_rev_x$subjects,
                               fk_prop_reads_rev = prop_reads_retained_rev_x,
                               fk_prop_Cs_rev = prop_Cs_retained_rev_x,
+
                               fk_kappa_all = mean(c(fkappa_pwider_fwd_x$value, fkappa_pwider_rev_x$value)),
                               fk_pval_all = mean(c(fkappa_pwider_fwd_x$p.value, fkappa_pwider_rev_x$p.value)),
                               fk_zstat_all = mean(c(fkappa_pwider_fwd_x$statistic, fkappa_pwider_rev_x$statistic)),
@@ -383,9 +449,27 @@ for(i in seq_along(chrs)) {
                               fk_num_Cs_all = mean(c(fkappa_pwider_fwd_x$subjects, fkappa_pwider_rev_x$subjects)),
                               fk_prop_reads_all = mean(c(prop_reads_retained_fwd_x, prop_reads_retained_rev_x)),
                               fk_prop_Cs_all = mean(c(prop_Cs_retained_fwd_x, prop_Cs_retained_rev_x)),
-                              pamk_pwider_fwd_nc = pamk_pwider_fwd_x$nc,
-                              pamk_pwider_rev_nc = pamk_pwider_rev_x$nc,
-                              pamk_pwider_all_nc = mean(c(pamk_pwider_fwd_x$nc, pamk_pwider_rev_x$nc), na.rm = T))
+#                              pamk_pwider_fwd_nc = pamk_pwider_fwd_x$nc,
+#                              pamk_pwider_rev_nc = pamk_pwider_rev_x$nc,
+#                              pamk_pwider_all_nc = mean(c(pamk_pwider_fwd_x$nc, pamk_pwider_rev_x$nc), na.rm = T),
+
+                              mean_stocha_fwd = mean_stocha_pwider_fwd_x,
+                              sd_stocha_fwd = sd_stocha_pwider_fwd_x,
+                              mean_min_acf_fwd = mean_min_acf_pwider_fwd_x,
+                              mean_max_acf_fwd = mean_max_acf_pwider_fwd_x,
+                              mean_mean_acf_fwd = mean_mean_acf_pwider_fwd_x,
+
+                              mean_stocha_rev = mean_stocha_pwider_rev_x,
+                              sd_stocha_rev = sd_stocha_pwider_rev_x,
+                              mean_min_acf_rev = mean_min_acf_pwider_rev_x,
+                              mean_max_acf_rev = mean_max_acf_pwider_rev_x,
+                              mean_mean_acf_rev = mean_mean_acf_pwider_rev_x,
+
+                              mean_stocha_all = mean(c(mean_stocha_pwider_fwd_x, mean_stocha_pwider_rev_x)),
+                              sd_stocha_all = mean(c(sd_stocha_pwider_fwd_x, sd_stocha_pwider_rev_x)),
+                              mean_min_acf_all = mean(c(mean_min_acf_pwider_fwd_x, mean_min_acf_pwider_rev_x)),
+                              mean_max_acf_all = mean(c(mean_max_acf_pwider_fwd_x, mean_max_acf_pwider_rev_x)),
+                              mean_mean_acf_all = mean(c(mean_mean_acf_pwider_fwd_x, mean_mean_acf_pwider_rev_x)) )
 
     fk_df_win_x
   }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
@@ -412,7 +496,6 @@ for(i in seq_along(chrs)) {
        main = "")
   mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
         text = bquote("Fleiss' kappa per-read m"*.(context)))
-#        text = bquote("Fleiss' kappa per-read m"*.(context)))
   axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
 
 #  par(new = T)
@@ -473,12 +556,12 @@ for(i in seq_along(chrs)) {
 ##  fOverlapsList <- mclapply(seq_along(unique(queryHits(fOverlaps))),
 ##                            function(x) {
 ##                              subjectHits(fOverlaps[queryHits(fOverlaps) == x])
-##                            }, mc.cores = detectCores(), mc.preschedule = TRUE)
+##                            }, mc.cores = detectCores(), mc.preschedule = T)
 #  fOverlapsList <- getOverlaps(coordinates = winGR,
 #                               segments = chr_tab_GR,
 #                               overlapType = "overlapping",
-#                               whichOverlaps = TRUE,
-#                               ignoreStrand = TRUE)
+#                               whichOverlaps = T,
+#                               ignoreStrand = T)
 #
 #  # Get per-read-window methylation proportion values overlapping each genomic window
 #  win_mProp_list <- lapply(fOverlapsList, function(x) {
