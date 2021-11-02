@@ -15,8 +15,8 @@
 
 #sampleName <- "Col_0_deepsignalDNAmeth_30kb_90pc"
 #refbase <- "t2t-col.20210610"
-#genomeBinSize <- 30000
-#genomeStepSize <- 30000
+#genomeBinSize <- 10000
+#genomeStepSize <- 10000
 #context <- "CpG"
 #NAmax <- 0.50
 #CPUpc <- 0.20
@@ -237,7 +237,7 @@ for(i in seq_along(chrs)) {
 #                              seed = 100000,
                               diss = FALSE)
 
-  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
+  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = F)
 
 #    htmp <- Heatmap(t(as.matrix(pwider_fwd_x)),
 #                    col = c("0" = "blue", "1" = "red"),
