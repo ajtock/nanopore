@@ -172,6 +172,8 @@ for(i in seq_along(chrs)) {
                                 ignore.strand = T)
 
   fk_df_win_list <- mclapply(seq_along(winGR), function(x) {
+#  fk_df_win_list <- lapply(seq_along(winGR), function(x) {
+#    print(x)
 
     # Analyse each strand separately
     # fwd
@@ -220,10 +222,10 @@ for(i in seq_along(chrs)) {
     prop_Cs_retained_fwd_x <- sum(!(mask_rows)) / nrow(pwider_fwd_x) 
     # Report number of rows (cytosines) to be retained:
     num_Cs_retained_fwd_x <- sum(!(mask_rows))
-    # Conditionally remove rows (cytosines) containing any NAs
-    if(sum(mask_rows) > 0) {
-      pwider_fwd_x <- pwider_fwd_x[ !(mask_rows), , drop = F]
-    }
+#    # Conditionally remove rows (cytosines) containing any NAs
+#    if(sum(mask_rows) > 0) {
+#      pwider_fwd_x <- pwider_fwd_x[ !(mask_rows), , drop = F]
+#    }
 
     # Calculate Fleiss' kappa
     fkappa_pwider_fwd_x <- kappam.fleiss(pwider_fwd_x, detail = F)
@@ -237,15 +239,15 @@ for(i in seq_along(chrs)) {
     # Get absolute differences in methylation status between Cs for each read
     absdiff_pwider_fwd_x <- abs(diff(as.matrix(pwider_fwd_x)))
     # Calculate the mean absolute difference for each read
-    colMeans_absdiff_pwider_fwd_x <- colMeans(absdiff_pwider_fwd_x)
+    colMeans_absdiff_pwider_fwd_x <- colMeans(absdiff_pwider_fwd_x, na.rm = T)
     # Across all reads overlapping a given window, calculate the mean of mean absolute differences
-    mean_stocha_pwider_fwd_x <- mean(colMeans_absdiff_pwider_fwd_x)
+    mean_stocha_pwider_fwd_x <- mean(colMeans_absdiff_pwider_fwd_x, na.rm = T)
     # Across all reads overlapping a given window, calculate the sd of mean absolute differences
-    sd_stocha_pwider_fwd_x <- sd(colMeans_absdiff_pwider_fwd_x)
+    sd_stocha_pwider_fwd_x <- sd(colMeans_absdiff_pwider_fwd_x, na.rm = T)
 
     # Calculate autocorrelations between methylation statuses of neighbouring Cs within each read
     acf_pwider_fwd_x_list <- apply(pwider_fwd_x, MARGIN = 2,
-                                   FUN = function(col) acf(col, lag.max = 10, plot = F))
+                                   FUN = function(col) acf(col, lag.max = 10, plot = F, na.action = na.pass))
     mean_min_acf_pwider_fwd_x <- mean(sapply(seq_along(acf_pwider_fwd_x_list), function(col) {
       min(as.vector(acf_pwider_fwd_x_list[[col]]$acf))
     }))
@@ -344,10 +346,10 @@ for(i in seq_along(chrs)) {
     prop_Cs_retained_rev_x <- sum(!(mask_rows)) / nrow(pwider_rev_x) 
     # Report number of rows (cytosines) to be retained:
     num_Cs_retained_rev_x <- sum(!(mask_rows))
-    # Conditionally remove rows (cytosines) containing any NAs
-    if(sum(mask_rows) > 0) {
-      pwider_rev_x <- pwider_rev_x[ !(mask_rows), , drop = F]
-    }
+#    # Conditionally remove rows (cytosines) containing any NAs
+#    if(sum(mask_rows) > 0) {
+#      pwider_rev_x <- pwider_rev_x[ !(mask_rows), , drop = F]
+#    }
 
     # Calculate Fleiss' kappa
     fkappa_pwider_rev_x <- kappam.fleiss(pwider_rev_x, detail = F)
@@ -361,15 +363,15 @@ for(i in seq_along(chrs)) {
     # Get absolute differences in methylation status between Cs for each read
     absdiff_pwider_rev_x <- abs(diff(as.matrix(pwider_rev_x)))
     # Calculate the mean absolute difference for each read
-    colMeans_absdiff_pwider_rev_x <- colMeans(absdiff_pwider_rev_x)
+    colMeans_absdiff_pwider_rev_x <- colMeans(absdiff_pwider_rev_x, na.rm = T)
     # Across all reads overlapping a given window, calculate the mean of mean absolute differences
-    mean_stocha_pwider_rev_x <- mean(colMeans_absdiff_pwider_rev_x)
+    mean_stocha_pwider_rev_x <- mean(colMeans_absdiff_pwider_rev_x, na.rm = T)
     # Across all reads overlapping a given window, calculate the sd of mean absolute differences
-    sd_stocha_pwider_rev_x <- sd(colMeans_absdiff_pwider_rev_x)
+    sd_stocha_pwider_rev_x <- sd(colMeans_absdiff_pwider_rev_x, na.rm = T)
 
     # Calculate autocorrelations between methylation statuses of neighbouring Cs within each read
     acf_pwider_rev_x_list <- apply(pwider_rev_x, MARGIN = 2,
-                                   FUN = function(col) acf(col, lag.max = 10, plot = F))
+                                   FUN = function(col) acf(col, lag.max = 10, plot = F, na.action = na.pass))
     mean_min_acf_pwider_rev_x <- mean(sapply(seq_along(acf_pwider_rev_x_list), function(col) {
       min(as.vector(acf_pwider_rev_x_list[[col]]$acf))
     }))
@@ -472,6 +474,7 @@ for(i in seq_along(chrs)) {
                               mean_mean_acf_all = mean(c(mean_mean_acf_pwider_fwd_x, mean_mean_acf_pwider_rev_x)) )
 
     fk_df_win_x
+#   })
   }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
                                
   fk_df <- dplyr::bind_rows(fk_df_win_list, .id = "column_label")
