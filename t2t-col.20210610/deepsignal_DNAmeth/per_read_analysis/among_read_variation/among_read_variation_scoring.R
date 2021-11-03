@@ -186,7 +186,9 @@ for(i in seq_along(chrs)) {
                                 select = "all",
                                 ignore.strand = T)
 
-  fk_df_win_list <- mclapply(seq_along(winGR), function(x) {
+#  fk_df_win_list <- mclapply(seq_along(winGR), function(x) {
+  fk_df_win_list <- lapply(seq_along(winGR), function(x) {
+    print(x)
 
     # Analyse each strand separately
     # fwd
@@ -212,7 +214,7 @@ for(i in seq_along(chrs)) {
                                                      values_from = call))
     pwider_fwd_x <- pwider_fwd_x[ with(data = pwider_fwd_x, expr = order(pos)), ]
     rownames(pwider_fwd_x) <- pwider_fwd_x[,1]
-    pwider_fwd_x <- pwider_fwd_x[,-1]
+    pwider_fwd_x <- pwider_fwd_x[ , -1, drop = F]
 
     # kappam.fleiss() uses only rows (cytosines) with complete information
     # across all columns (reads) considered
@@ -380,7 +382,7 @@ for(i in seq_along(chrs)) {
                                                      values_from = call))
     pwider_rev_x <- pwider_rev_x[ with(data = pwider_rev_x, expr = order(pos)), ]
     rownames(pwider_rev_x) <- pwider_rev_x[,1]
-    pwider_rev_x <- pwider_rev_x[,-1]
+    pwider_rev_x <- pwider_rev_x[ , -1, drop = F]
 
     # kappam.fleiss() uses only rows (cytosines) with complete information
     # across all columns (reads) considered
@@ -549,7 +551,8 @@ for(i in seq_along(chrs)) {
                               mean_mean_acf_all = mean(c(fk_df_fwd_win_x$mean_mean_acf_fwd, fk_df_rev_win_x$mean_mean_acf_rev), na.rm = T))
 
     fk_df_win_x
-  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
+  })
+#  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
                                
   fk_df <- dplyr::bind_rows(fk_df_win_list, .id = "column_label")
 
