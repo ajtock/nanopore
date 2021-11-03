@@ -48,22 +48,37 @@ library(ComplexHeatmap)
 #library(scales)
 #library(circlize)
  
+library(ggplot2)
+library(cowplot)
+#library(ggcorrplot)
+library(viridis)
+library(ggthemes)
+library(tidyquant)
+#library(grid)
+
+
 if(floor(log10(genomeBinSize)) + 1 < 4) {
   genomeBinName <- paste0(genomeBinSize, "bp")
+  genomeBinNamePlot <- paste0(genomeBinSize, "-bp")
 } else if(floor(log10(genomeBinSize)) + 1 >= 4 &
           floor(log10(genomeBinSize)) + 1 <= 6) {
   genomeBinName <- paste0(genomeBinSize/1e3, "kb")
+  genomeBinNamePlot <- paste0(genomeBinSize/1e3, "-kb")
 } else if(floor(log10(genomeBinSize)) + 1 >= 7) {
   genomeBinName <- paste0(genomeBinSize/1e6, "Mb")
+  genomeBinNamePlot <- paste0(genomeBinSize/1e6, "-Mb")
 }
 
 if(floor(log10(genomeStepSize)) + 1 < 4) {
   genomeStepName <- paste0(genomeStepSize, "bp")
+  genomeStepNamePlot <- paste0(genomeStepSize, "-bp")
 } else if(floor(log10(genomeStepSize)) + 1 >= 4 &
           floor(log10(genomeStepSize)) + 1 <= 6) {
   genomeStepName <- paste0(genomeStepSize/1e3, "kb")
+  genomeStepNamePlot <- paste0(genomeStepSize/1e3, "-kb")
 } else if(floor(log10(genomeStepSize)) + 1 >= 7) {
   genomeStepName <- paste0(genomeStepSize/1e6, "Mb")
+  genomeStepNamePlot <- paste0(genomeStepSize/1e6, "-Mb")
 }
 
 outDir <- paste0("genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName, "/")
@@ -172,8 +187,6 @@ for(i in seq_along(chrs)) {
                                 ignore.strand = T)
 
   fk_df_win_list <- mclapply(seq_along(winGR), function(x) {
-#  fk_df_win_list <- lapply(seq_along(winGR), function(x) {
-#    print(x)
 
     # Analyse each strand separately
     # fwd
@@ -259,19 +272,19 @@ for(i in seq_along(chrs)) {
     }))
     
 
-    # Define clusters of reads within each window using fpc::pamk()
-    # ("partitioning around medoids with estimation of number of clusters")
-    set.seed(20000)
-    pamk_pwider_fwd_x <- pamk(t(pwider_fwd_x),
-#                              krange = 1:(nrow(t(pwider_fwd_x))-1),
-                              krange = 1:(round(nrow(t(pwider_fwd_x))/2)),
-                              criterion = "asw",
-                              usepam = T,
-                              scaling = F,
-                              alpha = 0.001,
-#                              ns = 10,
-#                              seed = 100000,
-                              diss = F)
+#    # Define clusters of reads within each window using fpc::pamk()
+#    # ("partitioning around medoids with estimation of number of clusters")
+#    set.seed(20000)
+#    pamk_pwider_fwd_x <- pamk(t(pwider_fwd_x),
+##                              krange = 1:(nrow(t(pwider_fwd_x))-1),
+#                              krange = 1:(round(nrow(t(pwider_fwd_x))/2)),
+#                              criterion = "asw",
+#                              usepam = T,
+#                              scaling = F,
+#                              alpha = 0.001,
+##                              ns = 10,
+##                              seed = 100000,
+#                              diss = F)
 
 #    htmp <- Heatmap(t(as.matrix(pwider_fwd_x)),
 #                    col = c("0" = "blue", "1" = "red"),
@@ -381,19 +394,19 @@ for(i in seq_along(chrs)) {
     }))
     
 
-    # Define clusters of reads within each window using fpc::pamk()
-    # ("partitioning around medoids with estimation of number of clusters")
-    set.seed(20000)
-    pamk_pwider_rev_x <- pamk(t(pwider_rev_x),
-#                              krange = 1:(nrow(t(pwider_rev_x))-1),
-                              krange = 1:(round(nrow(t(pwider_rev_x))/2)),
-                              criterion = "asw",
-                              usepam = T,
-                              scaling = F,
-                              alpha = 0.001,
-#                              ns = 10,
-#                              seed = 100000,
-                              diss = F)
+#    # Define clusters of reads within each window using fpc::pamk()
+#    # ("partitioning around medoids with estimation of number of clusters")
+#    set.seed(20000)
+#    pamk_pwider_rev_x <- pamk(t(pwider_rev_x),
+##                              krange = 1:(nrow(t(pwider_rev_x))-1),
+#                              krange = 1:(round(nrow(t(pwider_rev_x))/2)),
+#                              criterion = "asw",
+#                              usepam = T,
+#                              scaling = F,
+#                              alpha = 0.001,
+##                              ns = 10,
+##                              seed = 100000,
+#                              diss = F)
 
 #    htmp <- Heatmap(t(as.matrix(pwider_rev_x)),
 #                    col = c("0" = "blue", "1" = "red"),
@@ -448,9 +461,9 @@ for(i in seq_along(chrs)) {
                               fk_prop_reads_all = mean(c(prop_reads_retained_fwd_x, prop_reads_retained_rev_x)),
                               fk_prop_Cs_all = mean(c(prop_Cs_retained_fwd_x, prop_Cs_retained_rev_x)),
 
-                              pamk_pwider_fwd_nc = pamk_pwider_fwd_x$nc,
-                              pamk_pwider_rev_nc = pamk_pwider_rev_x$nc,
-                              pamk_pwider_all_nc = mean(c(pamk_pwider_fwd_x$nc, pamk_pwider_rev_x$nc), na.rm = T),
+#                              pamk_pwider_fwd_nc = pamk_pwider_fwd_x$nc,
+#                              pamk_pwider_rev_nc = pamk_pwider_rev_x$nc,
+#                              pamk_pwider_all_nc = mean(c(pamk_pwider_fwd_x$nc, pamk_pwider_rev_x$nc), na.rm = T),
 
                               mean_stocha_fwd = mean_stocha_pwider_fwd_x,
                               sd_stocha_fwd = sd_stocha_pwider_fwd_x,
@@ -471,7 +484,6 @@ for(i in seq_along(chrs)) {
                               mean_mean_acf_all = mean(c(mean_mean_acf_pwider_fwd_x, mean_mean_acf_pwider_rev_x)) )
 
     fk_df_win_x
-#   })
   }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
                                
   fk_df <- dplyr::bind_rows(fk_df_win_list, .id = "column_label")
@@ -481,141 +493,6 @@ for(i in seq_along(chrs)) {
                       fk_adj_pval_rev = p.adjust(fk_df$fk_pval_rev, method = "BH"),
                       fk_adj_pval_all = p.adjust(fk_df$fk_pval_all, method = "BH"))
 
-  pdf(paste0(plotDir,
-             sampleName, "_MappedOn_", refbase, "_", context,
-             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
-             "_NAmax", NAmax, "_Fleiss_kappa_", chrName,
-             ".pdf"), height = 5, width = 30)
-  par(mfrow = c(1, 1))
-  par(mar = c(4.1, 4.1, 3.1, 4.1))
-  par(mgp = c(3, 1, 0))
-  plot(x = fk_df$midpoint, y = fk_df$fk_kappa_all, type = "l", lwd = 1.5, col = "red",
-       yaxt = "n",
-       xlab = "", ylab = "",
-       main = "")
-  mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
-        text = bquote("Fleiss' kappa per-read m"*.(context)))
-  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
-#  par(new = T)
-#  plot(x = fk_df$midpoint, y = fk_df$fk_num_Cs_all, type = "l", lwd = 0.5, col = "skyblue",
-#       xaxt = "n", yaxt = "n",
-#       xlab = "", ylab = "",
-#       main = "")
-#  p <- par('usr')
-#  text(p[2], mean(p[3:4]), cex = 1.5, adj = c(0.5, -2.0), xpd = NA, srt = -90, col = "skyblue",
-#       labels = bquote(.(context)*" sites per window"))
-#  axis(side = 4, cex.axis = 1, lwd.tick = 1.5)
-  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
-  dev.off()
-
-  pdf(paste0(plotDir,
-             sampleName, "_MappedOn_", refbase, "_", context,
-             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
-             "_NAmax", NAmax, "_mean_stocha_", chrName,
-             ".pdf"), height = 5, width = 30)
-  par(mfrow = c(1, 1))
-  par(mar = c(4.1, 4.1, 3.1, 4.1))
-  par(mgp = c(3, 1, 0))
-  plot(x = fk_df$midpoint, y = fk_df$mean_stocha_all, type = "l", lwd = 1.5, col = "red",
-       yaxt = "n",
-       xlab = "", ylab = "",
-       main = "")
-  mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
-        text = bquote("Mean stoch. per-read m"*.(context)))
-  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
-  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
-  dev.off()
-
-  pdf(paste0(plotDir,
-             sampleName, "_MappedOn_", refbase, "_", context,
-             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
-             "_NAmax", NAmax, "_sd_stocha_", chrName,
-             ".pdf"), height = 5, width = 30)
-  par(mfrow = c(1, 1))
-  par(mar = c(4.1, 4.1, 3.1, 4.1))
-  par(mgp = c(3, 1, 0))
-  plot(x = fk_df$midpoint, y = fk_df$sd_stocha_all, type = "l", lwd = 1.5, col = "red",
-       yaxt = "n",
-       xlab = "", ylab = "",
-       main = "")
-  mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
-        text = bquote("SD stoch. per-read m"*.(context)))
-  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
-  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
-  dev.off()
-
-  pdf(paste0(plotDir,
-             sampleName, "_MappedOn_", refbase, "_", context,
-             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
-             "_NAmax", NAmax, "_mean_mean_acf_", chrName,
-             ".pdf"), height = 5, width = 30)
-  par(mfrow = c(1, 1))
-  par(mar = c(4.1, 4.1, 3.1, 4.1))
-  par(mgp = c(3, 1, 0))
-  plot(x = fk_df$midpoint, y = fk_df$mean_mean_acf_all, type = "l", lwd = 1.5, col = "red",
-       yaxt = "n",
-       xlab = "", ylab = "",
-       main = "")
-  mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
-        text = bquote("Mean mean ACF per-read m"*.(context)))
-  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
-  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
-  dev.off()
-
-  pdf(paste0(plotDir,
-             sampleName, "_MappedOn_", refbase, "_", context,
-             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
-             "_NAmax", NAmax, "_mean_min_acf_", chrName,
-             ".pdf"), height = 5, width = 30)
-  par(mfrow = c(1, 1))
-  par(mar = c(4.1, 4.1, 3.1, 4.1))
-  par(mgp = c(3, 1, 0))
-  plot(x = fk_df$midpoint, y = fk_df$mean_min_acf_all, type = "l", lwd = 1.5, col = "red",
-       yaxt = "n",
-       xlab = "", ylab = "",
-       main = "")
-  mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
-        text = bquote("Mean min. ACF per-read m"*.(context)))
-  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
-  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
-  dev.off()
-
-  pdf(paste0(plotDir,
-             sampleName, "_MappedOn_", refbase, "_", context,
-             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
-             "_NAmax", NAmax, "_mean_max_acf_", chrName,
-             ".pdf"), height = 5, width = 30)
-  par(mfrow = c(1, 1))
-  par(mar = c(4.1, 4.1, 3.1, 4.1))
-  par(mgp = c(3, 1, 0))
-  plot(x = fk_df$midpoint, y = fk_df$mean_max_acf_all, type = "l", lwd = 1.5, col = "red",
-       yaxt = "n",
-       xlab = "", ylab = "",
-       main = "")
-  mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
-        text = bquote("Mean max. ACF per-read m"*.(context)))
-  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
-  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
-  dev.off()
-
-  pdf(paste0(plotDir,
-             sampleName, "_MappedOn_", refbase, "_", context,
-             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
-             "_NAmax", NAmax, "_pam_clusters_", chrName,
-             ".pdf"), height = 5, width = 30)
-  par(mfrow = c(1, 1))
-  par(mar = c(4.1, 4.1, 3.1, 4.1))
-  par(mgp = c(3, 1, 0))
-  plot(x = fk_df$midpoint, y = fk_df$pamk_pwider_all_nc, type = "l", lwd = 1.5, col = "red",
-       yaxt = "n",
-       xlab = "", ylab = "",
-       main = "")
-  mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
-        text = bquote("PAM clusters per-read m"*.(context)))
-  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
-  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
-  dev.off()
-
   write.table(fk_df,
               file = paste0(outDir,
                             sampleName, "_MappedOn_", refbase, "_", context,
@@ -623,6 +500,260 @@ for(i in seq_along(chrs)) {
                             "_NAmax", NAmax, "_per_read_var_df_", chrName, ".tsv"),
               quote = F, sep = "\t", row.names = F, col.names = T)
 }
+
+#  chrPlot <- function(dataFrame, xvar, yvar, xlab, ylab, colour) {
+#    xvar <- enquo(xvar)
+#    yvar <- enquo(yvar)
+#    ggplot(data = dataFrame,
+#           mapping = aes(x = !!xvar,
+#                         y = !!yvar)) +
+##    geom_line(size = 1, colour = colour) +
+#    geom_ma(ma_fun = SMA, n = 10, colour = colour, linetype = 1, size = 1) +
+##    geom_smooth(colour = colour, fill = colour, alpha = 0.6,
+##                method = "gam", formula = y ~ s(x, bs = "cs")) +
+#    scale_x_continuous(
+#                       labels = function(x) x/1e6) +
+#    labs(x = xlab,
+#         y = ylab) +
+#    theme_bw() +
+#    theme(
+#          axis.ticks = element_line(size = 0.5, colour = "black"),
+#          axis.ticks.length = unit(0.25, "cm"),
+#          axis.text.x = element_text(size = 16, colour = "black"),
+#          axis.text.y = element_text(size = 16, colour = "black"),
+#          axis.title = element_text(size = 18, colour = "black"),
+#          axis.line = element_line(size = 0.5, colour = "black"),
+##          panel.grid = element_blank(),
+#          panel.background = element_blank(),
+##          panel.border = element_rect(size = 1.0, colour = "black"),
+#          plot.margin = unit(c(0.3,1.2,0.0,0.3), "cm"))
+#  }
+#
+#  gg_fk_kappa_all <- chrPlot(dataFrame = fk_df,
+#                             xvar = midpoint,
+#                             yvar = fk_kappa_all,
+#                             xlab = paste0(chrName, " (Mb; ", genomeBinNamePlot, " windows, ", genomeStepNamePlot, " step)"),
+#                             ylab = bquote("Fleiss' kappa per-read m"*.(context)),
+#                             colour = "red") 
+#  ggsave(paste0(plotDir,
+#                sampleName, "_MappedOn_", refbase, "_", context,
+#                "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
+#                "_NAmax", NAmax, "_Fleiss_kappa_all_", chrName,
+#                ".pdf"),
+#         plot = gg_fk_kappa_all,
+#         height = 5, width = 30, limitsize = F)
+#
+#ggsave(paste0(plotDir,
+#              "DNAmethAllContexts_",
+#              gsub("_MappedOn_t2t-col.20210610_.+", "", ChIPNames)[1], "_",
+#              "_avgProfiles_around",
+#              "_CEN180_ranLoc_CENAthila_nonCENAthila_nonCENGypsy_in_t2t-col.20210610_",
+#              paste0(chrName, collapse = "_"), ".pdf"),
+#       plot = ggObjGA_combined,
+#       height = 6.5, width = 7*5, limitsize = FALSE)
+#
+#
+#  
+#  pdf(paste0(plotDir,
+#             sampleName, "_MappedOn_", refbase, "_", context,
+#             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
+#             "_NAmax", NAmax, "_Fleiss_kappa_", chrName,
+#             ".pdf"), height = 5, width = 30)
+#  par(mfrow = c(1, 1))
+#  par(mar = c(4.1, 4.1, 3.1, 4.1))
+#  par(mgp = c(3, 1, 0))
+#  plot(x = fk_df$midpoint, y = fk_df$fk_kappa_all, type = "l", lwd = 1.5, col = "red",
+#       yaxt = "n",
+#       xlab = "", ylab = "",
+#       main = "")
+#  mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
+#        text = bquote("Fleiss' kappa per-read m"*.(context)))
+#  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
+##  par(new = T)
+##  plot(x = fk_df$midpoint, y = fk_df$fk_num_Cs_all, type = "l", lwd = 0.5, col = "skyblue",
+##       xaxt = "n", yaxt = "n",
+##       xlab = "", ylab = "",
+##       main = "")
+##  p <- par('usr')
+##  text(p[2], mean(p[3:4]), cex = 1.5, adj = c(0.5, -2.0), xpd = NA, srt = -90, col = "skyblue",
+##       labels = bquote(.(context)*" sites per window"))
+##  axis(side = 4, cex.axis = 1, lwd.tick = 1.5)
+#  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
+#  dev.off()
+#
+#
+## CENH3_in_bodies vs HORlengthsSum
+#ggTrend5 <- ggplot(data = CEN180,
+#                   mapping = aes(x = CENH3_in_bodies,
+#                                 y = HORlengthsSum+1)) +
+#  geom_hex(bins = 60) +
+#  scale_y_continuous(trans = log10_trans(),
+#                     breaks = trans_breaks("log10", function(x) 10^x),
+#                     labels = trans_format("log10", math_format(10^.x))) +
+#  annotation_logticks(sides = "l") +
+#  scale_fill_viridis() +
+#  geom_smooth(colour = "red", fill = "grey70", alpha = 0.9,
+#              method = "gam", formula = y ~ s(x, bs = "cs")) +
+#  labs(x = "CENH3",
+#       y = "Repetitiveness") +
+#  theme_bw() +
+#  theme(
+#        axis.ticks = element_line(size = 0.5, colour = "black"),
+#        axis.ticks.length = unit(0.25, "cm"),
+#        axis.text.x = element_text(size = 16, colour = "black"),
+#        axis.text.y = element_text(size = 16, colour = "black"),
+#        axis.title = element_text(size = 18, colour = "black"),
+#        panel.grid = element_blank(),
+#        panel.background = element_blank(),
+#        panel.border = element_rect(size = 1.0, colour = "black"),
+#        plot.margin = unit(c(0.3,1.2,0.0,0.3), "cm"),
+#        plot.title = element_text(hjust = 0.5, size = 18)) +
+#  ggtitle(bquote(italic(r[s]) ~ "=" ~
+#                 .(round(cor.test(CEN180$CENH3_in_bodies, CEN180$HORlengthsSum, method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
+#                         digits = 2)) *
+#                 ";" ~ italic(P) ~ "=" ~
+#                 .(round(min(0.5, cor.test(CEN180$CENH3_in_bodies, CEN180$HORlengthsSum, method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(CEN180)[1]/100) )),
+#                         digits = 5)) ~
+#                 "(CEN180 in" ~ .(paste0(chrName, collapse = ",")) * ")"))
+#
+#
+#
+#
+#  pdf(paste0(plotDir,
+#             sampleName, "_MappedOn_", refbase, "_", context,
+#             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
+#             "_NAmax", NAmax, "_Fleiss_kappa_", chrName,
+#             ".pdf"), height = 5, width = 30)
+#  par(mfrow = c(1, 1))
+#  par(mar = c(4.1, 4.1, 3.1, 4.1))
+#  par(mgp = c(3, 1, 0))
+#  plot(x = fk_df$midpoint, y = fk_df$fk_kappa_all, type = "l", lwd = 1.5, col = "red",
+#       yaxt = "n",
+#       xlab = "", ylab = "",
+#       main = "")
+#  mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
+#        text = bquote("Fleiss' kappa per-read m"*.(context)))
+#  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
+##  par(new = T)
+##  plot(x = fk_df$midpoint, y = fk_df$fk_num_Cs_all, type = "l", lwd = 0.5, col = "skyblue",
+##       xaxt = "n", yaxt = "n",
+##       xlab = "", ylab = "",
+##       main = "")
+##  p <- par('usr')
+##  text(p[2], mean(p[3:4]), cex = 1.5, adj = c(0.5, -2.0), xpd = NA, srt = -90, col = "skyblue",
+##       labels = bquote(.(context)*" sites per window"))
+##  axis(side = 4, cex.axis = 1, lwd.tick = 1.5)
+#  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
+#  dev.off()
+#
+#  pdf(paste0(plotDir,
+#             sampleName, "_MappedOn_", refbase, "_", context,
+#             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
+#             "_NAmax", NAmax, "_mean_stocha_", chrName,
+#             ".pdf"), height = 5, width = 30)
+#  par(mfrow = c(1, 1))
+#  par(mar = c(4.1, 4.1, 3.1, 4.1))
+#  par(mgp = c(3, 1, 0))
+#  plot(x = fk_df$midpoint, y = fk_df$mean_stocha_all, type = "l", lwd = 1.5, col = "red",
+#       yaxt = "n",
+#       xlab = "", ylab = "",
+#       main = "")
+#  mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
+#        text = bquote("Mean stoch. per-read m"*.(context)))
+#  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
+#  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
+#  dev.off()
+#
+#  pdf(paste0(plotDir,
+#             sampleName, "_MappedOn_", refbase, "_", context,
+#             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
+#             "_NAmax", NAmax, "_sd_stocha_", chrName,
+#             ".pdf"), height = 5, width = 30)
+#  par(mfrow = c(1, 1))
+#  par(mar = c(4.1, 4.1, 3.1, 4.1))
+#  par(mgp = c(3, 1, 0))
+#  plot(x = fk_df$midpoint, y = fk_df$sd_stocha_all, type = "l", lwd = 1.5, col = "red",
+#       yaxt = "n",
+#       xlab = "", ylab = "",
+#       main = "")
+#  mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
+#        text = bquote("SD stoch. per-read m"*.(context)))
+#  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
+#  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
+#  dev.off()
+#
+#  pdf(paste0(plotDir,
+#             sampleName, "_MappedOn_", refbase, "_", context,
+#             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
+#             "_NAmax", NAmax, "_mean_mean_acf_", chrName,
+#             ".pdf"), height = 5, width = 30)
+#  par(mfrow = c(1, 1))
+#  par(mar = c(4.1, 4.1, 3.1, 4.1))
+#  par(mgp = c(3, 1, 0))
+#  plot(x = fk_df$midpoint, y = fk_df$mean_mean_acf_all, type = "l", lwd = 1.5, col = "red",
+#       yaxt = "n",
+#       xlab = "", ylab = "",
+#       main = "")
+#  mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
+#        text = bquote("Mean mean ACF per-read m"*.(context)))
+#  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
+#  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
+#  dev.off()
+#
+#  pdf(paste0(plotDir,
+#             sampleName, "_MappedOn_", refbase, "_", context,
+#             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
+#             "_NAmax", NAmax, "_mean_min_acf_", chrName,
+#             ".pdf"), height = 5, width = 30)
+#  par(mfrow = c(1, 1))
+#  par(mar = c(4.1, 4.1, 3.1, 4.1))
+#  par(mgp = c(3, 1, 0))
+#  plot(x = fk_df$midpoint, y = fk_df$mean_min_acf_all, type = "l", lwd = 1.5, col = "red",
+#       yaxt = "n",
+#       xlab = "", ylab = "",
+#       main = "")
+#  mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
+#        text = bquote("Mean min. ACF per-read m"*.(context)))
+#  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
+#  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
+#  dev.off()
+#
+#  pdf(paste0(plotDir,
+#             sampleName, "_MappedOn_", refbase, "_", context,
+#             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
+#             "_NAmax", NAmax, "_mean_max_acf_", chrName,
+#             ".pdf"), height = 5, width = 30)
+#  par(mfrow = c(1, 1))
+#  par(mar = c(4.1, 4.1, 3.1, 4.1))
+#  par(mgp = c(3, 1, 0))
+#  plot(x = fk_df$midpoint, y = fk_df$mean_max_acf_all, type = "l", lwd = 1.5, col = "red",
+#       yaxt = "n",
+#       xlab = "", ylab = "",
+#       main = "")
+#  mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
+#        text = bquote("Mean max. ACF per-read m"*.(context)))
+#  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
+#  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
+#  dev.off()
+#
+#  pdf(paste0(plotDir,
+#             sampleName, "_MappedOn_", refbase, "_", context,
+#             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
+#             "_NAmax", NAmax, "_pam_clusters_", chrName,
+#             ".pdf"), height = 5, width = 30)
+#  par(mfrow = c(1, 1))
+#  par(mar = c(4.1, 4.1, 3.1, 4.1))
+#  par(mgp = c(3, 1, 0))
+#  plot(x = fk_df$midpoint, y = fk_df$pamk_pwider_all_nc, type = "l", lwd = 1.5, col = "red",
+#       yaxt = "n",
+#       xlab = "", ylab = "",
+#       main = "")
+#  mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
+#        text = bquote("PAM clusters per-read m"*.(context)))
+#  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
+#  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
+#  dev.off()
+
 
 #  par(new = T)
 #  plot(x = fk_df$midpoint, y = -log10(fk_df$fk_adj_pval_all+1e-10), type = "l", lwd = 1.5, col = "blue",
@@ -646,154 +777,3 @@ for(i in seq_along(chrs)) {
 #  plot(x = fk_df$midpoint, y = fk_df$fk_num_Cs_all, type = "l", col = "darkgreen")
 #  dev.off()
 
-#sampleName <- "Col_0_deepsignalDNAmeth_30kb_90pc"
-#refbase <- "t2t-col.20210610"
-#genomeBinSize <- 10000
-#genomeStepSize <- 2000
-#context <- "CpG"
-#NAmax <- 0.50
-#CPUpc <- 0.20
-#chrName <- unlist(strsplit("Chr4", split = ","))
-
-
-##  # Convert fOverlaps into list object equivalent to that
-##  # generated by segmentSeq::getOverlaps(), in which each
-##  # list element corresponds to a vector of sequentially numbered indices of
-##  # read midpoint coordinates that overlap a given genomic window
-##  fOverlapsList <- mclapply(seq_along(unique(queryHits(fOverlaps))),
-##                            function(x) {
-##                              subjectHits(fOverlaps[queryHits(fOverlaps) == x])
-##                            }, mc.cores = detectCores(), mc.preschedule = T)
-#  fOverlapsList <- getOverlaps(coordinates = winGR,
-#                               segments = chr_tab_GR,
-#                               overlapType = "overlapping",
-#                               whichOverlaps = T,
-#                               ignoreStrand = T)
-#
-#  # Get per-read-window methylation proportion values overlapping each genomic window
-#  win_mProp_list <- lapply(fOverlapsList, function(x) {
-#                      data.frame(matrix(data = chr_tab[,3][x], nrow = 1))
-#                    })
-#  # Convert into matrix in which each column corresponds to a genomic window
-#  win_mProp_matrix <- t(as.matrix(x = bind_rows(win_mProp_list)))
-#  colnames(win_mProp_matrix) <- round(start(winGR)/1e6, digits = 1)
-#  # Remove columns where fewer than 2 rows are not NA
-#  win_mProp_matrix <- win_mProp_matrix[,which(colSums(is.na(win_mProp_matrix)) < nrow(win_mProp_matrix) - 1)]  
-#
-## Generate a character vector of the unique readIDs in the file
-#readIDs <- unique(tab$V5)
-#
-## Loop within parallelised loop to calculate the per-read methylation proportion
-## across sequential adjacent readBinCs-Cs-containing windows along each read
-#per_read_DNAmeth_DF <- do.call(rbind, mclapply(readIDs, function(x) {
-#  y <- tab[tab[,5] == x,]              # Get rows (cytosine positions) for read x
-#  y <- y[order(y$V2, decreasing = F),] # Order the rows by ascending position in the chromosome
-# 
-#  # Define window start coordinates within read
-#  winStarts <- seq(from = 1,
-#                   to = nrow(y),
-#                   by = readBinCs)
-#  # Remove the last winStart value if is the same as the number of rows (total number of Cs in read)
-#  if(winStarts[length(winStarts)] == nrow(y)) {
-#    winStarts <- winStarts[-length(winStarts)]
-#  }
-#  # Remove the last winStart value if there are fewer than readBinCs Cs from
-#  # this value to the last C in the read (the last row), so that the last window
-#  # always has as much or more methylation-state information than the other windows
-#  tryCatch(
-#    {
-#      if(length(winStarts) > 1 && nrow(y) - winStarts[length(winStarts)] + 1 < readBinCs) {
-#        winStarts <- winStarts[-length(winStarts)]
-#      }
-#    },
-#    error=function(cond) {
-#      message(paste(x, "read is problematic for winStarts"))
-#      message("Here's the original error message:")
-#      message(cond)
-#      # Choose a return value in case of error
-#      return(NA)
-#    }
-#  )
-#
-#  # Define window end coordinates within read
-#  tryCatch(
-#    {
-#      if(nrow(y) >= readBinCs) {
-#        winEnds <- seq(from = readBinCs,
-#                       to = nrow(y),
-#                       by = readBinCs)
-#        if(winEnds[length(winEnds)] != nrow(y)) {
-#          winEnds <- c(winEnds, nrow(y))
-#        }
-#        # Remove the penultimate winEnd value if there are fewer than readBinCs Cs from
-#        # this value to the last C in the read (the last row), so that the last window
-#        # always has as much methylation-state information as, or more than, the other windows
-#        if(nrow(y) - winEnds[(length(winEnds) - 1)] < readBinCs) {
-#          winEnds <- winEnds[-(length(winEnds) - 1)]
-#        }
-#      } else {
-#        winEnds <- nrow(y)
-#      }
-#    },
-#    error=function(cond) {
-#      message(paste(x, "read is problematic for winEnds"))
-#      message("Here's the original error message:")
-#      message(cond)
-#      # Choose a return value in case of error
-#      return(NA)
-#    }
-#  )
-#
-#  tryCatch(
-#    {
-#      stopifnot(length(winStarts) == length(winEnds))
-#    },
-#    error = function(cond) {
-#      message(paste(x, "read: length of winStarts is not equal to length of winEnds"))
-#      message("Here's the original error message:")
-#      message(cond)
-#      # Choose a return value in case of error
-#      return(NA)
-#    }
-#  )
-#
-#  methDat <- NULL
-#  for(i in 1:length(winStarts)) {
-#    readwin <- y[winStarts[i] : winEnds[i],]
-#    # Proceed only if readwin contains rows (cytosine positions)
-#    if(dim(readwin)[1] > 0) {
-#      midpoint <- ( min(readwin[,2]) + max(readwin[,2]) ) / 2
-#      per_readwin_methyl_mean <- mean(readwin[,9])
-#      per_readwin_methyl_sd <- sd(readwin[,9])
-#      methDat_mean <- data.frame(chr = readwin[,1][1],
-#                                 midpoint = midpoint,
-#                                 per_readwin_methyl_mean = per_readwin_methyl_mean,
-#                                 per_readwin_methyl_sd = per_readwin_methyl_sd,
-#                                 start = min(readwin[,2]),
-#                                 end = max(readwin[,2]),
-#                                 read = readwin[,5][1],
-#                                 stringsAsFactors = F)
-#
-#      methDat <- rbind(methDat, methDat_mean)
-#    }
-#  }
-# 
-#  # Andy to Matt: Removed return(methDat) as return() works only within a function
-#  #               (this may be the source of the issue you mentioned);
-#  #               Replaced with methDat :
-#  methDat
-#  # Due to the large numbers of reads that are forked to each CPU, these are
-#  # RAM-heavy combined processes, which calls for using fewer CPUs than are
-#  # available on a given node (e.g., 30% of the available CPUs)
-#}, mc.cores = detectCores()*CPUpc, mc.preschedule = T))
-#
-#print("Done")
-#
-#per_read_DNAmeth_DF <- per_read_DNAmeth_DF[
-#                         order(per_read_DNAmeth_DF[,1], per_read_DNAmeth_DF[,2]),
-#                       ]
-#
-#write.table(per_read_DNAmeth_DF,
-#            file = paste0(sampleName, "_MappedOn_", refbase, "_", context,
-#                          "_raw_readBinSize", readBinCs, "Cs_per_readWin_midpoint.tsv"),
-#            quote = F, sep = "\t", row.names = F, col.names = T)
