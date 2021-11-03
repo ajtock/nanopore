@@ -20,7 +20,7 @@
 #context <- "CpG"
 #NAmax <- 0.50
 #CPUpc <- 1.00
-#chrName <- unlist(strsplit("Chr4", split = ","))
+#chrName <- unlist(strsplit("Chr1", split = ","))
 
 args <- commandArgs(trailingOnly = T)
 sampleName <- args[1]
@@ -48,13 +48,13 @@ library(ComplexHeatmap)
 #library(scales)
 #library(circlize)
  
-library(ggplot2)
-library(cowplot)
-#library(ggcorrplot)
-library(viridis)
-library(ggthemes)
-library(tidyquant)
-#library(grid)
+#library(ggplot2)
+#library(cowplot)
+##library(ggcorrplot)
+#library(viridis)
+#library(ggthemes)
+#library(tidyquant)
+##library(grid)
 
 
 if(floor(log10(genomeBinSize)) + 1 < 4) {
@@ -88,7 +88,7 @@ system(paste0("[ -d ", plotDir, " ] || mkdir -p ", plotDir))
 # Genomic definitions
 fai <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase, "/", refbase, ".fa.fai"), header = F)
 if(!grepl("Chr", fai[,1][1])) {
-  chrs <- paste0("Chr", fai[,1])[1:5]
+  chrs <- paste0("Chr", fai[,1])[which(paste0("Chr", fai[,1]) %in% chrName)]
 } else {
   chrs <- fai[,1][which(fai[,1] %in% chrName)]
 }
@@ -191,6 +191,7 @@ for(i in seq_along(chrs)) {
     # Analyse each strand separately
     # fwd
     chr_tab_GR_fwd_x <- chr_tab_GR_fwd[subjectHits(fOverlaps_fwd[queryHits(fOverlaps_fwd) == x])]
+    if(length(chr_tab_GR_fwd_x) > 0) {
     chr_tab_GR_fwd_x <- sortSeqlevels(chr_tab_GR_fwd_x)
     chr_tab_GR_fwd_x <- sort(chr_tab_GR_fwd_x, by = ~ read + start)
 
@@ -308,11 +309,57 @@ for(i in seq_along(chrs)) {
 #         gap = unit(c(1), "mm"))
 #    dev.off()
 
+    fk_df_fwd_win_x <- data.frame(chr = seqnames(winGR[x]),
+                                  start = start(winGR[x]),
+                                  end = end(winGR[x]),
+                                  midpoint = round((start(winGR[x])+end(winGR[x]))/2),
+
+                                  fk_kappa_fwd = fkappa_pwider_fwd_x$value,
+                                  fk_pval_fwd = fkappa_pwider_fwd_x$p.value,
+                                  fk_zstat_fwd = fkappa_pwider_fwd_x$statistic,
+                                  fk_num_reads_fwd = fkappa_pwider_fwd_x$raters,
+                                  fk_num_Cs_fwd = fkappa_pwider_fwd_x$subjects,
+                                  fk_prop_reads_fwd = prop_reads_retained_fwd_x,
+                                  fk_prop_Cs_fwd = prop_Cs_retained_fwd_x,
+ 
+#                                  pamk_nc_fwd = pamk_pwider_fwd_x$nc,
+
+                                  mean_stocha_fwd = mean_stocha_pwider_fwd_x,
+                                  sd_stocha_fwd = sd_stocha_pwider_fwd_x,
+                                  mean_min_acf_fwd = mean_min_acf_pwider_fwd_x,
+                                  mean_max_acf_fwd = mean_max_acf_pwider_fwd_x,
+                                  mean_mean_acf_fwd = mean_mean_acf_pwider_fwd_x)
+
+    } else {
+
+    fk_df_fwd_win_x <- data.frame(chr = seqnames(winGR[x]),
+                                  start = start(winGR[x]),
+                                  end = end(winGR[x]),
+                                  midpoint = round((start(winGR[x])+end(winGR[x]))/2),
+
+                                  fk_kappa_fwd = NaN,
+                                  fk_pval_fwd = NaN,
+                                  fk_zstat_fwd = NaN,
+                                  fk_num_reads_fwd = NaN,
+                                  fk_num_Cs_fwd = NaN,
+                                  fk_prop_reads_fwd = NaN,
+                                  fk_prop_Cs_fwd = NaN,
+ 
+#                                  pamk_nc_fwd = NaN,
+
+                                  mean_stocha_fwd = NaN,
+                                  sd_stocha_fwd = NaN,
+                                  mean_min_acf_fwd = NaN,
+                                  mean_max_acf_fwd = NaN,
+                                  mean_mean_acf_fwd = NaN)
+ 
+    }
 
 
     # Analyse each strand separately
     # rev
     chr_tab_GR_rev_x <- chr_tab_GR_rev[subjectHits(fOverlaps_rev[queryHits(fOverlaps_rev) == x])]
+    if(length(chr_tab_GR_rev_x) > 0) {
     chr_tab_GR_rev_x <- sortSeqlevels(chr_tab_GR_rev_x)
     chr_tab_GR_rev_x <- sort(chr_tab_GR_rev_x, by = ~ read + start)
 
@@ -430,58 +477,76 @@ for(i in seq_along(chrs)) {
 #         gap = unit(c(1), "mm"))
 #    dev.off()
 
-   
+    fk_df_rev_win_x <- data.frame(chr = seqnames(winGR[x]),
+                                  start = start(winGR[x]),
+                                  end = end(winGR[x]),
+                                  midpoint = round((start(winGR[x])+end(winGR[x]))/2),
 
+                                  fk_kappa_rev = fkappa_pwider_rev_x$value,
+                                  fk_pval_rev = fkappa_pwider_rev_x$p.value,
+                                  fk_zstat_rev = fkappa_pwider_rev_x$statistic,
+                                  fk_num_reads_rev = fkappa_pwider_rev_x$raters,
+                                  fk_num_Cs_rev = fkappa_pwider_rev_x$subjects,
+                                  fk_prop_reads_rev = prop_reads_retained_rev_x,
+                                  fk_prop_Cs_rev = prop_Cs_retained_rev_x,
+ 
+#                                  pamk_nc_rev = pamk_pwider_rev_x$nc,
+
+                                  mean_stocha_rev = mean_stocha_pwider_rev_x,
+                                  sd_stocha_rev = sd_stocha_pwider_rev_x,
+                                  mean_min_acf_rev = mean_min_acf_pwider_rev_x,
+                                  mean_max_acf_rev = mean_max_acf_pwider_rev_x,
+                                  mean_mean_acf_rev = mean_mean_acf_pwider_rev_x)
+
+    } else {
+
+    fk_df_rev_win_x <- data.frame(chr = seqnames(winGR[x]),
+                                  start = start(winGR[x]),
+                                  end = end(winGR[x]),
+                                  midpoint = round((start(winGR[x])+end(winGR[x]))/2),
+
+                                  fk_kappa_rev = NaN,
+                                  fk_pval_rev = NaN,
+                                  fk_zstat_rev = NaN,
+                                  fk_num_reads_rev = NaN,
+                                  fk_num_Cs_rev = NaN,
+                                  fk_prop_reads_rev = NaN,
+                                  fk_prop_Cs_rev = NaN,
+ 
+#                                  pamk_nc_rev = NaN,
+
+                                  mean_stocha_rev = NaN,
+                                  sd_stocha_rev = NaN,
+                                  mean_min_acf_rev = NaN,
+                                  mean_max_acf_rev = NaN,
+                                  mean_mean_acf_rev = NaN)
+
+    }
+ 
     # Make data.frame with relevant info for genomic window
     fk_df_win_x <- data.frame(chr = seqnames(winGR[x]),
                               start = start(winGR[x]),
                               end = end(winGR[x]),
                               midpoint = round((start(winGR[x])+end(winGR[x]))/2),
-                              fk_kappa_fwd = fkappa_pwider_fwd_x$value,
-                              fk_pval_fwd = fkappa_pwider_fwd_x$p.value,
-                              fk_zstat_fwd = fkappa_pwider_fwd_x$statistic,
-                              fk_num_reads_fwd = fkappa_pwider_fwd_x$raters,
-                              fk_num_Cs_fwd = fkappa_pwider_fwd_x$subjects,
-                              fk_prop_reads_fwd = prop_reads_retained_fwd_x,
-                              fk_prop_Cs_fwd = prop_Cs_retained_fwd_x,
+                              
+                              fk_df_fwd_win_x[,5:ncol(fk_df_fwd_win_x)],
+                              fk_df_rev_win_x[,5:ncol(fk_df_rev_win_x)],
 
-                              fk_kappa_rev = fkappa_pwider_rev_x$value,
-                              fk_pval_rev = fkappa_pwider_rev_x$p.value,
-                              fk_zstat_rev = fkappa_pwider_rev_x$statistic,
-                              fk_num_reads_rev = fkappa_pwider_rev_x$raters,
-                              fk_num_Cs_rev = fkappa_pwider_rev_x$subjects,
-                              fk_prop_reads_rev = prop_reads_retained_rev_x,
-                              fk_prop_Cs_rev = prop_Cs_retained_rev_x,
+                              fk_kappa_all = mean(c(fk_df_fwd_win_x$fk_kappa_fwd, fk_df_rev_win_x$fk_kappa_rev), na.rm = T),
+                              fk_pval_all = mean(c(fk_df_fwd_win_x$fk_pval_fwd, fk_df_rev_win_x$fk_pval_rev), na.rm = T),
+                              fk_zstat_all = mean(c(fk_df_fwd_win_x$fk_zstat_fwd, fk_df_rev_win_x$fk_zstat_rev), na.rm = T),
+                              fk_num_reads_all = mean(c(fk_df_fwd_win_x$fk_num_reads_fwd, fk_df_rev_win_x$fk_num_reads_rev), na.rm = T),
+                              fk_num_Cs_all = mean(c(fk_df_fwd_win_x$fk_num_Cs_fwd, fk_df_rev_win_x$fk_num_Cs_rev), na.rm = T),
+                              fk_prop_reads_all = mean(c(fk_df_fwd_win_x$fk_prop_reads_fwd, fk_df_rev_win_x$fk_prop_reads_rev), na.rm = T),
+                              fk_prop_Cs_all = mean(c(fk_df_fwd_win_x$fk_prop_Cs_fwd, fk_df_rev_win_x$fk_prop_Cs_rev), na.rm = T),
 
-                              fk_kappa_all = mean(c(fkappa_pwider_fwd_x$value, fkappa_pwider_rev_x$value)),
-                              fk_pval_all = mean(c(fkappa_pwider_fwd_x$p.value, fkappa_pwider_rev_x$p.value)),
-                              fk_zstat_all = mean(c(fkappa_pwider_fwd_x$statistic, fkappa_pwider_rev_x$statistic)),
-                              fk_num_reads_all = mean(c(fkappa_pwider_fwd_x$raters, fkappa_pwider_rev_x$raters)),
-                              fk_num_Cs_all = mean(c(fkappa_pwider_fwd_x$subjects, fkappa_pwider_rev_x$subjects)),
-                              fk_prop_reads_all = mean(c(prop_reads_retained_fwd_x, prop_reads_retained_rev_x)),
-                              fk_prop_Cs_all = mean(c(prop_Cs_retained_fwd_x, prop_Cs_retained_rev_x)),
+#                              pamk_nc_all = mean(c(fk_df_fwd_win_x$pamk_nc_fwd, fk_df_rev_win_x$pamk_nc_rev), na.rm = T)
 
-#                              pamk_pwider_fwd_nc = pamk_pwider_fwd_x$nc,
-#                              pamk_pwider_rev_nc = pamk_pwider_rev_x$nc,
-#                              pamk_pwider_all_nc = mean(c(pamk_pwider_fwd_x$nc, pamk_pwider_rev_x$nc), na.rm = T),
-
-                              mean_stocha_fwd = mean_stocha_pwider_fwd_x,
-                              sd_stocha_fwd = sd_stocha_pwider_fwd_x,
-                              mean_min_acf_fwd = mean_min_acf_pwider_fwd_x,
-                              mean_max_acf_fwd = mean_max_acf_pwider_fwd_x,
-                              mean_mean_acf_fwd = mean_mean_acf_pwider_fwd_x,
-
-                              mean_stocha_rev = mean_stocha_pwider_rev_x,
-                              sd_stocha_rev = sd_stocha_pwider_rev_x,
-                              mean_min_acf_rev = mean_min_acf_pwider_rev_x,
-                              mean_max_acf_rev = mean_max_acf_pwider_rev_x,
-                              mean_mean_acf_rev = mean_mean_acf_pwider_rev_x,
-
-                              mean_stocha_all = mean(c(mean_stocha_pwider_fwd_x, mean_stocha_pwider_rev_x)),
-                              sd_stocha_all = mean(c(sd_stocha_pwider_fwd_x, sd_stocha_pwider_rev_x)),
-                              mean_min_acf_all = mean(c(mean_min_acf_pwider_fwd_x, mean_min_acf_pwider_rev_x)),
-                              mean_max_acf_all = mean(c(mean_max_acf_pwider_fwd_x, mean_max_acf_pwider_rev_x)),
-                              mean_mean_acf_all = mean(c(mean_mean_acf_pwider_fwd_x, mean_mean_acf_pwider_rev_x)) )
+                              mean_stocha_all = mean(c(fk_df_fwd_win_x$mean_stocha_fwd, fk_df_rev_win_x$mean_stocha_rev), na.rm = T),
+                              sd_stocha_all = mean(c(fk_df_fwd_win_x$sd_stocha_fwd, fk_df_rev_win_x$sd_stocha_rev), na.rm = T),
+                              mean_min_acf_all = mean(c(fk_df_fwd_win_x$mean_min_acf_fwd, fk_df_rev_win_x$mean_min_acf_rev), na.rm = T),
+                              mean_max_acf_all = mean(c(fk_df_fwd_win_x$mean_max_acf_fwd, fk_df_rev_win_x$mean_max_acf_rev), na.rm = T),
+                              mean_mean_acf_all = mean(c(fk_df_fwd_win_x$mean_mean_acf_fwd, fk_df_rev_win_x$mean_mean_acf_rev), na.rm = T))
 
     fk_df_win_x
   }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
@@ -744,7 +809,7 @@ for(i in seq_along(chrs)) {
 #  par(mfrow = c(1, 1))
 #  par(mar = c(4.1, 4.1, 3.1, 4.1))
 #  par(mgp = c(3, 1, 0))
-#  plot(x = fk_df$midpoint, y = fk_df$pamk_pwider_all_nc, type = "l", lwd = 1.5, col = "red",
+#  plot(x = fk_df$midpoint, y = fk_df$pamk_nc_all, type = "l", lwd = 1.5, col = "red",
 #       yaxt = "n",
 #       xlab = "", ylab = "",
 #       main = "")
