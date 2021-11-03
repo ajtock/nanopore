@@ -234,7 +234,7 @@ gg_cow <- plot_grid(plotlist = gg_cow_list,
 ggsave(paste0(plotDir,
               sampleName, "_MappedOn_", refbase, "_", context,
               "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
-              "_NAmax", NAmax, "_all_", paste0(chrName, collapse = "_"),
+              "_NAmax", NAmax, "_all_chrPlot_", paste0(chrName, collapse = "_"),
               ".pdf"),
        plot = gg_cow,
        height = 5*length(gg_cow_list), width = 15*length(chrName), limitsize = F)
@@ -364,7 +364,6 @@ ggTrend_mean_stocha_all_mean_min_acf_all <- trendPlot(dataFrame = tab,
 ggTrend_mean_stocha_all_mean_min_acf_all <- ggTrend_mean_stocha_all_mean_min_acf_all +
   facet_grid(cols = vars(chr), scales = "free_x")
 
-
 ggTrend_fk_kappa_all_genes <- trendPlot(dataFrame = cbind(tab, genes[,3:4]),
                                         xvar = fk_kappa_all,
                                         yvar = features,
@@ -421,8 +420,8 @@ ggTrend_mean_stocha_all_gypsy <- trendPlot(dataFrame = cbind(tab, gypsy[,3:4]),
 ggTrend_mean_stocha_all_gypsy <- ggTrend_mean_stocha_all_gypsy +
   facet_grid(cols = vars(chr), scales = "free_x")
 
-ggTrend_mean_stocha_all_genes <- trendPlot(dataFrame = cbind(tab, genes[,3:4]),
-                                           xvar = mean_stocha_all,
+ggTrend_mean_mean_acf_all_genes <- trendPlot(dataFrame = cbind(tab, genes[,3:4]),
+                                           xvar = mean_mean_acf_all,
                                            yvar = features,
                                            xlab = bquote("Mean mean ACF per-read m"*.(context)),
                                            ylab = bquote("Genes"),
@@ -432,11 +431,11 @@ ggTrend_mean_stocha_all_genes <- trendPlot(dataFrame = cbind(tab, genes[,3:4]),
                                            ybreaks = waiver(),
                                            xlabels = waiver(),
                                            ylabels = waiver())
-ggTrend_mean_stocha_all_genes <- ggTrend_mean_stocha_all_genes +
+ggTrend_mean_mean_acf_all_genes <- ggTrend_mean_mean_acf_all_genes +
   facet_grid(cols = vars(chr), scales = "free_x")
 
-ggTrend_mean_stocha_all_gypsy <- trendPlot(dataFrame = cbind(tab, gypsy[,3:4]),
-                                           xvar = mean_stocha_all,
+ggTrend_mean_mean_acf_all_gypsy <- trendPlot(dataFrame = cbind(tab, gypsy[,3:4]),
+                                           xvar = mean_mean_acf_all,
                                            yvar = features,
                                            xlab = bquote("Mean mean ACF per-read m"*.(context)),
                                            ylab = bquote(italic("GYPSY")),
@@ -446,15 +445,65 @@ ggTrend_mean_stocha_all_gypsy <- trendPlot(dataFrame = cbind(tab, gypsy[,3:4]),
                                            ybreaks = waiver(),
                                            xlabels = waiver(),
                                            ylabels = waiver())
-ggTrend_mean_stocha_all_gypsy <- ggTrend_mean_stocha_all_gypsy +
+ggTrend_mean_mean_acf_all_gypsy <- ggTrend_mean_mean_acf_all_gypsy +
   facet_grid(cols = vars(chr), scales = "free_x")
 
+ggTrend_mean_min_acf_all_genes <- trendPlot(dataFrame = cbind(tab, genes[,3:4]),
+                                            xvar = mean_min_acf_all,
+                                            yvar = features,
+                                            xlab = bquote("Mean min. ACF per-read m"*.(context)),
+                                            ylab = bquote("Genes"),
+                                            xtrans = "identity",
+                                            ytrans = "identity",
+                                            xbreaks = waiver(),
+                                            ybreaks = waiver(),
+                                            xlabels = waiver(),
+                                            ylabels = waiver())
+ggTrend_mean_min_acf_all_genes <- ggTrend_mean_min_acf_all_genes +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+ggTrend_mean_min_acf_all_gypsy <- trendPlot(dataFrame = cbind(tab, gypsy[,3:4]),
+                                            xvar = mean_min_acf_all,
+                                            yvar = features,
+                                            xlab = bquote("Mean min. ACF per-read m"*.(context)),
+                                            ylab = bquote(italic("GYPSY")),
+                                            xtrans = "identity",
+                                            ytrans = "identity",
+                                            xbreaks = waiver(),
+                                            ybreaks = waiver(),
+                                            xlabels = waiver(),
+                                            ylabels = waiver())
+ggTrend_mean_min_acf_all_gypsy <- ggTrend_mean_min_acf_all_gypsy +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+gg_cow_list2 <- list(
+                    ggTrend_fk_kappa_all_mean_stocha_all, ggTrend_fk_kappa_all_mean_mean_acf_all, ggTrend_fk_kappa_all_mean_min_acf_all,
+                    ggTrend_mean_stocha_all_mean_mean_acf_all, ggTrend_mean_stocha_all_mean_min_acf_all,
+                    ggTrend_fk_kappa_all_genes, ggTrend_fk_kappa_all_gypsy,
+                    ggTrend_mean_stocha_all_genes, ggTrend_mean_stocha_all_gypsy,
+                    ggTrend_mean_mean_acf_all_genes, ggTrend_mean_mean_acf_all_gypsy,
+                    ggTrend_mean_min_acf_all_genes, ggTrend_mean_min_acf_all_gypsy
+                   )
+ 
+gg_cow2 <- plot_grid(plotlist = gg_cow_list2,
+                     labels = "AUTO", label_size = 30,
+                     align = "hv",
+                     axis = "l",
+                     nrow = length(gg_cow_list), ncol = 1)
 
 ggsave(paste0(plotDir,
               sampleName, "_MappedOn_", refbase, "_", context,
               "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
-              "_NAmax", NAmax, "_test_", paste0(chrName, collapse = "_"),
+              "_NAmax", NAmax, "_all_trendPlot_", paste0(chrName, collapse = "_"),
               ".pdf"),
-       plot = ggTrend_fk_kappa_all_genes,
-       height = 5, width = 5*length(chrName), limitsize = F)
+       plot = gg_cow2,
+       height = 5*length(gg_cow_list), width = 5*length(chrName), limitsize = F)
+
+#ggsave(paste0(plotDir,
+#              sampleName, "_MappedOn_", refbase, "_", context,
+#              "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
+#              "_NAmax", NAmax, "_test_", paste0(chrName, collapse = "_"),
+#              ".pdf"),
+#       plot = ggTrend_fk_kappa_all_genes,
+#       height = 5, width = 5*length(chrName), limitsize = F)
 
