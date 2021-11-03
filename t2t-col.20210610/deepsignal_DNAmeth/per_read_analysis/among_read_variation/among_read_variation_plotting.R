@@ -44,17 +44,16 @@ library(tidyr)
 ##library(segmentSeq)
 #library(ComplexHeatmap)
 #library(RColorBrewer)
-#library(scales)
 #library(circlize)
  
 library(ggplot2)
 library(cowplot)
+library(scales)
 #library(ggcorrplot)
 library(viridis)
 library(ggthemes)
 library(tidyquant)
 #library(grid)
-
 
 if(floor(log10(genomeBinSize)) + 1 < 4) {
   genomeBinName <- paste0(genomeBinSize, "bp")
@@ -110,6 +109,28 @@ if(length(chrName) > 1) {
   tab <- tab_list[[1]]
 }
 rm(tab_list); gc()
+
+genes <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase,
+                           "/annotation/genes/", refbase, "_gene_frequency_per_",
+                           genomeBinName, "_unsmoothed.tsv"),
+                    header = T)
+genes$midpoint <- (genes$window-1) + (genomeBinSize/2)
+genes <- genes[genes$chr %in% chrName,]
+
+gypsy <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase,
+                           "/annotation/TEs_EDTA/", refbase, "_TEs_Gypsy_LTR_frequency_per_",
+                           genomeBinName, "_unsmoothed.tsv"),
+                    header = T)
+gypsy$midpoint <- (gypsy$window-1) + (genomeBinSize/2)
+gypsy <- gypsy[gypsy$chr %in% chrName,]
+
+CEN180 <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase,
+                           "/annotation/CEN180/", refbase, "_CEN180_frequency_per_",
+                           genomeBinName, "_unsmoothed.tsv"),
+                    header = T)
+CEN180$midpoint <- (CEN180$window-1) + (genomeBinSize/2)
+CEN180 <- CEN180[CEN180$chr %in% chrName,]
+
 
 chrPlot <- function(dataFrame, xvar, yvar, xlab, ylab, colour) {
   xvar <- enquo(xvar)
@@ -168,17 +189,44 @@ gg_mean_mean_acf_all <- gg_mean_mean_acf_all +
   facet_grid(cols = vars(chr), scales = "free_x")
 
 gg_mean_min_acf_all <- chrPlot(dataFrame = tab,
-                                xvar = midpoint,
-                                yvar = mean_min_acf_all,
-                                xlab = paste0("Coordinates (Mb; ", genomeBinNamePlot, " windows, ", genomeStepNamePlot, " step)"),
-                                ylab = bquote("Mean min. ACF per-read m"*.(context)),
-                                colour = "seagreen") 
+                               xvar = midpoint,
+                               yvar = mean_min_acf_all,
+                               xlab = paste0("Coordinates (Mb; ", genomeBinNamePlot, " windows, ", genomeStepNamePlot, " step)"),
+                               ylab = bquote("Mean min. ACF per-read m"*.(context)),
+                               colour = "forestgreen") 
 gg_mean_min_acf_all <- gg_mean_min_acf_all +
   facet_grid(cols = vars(chr), scales = "free_x")
 
-gg_cow_list <- list(gg_fk_kappa_all, gg_mean_stocha_all, gg_mean_mean_acf_all, gg_mean_min_acf_all)
+gg_genes <- chrPlot(dataFrame = genes,
+                    xvar = midpoint,
+                    yvar = features,
+                    xlab = paste0("Coordinates (Mb; ", genomeBinNamePlot, " windows, ", genomeStepNamePlot, " step)"),
+                    ylab = bquote("Genes"),
+                    colour = "lightseagreen") 
+gg_genes <- gg_genes +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+gg_gypsy <- chrPlot(dataFrame = gypsy,
+                    xvar = midpoint,
+                    yvar = features,
+                    xlab = paste0("Coordinates (Mb; ", genomeBinNamePlot, " windows, ", genomeStepNamePlot, " step)"),
+                    ylab = bquote(italic(GYPSY)),
+                    colour = "purple4") 
+gg_gypsy <- gg_gypsy +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+gg_CEN180 <- chrPlot(dataFrame = CEN180,
+                    xvar = midpoint,
+                    yvar = features,
+                    xlab = paste0("Coordinates (Mb; ", genomeBinNamePlot, " windows, ", genomeStepNamePlot, " step)"),
+                    ylab = bquote(italic("CEN180")),
+                    colour = "darkorange") 
+gg_CEN180 <- gg_CEN180 +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+gg_cow_list <- list(gg_fk_kappa_all, gg_mean_stocha_all, gg_mean_mean_acf_all, gg_mean_min_acf_all, gg_genes, gg_gypsy, gg_CEN180)
 gg_cow <- plot_grid(plotlist = gg_cow_list,
-                    labels = c("A", "B", "C", "D"), label_size = 30,
+                    labels = c("A", "B", "C", "D", "E", "F", "G"), label_size = 30,
                     align = "hv",
                     axis = "l",
                     nrow = length(gg_cow_list), ncol = 1)
@@ -191,229 +239,222 @@ ggsave(paste0(plotDir,
        plot = gg_cow,
        height = 5*length(gg_cow_list), width = 15*length(chrName), limitsize = F)
 
-#
-#
-#  
-#  pdf(paste0(plotDir,
-#             sampleName, "_MappedOn_", refbase, "_", context,
-#             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
-#             "_NAmax", NAmax, "_Fleiss_kappa_", chrName,
-#             ".pdf"), height = 5, width = 30)
-#  par(mfrow = c(1, 1))
-#  par(mar = c(4.1, 4.1, 3.1, 4.1))
-#  par(mgp = c(3, 1, 0))
-#  plot(x = tab$midpoint, y = tab$fk_kappa_all, type = "l", lwd = 1.5, col = "red",
-#       yaxt = "n",
-#       xlab = "", ylab = "",
-#       main = "")
-#  mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
-#        text = bquote("Fleiss' kappa per-read m"*.(context)))
-#  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
-##  par(new = T)
-##  plot(x = tab$midpoint, y = tab$fk_num_Cs_all, type = "l", lwd = 0.5, col = "skyblue",
-##       xaxt = "n", yaxt = "n",
-##       xlab = "", ylab = "",
-##       main = "")
-##  p <- par('usr')
-##  text(p[2], mean(p[3:4]), cex = 1.5, adj = c(0.5, -2.0), xpd = NA, srt = -90, col = "skyblue",
-##       labels = bquote(.(context)*" sites per window"))
-##  axis(side = 4, cex.axis = 1, lwd.tick = 1.5)
-#  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
-#  dev.off()
-#
-#
-## CENH3_in_bodies vs HORlengthsSum
-#ggTrend5 <- ggplot(data = CEN180,
-#                   mapping = aes(x = CENH3_in_bodies,
-#                                 y = HORlengthsSum+1)) +
-#  geom_hex(bins = 60) +
-#  scale_y_continuous(trans = log10_trans(),
-#                     breaks = trans_breaks("log10", function(x) 10^x),
-#                     labels = trans_format("log10", math_format(10^.x))) +
-#  annotation_logticks(sides = "l") +
-#  scale_fill_viridis() +
-#  geom_smooth(colour = "red", fill = "grey70", alpha = 0.9,
-#              method = "gam", formula = y ~ s(x, bs = "cs")) +
-#  labs(x = "CENH3",
-#       y = "Repetitiveness") +
-#  theme_bw() +
-#  theme(
-#        axis.ticks = element_line(size = 0.5, colour = "black"),
-#        axis.ticks.length = unit(0.25, "cm"),
-#        axis.text.x = element_text(size = 16, colour = "black"),
-#        axis.text.y = element_text(size = 16, colour = "black"),
-#        axis.title = element_text(size = 18, colour = "black"),
-#        panel.grid = element_blank(),
-#        panel.background = element_blank(),
+trendPlot <- function(dataFrame, xvar, yvar, xlab, ylab, xtrans, ytrans, xbreaks, ybreaks, xlabels, ylabels) {
+  xvar <- enquo(xvar)
+  yvar <- enquo(yvar)
+  ggplot(data = dataFrame,
+         mapping = aes(x = !!xvar,
+                       y = !!yvar)) + 
+  geom_hex(bins = 60) + 
+  scale_x_continuous(trans = xtrans,
+                     breaks = xbreaks,
+                     labels = xlabels) +
+  scale_y_continuous(trans = ytrans,
+                     breaks = ybreaks,
+                     labels = ylabels) +
+  scale_fill_viridis() + 
+  geom_smooth(colour = "red", fill = "grey70", alpha = 0.9,
+              method = "gam", formula = y ~ s(x, bs = "cs")) +
+  labs(x = xlab,
+       y = ylab) +
+  theme_bw() +
+  theme(
+        axis.ticks = element_line(size = 0.5, colour = "black"),
+        axis.ticks.length = unit(0.25, "cm"),
+        axis.text.x = element_text(size = 16, colour = "black"),
+        axis.text.y = element_text(size = 16, colour = "black"),
+        axis.title = element_text(size = 18, colour = "black"),
+        axis.line = element_line(size = 1.5, colour = "black"),
+        panel.background = element_blank(),
+        panel.border = element_blank(),
 #        panel.border = element_rect(size = 1.0, colour = "black"),
-#        plot.margin = unit(c(0.3,1.2,0.0,0.3), "cm"),
-#        plot.title = element_text(hjust = 0.5, size = 18)) +
-#  ggtitle(bquote(italic(r[s]) ~ "=" ~
-#                 .(round(cor.test(CEN180$CENH3_in_bodies, CEN180$HORlengthsSum, method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
-#                         digits = 2)) *
-#                 ";" ~ italic(P) ~ "=" ~
-#                 .(round(min(0.5, cor.test(CEN180$CENH3_in_bodies, CEN180$HORlengthsSum, method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(CEN180)[1]/100) )),
-#                         digits = 5)) ~
-#                 "(CEN180 in" ~ .(paste0(chrName, collapse = ",")) * ")"))
-#
-#
-#
-#
-#  pdf(paste0(plotDir,
-#             sampleName, "_MappedOn_", refbase, "_", context,
-#             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
-#             "_NAmax", NAmax, "_Fleiss_kappa_", chrName,
-#             ".pdf"), height = 5, width = 30)
-#  par(mfrow = c(1, 1))
-#  par(mar = c(4.1, 4.1, 3.1, 4.1))
-#  par(mgp = c(3, 1, 0))
-#  plot(x = tab$midpoint, y = tab$fk_kappa_all, type = "l", lwd = 1.5, col = "red",
-#       yaxt = "n",
-#       xlab = "", ylab = "",
-#       main = "")
-#  mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
-#        text = bquote("Fleiss' kappa per-read m"*.(context)))
-#  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
-##  par(new = T)
-##  plot(x = tab$midpoint, y = tab$fk_num_Cs_all, type = "l", lwd = 0.5, col = "skyblue",
-##       xaxt = "n", yaxt = "n",
-##       xlab = "", ylab = "",
-##       main = "")
-##  p <- par('usr')
-##  text(p[2], mean(p[3:4]), cex = 1.5, adj = c(0.5, -2.0), xpd = NA, srt = -90, col = "skyblue",
-##       labels = bquote(.(context)*" sites per window"))
-##  axis(side = 4, cex.axis = 1, lwd.tick = 1.5)
-#  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
-#  dev.off()
-#
-#  pdf(paste0(plotDir,
-#             sampleName, "_MappedOn_", refbase, "_", context,
-#             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
-#             "_NAmax", NAmax, "_mean_stocha_", chrName,
-#             ".pdf"), height = 5, width = 30)
-#  par(mfrow = c(1, 1))
-#  par(mar = c(4.1, 4.1, 3.1, 4.1))
-#  par(mgp = c(3, 1, 0))
-#  plot(x = tab$midpoint, y = tab$mean_stocha_all, type = "l", lwd = 1.5, col = "red",
-#       yaxt = "n",
-#       xlab = "", ylab = "",
-#       main = "")
-#  mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
-#        text = bquote("Mean stoch. per-read m"*.(context)))
-#  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
-#  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
-#  dev.off()
-#
-#  pdf(paste0(plotDir,
-#             sampleName, "_MappedOn_", refbase, "_", context,
-#             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
-#             "_NAmax", NAmax, "_sd_stocha_", chrName,
-#             ".pdf"), height = 5, width = 30)
-#  par(mfrow = c(1, 1))
-#  par(mar = c(4.1, 4.1, 3.1, 4.1))
-#  par(mgp = c(3, 1, 0))
-#  plot(x = tab$midpoint, y = tab$sd_stocha_all, type = "l", lwd = 1.5, col = "red",
-#       yaxt = "n",
-#       xlab = "", ylab = "",
-#       main = "")
-#  mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
-#        text = bquote("SD stoch. per-read m"*.(context)))
-#  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
-#  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
-#  dev.off()
-#
-#  pdf(paste0(plotDir,
-#             sampleName, "_MappedOn_", refbase, "_", context,
-#             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
-#             "_NAmax", NAmax, "_mean_mean_acf_", chrName,
-#             ".pdf"), height = 5, width = 30)
-#  par(mfrow = c(1, 1))
-#  par(mar = c(4.1, 4.1, 3.1, 4.1))
-#  par(mgp = c(3, 1, 0))
-#  plot(x = tab$midpoint, y = tab$mean_mean_acf_all, type = "l", lwd = 1.5, col = "red",
-#       yaxt = "n",
-#       xlab = "", ylab = "",
-#       main = "")
-#  mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
-#        text = bquote("Mean mean ACF per-read m"*.(context)))
-#  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
-#  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
-#  dev.off()
-#
-#  pdf(paste0(plotDir,
-#             sampleName, "_MappedOn_", refbase, "_", context,
-#             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
-#             "_NAmax", NAmax, "_mean_min_acf_", chrName,
-#             ".pdf"), height = 5, width = 30)
-#  par(mfrow = c(1, 1))
-#  par(mar = c(4.1, 4.1, 3.1, 4.1))
-#  par(mgp = c(3, 1, 0))
-#  plot(x = tab$midpoint, y = tab$mean_min_acf_all, type = "l", lwd = 1.5, col = "red",
-#       yaxt = "n",
-#       xlab = "", ylab = "",
-#       main = "")
-#  mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
-#        text = bquote("Mean min. ACF per-read m"*.(context)))
-#  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
-#  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
-#  dev.off()
-#
-#  pdf(paste0(plotDir,
-#             sampleName, "_MappedOn_", refbase, "_", context,
-#             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
-#             "_NAmax", NAmax, "_mean_max_acf_", chrName,
-#             ".pdf"), height = 5, width = 30)
-#  par(mfrow = c(1, 1))
-#  par(mar = c(4.1, 4.1, 3.1, 4.1))
-#  par(mgp = c(3, 1, 0))
-#  plot(x = tab$midpoint, y = tab$mean_max_acf_all, type = "l", lwd = 1.5, col = "red",
-#       yaxt = "n",
-#       xlab = "", ylab = "",
-#       main = "")
-#  mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
-#        text = bquote("Mean max. ACF per-read m"*.(context)))
-#  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
-#  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
-#  dev.off()
-#
-#  pdf(paste0(plotDir,
-#             sampleName, "_MappedOn_", refbase, "_", context,
-#             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
-#             "_NAmax", NAmax, "_pam_clusters_", chrName,
-#             ".pdf"), height = 5, width = 30)
-#  par(mfrow = c(1, 1))
-#  par(mar = c(4.1, 4.1, 3.1, 4.1))
-#  par(mgp = c(3, 1, 0))
-#  plot(x = tab$midpoint, y = tab$pamk_nc_all, type = "l", lwd = 1.5, col = "red",
-#       yaxt = "n",
-#       xlab = "", ylab = "",
-#       main = "")
-#  mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
-#        text = bquote("PAM clusters per-read m"*.(context)))
-#  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
-#  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
-#  dev.off()
+#        panel.grid = element_blank(),
+        strip.text.x = element_text(size = 20, colour = "white"),
+        strip.background = element_rect(fill = "black", colour = "black"),
+        plot.margin = unit(c(0.3,1.2,0.3,0.3), "cm"),
+        plot.title = element_text(hjust = 0.5, size = 18)) +
+  ggtitle(bquote(italic(r[s]) ~ "=" ~
+                 .(round(cor.test(select(dataFrame, !!enquo(xvar))[,1], select(dataFrame, !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
+                         digits = 2)) *
+                 ";" ~ italic(P) ~ "=" ~
+                 .(round(min(0.5, cor.test(select(dataFrame, !!enquo(xvar))[,1], select(dataFrame, !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame)[1]/100) )),
+                         digits = 5)) ~
+                 "(" * .(genomeBinNamePlot) * " windows)"))
+}
+
+#ggTrend_fk_kappa_all_mean_stocha_all <- trendPlot(dataFrame = tab,
+#                                                  xvar = fk_kappa_all,
+#                                                  yvar = mean_stocha_all,
+#                                                  xlab = bquote("Fleiss' kappa per-read m"*.(context)),
+#                                                  ylab = bquote("Mean stoch. per-read m"*.(context)),
+#                                                  xtrans = log10_trans(),
+#                                                  ytrans = log10_trans(),
+#                                                  xbreaks = trans_breaks("log10", function(x) 10^x),
+#                                                  ybreaks = trans_breaks("log10", function(x) 10^x),
+#                                                  xlabels = trans_format("log10", math_format(10^.x)),
+#                                                  ylabels = trans_format("log10", math_format(10^.x)))
+
+ggTrend_fk_kappa_all_mean_stocha_all <- trendPlot(dataFrame = tab,
+                                                  xvar = fk_kappa_all,
+                                                  yvar = mean_stocha_all,
+                                                  xlab = bquote("Fleiss' kappa per-read m"*.(context)),
+                                                  ylab = bquote("Mean stoch. per-read m"*.(context)),
+                                                  xtrans = "identity",
+                                                  ytrans = "identity",
+                                                  xbreaks = waiver(),
+                                                  ybreaks = waiver(),
+                                                  xlabels = waiver(),
+                                                  ylabels = waiver())
+ggTrend_fk_kappa_all_mean_stocha_all <- ggTrend_fk_kappa_all_mean_stocha_all +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+ggTrend_fk_kappa_all_mean_mean_acf_all <- trendPlot(dataFrame = tab,
+                                                    xvar = fk_kappa_all,
+                                                    yvar = mean_mean_acf_all,
+                                                    xlab = bquote("Fleiss' kappa per-read m"*.(context)),
+                                                    ylab = bquote("Mean mean ACF per-read m"*.(context)),
+                                                    xtrans = "identity",
+                                                    ytrans = "identity",
+                                                    xbreaks = waiver(),
+                                                    ybreaks = waiver(),
+                                                    xlabels = waiver(),
+                                                    ylabels = waiver())
+ggTrend_fk_kappa_all_mean_mean_acf_all <- ggTrend_fk_kappa_all_mean_mean_acf_all +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+ggTrend_fk_kappa_all_mean_min_acf_all <- trendPlot(dataFrame = tab,
+                                                    xvar = fk_kappa_all,
+                                                    yvar = mean_min_acf_all,
+                                                    xlab = bquote("Fleiss' kappa per-read m"*.(context)),
+                                                    ylab = bquote("Mean min. ACF per-read m"*.(context)),
+                                                    xtrans = "identity",
+                                                    ytrans = "identity",
+                                                    xbreaks = waiver(),
+                                                    ybreaks = waiver(),
+                                                    xlabels = waiver(),
+                                                    ylabels = waiver())
+ggTrend_fk_kappa_all_mean_min_acf_all <- ggTrend_fk_kappa_all_mean_min_acf_all +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+ggTrend_mean_stocha_all_mean_mean_acf_all <- trendPlot(dataFrame = tab,
+                                                    xvar = mean_stocha_all,
+                                                    yvar = mean_mean_acf_all,
+                                                    xlab = bquote("Mean stoch. per-read m"*.(context)),
+                                                    ylab = bquote("Mean mean ACF per-read m"*.(context)),
+                                                    xtrans = "identity",
+                                                    ytrans = "identity",
+                                                    xbreaks = waiver(),
+                                                    ybreaks = waiver(),
+                                                    xlabels = waiver(),
+                                                    ylabels = waiver())
+ggTrend_mean_stocha_all_mean_mean_acf_all <- ggTrend_mean_stocha_all_mean_mean_acf_all +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+ggTrend_mean_stocha_all_mean_min_acf_all <- trendPlot(dataFrame = tab,
+                                                    xvar = mean_stocha_all,
+                                                    yvar = mean_min_acf_all,
+                                                    xlab = bquote("Mean stoch. per-read m"*.(context)),
+                                                    ylab = bquote("Mean min. ACF per-read m"*.(context)),
+                                                    xtrans = "identity",
+                                                    ytrans = "identity",
+                                                    xbreaks = waiver(),
+                                                    ybreaks = waiver(),
+                                                    xlabels = waiver(),
+                                                    ylabels = waiver())
+ggTrend_mean_stocha_all_mean_min_acf_all <- ggTrend_mean_stocha_all_mean_min_acf_all +
+  facet_grid(cols = vars(chr), scales = "free_x")
 
 
-#  par(new = T)
-#  plot(x = tab$midpoint, y = -log10(tab$fk_adj_pval_all+1e-10), type = "l", lwd = 1.5, col = "blue",
-#       ylim = c(0,
-#                pmax(-log10(0.05), max(-log10(tab$fk_adj_pval_all+1e-10), na.rm = T))),
-#       xlab = "", ylab = "",
-#       main = "")
-#  p <- par('usr')
-#  text(p[2], mean(p[3:4]), cex = 1, adj = c(0.5, -3.0), xpd = NA, srt = -90, col = "blue",
-#       labels = bquote("-Log"[10]*"(BH-adjusted "*italic("P")*"-value)"))
-#  abline(h = -log10(0.05), lty = 5, lwd = 1, col = "blue")
+ggTrend_fk_kappa_all_genes <- trendPlot(dataFrame = cbind(tab, genes[,3:4]),
+                                        xvar = fk_kappa_all,
+                                        yvar = features,
+                                        xlab = bquote("Fleiss' kappa per-read m"*.(context)),
+                                        ylab = bquote("Genes"),
+                                        xtrans = "identity",
+                                        ytrans = "identity",
+                                        xbreaks = waiver(),
+                                        ybreaks = waiver(),
+                                        xlabels = waiver(),
+                                        ylabels = waiver())
+ggTrend_fk_kappa_all_genes <- ggTrend_fk_kappa_all_genes +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+ggTrend_fk_kappa_all_gypsy <- trendPlot(dataFrame = cbind(tab, gypsy[,3:4]),
+                                        xvar = fk_kappa_all,
+                                        yvar = features,
+                                        xlab = bquote("Fleiss' kappa per-read m"*.(context)),
+                                        ylab = bquote(italic("GYPSY")),
+                                        xtrans = "identity",
+                                        ytrans = "identity",
+                                        xbreaks = waiver(),
+                                        ybreaks = waiver(),
+                                        xlabels = waiver(),
+                                        ylabels = waiver())
+ggTrend_fk_kappa_all_gypsy <- ggTrend_fk_kappa_all_gypsy +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+ggTrend_mean_stocha_all_genes <- trendPlot(dataFrame = cbind(tab, genes[,3:4]),
+                                           xvar = mean_stocha_all,
+                                           yvar = features,
+                                           xlab = bquote("Mean stoch. per-read m"*.(context)),
+                                           ylab = bquote("Genes"),
+                                           xtrans = "identity",
+                                           ytrans = "identity",
+                                           xbreaks = waiver(),
+                                           ybreaks = waiver(),
+                                           xlabels = waiver(),
+                                           ylabels = waiver())
+ggTrend_mean_stocha_all_genes <- ggTrend_mean_stocha_all_genes +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+ggTrend_mean_stocha_all_gypsy <- trendPlot(dataFrame = cbind(tab, gypsy[,3:4]),
+                                           xvar = mean_stocha_all,
+                                           yvar = features,
+                                           xlab = bquote("Mean stoch. per-read m"*.(context)),
+                                           ylab = bquote(italic("GYPSY")),
+                                           xtrans = "identity",
+                                           ytrans = "identity",
+                                           xbreaks = waiver(),
+                                           ybreaks = waiver(),
+                                           xlabels = waiver(),
+                                           ylabels = waiver())
+ggTrend_mean_stocha_all_gypsy <- ggTrend_mean_stocha_all_gypsy +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+ggTrend_mean_stocha_all_genes <- trendPlot(dataFrame = cbind(tab, genes[,3:4]),
+                                           xvar = mean_stocha_all,
+                                           yvar = features,
+                                           xlab = bquote("Mean mean ACF per-read m"*.(context)),
+                                           ylab = bquote("Genes"),
+                                           xtrans = "identity",
+                                           ytrans = "identity",
+                                           xbreaks = waiver(),
+                                           ybreaks = waiver(),
+                                           xlabels = waiver(),
+                                           ylabels = waiver())
+ggTrend_mean_stocha_all_genes <- ggTrend_mean_stocha_all_genes +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+ggTrend_mean_stocha_all_gypsy <- trendPlot(dataFrame = cbind(tab, gypsy[,3:4]),
+                                           xvar = mean_stocha_all,
+                                           yvar = features,
+                                           xlab = bquote("Mean mean ACF per-read m"*.(context)),
+                                           ylab = bquote(italic("GYPSY")),
+                                           xtrans = "identity",
+                                           ytrans = "identity",
+                                           xbreaks = waiver(),
+                                           ybreaks = waiver(),
+                                           xlabels = waiver(),
+                                           ylabels = waiver())
+ggTrend_mean_stocha_all_gypsy <- ggTrend_mean_stocha_all_gypsy +
+  facet_grid(cols = vars(chr), scales = "free_x")
 
 
-#  par(new = T)
-#  plot(x = tab$midpoint, y = tab$fk_prop_reads_all, type = "l", col = "blue")
-#  par(new = T)
-#  plot(x = tab$midpoint, y = tab$fk_num_reads_all, type = "l", col = "navy")
-#  par(new = T)
-#  plot(x = tab$midpoint, y = tab$fk_prop_Cs_all, type = "l", col = "green")
-#  par(new = T)
-#  plot(x = tab$midpoint, y = tab$fk_num_Cs_all, type = "l", col = "darkgreen")
-#  dev.off()
+ggsave(paste0(plotDir,
+              sampleName, "_MappedOn_", refbase, "_", context,
+              "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
+              "_NAmax", NAmax, "_test_", paste0(chrName, collapse = "_"),
+              ".pdf"),
+       plot = ggTrend_fk_kappa_all_genes,
+       height = 5, width = 5*length(chrName), limitsize = F)
 
