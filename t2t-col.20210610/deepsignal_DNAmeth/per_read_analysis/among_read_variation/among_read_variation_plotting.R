@@ -489,7 +489,7 @@ gg_cow2 <- plot_grid(plotlist = gg_cow_list2,
                      labels = "AUTO", label_size = 30,
                      align = "hv",
                      axis = "l",
-                     nrow = length(gg_cow_list), ncol = 1)
+                     nrow = length(gg_cow_list2), ncol = 1)
 
 ggsave(paste0(plotDir,
               sampleName, "_MappedOn_", refbase, "_", context,
@@ -497,7 +497,7 @@ ggsave(paste0(plotDir,
               "_NAmax", NAmax, "_all_trendPlot_", paste0(chrName, collapse = "_"),
               ".pdf"),
        plot = gg_cow2,
-       height = 5*length(gg_cow_list), width = 5*length(chrName), limitsize = F)
+       height = 5*length(gg_cow_list2), width = 5*length(chrName), limitsize = F)
 
 #ggsave(paste0(plotDir,
 #              sampleName, "_MappedOn_", refbase, "_", context,
