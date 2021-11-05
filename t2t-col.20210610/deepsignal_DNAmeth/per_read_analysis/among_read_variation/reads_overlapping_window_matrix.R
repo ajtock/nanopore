@@ -6,8 +6,8 @@
  
 # Usage on hydrogen node7:
 # chmod +x per_read_methylation_proportion_winByCs.R
-# csmit -m 300G -c 47 "/applications/R/R-4.0.0/bin/Rscript reads_overlapping_window_matrix.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 10000 10000 CHG 0.50 1.00 Chr1"
-# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript reads_overlapping_window_matrix.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 10000 10000 CpG 0.50 1.00 Chr1"
+# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript reads_overlapping_window_matrix.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 200000 200000 CHG 0.50 1.00 Chr1"
+# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript reads_overlapping_window_matrix.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 200000 200000 CpG 0.50 1.00 Chr1"
 
 #sampleName <- "Col_0_deepsignalDNAmeth_30kb_90pc"
 #refbase <- "t2t-col.20210610"
