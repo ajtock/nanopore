@@ -188,13 +188,13 @@ for(i in seq_along(chrName)) {
   save(fwd_df_win_list,
        file = paste0(outDir,
                      sampleName, "_MappedOn_", refbase,
-                     "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName, "_matrix_list_",
+                     "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName, "_matrix_list",
                      "_per_read_methylation_calls_fwd_strand_", context, "_", chrName[i], ".RData"))
 
   rm(fwd_df_win_list); gc()
 #  load(paste0(outDir,
 #              sampleName, "_MappedOn_", refbase,
-#              "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName, "_matrix_list_",
+#              "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName, "_matrix_list",
 #              "_per_read_methylation_calls_fwd_strand_", context, "_", chrName[i], ".RData"))
 
   # Process each strand separately
@@ -235,13 +235,13 @@ for(i in seq_along(chrName)) {
   save(rev_df_win_list,
        file = paste0(outDir,
                      sampleName, "_MappedOn_", refbase,
-                     "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName, "_matrix_list_",
+                     "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName, "_matrix_list",
                      "_per_read_methylation_calls_rev_strand_", context, "_", chrName[i], ".RData"))
 
   rm(rev_df_win_list); gc()
 #  load(paste0(outDir,
 #              sampleName, "_MappedOn_", refbase,
-#              "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName, "_matrix_list_",
+#              "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName, "_matrix_list",
 #              "_per_read_methylation_calls_rev_strand_", context, "_", chrName[i], ".RData"))
 
 }
