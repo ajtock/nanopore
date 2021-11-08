@@ -161,17 +161,20 @@ chrPlot <- function(dataFrame, xvar, yvar, xlab, ylab, colour) {
         plot.margin = unit(c(0.3,1.2,0.3,0.3), "cm"))
 }
 
-chrPlot2 <- function(dataFrame, xvar, yvar1, yvar2, xlab, ylab, colour1, colour2) {
+chrPlot2 <- function(dataFrame, xvar, yvar1, yvar2, yvar1lab, yvar2lab, ylims, xlab, ylab, colour1, colour2) {
   xvar <- enquo(xvar)
   yvar1 <- enquo(yvar1)
   yvar2 <- enquo(yvar2)
   ggplot(data = dataFrame,
          mapping = aes(x = !!xvar)) +
-#  geom_line(size = 1, colour = colour) +
-  geom_ma(ma_fun = SMA, mapping = aes(y = !!yvar1), n = 10, colour = colour1, linetype = 1, size = 1) +
-  geom_ma(ma_fun = SMA, mapping = aes(y = !!yvar2), n = 10, colour = colour2, linetype = 1, size = 1) +
-  scale_x_continuous(
-                     labels = function(x) x/1e6) +
+  geom_ma(ma_fun = SMA, mapping = aes(y = !!yvar1, colour = colour1), n = 10, linetype = 1, size = 1) +
+  geom_ma(ma_fun = SMA, mapping = aes(y = !!yvar2, colour = colour2), n = 10, linetype = 1, size = 1) +
+  scale_colour_identity(name = NULL,
+                        breaks = c(colour1, colour2),
+                        labels = c(yvar1lab, yvar2lab),
+                        guide = "legend") +
+  coord_cartesian(ylim = ylims) +
+  scale_x_continuous(labels = function(x) x/1e6) +
   labs(x = xlab,
        y = ylab) +
   theme_bw() +
@@ -188,6 +191,12 @@ chrPlot2 <- function(dataFrame, xvar, yvar1, yvar2, xlab, ylab, colour1, colour2
 #        panel.grid = element_blank(),
         strip.text.x = element_text(size = 30, colour = "white"),
         strip.background = element_rect(fill = "black", colour = "black"),
+        legend.position = c(0.01, 0.975),
+        legend.justification = c("left", "top"),
+        legend.box.just = "left",
+        legend.box.background = element_rect(colour = "black", size = 1),
+        legend.margin = margin(6, 6, 6, 6),
+        legend.text = element_text(size = 16),
         plot.margin = unit(c(0.3,1.2,0.3,0.3), "cm"))
 }
 
@@ -204,26 +213,32 @@ tab2 <- tab %>%
   mutate(fk_total_reads_all = tab$fk_num_reads_all/tab$fk_prop_reads_all,
          fk_total_Cs_all = tab$fk_num_Cs_all/tab$fk_prop_Cs_all)
 
-gg_fk_num_reads_all <- chrPlot2(dataFrame = tab2,
-                                xvar = midpoint,
-                                yvar1 = fk_num_reads_all,
-                                yvar2 = fk_total_reads_all,
-                                xlab = paste0("Coordinates (Mb; ", genomeBinNamePlot, " windows, ", genomeStepNamePlot, " step)"),
-                                ylab = bquote("No. of reads per-read m"*.(context)),
-                                colour1 = "red",
-                                colour2 = "grey50") 
-gg_fk_num_reads_all <- gg_fk_num_reads_all +
-  facet_grid(cols = vars(chr), scales = "free_x")
-
 gg_fk_num_Cs_all <- chrPlot2(dataFrame = tab2,
                              xvar = midpoint,
                              yvar1 = fk_num_Cs_all,
                              yvar2 = fk_total_Cs_all,
+                             yvar1lab = "Kept for Fleiss' kappa",
+                             yvar2lab = "Total",
+                             ylims = NULL,
                              xlab = paste0("Coordinates (Mb; ", genomeBinNamePlot, " windows, ", genomeStepNamePlot, " step)"),
-                             ylab = bquote("No. of cytosines per-read m"*.(context)),
-                             colour1 = "green",
+                             ylab = bquote("No. of sites per-read m"*.(context)),
+                             colour1 = "red",
                              colour2 = "grey50") 
 gg_fk_num_Cs_all <- gg_fk_num_Cs_all +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+gg_fk_num_reads_all <- chrPlot2(dataFrame = tab2,
+                                xvar = midpoint,
+                                yvar1 = fk_num_reads_all,
+                                yvar2 = fk_total_reads_all,
+                                yvar1lab = "Kept",
+                                yvar2lab = "Total",
+                                ylims = c(0, 100),
+                                xlab = paste0("Coordinates (Mb; ", genomeBinNamePlot, " windows, ", genomeStepNamePlot, " step)"),
+                                ylab = bquote("No. of reads per-read m"*.(context)),
+                                colour1 = "blue",
+                                colour2 = "grey50") 
+gg_fk_num_reads_all <- gg_fk_num_reads_all +
   facet_grid(cols = vars(chr), scales = "free_x")
 
 gg_mean_stocha_all <- chrPlot(dataFrame = tab,
@@ -280,7 +295,7 @@ gg_CEN180 <- chrPlot(dataFrame = CEN180,
 gg_CEN180 <- gg_CEN180 +
   facet_grid(cols = vars(chr), scales = "free_x")
 
-gg_cow_list <- list(gg_fk_kappa_all, gg_fk_num_reads_all, gg_fk_num_Cs_all, gg_mean_stocha_all, gg_mean_mean_acf_all, gg_mean_min_acf_all, gg_genes, gg_gypsy, gg_CEN180)
+gg_cow_list <- list(gg_fk_kappa_all, gg_fk_num_Cs_all, gg_fk_num_reads_all, gg_mean_stocha_all, gg_mean_mean_acf_all, gg_mean_min_acf_all, gg_genes, gg_gypsy, gg_CEN180)
 gg_cow <- plot_grid(plotlist = gg_cow_list,
                     labels = c("A", "B", "C", "D", "E", "F", "G", "H", "I"), label_size = 30,
                     align = "hv",
