@@ -56,7 +56,6 @@ library(ComplexHeatmap)
 #library(tidyquant)
 ##library(grid)
 
-
 if(floor(log10(genomeBinSize)) + 1 < 4) {
   genomeBinName <- paste0(genomeBinSize, "bp")
   genomeBinNamePlot <- paste0(genomeBinSize, "-bp")
@@ -113,7 +112,7 @@ rm(tab_list); gc()
 # in methylation state
 print(genomeBinName)
 print(genomeStepName)
-for(i in seq_along(chrs)) {
+for(i in seq_along(chrName)) {
   # Define sliding windows of width genomeBinSize bp,
   # with a step of genomeStepSize vp
   ## Note: the active code creates windows of genomeBinSize bp only,
@@ -136,7 +135,7 @@ for(i in seq_along(chrs)) {
   stopifnot(winEnds[length(winEnds)] == chrLens[i])
   stopifnot(length(winStarts) == length(winEnds))
 
-  winGR <- GRanges(seqnames = chrs[i],
+  winGR <- GRanges(seqnames = chrName[i],
                    ranges = IRanges(start = winStarts,
                                     end = winEnds),
                    strand = "*")
@@ -150,16 +149,15 @@ for(i in seq_along(chrs)) {
 #  winIR <- append(winIR,
 #                  IRanges(start = winSeq[length(winSeq)],
 #                          end = chrLens[i]))
-#  winGR <- GRanges(seqnames = chrs[i],
+#  winGR <- GRanges(seqnames = chrName[i],
 #                   ranges = winIR,
 #                   strand = "*")
 #  print(winGR)
 
   # Define per-read-window midpoint coordinates as GRanges objects
   # and get corresponding DNA methylation proportions that overlap genomic windows
-  chr_tab <- tab[tab[,1] == chrs[i],]
-#  chr_tab <- tab
-  chr_tab_GR <- GRanges(seqnames = chrs[i],
+  chr_tab <- tab[tab[,1] == chrName[i],]
+  chr_tab_GR <- GRanges(seqnames = chrName[i],
                         ranges = IRanges(start = chr_tab[,2],
                                          width = 1),
                         strand = chr_tab[,3],
@@ -186,174 +184,181 @@ for(i in seq_along(chrs)) {
                                 select = "all",
                                 ignore.strand = T)
 
-  fk_df_win_list <- mclapply(seq_along(winGR), function(x) {
-#  fk_df_win_list <- lapply(seq_along(winGR), function(x) {
-#    print(x)
+#  fk_df_win_list <- mclapply(seq_along(winGR), function(x) {
+  fk_df_win_list <- lapply(seq_along(winGR), function(x) {
+    print(x)
 
     # Analyse each strand separately
     # fwd
     chr_tab_GR_fwd_x <- chr_tab_GR_fwd[subjectHits(fOverlaps_fwd[queryHits(fOverlaps_fwd) == x])]
     if(length(chr_tab_GR_fwd_x) > 0) {
-    chr_tab_GR_fwd_x <- sortSeqlevels(chr_tab_GR_fwd_x)
-    chr_tab_GR_fwd_x <- sort(chr_tab_GR_fwd_x, by = ~ read + start)
+      chr_tab_GR_fwd_x <- sortSeqlevels(chr_tab_GR_fwd_x)
+      chr_tab_GR_fwd_x <- sort(chr_tab_GR_fwd_x, by = ~ read + start)
 
-    df_fwd_x <- data.frame(pos = start(chr_tab_GR_fwd_x),
-                           read = chr_tab_GR_fwd_x$read,
-                           call = chr_tab_GR_fwd_x$call)
+      df_fwd_x <- data.frame(pos = start(chr_tab_GR_fwd_x),
+                             read = chr_tab_GR_fwd_x$read,
+                             call = chr_tab_GR_fwd_x$call)
 
-#    # tidyr::spread() is deprecated; use tidyr::pivot_wider() instead 
-#    spread_fwd_x <- tidyr::spread(data = df_fwd_x,
-#                                  key = read,
-#                                  value = call)
-##                                  sep = "_")
-#    spread_fwd_x <- spread_x[ with(data = spread_x, expr = order(pos)), ]
+#      # tidyr::spread() is deprecated; use tidyr::pivot_wider() instead 
+#      spread_fwd_x <- tidyr::spread(data = df_fwd_x,
+#                                    key = read,
+#                                    value = call)
+##                                    sep = "_")
+#      spread_fwd_x <- spread_x[ with(data = spread_x, expr = order(pos)), ]
  
-    pwider_fwd_x <- as.data.frame(tidyr::pivot_wider(data = df_fwd_x,
-                                                     names_from = read,
-#                                                     names_prefix = "read_",
-                                                     values_from = call))
-    pwider_fwd_x <- pwider_fwd_x[ with(data = pwider_fwd_x, expr = order(pos)), ]
-    rownames(pwider_fwd_x) <- pwider_fwd_x[,1]
-    pwider_fwd_x <- pwider_fwd_x[ , -1, drop = F]
+      pwider_fwd_x <- as.data.frame(tidyr::pivot_wider(data = df_fwd_x,
+                                                       names_from = read,
+#                                                       names_prefix = "read_",
+                                                       values_from = call))
+      pwider_fwd_x <- pwider_fwd_x[ with(data = pwider_fwd_x, expr = order(pos)), ]
+      rownames(pwider_fwd_x) <- pwider_fwd_x[,1]
+      pwider_fwd_x <- pwider_fwd_x[ , -1, drop = F]
 
-    # kappam.fleiss() uses only rows (cytosines) with complete information
-    # across all columns (reads) considered
-    # Therefore, remove columns (reads) containing > NAmax proportion NAs to
-    # to retain more cytosines in the data.frame for kappa calculation
+      # kappam.fleiss() uses only rows (cytosines) with complete information
+      # across all columns (reads) considered
+      # Therefore, remove columns (reads) containing > NAmax proportion NAs to
+      # to retain more cytosines in the data.frame for kappa calculation
 
-    mask_cols <- apply(pwider_fwd_x, MARGIN = 2, FUN = function(col) sum(is.na(col)) >= nrow(pwider_fwd_x) * NAmax)    
-    # Report proportion of columns (reads) to be retained:
-    prop_reads_retained_fwd_x <- sum(!(mask_cols)) / ncol(pwider_fwd_x)
-    # Report number of columns (reads) to be retained:
-    num_reads_retained_fwd_x <- sum(!(mask_cols)) 
-    # Conditionally remove columns (reads) containing > NAmax proportion NAs
-    if(sum(mask_cols) > 0) {
-      pwider_fwd_x <- pwider_fwd_x[ , !(mask_cols), drop = F]
-    }
+      mask_cols <- apply(pwider_fwd_x, MARGIN = 2, FUN = function(col) sum(is.na(col)) >= nrow(pwider_fwd_x) * NAmax)    
+      # Report proportion of columns (reads) to be retained:
+      prop_reads_retained_fwd_x <- sum(!(mask_cols)) / ncol(pwider_fwd_x)
+      # Report number of columns (reads) to be retained:
+      num_reads_retained_fwd_x <- sum(!(mask_cols)) 
+      # Conditionally remove columns (reads) containing > NAmax proportion NAs
+      if(sum(mask_cols) > 0) {
+        pwider_fwd_x <- pwider_fwd_x[ , !(mask_cols), drop = F]
+      }
 
-    # Remove rows (cytosines) containing any NAs across the retained columns (reads),
-    # as these will not be used by kappam.fleiss() in any case
-    mask_rows <- apply(pwider_fwd_x, MARGIN = 1, FUN = function(row) sum(is.na(row)) > 0)
-    # Report proportion of rows (cytosines) to be retained:
-    prop_Cs_retained_fwd_x <- sum(!(mask_rows)) / nrow(pwider_fwd_x) 
-    # Report number of rows (cytosines) to be retained:
-    num_Cs_retained_fwd_x <- sum(!(mask_rows))
-#    # Conditionally remove rows (cytosines) containing any NAs
-#    if(sum(mask_rows) > 0) {
-#      pwider_fwd_x <- pwider_fwd_x[ !(mask_rows), , drop = F]
-#    }
+      # Identify rows (cytosines) containing any NAs across the retained columns (reads),
+      # as these will not be used by kappam.fleiss() in any case
+      mask_rows <- apply(pwider_fwd_x, MARGIN = 1, FUN = function(row) sum(is.na(row)) > 0)
+      # Report proportion of rows (cytosines) to be retained:
+      prop_Cs_retained_fwd_x <- sum(!(mask_rows)) / nrow(pwider_fwd_x) 
+      # Report number of rows (cytosines) to be retained:
+      num_Cs_retained_fwd_x <- sum(!(mask_rows))
+#      # Conditionally remove rows (cytosines) containing any NAs
+#      if(sum(mask_rows) > 0) {
+#        pwider_fwd_x <- pwider_fwd_x[ !(mask_rows), , drop = F]
+#      }
 
-    # Calculate Fleiss' kappa
-    fkappa_pwider_fwd_x <- kappam.fleiss(pwider_fwd_x, detail = F)
+      # Calculate Fleiss' kappa
+      fkappa_pwider_fwd_x <- kappam.fleiss(pwider_fwd_x, detail = F)
 
-    # Sanity checks
-    stopifnot(fkappa_pwider_fwd_x$raters == num_reads_retained_fwd_x)
-    stopifnot(fkappa_pwider_fwd_x$subjects == num_Cs_retained_fwd_x)
+      # Sanity checks
+      stopifnot(fkappa_pwider_fwd_x$raters == num_reads_retained_fwd_x)
+      stopifnot(fkappa_pwider_fwd_x$subjects == num_Cs_retained_fwd_x)
 
 
-    # Calculate within-read site-to-site stochasticity in methylation status
-    # Get absolute differences in methylation status between Cs for each read
-    absdiff_pwider_fwd_x <- abs(diff(as.matrix(pwider_fwd_x)))
-    # Calculate the mean absolute difference for each read
-    colMeans_absdiff_pwider_fwd_x <- colMeans(absdiff_pwider_fwd_x, na.rm = T)
-    # Across all reads overlapping a given window, calculate the mean of mean absolute differences
-    mean_stocha_pwider_fwd_x <- mean(colMeans_absdiff_pwider_fwd_x, na.rm = T)
-    # Across all reads overlapping a given window, calculate the sd of mean absolute differences
-    sd_stocha_pwider_fwd_x <- sd(colMeans_absdiff_pwider_fwd_x, na.rm = T)
+      # Calculate within-read site-to-site stochasticity in methylation status
+      # Get absolute differences in methylation status between Cs for each read
+      if(nrow(pwider_fwd_x) > 1) {
+        absdiff_pwider_fwd_x <- abs(diff(as.matrix(pwider_fwd_x)))
+        # Calculate the mean absolute difference for each read
+        colMeans_absdiff_pwider_fwd_x <- colMeans(absdiff_pwider_fwd_x, na.rm = T)
+        # Across all reads overlapping a given window, calculate the mean of mean absolute differences
+        mean_stocha_pwider_fwd_x <- mean(colMeans_absdiff_pwider_fwd_x, na.rm = T)
+        # Across all reads overlapping a given window, calculate the sd of mean absolute differences
+        sd_stocha_pwider_fwd_x <- sd(colMeans_absdiff_pwider_fwd_x, na.rm = T)
 
-    # Calculate autocorrelations between methylation statuses of neighbouring Cs within each read
-    acf_pwider_fwd_x_list <- apply(pwider_fwd_x, MARGIN = 2,
-                                   FUN = function(col) acf(col, lag.max = 10, plot = F, na.action = na.pass))
-    mean_min_acf_pwider_fwd_x <- mean(sapply(seq_along(acf_pwider_fwd_x_list), function(col) {
-      min(as.vector(acf_pwider_fwd_x_list[[col]]$acf))
-    }))
-    mean_max_acf_pwider_fwd_x <- mean(sapply(seq_along(acf_pwider_fwd_x_list), function(col) {
-      max(as.vector(acf_pwider_fwd_x_list[[col]]$acf))
-    }))
-    mean_mean_acf_pwider_fwd_x <- mean(sapply(seq_along(acf_pwider_fwd_x_list), function(col) {
-      mean(as.vector(acf_pwider_fwd_x_list[[col]]$acf))
-    }))
-    
+        # Calculate autocorrelations between methylation statuses of neighbouring Cs within each read
+        acf_pwider_fwd_x_list <- apply(pwider_fwd_x, MARGIN = 2,
+                                       FUN = function(col) acf(col, lag.max = 10, plot = F, na.action = na.pass))
+        mean_min_acf_pwider_fwd_x <- mean(sapply(seq_along(acf_pwider_fwd_x_list), function(col) {
+          min(as.vector(acf_pwider_fwd_x_list[[col]]$acf)[-1])
+        }))
+        mean_max_acf_pwider_fwd_x <- mean(sapply(seq_along(acf_pwider_fwd_x_list), function(col) {
+          max(as.vector(acf_pwider_fwd_x_list[[col]]$acf)[-1])
+        }))
+        mean_mean_acf_pwider_fwd_x <- mean(sapply(seq_along(acf_pwider_fwd_x_list), function(col) {
+          mean(as.vector(acf_pwider_fwd_x_list[[col]]$acf)[-1])
+        }))
+      } else {
+        mean_stocha_pwider_fwd_x <- NaN
+        sd_stocha_pwider_fwd_x <- NaN
+        mean_min_acf_pwider_fwd_x <- NaN
+        mean_max_acf_pwider_fwd_x <- NaN
+        mean_mean_acf_pwider_fwd_x <- NaN
+      }  
 
-#    # Define clusters of reads within each window using fpc::pamk()
-#    # ("partitioning around medoids with estimation of number of clusters")
-#    set.seed(20000)
-#    pamk_pwider_fwd_x <- pamk(t(pwider_fwd_x),
-##                              krange = 1:(nrow(t(pwider_fwd_x))-1),
-#                              krange = 1:(round(nrow(t(pwider_fwd_x))/2)),
-#                              criterion = "asw",
-#                              usepam = T,
-#                              scaling = F,
-#                              alpha = 0.001,
-##                              ns = 10,
-##                              seed = 100000,
-#                              diss = F)
+#      # Define clusters of reads within each window using fpc::pamk()
+#      # ("partitioning around medoids with estimation of number of clusters")
+#      set.seed(20000)
+#      pamk_pwider_fwd_x <- pamk(t(pwider_fwd_x),
+##                                krange = 1:(nrow(t(pwider_fwd_x))-1),
+#                                krange = 1:(round(nrow(t(pwider_fwd_x))/2)),
+#                                criterion = "asw",
+#                                usepam = T,
+#                                scaling = F,
+#                                alpha = 0.001,
+##                                ns = 10,
+##                                seed = 100000,
+#                                diss = F)
 
-#    htmp <- Heatmap(t(as.matrix(pwider_fwd_x)),
-#                    col = c("0" = "blue", "1" = "red"),
-#                    row_split = paste0("Cluster", pamk_pwider_fwd_x$pamobject$clustering),
-#                    show_column_dend = F, 
-#                    cluster_columns = F,
-#                    heatmap_legend_param = list(title = context,
-#                                                title_position = "topcenter",
-#                                                title_gp = gpar(font = 2, fontsize = 12),
-#                                                legend_direction = "horizontal",
-#                                                labels_gp = gpar(fontsize = 10)),
-#                    column_title = paste0(chrName, ":", start(winGR[x]), "-" , end(winGR[x])))
-#    pdf(paste0(plotDir,
-#               sampleName, "_MappedOn_", refbase, "_", context,
-#               "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
-#               "_NAmax", NAmax, "_", chrName, "_", start(winGR[x]), "_", end(winGR[x]), "_fwd",
-#               ".pdf"),
-#        height = 10, width = 50)
-#    draw(htmp,
-#         heatmap_legend_side = "bottom",
-#         gap = unit(c(1), "mm"))
-#    dev.off()
+#      htmp <- Heatmap(t(as.matrix(pwider_fwd_x)),
+#                      col = c("0" = "blue", "1" = "red"),
+#                      row_split = paste0("Cluster", pamk_pwider_fwd_x$pamobject$clustering),
+#                      show_column_dend = F, 
+#                      cluster_columns = F,
+#                      heatmap_legend_param = list(title = context,
+#                                                  title_position = "topcenter",
+#                                                  title_gp = gpar(font = 2, fontsize = 12),
+#                                                  legend_direction = "horizontal",
+#                                                  labels_gp = gpar(fontsize = 10)),
+#                      column_title = paste0(chrName[i], ":", start(winGR[x]), "-" , end(winGR[x])))
+#      pdf(paste0(plotDir,
+#                 sampleName, "_MappedOn_", refbase, "_", context,
+#                 "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
+#                 "_NAmax", NAmax, "_", chrName[i], "_", start(winGR[x]), "_", end(winGR[x]), "_fwd",
+#                 ".pdf"),
+#          height = 10, width = 50)
+#      draw(htmp,
+#           heatmap_legend_side = "bottom",
+#           gap = unit(c(1), "mm"))
+#      dev.off()
 
-    fk_df_fwd_win_x <- data.frame(chr = seqnames(winGR[x]),
-                                  start = start(winGR[x]),
-                                  end = end(winGR[x]),
-                                  midpoint = round((start(winGR[x])+end(winGR[x]))/2),
+      fk_df_fwd_win_x <- data.frame(chr = seqnames(winGR[x]),
+                                    start = start(winGR[x]),
+                                    end = end(winGR[x]),
+                                    midpoint = round((start(winGR[x])+end(winGR[x]))/2),
 
-                                  fk_kappa_fwd = fkappa_pwider_fwd_x$value,
-                                  fk_pval_fwd = fkappa_pwider_fwd_x$p.value,
-                                  fk_zstat_fwd = fkappa_pwider_fwd_x$statistic,
-                                  fk_num_reads_fwd = fkappa_pwider_fwd_x$raters,
-                                  fk_num_Cs_fwd = fkappa_pwider_fwd_x$subjects,
-                                  fk_prop_reads_fwd = prop_reads_retained_fwd_x,
-                                  fk_prop_Cs_fwd = prop_Cs_retained_fwd_x,
+                                    fk_kappa_fwd = fkappa_pwider_fwd_x$value,
+                                    fk_pval_fwd = fkappa_pwider_fwd_x$p.value,
+                                    fk_zstat_fwd = fkappa_pwider_fwd_x$statistic,
+                                    fk_num_reads_fwd = fkappa_pwider_fwd_x$raters,
+                                    fk_num_Cs_fwd = fkappa_pwider_fwd_x$subjects,
+                                    fk_prop_reads_fwd = prop_reads_retained_fwd_x,
+                                    fk_prop_Cs_fwd = prop_Cs_retained_fwd_x,
  
-#                                  pamk_nc_fwd = pamk_pwider_fwd_x$nc,
+#                                    pamk_nc_fwd = pamk_pwider_fwd_x$nc,
 
-                                  mean_stocha_fwd = mean_stocha_pwider_fwd_x,
-                                  sd_stocha_fwd = sd_stocha_pwider_fwd_x,
-                                  mean_min_acf_fwd = mean_min_acf_pwider_fwd_x,
-                                  mean_max_acf_fwd = mean_max_acf_pwider_fwd_x,
-                                  mean_mean_acf_fwd = mean_mean_acf_pwider_fwd_x)
+                                    mean_stocha_fwd = mean_stocha_pwider_fwd_x,
+                                    sd_stocha_fwd = sd_stocha_pwider_fwd_x,
+                                    mean_min_acf_fwd = mean_min_acf_pwider_fwd_x,
+                                    mean_max_acf_fwd = mean_max_acf_pwider_fwd_x,
+                                    mean_mean_acf_fwd = mean_mean_acf_pwider_fwd_x)
 
     } else {
 
-    fk_df_fwd_win_x <- data.frame(chr = seqnames(winGR[x]),
-                                  start = start(winGR[x]),
-                                  end = end(winGR[x]),
-                                  midpoint = round((start(winGR[x])+end(winGR[x]))/2),
+      fk_df_fwd_win_x <- data.frame(chr = seqnames(winGR[x]),
+                                    start = start(winGR[x]),
+                                    end = end(winGR[x]),
+                                    midpoint = round((start(winGR[x])+end(winGR[x]))/2),
 
-                                  fk_kappa_fwd = NaN,
-                                  fk_pval_fwd = NaN,
-                                  fk_zstat_fwd = NaN,
-                                  fk_num_reads_fwd = NaN,
-                                  fk_num_Cs_fwd = NaN,
-                                  fk_prop_reads_fwd = NaN,
-                                  fk_prop_Cs_fwd = NaN,
+                                    fk_kappa_fwd = NaN,
+                                    fk_pval_fwd = NaN,
+                                    fk_zstat_fwd = NaN,
+                                    fk_num_reads_fwd = NaN,
+                                    fk_num_Cs_fwd = NaN,
+                                    fk_prop_reads_fwd = NaN,
+                                    fk_prop_Cs_fwd = NaN,
  
-#                                  pamk_nc_fwd = NaN,
+#                                    pamk_nc_fwd = NaN,
 
-                                  mean_stocha_fwd = NaN,
-                                  sd_stocha_fwd = NaN,
-                                  mean_min_acf_fwd = NaN,
-                                  mean_max_acf_fwd = NaN,
-                                  mean_mean_acf_fwd = NaN)
+                                    mean_stocha_fwd = NaN,
+                                    sd_stocha_fwd = NaN,
+                                    mean_min_acf_fwd = NaN,
+                                    mean_max_acf_fwd = NaN,
+                                    mean_mean_acf_fwd = NaN)
  
     }
 
@@ -362,166 +367,172 @@ for(i in seq_along(chrs)) {
     # rev
     chr_tab_GR_rev_x <- chr_tab_GR_rev[subjectHits(fOverlaps_rev[queryHits(fOverlaps_rev) == x])]
     if(length(chr_tab_GR_rev_x) > 0) {
-    chr_tab_GR_rev_x <- sortSeqlevels(chr_tab_GR_rev_x)
-    chr_tab_GR_rev_x <- sort(chr_tab_GR_rev_x, by = ~ read + start)
+      chr_tab_GR_rev_x <- sortSeqlevels(chr_tab_GR_rev_x)
+      chr_tab_GR_rev_x <- sort(chr_tab_GR_rev_x, by = ~ read + start)
 
-    df_rev_x <- data.frame(pos = start(chr_tab_GR_rev_x),
-                           read = chr_tab_GR_rev_x$read,
-                           call = chr_tab_GR_rev_x$call)
+      df_rev_x <- data.frame(pos = start(chr_tab_GR_rev_x),
+                             read = chr_tab_GR_rev_x$read,
+                             call = chr_tab_GR_rev_x$call)
 
-#    # tidyr::spread() is deprecated; use tidyr::pivot_wider() instead 
-#    spread_rev_x <- tidyr::spread(data = df_rev_x,
-#                                  key = read,
-#                                  value = call)
-##                                  sep = "_")
-#    spread_rev_x <- spread_x[ with(data = spread_x, expr = order(pos)), ]
+#      # tidyr::spread() is deprecated; use tidyr::pivot_wider() instead 
+#      spread_rev_x <- tidyr::spread(data = df_rev_x,
+#                                    key = read,
+#                                    value = call)
+##                                    sep = "_")
+#      spread_rev_x <- spread_x[ with(data = spread_x, expr = order(pos)), ]
  
-    pwider_rev_x <- as.data.frame(tidyr::pivot_wider(data = df_rev_x,
-                                                     names_from = read,
-#                                                     names_prefix = "read_",
-                                                     values_from = call))
-    pwider_rev_x <- pwider_rev_x[ with(data = pwider_rev_x, expr = order(pos)), ]
-    rownames(pwider_rev_x) <- pwider_rev_x[,1]
-    pwider_rev_x <- pwider_rev_x[ , -1, drop = F]
+      pwider_rev_x <- as.data.frame(tidyr::pivot_wider(data = df_rev_x,
+                                                       names_from = read,
+#                                                       names_prefix = "read_",
+                                                       values_from = call))
+      pwider_rev_x <- pwider_rev_x[ with(data = pwider_rev_x, expr = order(pos)), ]
+      rownames(pwider_rev_x) <- pwider_rev_x[,1]
+      pwider_rev_x <- pwider_rev_x[ , -1, drop = F]
 
-    # kappam.fleiss() uses only rows (cytosines) with complete information
-    # across all columns (reads) considered
-    # Therefore, remove columns (reads) containing > NAmax proportion NAs to
-    # to retain more cytosines in the data.frame for kappa calculation
+      # kappam.fleiss() uses only rows (cytosines) with complete information
+      # across all columns (reads) considered
+      # Therefore, remove columns (reads) containing > NAmax proportion NAs to
+      # to retain more cytosines in the data.frame for kappa calculation
 
-    mask_cols <- apply(pwider_rev_x, MARGIN = 2, FUN = function(col) sum(is.na(col)) >= nrow(pwider_rev_x) * NAmax)    
-    # Report proportion of columns (reads) to be retained:
-    prop_reads_retained_rev_x <- sum(!(mask_cols)) / ncol(pwider_rev_x)
-    # Report number of columns (reads) to be retained:
-    num_reads_retained_rev_x <- sum(!(mask_cols)) 
-    # Conditionally remove columns (reads) containing > NAmax proportion NAs
-    if(sum(mask_cols) > 0) {
-      pwider_rev_x <- pwider_rev_x[ , !(mask_cols), drop = F]
-    }
+      mask_cols <- apply(pwider_rev_x, MARGIN = 2, FUN = function(col) sum(is.na(col)) >= nrow(pwider_rev_x) * NAmax)    
+      # Report proportion of columns (reads) to be retained:
+      prop_reads_retained_rev_x <- sum(!(mask_cols)) / ncol(pwider_rev_x)
+      # Report number of columns (reads) to be retained:
+      num_reads_retained_rev_x <- sum(!(mask_cols)) 
+      # Conditionally remove columns (reads) containing > NAmax proportion NAs
+      if(sum(mask_cols) > 0) {
+        pwider_rev_x <- pwider_rev_x[ , !(mask_cols), drop = F]
+      }
 
-    # Remove rows (cytosines) containing any NAs across the retained columns (reads),
-    # as these will not be used by kappam.fleiss() in any case
-    mask_rows <- apply(pwider_rev_x, MARGIN = 1, FUN = function(row) sum(is.na(row)) > 0)
-    # Report proportion of rows (cytosines) to be retained:
-    prop_Cs_retained_rev_x <- sum(!(mask_rows)) / nrow(pwider_rev_x) 
-    # Report number of rows (cytosines) to be retained:
-    num_Cs_retained_rev_x <- sum(!(mask_rows))
-#    # Conditionally remove rows (cytosines) containing any NAs
-#    if(sum(mask_rows) > 0) {
-#      pwider_rev_x <- pwider_rev_x[ !(mask_rows), , drop = F]
-#    }
+      # Identify rows (cytosines) containing any NAs across the retained columns (reads),
+      # as these will not be used by kappam.fleiss() in any case
+      mask_rows <- apply(pwider_rev_x, MARGIN = 1, FUN = function(row) sum(is.na(row)) > 0)
+      # Report proportion of rows (cytosines) to be retained:
+      prop_Cs_retained_rev_x <- sum(!(mask_rows)) / nrow(pwider_rev_x) 
+      # Report number of rows (cytosines) to be retained:
+      num_Cs_retained_rev_x <- sum(!(mask_rows))
+#      # Conditionally remove rows (cytosines) containing any NAs
+#      if(sum(mask_rows) > 0) {
+#        pwider_rev_x <- pwider_rev_x[ !(mask_rows), , drop = F]
+#      }
 
-    # Calculate Fleiss' kappa
-    fkappa_pwider_rev_x <- kappam.fleiss(pwider_rev_x, detail = F)
+      # Calculate Fleiss' kappa
+      fkappa_pwider_rev_x <- kappam.fleiss(pwider_rev_x, detail = F)
 
-    # Sanity checks
-    stopifnot(fkappa_pwider_rev_x$raters == num_reads_retained_rev_x)
-    stopifnot(fkappa_pwider_rev_x$subjects == num_Cs_retained_rev_x)
+      # Sanity checks
+      stopifnot(fkappa_pwider_rev_x$raters == num_reads_retained_rev_x)
+      stopifnot(fkappa_pwider_rev_x$subjects == num_Cs_retained_rev_x)
 
 
-    # Calculate within-read site-to-site stochasticity in methylation status
-    # Get absolute differences in methylation status between Cs for each read
-    absdiff_pwider_rev_x <- abs(diff(as.matrix(pwider_rev_x)))
-    # Calculate the mean absolute difference for each read
-    colMeans_absdiff_pwider_rev_x <- colMeans(absdiff_pwider_rev_x, na.rm = T)
-    # Across all reads overlapping a given window, calculate the mean of mean absolute differences
-    mean_stocha_pwider_rev_x <- mean(colMeans_absdiff_pwider_rev_x, na.rm = T)
-    # Across all reads overlapping a given window, calculate the sd of mean absolute differences
-    sd_stocha_pwider_rev_x <- sd(colMeans_absdiff_pwider_rev_x, na.rm = T)
+      if(nrow(pwider_rev_x) > 1) {
+        absdiff_pwider_rev_x <- abs(diff(as.matrix(pwider_rev_x)))
+        # Calculate the mean absolute difference for each read
+        colMeans_absdiff_pwider_rev_x <- colMeans(absdiff_pwider_rev_x, na.rm = T)
+        # Across all reads overlapping a given window, calculate the mean of mean absolute differences
+        mean_stocha_pwider_rev_x <- mean(colMeans_absdiff_pwider_rev_x, na.rm = T)
+        # Across all reads overlapping a given window, calculate the sd of mean absolute differences
+        sd_stocha_pwider_rev_x <- sd(colMeans_absdiff_pwider_rev_x, na.rm = T)
 
-    # Calculate autocorrelations between methylation statuses of neighbouring Cs within each read
-    acf_pwider_rev_x_list <- apply(pwider_rev_x, MARGIN = 2,
-                                   FUN = function(col) acf(col, lag.max = 10, plot = F, na.action = na.pass))
-    mean_min_acf_pwider_rev_x <- mean(sapply(seq_along(acf_pwider_rev_x_list), function(col) {
-      min(as.vector(acf_pwider_rev_x_list[[col]]$acf))
-    }))
-    mean_max_acf_pwider_rev_x <- mean(sapply(seq_along(acf_pwider_rev_x_list), function(col) {
-      max(as.vector(acf_pwider_rev_x_list[[col]]$acf))
-    }))
-    mean_mean_acf_pwider_rev_x <- mean(sapply(seq_along(acf_pwider_rev_x_list), function(col) {
-      mean(as.vector(acf_pwider_rev_x_list[[col]]$acf))
-    }))
-    
+        # Calculate autocorrelations between methylation statuses of neighbouring Cs within each read
+        acf_pwider_rev_x_list <- apply(pwider_rev_x, MARGIN = 2,
+                                       FUN = function(col) acf(col, lag.max = 10, plot = F, na.action = na.pass))
+        mean_min_acf_pwider_rev_x <- mean(sapply(seq_along(acf_pwider_rev_x_list), function(col) {
+          min(as.vector(acf_pwider_rev_x_list[[col]]$acf)[-1])
+        }))
+        mean_max_acf_pwider_rev_x <- mean(sapply(seq_along(acf_pwider_rev_x_list), function(col) {
+          max(as.vector(acf_pwider_rev_x_list[[col]]$acf)[-1])
+        }))
+        mean_mean_acf_pwider_rev_x <- mean(sapply(seq_along(acf_pwider_rev_x_list), function(col) {
+          mean(as.vector(acf_pwider_rev_x_list[[col]]$acf)[-1])
+        }))
+      } else {
+        mean_stocha_pwider_rev_x <- NaN
+        sd_stocha_pwider_rev_x <- NaN
+        mean_min_acf_pwider_rev_x <- NaN
+        mean_max_acf_pwider_rev_x <- NaN
+        mean_mean_acf_pwider_rev_x <- NaN
+      }  
 
-#    # Define clusters of reads within each window using fpc::pamk()
-#    # ("partitioning around medoids with estimation of number of clusters")
-#    set.seed(20000)
-#    pamk_pwider_rev_x <- pamk(t(pwider_rev_x),
-##                              krange = 1:(nrow(t(pwider_rev_x))-1),
-#                              krange = 1:(round(nrow(t(pwider_rev_x))/2)),
-#                              criterion = "asw",
-#                              usepam = T,
-#                              scaling = F,
-#                              alpha = 0.001,
-##                              ns = 10,
-##                              seed = 100000,
-#                              diss = F)
 
-#    htmp <- Heatmap(t(as.matrix(pwider_rev_x)),
-#                    col = c("0" = "blue", "1" = "red"),
-#                    row_split = paste0("Cluster", pamk_pwider_rev_x$pamobject$clustering),
-#                    show_column_dend = F, 
-#                    cluster_columns = F,
-#                    heatmap_legend_param = list(title = context,
-#                                                title_position = "topcenter",
-#                                                title_gp = gpar(font = 2, fontsize = 12),
-#                                                legend_direction = "horizontal",
-#                                                labels_gp = gpar(fontsize = 10)),
-#                    column_title = paste0(chrName, ":", start(winGR[x]), "-" , end(winGR[x])))
-#    pdf(paste0(plotDir,
-#               sampleName, "_MappedOn_", refbase, "_", context,
-#               "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
-#               "_NAmax", NAmax, "_", chrName, "_", start(winGR[x]), "_", end(winGR[x]), "_rev",
-#               ".pdf"),
-#        height = 10, width = 50)
-#    draw(htmp,
-#         heatmap_legend_side = "bottom",
-#         gap = unit(c(1), "mm"))
-#    dev.off()
+#      # Define clusters of reads within each window using fpc::pamk()
+#      # ("partitioning around medoids with estimation of number of clusters")
+#      set.seed(20000)
+#      pamk_pwider_rev_x <- pamk(t(pwider_rev_x),
+##                                krange = 1:(nrow(t(pwider_rev_x))-1),
+#                                krange = 1:(round(nrow(t(pwider_rev_x))/2)),
+#                                criterion = "asw",
+#                                usepam = T,
+#                                scaling = F,
+#                                alpha = 0.001,
+##                                ns = 10,
+##                                seed = 100000,
+#                                diss = F)
 
-    fk_df_rev_win_x <- data.frame(chr = seqnames(winGR[x]),
-                                  start = start(winGR[x]),
-                                  end = end(winGR[x]),
-                                  midpoint = round((start(winGR[x])+end(winGR[x]))/2),
+#      htmp <- Heatmap(t(as.matrix(pwider_rev_x)),
+#                      col = c("0" = "blue", "1" = "red"),
+#                      row_split = paste0("Cluster", pamk_pwider_rev_x$pamobject$clustering),
+#                      show_column_dend = F, 
+#                      cluster_columns = F,
+#                      heatmap_legend_param = list(title = context,
+#                                                  title_position = "topcenter",
+#                                                  title_gp = gpar(font = 2, fontsize = 12),
+#                                                  legend_direction = "horizontal",
+#                                                  labels_gp = gpar(fontsize = 10)),
+#                      column_title = paste0(chrName[i], ":", start(winGR[x]), "-" , end(winGR[x])))
+#      pdf(paste0(plotDir,
+#                 sampleName, "_MappedOn_", refbase, "_", context,
+#                 "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
+#                 "_NAmax", NAmax, "_", chrName[i], "_", start(winGR[x]), "_", end(winGR[x]), "_rev",
+#                 ".pdf"),
+#          height = 10, width = 50)
+#      draw(htmp,
+#           heatmap_legend_side = "bottom",
+#           gap = unit(c(1), "mm"))
+#      dev.off()
 
-                                  fk_kappa_rev = fkappa_pwider_rev_x$value,
-                                  fk_pval_rev = fkappa_pwider_rev_x$p.value,
-                                  fk_zstat_rev = fkappa_pwider_rev_x$statistic,
-                                  fk_num_reads_rev = fkappa_pwider_rev_x$raters,
-                                  fk_num_Cs_rev = fkappa_pwider_rev_x$subjects,
-                                  fk_prop_reads_rev = prop_reads_retained_rev_x,
-                                  fk_prop_Cs_rev = prop_Cs_retained_rev_x,
+      fk_df_rev_win_x <- data.frame(chr = seqnames(winGR[x]),
+                                    start = start(winGR[x]),
+                                    end = end(winGR[x]),
+                                    midpoint = round((start(winGR[x])+end(winGR[x]))/2),
+
+                                    fk_kappa_rev = fkappa_pwider_rev_x$value,
+                                    fk_pval_rev = fkappa_pwider_rev_x$p.value,
+                                    fk_zstat_rev = fkappa_pwider_rev_x$statistic,
+                                    fk_num_reads_rev = fkappa_pwider_rev_x$raters,
+                                    fk_num_Cs_rev = fkappa_pwider_rev_x$subjects,
+                                    fk_prop_reads_rev = prop_reads_retained_rev_x,
+                                    fk_prop_Cs_rev = prop_Cs_retained_rev_x,
  
-#                                  pamk_nc_rev = pamk_pwider_rev_x$nc,
+#                                    pamk_nc_rev = pamk_pwider_rev_x$nc,
 
-                                  mean_stocha_rev = mean_stocha_pwider_rev_x,
-                                  sd_stocha_rev = sd_stocha_pwider_rev_x,
-                                  mean_min_acf_rev = mean_min_acf_pwider_rev_x,
-                                  mean_max_acf_rev = mean_max_acf_pwider_rev_x,
-                                  mean_mean_acf_rev = mean_mean_acf_pwider_rev_x)
+                                    mean_stocha_rev = mean_stocha_pwider_rev_x,
+                                    sd_stocha_rev = sd_stocha_pwider_rev_x,
+                                    mean_min_acf_rev = mean_min_acf_pwider_rev_x,
+                                    mean_max_acf_rev = mean_max_acf_pwider_rev_x,
+                                    mean_mean_acf_rev = mean_mean_acf_pwider_rev_x)
 
     } else {
 
-    fk_df_rev_win_x <- data.frame(chr = seqnames(winGR[x]),
-                                  start = start(winGR[x]),
-                                  end = end(winGR[x]),
-                                  midpoint = round((start(winGR[x])+end(winGR[x]))/2),
+      fk_df_rev_win_x <- data.frame(chr = seqnames(winGR[x]),
+                                    start = start(winGR[x]),
+                                    end = end(winGR[x]),
+                                    midpoint = round((start(winGR[x])+end(winGR[x]))/2),
 
-                                  fk_kappa_rev = NaN,
-                                  fk_pval_rev = NaN,
-                                  fk_zstat_rev = NaN,
-                                  fk_num_reads_rev = NaN,
-                                  fk_num_Cs_rev = NaN,
-                                  fk_prop_reads_rev = NaN,
-                                  fk_prop_Cs_rev = NaN,
+                                    fk_kappa_rev = NaN,
+                                    fk_pval_rev = NaN,
+                                    fk_zstat_rev = NaN,
+                                    fk_num_reads_rev = NaN,
+                                    fk_num_Cs_rev = NaN,
+                                    fk_prop_reads_rev = NaN,
+                                    fk_prop_Cs_rev = NaN,
  
-#                                  pamk_nc_rev = NaN,
+#                                    pamk_nc_rev = NaN,
 
-                                  mean_stocha_rev = NaN,
-                                  sd_stocha_rev = NaN,
-                                  mean_min_acf_rev = NaN,
-                                  mean_max_acf_rev = NaN,
-                                  mean_mean_acf_rev = NaN)
+                                    mean_stocha_rev = NaN,
+                                    sd_stocha_rev = NaN,
+                                    mean_min_acf_rev = NaN,
+                                    mean_max_acf_rev = NaN,
+                                    mean_mean_acf_rev = NaN)
 
     }
  
@@ -551,8 +562,8 @@ for(i in seq_along(chrs)) {
                               mean_mean_acf_all = mean(c(fk_df_fwd_win_x$mean_mean_acf_fwd, fk_df_rev_win_x$mean_mean_acf_rev), na.rm = T))
 
     fk_df_win_x
-#  })
-  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
+  })
+#  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
                                
   fk_df <- dplyr::bind_rows(fk_df_win_list, .id = "column_label")
 
@@ -565,7 +576,7 @@ for(i in seq_along(chrs)) {
               file = paste0(outDir,
                             sampleName, "_MappedOn_", refbase, "_", context,
                             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
-                            "_NAmax", NAmax, "_per_read_var_df_", chrName, ".tsv"),
+                            "_NAmax", NAmax, "_per_read_var_df_", chrName[i], ".tsv"),
               quote = F, sep = "\t", row.names = F, col.names = T)
 }
 
@@ -600,13 +611,13 @@ for(i in seq_along(chrs)) {
 #  gg_fk_kappa_all <- chrPlot(dataFrame = fk_df,
 #                             xvar = midpoint,
 #                             yvar = fk_kappa_all,
-#                             xlab = paste0(chrName, " (Mb; ", genomeBinNamePlot, " windows, ", genomeStepNamePlot, " step)"),
+#                             xlab = paste0(chrName[i], " (Mb; ", genomeBinNamePlot, " windows, ", genomeStepNamePlot, " step)"),
 #                             ylab = bquote("Fleiss' kappa per-read m"*.(context)),
 #                             colour = "red") 
 #  ggsave(paste0(plotDir,
 #                sampleName, "_MappedOn_", refbase, "_", context,
 #                "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
-#                "_NAmax", NAmax, "_Fleiss_kappa_all_", chrName,
+#                "_NAmax", NAmax, "_Fleiss_kappa_all_", chrName[i],
 #                ".pdf"),
 #         plot = gg_fk_kappa_all,
 #         height = 5, width = 30, limitsize = F)
@@ -616,7 +627,7 @@ for(i in seq_along(chrs)) {
 #              gsub("_MappedOn_t2t-col.20210610_.+", "", ChIPNames)[1], "_",
 #              "_avgProfiles_around",
 #              "_CEN180_ranLoc_CENAthila_nonCENAthila_nonCENGypsy_in_t2t-col.20210610_",
-#              paste0(chrName, collapse = "_"), ".pdf"),
+#              paste0(chrName[i], collapse = "_"), ".pdf"),
 #       plot = ggObjGA_combined,
 #       height = 6.5, width = 7*5, limitsize = FALSE)
 #
@@ -625,7 +636,7 @@ for(i in seq_along(chrs)) {
 #  pdf(paste0(plotDir,
 #             sampleName, "_MappedOn_", refbase, "_", context,
 #             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
-#             "_NAmax", NAmax, "_Fleiss_kappa_", chrName,
+#             "_NAmax", NAmax, "_Fleiss_kappa_", chrName[i],
 #             ".pdf"), height = 5, width = 30)
 #  par(mfrow = c(1, 1))
 #  par(mar = c(4.1, 4.1, 3.1, 4.1))
@@ -646,7 +657,7 @@ for(i in seq_along(chrs)) {
 ##  text(p[2], mean(p[3:4]), cex = 1.5, adj = c(0.5, -2.0), xpd = NA, srt = -90, col = "skyblue",
 ##       labels = bquote(.(context)*" sites per window"))
 ##  axis(side = 4, cex.axis = 1, lwd.tick = 1.5)
-#  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
+#  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName[i], " (", genomeBinName, " window, ", genomeStepName, " step)"))
 #  dev.off()
 #
 #
@@ -682,7 +693,7 @@ for(i in seq_along(chrs)) {
 #                 ";" ~ italic(P) ~ "=" ~
 #                 .(round(min(0.5, cor.test(CEN180$CENH3_in_bodies, CEN180$HORlengthsSum, method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(CEN180)[1]/100) )),
 #                         digits = 5)) ~
-#                 "(CEN180 in" ~ .(paste0(chrName, collapse = ",")) * ")"))
+#                 "(CEN180 in" ~ .(paste0(chrName[i], collapse = ",")) * ")"))
 #
 #
 #
@@ -690,7 +701,7 @@ for(i in seq_along(chrs)) {
 #  pdf(paste0(plotDir,
 #             sampleName, "_MappedOn_", refbase, "_", context,
 #             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
-#             "_NAmax", NAmax, "_Fleiss_kappa_", chrName,
+#             "_NAmax", NAmax, "_Fleiss_kappa_", chrName[i],
 #             ".pdf"), height = 5, width = 30)
 #  par(mfrow = c(1, 1))
 #  par(mar = c(4.1, 4.1, 3.1, 4.1))
@@ -711,13 +722,13 @@ for(i in seq_along(chrs)) {
 ##  text(p[2], mean(p[3:4]), cex = 1.5, adj = c(0.5, -2.0), xpd = NA, srt = -90, col = "skyblue",
 ##       labels = bquote(.(context)*" sites per window"))
 ##  axis(side = 4, cex.axis = 1, lwd.tick = 1.5)
-#  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
+#  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName[i], " (", genomeBinName, " window, ", genomeStepName, " step)"))
 #  dev.off()
 #
 #  pdf(paste0(plotDir,
 #             sampleName, "_MappedOn_", refbase, "_", context,
 #             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
-#             "_NAmax", NAmax, "_mean_stocha_", chrName,
+#             "_NAmax", NAmax, "_mean_stocha_", chrName[i],
 #             ".pdf"), height = 5, width = 30)
 #  par(mfrow = c(1, 1))
 #  par(mar = c(4.1, 4.1, 3.1, 4.1))
@@ -729,13 +740,13 @@ for(i in seq_along(chrs)) {
 #  mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
 #        text = bquote("Mean stoch. per-read m"*.(context)))
 #  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
-#  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
+#  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName[i], " (", genomeBinName, " window, ", genomeStepName, " step)"))
 #  dev.off()
 #
 #  pdf(paste0(plotDir,
 #             sampleName, "_MappedOn_", refbase, "_", context,
 #             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
-#             "_NAmax", NAmax, "_sd_stocha_", chrName,
+#             "_NAmax", NAmax, "_sd_stocha_", chrName[i],
 #             ".pdf"), height = 5, width = 30)
 #  par(mfrow = c(1, 1))
 #  par(mar = c(4.1, 4.1, 3.1, 4.1))
@@ -747,13 +758,13 @@ for(i in seq_along(chrs)) {
 #  mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
 #        text = bquote("SD stoch. per-read m"*.(context)))
 #  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
-#  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
+#  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName[i], " (", genomeBinName, " window, ", genomeStepName, " step)"))
 #  dev.off()
 #
 #  pdf(paste0(plotDir,
 #             sampleName, "_MappedOn_", refbase, "_", context,
 #             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
-#             "_NAmax", NAmax, "_mean_mean_acf_", chrName,
+#             "_NAmax", NAmax, "_mean_mean_acf_", chrName[i],
 #             ".pdf"), height = 5, width = 30)
 #  par(mfrow = c(1, 1))
 #  par(mar = c(4.1, 4.1, 3.1, 4.1))
@@ -765,13 +776,13 @@ for(i in seq_along(chrs)) {
 #  mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
 #        text = bquote("Mean mean ACF per-read m"*.(context)))
 #  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
-#  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
+#  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName[i], " (", genomeBinName, " window, ", genomeStepName, " step)"))
 #  dev.off()
 #
 #  pdf(paste0(plotDir,
 #             sampleName, "_MappedOn_", refbase, "_", context,
 #             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
-#             "_NAmax", NAmax, "_mean_min_acf_", chrName,
+#             "_NAmax", NAmax, "_mean_min_acf_", chrName[i],
 #             ".pdf"), height = 5, width = 30)
 #  par(mfrow = c(1, 1))
 #  par(mar = c(4.1, 4.1, 3.1, 4.1))
@@ -783,13 +794,13 @@ for(i in seq_along(chrs)) {
 #  mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
 #        text = bquote("Mean min. ACF per-read m"*.(context)))
 #  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
-#  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
+#  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName[i], " (", genomeBinName, " window, ", genomeStepName, " step)"))
 #  dev.off()
 #
 #  pdf(paste0(plotDir,
 #             sampleName, "_MappedOn_", refbase, "_", context,
 #             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
-#             "_NAmax", NAmax, "_mean_max_acf_", chrName,
+#             "_NAmax", NAmax, "_mean_max_acf_", chrName[i],
 #             ".pdf"), height = 5, width = 30)
 #  par(mfrow = c(1, 1))
 #  par(mar = c(4.1, 4.1, 3.1, 4.1))
@@ -801,13 +812,13 @@ for(i in seq_along(chrs)) {
 #  mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
 #        text = bquote("Mean max. ACF per-read m"*.(context)))
 #  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
-#  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
+#  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName[i], " (", genomeBinName, " window, ", genomeStepName, " step)"))
 #  dev.off()
 #
 #  pdf(paste0(plotDir,
 #             sampleName, "_MappedOn_", refbase, "_", context,
 #             "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
-#             "_NAmax", NAmax, "_pam_clusters_", chrName,
+#             "_NAmax", NAmax, "_pam_clusters_", chrName[i],
 #             ".pdf"), height = 5, width = 30)
 #  par(mfrow = c(1, 1))
 #  par(mar = c(4.1, 4.1, 3.1, 4.1))
@@ -819,7 +830,7 @@ for(i in seq_along(chrs)) {
 #  mtext(side = 2, line = 2.25, cex = 1.5, col = "red",
 #        text = bquote("PAM clusters per-read m"*.(context)))
 #  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
-#  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName, " (", genomeBinName, " window, ", genomeStepName, " step)"))
+#  mtext(side = 1, line = 2.25, cex = 1.5, text = paste0(chrName[i], " (", genomeBinName, " window, ", genomeStepName, " step)"))
 #  dev.off()
 
 
