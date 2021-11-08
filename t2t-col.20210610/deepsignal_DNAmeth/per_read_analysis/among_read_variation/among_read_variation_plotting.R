@@ -7,8 +7,8 @@
 
 # Usage on hydrogen node7:
 # chmod +x per_read_methylation_proportion_winByCs.R
-# /applications/R/R-4.0.0/bin/Rscript among_read_variation_plotting.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 10000 10000 CHG 0.50 1.00 Chr1,Chr2,Chr4,Chr5
-# /applications/R/R-4.0.0/bin/Rscript among_read_variation_plotting.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 10000 10000 CpG 0.50 1.00 Chr1,Chr2,Chr4,Chr5
+# /applications/R/R-4.0.0/bin/Rscript among_read_variation_plotting.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 10000 10000 CHG 0.50 1.00 Chr1,Chr2,Chr3,Chr4,Chr5
+# /applications/R/R-4.0.0/bin/Rscript among_read_variation_plotting.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 10000 10000 CpG 0.50 1.00 Chr1,Chr2,Chr3,Chr4,Chr5
 
 # Divide each read into adjacent segments each consisting of a given number of consecutive cytosines,
 # and calculate the methylation proportion for each segment of each read
@@ -20,7 +20,7 @@
 #context <- "CpG"
 #NAmax <- 0.50
 #CPUpc <- 1.00
-chrName <- unlist(strsplit("Chr1,Chr2,Chr4,Chr5", split = ","))
+#chrName <- unlist(strsplit("Chr1,Chr2,Chr3,Chr4,Chr5", split = ","))
 
 args <- commandArgs(trailingOnly = T)
 sampleName <- args[1]
@@ -161,6 +161,36 @@ chrPlot <- function(dataFrame, xvar, yvar, xlab, ylab, colour) {
         plot.margin = unit(c(0.3,1.2,0.3,0.3), "cm"))
 }
 
+chrPlot2 <- function(dataFrame, xvar, yvar1, yvar2, xlab, ylab, colour1, colour2) {
+  xvar <- enquo(xvar)
+  yvar1 <- enquo(yvar1)
+  yvar2 <- enquo(yvar2)
+  ggplot(data = dataFrame,
+         mapping = aes(x = !!xvar)) +
+#  geom_line(size = 1, colour = colour) +
+  geom_ma(ma_fun = SMA, mapping = aes(y = !!yvar1), n = 10, colour = colour1, linetype = 1, size = 1) +
+  geom_ma(ma_fun = SMA, mapping = aes(y = !!yvar2), n = 10, colour = colour2, linetype = 1, size = 1) +
+  scale_x_continuous(
+                     labels = function(x) x/1e6) +
+  labs(x = xlab,
+       y = ylab) +
+  theme_bw() +
+  theme(
+        axis.ticks = element_line(size = 0.5, colour = "black"),
+        axis.ticks.length = unit(0.25, "cm"),
+        axis.text.x = element_text(size = 16, colour = "black"),
+        axis.text.y = element_text(size = 16, colour = "black"),
+        axis.title = element_text(size = 18, colour = "black"),
+        axis.line = element_line(size = 1.5, colour = "black"),
+        panel.background = element_blank(),
+        panel.border = element_blank(),
+#        panel.border = element_rect(size = 1.0, colour = "black"),
+#        panel.grid = element_blank(),
+        strip.text.x = element_text(size = 30, colour = "white"),
+        strip.background = element_rect(fill = "black", colour = "black"),
+        plot.margin = unit(c(0.3,1.2,0.3,0.3), "cm"))
+}
+
 gg_fk_kappa_all <- chrPlot(dataFrame = tab,
                            xvar = midpoint,
                            yvar = fk_kappa_all,
@@ -168,6 +198,32 @@ gg_fk_kappa_all <- chrPlot(dataFrame = tab,
                            ylab = bquote("Fleiss' kappa per-read m"*.(context)),
                            colour = "red") 
 gg_fk_kappa_all <- gg_fk_kappa_all +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+tab2 <- tab %>%
+  mutate(fk_total_reads_all = tab$fk_num_reads_all/tab$fk_prop_reads_all,
+         fk_total_Cs_all = tab$fk_num_Cs_all/tab$fk_prop_Cs_all)
+
+gg_fk_num_reads_all <- chrPlot2(dataFrame = tab2,
+                                xvar = midpoint,
+                                yvar1 = fk_num_reads_all,
+                                yvar2 = fk_total_reads_all,
+                                xlab = paste0("Coordinates (Mb; ", genomeBinNamePlot, " windows, ", genomeStepNamePlot, " step)"),
+                                ylab = bquote("No. of reads per-read m"*.(context)),
+                                colour1 = "red",
+                                colour2 = "grey50") 
+gg_fk_num_reads_all <- gg_fk_num_reads_all +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+gg_fk_num_Cs_all <- chrPlot2(dataFrame = tab2,
+                             xvar = midpoint,
+                             yvar1 = fk_num_Cs_all,
+                             yvar2 = fk_total_Cs_all,
+                             xlab = paste0("Coordinates (Mb; ", genomeBinNamePlot, " windows, ", genomeStepNamePlot, " step)"),
+                             ylab = bquote("No. of cytosines per-read m"*.(context)),
+                             colour1 = "green",
+                             colour2 = "grey50") 
+gg_fk_num_Cs_all <- gg_fk_num_Cs_all +
   facet_grid(cols = vars(chr), scales = "free_x")
 
 gg_mean_stocha_all <- chrPlot(dataFrame = tab,
@@ -216,17 +272,17 @@ gg_gypsy <- gg_gypsy +
   facet_grid(cols = vars(chr), scales = "free_x")
 
 gg_CEN180 <- chrPlot(dataFrame = CEN180,
-                    xvar = midpoint,
-                    yvar = features,
-                    xlab = paste0("Coordinates (Mb; ", genomeBinNamePlot, " windows, ", genomeStepNamePlot, " step)"),
-                    ylab = bquote(italic("CEN180")),
-                    colour = "darkorange") 
+                     xvar = midpoint,
+                     yvar = features,
+                     xlab = paste0("Coordinates (Mb; ", genomeBinNamePlot, " windows, ", genomeStepNamePlot, " step)"),
+                     ylab = bquote(italic("CEN180")),
+                     colour = "darkorange") 
 gg_CEN180 <- gg_CEN180 +
   facet_grid(cols = vars(chr), scales = "free_x")
 
-gg_cow_list <- list(gg_fk_kappa_all, gg_mean_stocha_all, gg_mean_mean_acf_all, gg_mean_min_acf_all, gg_genes, gg_gypsy, gg_CEN180)
+gg_cow_list <- list(gg_fk_kappa_all, gg_fk_num_reads_all, gg_fk_num_Cs_all, gg_mean_stocha_all, gg_mean_mean_acf_all, gg_mean_min_acf_all, gg_genes, gg_gypsy, gg_CEN180)
 gg_cow <- plot_grid(plotlist = gg_cow_list,
-                    labels = c("A", "B", "C", "D", "E", "F", "G"), label_size = 30,
+                    labels = c("A", "B", "C", "D", "E", "F", "G", "H", "I"), label_size = 30,
                     align = "hv",
                     axis = "l",
                     nrow = length(gg_cow_list), ncol = 1)
