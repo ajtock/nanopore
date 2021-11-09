@@ -93,6 +93,17 @@ if(!grepl("Chr", fai[,1][1])) {
 }
 chrLens <- fai[,2][which(fai[,1] %in% chrName)]
 
+# Load coordinates for mitochondrial insertion on Chr2, in BED format
+mito_ins <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase, "/annotation/", refbase , ".mitochondrial_insertion.bed"),
+                       header = F)
+colnames(mito_ins) <- c("chr", "start", "end", "name", "score", "strand")
+mito_ins <- mito_ins[ mito_ins$chr %in% chrName,]
+mito_ins <- mito_ins[ with(mito_ins, order(chr, start, end)) , ]
+mito_ins_GR <- GRanges(seqnames = "Chr2",
+                       ranges = IRanges(start = min(mito_ins$start)+1,
+                                        end = max(mito_ins$end)),
+                       strand = "*")
+
 # Read in the raw output .tsv file from Deepsignal methylation model
 tab_list <- mclapply(seq_along(chrName), function(x) {
   read.table(paste0("/home/ajt200/analysis/nanopore/", refbase, "/deepsignal_DNAmeth/",
@@ -107,6 +118,7 @@ if(length(chrName) > 1) {
 }
 rm(tab_list); gc()
 
+
 # For each genomeBinSize-bp window with a step of genomeStepSize-bp,
 # calculate Fleiss' kappa statistic as a measure of among-read variation
 # in methylation state
@@ -117,7 +129,7 @@ for(i in seq_along(chrName)) {
   # with a step of genomeStepSize vp
   ## Note: the active code creates windows of genomeBinSize bp only,
   ## whereas the commented-out code creates windows decreasing from genomeBinSize bp to genomeStepSize bp
-  ## at the right-hand end of each chromosome ( from chrLens[x]-genomeBinSize to chrLens[x] ),
+  ## at the right-hand end of each chromosome ( from chrLens[i]-genomeBinSize to chrLens[i] ),
   winStarts <- seq(from = 1,
 #                   to = chrLens[i],
                    to = chrLens[i]-genomeBinSize,

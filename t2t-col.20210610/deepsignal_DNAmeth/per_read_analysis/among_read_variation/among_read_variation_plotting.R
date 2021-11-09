@@ -200,18 +200,32 @@ chrPlot2 <- function(dataFrame, xvar, yvar1, yvar2, yvar1lab, yvar2lab, ylims, x
         plot.margin = unit(c(0.3,1.2,0.3,0.3), "cm"))
 }
 
-gg_fk_kappa_all <- chrPlot(dataFrame = tab,
-                           xvar = midpoint,
-                           yvar = fk_kappa_all,
-                           xlab = paste0("Coordinates (Mb; ", genomeBinNamePlot, " windows, ", genomeStepNamePlot, " step)"),
-                           ylab = bquote("Fleiss' kappa per-read m"*.(context)),
-                           colour = "red") 
-gg_fk_kappa_all <- gg_fk_kappa_all +
-  facet_grid(cols = vars(chr), scales = "free_x")
-
 tab2 <- tab %>%
   mutate(fk_total_reads_all = tab$fk_num_reads_all/tab$fk_prop_reads_all,
          fk_total_Cs_all = tab$fk_num_Cs_all/tab$fk_prop_Cs_all)
+
+gg_fk_num_reads_all <- chrPlot2(dataFrame = tab2,
+                                xvar = midpoint,
+                                yvar1 = fk_num_reads_all,
+                                yvar2 = fk_total_reads_all,
+                                yvar1lab = bquote("Kept (NAs at <" * .(NAmax*100) * "% of sites)"),
+                                yvar2lab = "Total",
+                                ylims = c(0, 100),
+                                xlab = paste0("Coordinates (Mb; ", genomeBinNamePlot, " windows, ", genomeStepNamePlot, " step)"),
+                                ylab = bquote("No. of reads (m"*.(context)*")"),
+                                colour1 = "blue",
+                                colour2 = "grey50") 
+gg_fk_num_reads_all <- gg_fk_num_reads_all +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+gg_fk_prop_reads_all <- chrPlot(dataFrame = tab,
+                                xvar = midpoint,
+                                yvar = fk_prop_reads_all,
+                                xlab = paste0("Coordinates (Mb; ", genomeBinNamePlot, " windows, ", genomeStepNamePlot, " step)"),
+                                ylab = bquote("Proportion of reads kept (m"*.(context)*")"),
+                                colour = "blue") 
+gg_fk_prop_reads_all <- gg_fk_prop_reads_all +
+  facet_grid(cols = vars(chr), scales = "free_x")
 
 gg_fk_num_Cs_all <- chrPlot2(dataFrame = tab2,
                              xvar = midpoint,
@@ -221,31 +235,35 @@ gg_fk_num_Cs_all <- chrPlot2(dataFrame = tab2,
                              yvar2lab = "Total",
                              ylims = NULL,
                              xlab = paste0("Coordinates (Mb; ", genomeBinNamePlot, " windows, ", genomeStepNamePlot, " step)"),
-                             ylab = bquote("No. of sites per-read m"*.(context)),
+                             ylab = bquote("No. of sites (m"*.(context)*")"),
                              colour1 = "red",
                              colour2 = "grey50") 
 gg_fk_num_Cs_all <- gg_fk_num_Cs_all +
   facet_grid(cols = vars(chr), scales = "free_x")
 
-gg_fk_num_reads_all <- chrPlot2(dataFrame = tab2,
-                                xvar = midpoint,
-                                yvar1 = fk_num_reads_all,
-                                yvar2 = fk_total_reads_all,
-                                yvar1lab = "Kept",
-                                yvar2lab = "Total",
-                                ylims = c(0, 100),
-                                xlab = paste0("Coordinates (Mb; ", genomeBinNamePlot, " windows, ", genomeStepNamePlot, " step)"),
-                                ylab = bquote("No. of reads per-read m"*.(context)),
-                                colour1 = "blue",
-                                colour2 = "grey50") 
-gg_fk_num_reads_all <- gg_fk_num_reads_all +
+gg_fk_prop_Cs_all <- chrPlot(dataFrame = tab,
+                             xvar = midpoint,
+                             yvar = fk_prop_Cs_all,
+                             xlab = paste0("Coordinates (Mb; ", genomeBinNamePlot, " windows, ", genomeStepNamePlot, " step)"),
+                             ylab = bquote("Proportion of sites kept (m"*.(context)*")"),
+                             colour = "red") 
+gg_fk_prop_Cs_all <- gg_fk_prop_Cs_all +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+gg_fk_kappa_all <- chrPlot(dataFrame = tab,
+                           xvar = midpoint,
+                           yvar = fk_kappa_all,
+                           xlab = paste0("Coordinates (Mb; ", genomeBinNamePlot, " windows, ", genomeStepNamePlot, " step)"),
+                           ylab = bquote("Fleiss' kappa (m"*.(context)*")"),
+                           colour = "red") 
+gg_fk_kappa_all <- gg_fk_kappa_all +
   facet_grid(cols = vars(chr), scales = "free_x")
 
 gg_mean_stocha_all <- chrPlot(dataFrame = tab,
                               xvar = midpoint,
                               yvar = mean_stocha_all,
                               xlab = paste0("Coordinates (Mb; ", genomeBinNamePlot, " windows, ", genomeStepNamePlot, " step)"),
-                              ylab = bquote("Mean stoch. per-read m"*.(context)),
+                              ylab = bquote("Mean stochasticity (m"*.(context)*")"),
                               colour = "dodgerblue") 
 gg_mean_stocha_all <- gg_mean_stocha_all +
   facet_grid(cols = vars(chr), scales = "free_x")
@@ -254,7 +272,7 @@ gg_mean_mean_acf_all <- chrPlot(dataFrame = tab,
                                 xvar = midpoint,
                                 yvar = mean_mean_acf_all,
                                 xlab = paste0("Coordinates (Mb; ", genomeBinNamePlot, " windows, ", genomeStepNamePlot, " step)"),
-                                ylab = bquote("Mean mean ACF per-read m"*.(context)),
+                                ylab = bquote("Mean mean ACF (m"*.(context)*")"),
                                 colour = "darkgreen") 
 gg_mean_mean_acf_all <- gg_mean_mean_acf_all +
   facet_grid(cols = vars(chr), scales = "free_x")
@@ -263,7 +281,7 @@ gg_mean_min_acf_all <- chrPlot(dataFrame = tab,
                                xvar = midpoint,
                                yvar = mean_min_acf_all,
                                xlab = paste0("Coordinates (Mb; ", genomeBinNamePlot, " windows, ", genomeStepNamePlot, " step)"),
-                               ylab = bquote("Mean min. ACF per-read m"*.(context)),
+                               ylab = bquote("Mean min. ACF (m"*.(context)*")"),
                                colour = "forestgreen") 
 gg_mean_min_acf_all <- gg_mean_min_acf_all +
   facet_grid(cols = vars(chr), scales = "free_x")
@@ -295,7 +313,11 @@ gg_CEN180 <- chrPlot(dataFrame = CEN180,
 gg_CEN180 <- gg_CEN180 +
   facet_grid(cols = vars(chr), scales = "free_x")
 
-gg_cow_list <- list(gg_fk_kappa_all, gg_fk_num_Cs_all, gg_fk_num_reads_all, gg_mean_stocha_all, gg_mean_mean_acf_all, gg_mean_min_acf_all, gg_genes, gg_gypsy, gg_CEN180)
+gg_cow_list <- list(
+                    gg_fk_num_reads_all, gg_fk_num_Cs_all,
+                    gg_fk_kappa_all, gg_mean_stocha_all, gg_mean_mean_acf_all, gg_mean_min_acf_all,
+                    gg_genes, gg_gypsy, gg_CEN180
+                   )
 gg_cow <- plot_grid(plotlist = gg_cow_list,
                     labels = c("A", "B", "C", "D", "E", "F", "G", "H", "I"), label_size = 30,
                     align = "hv",
@@ -356,8 +378,8 @@ trendPlot <- function(dataFrame, xvar, yvar, xlab, ylab, xtrans, ytrans, xbreaks
 #ggTrend_fk_kappa_all_mean_stocha_all <- trendPlot(dataFrame = tab,
 #                                                  xvar = fk_kappa_all,
 #                                                  yvar = mean_stocha_all,
-#                                                  xlab = bquote("Fleiss' kappa per-read m"*.(context)),
-#                                                  ylab = bquote("Mean stoch. per-read m"*.(context)),
+#                                                  xlab = bquote("Fleiss' kappa (m"*.(context)*")"),
+#                                                  ylab = bquote("Mean stochasticity (m"*.(context)*")"),
 #                                                  xtrans = log10_trans(),
 #                                                  ytrans = log10_trans(),
 #                                                  xbreaks = trans_breaks("log10", function(x) 10^x),
@@ -368,8 +390,8 @@ trendPlot <- function(dataFrame, xvar, yvar, xlab, ylab, xtrans, ytrans, xbreaks
 ggTrend_fk_kappa_all_mean_stocha_all <- trendPlot(dataFrame = tab,
                                                   xvar = fk_kappa_all,
                                                   yvar = mean_stocha_all,
-                                                  xlab = bquote("Fleiss' kappa per-read m"*.(context)),
-                                                  ylab = bquote("Mean stoch. per-read m"*.(context)),
+                                                  xlab = bquote("Fleiss' kappa (m"*.(context)*")"),
+                                                  ylab = bquote("Mean stochasticity (m"*.(context)*")"),
                                                   xtrans = "identity",
                                                   ytrans = "identity",
                                                   xbreaks = waiver(),
@@ -382,8 +404,8 @@ ggTrend_fk_kappa_all_mean_stocha_all <- ggTrend_fk_kappa_all_mean_stocha_all +
 ggTrend_fk_kappa_all_mean_mean_acf_all <- trendPlot(dataFrame = tab,
                                                     xvar = fk_kappa_all,
                                                     yvar = mean_mean_acf_all,
-                                                    xlab = bquote("Fleiss' kappa per-read m"*.(context)),
-                                                    ylab = bquote("Mean mean ACF per-read m"*.(context)),
+                                                    xlab = bquote("Fleiss' kappa (m"*.(context)*")"),
+                                                    ylab = bquote("Mean mean ACF (m"*.(context)*")"),
                                                     xtrans = "identity",
                                                     ytrans = "identity",
                                                     xbreaks = waiver(),
@@ -396,8 +418,8 @@ ggTrend_fk_kappa_all_mean_mean_acf_all <- ggTrend_fk_kappa_all_mean_mean_acf_all
 ggTrend_fk_kappa_all_mean_min_acf_all <- trendPlot(dataFrame = tab,
                                                     xvar = fk_kappa_all,
                                                     yvar = mean_min_acf_all,
-                                                    xlab = bquote("Fleiss' kappa per-read m"*.(context)),
-                                                    ylab = bquote("Mean min. ACF per-read m"*.(context)),
+                                                    xlab = bquote("Fleiss' kappa (m"*.(context)*")"),
+                                                    ylab = bquote("Mean min. ACF (m"*.(context)*")"),
                                                     xtrans = "identity",
                                                     ytrans = "identity",
                                                     xbreaks = waiver(),
@@ -410,8 +432,8 @@ ggTrend_fk_kappa_all_mean_min_acf_all <- ggTrend_fk_kappa_all_mean_min_acf_all +
 ggTrend_mean_stocha_all_mean_mean_acf_all <- trendPlot(dataFrame = tab,
                                                     xvar = mean_stocha_all,
                                                     yvar = mean_mean_acf_all,
-                                                    xlab = bquote("Mean stoch. per-read m"*.(context)),
-                                                    ylab = bquote("Mean mean ACF per-read m"*.(context)),
+                                                    xlab = bquote("Mean stochasticity (m"*.(context)*")"),
+                                                    ylab = bquote("Mean mean ACF (m"*.(context)*")"),
                                                     xtrans = "identity",
                                                     ytrans = "identity",
                                                     xbreaks = waiver(),
@@ -424,8 +446,8 @@ ggTrend_mean_stocha_all_mean_mean_acf_all <- ggTrend_mean_stocha_all_mean_mean_a
 ggTrend_mean_stocha_all_mean_min_acf_all <- trendPlot(dataFrame = tab,
                                                     xvar = mean_stocha_all,
                                                     yvar = mean_min_acf_all,
-                                                    xlab = bquote("Mean stoch. per-read m"*.(context)),
-                                                    ylab = bquote("Mean min. ACF per-read m"*.(context)),
+                                                    xlab = bquote("Mean stochasticity (m"*.(context)*")"),
+                                                    ylab = bquote("Mean min. ACF (m"*.(context)*")"),
                                                     xtrans = "identity",
                                                     ytrans = "identity",
                                                     xbreaks = waiver(),
@@ -438,7 +460,7 @@ ggTrend_mean_stocha_all_mean_min_acf_all <- ggTrend_mean_stocha_all_mean_min_acf
 ggTrend_fk_kappa_all_genes <- trendPlot(dataFrame = cbind(tab, genes[,3:4]),
                                         xvar = fk_kappa_all,
                                         yvar = features,
-                                        xlab = bquote("Fleiss' kappa per-read m"*.(context)),
+                                        xlab = bquote("Fleiss' kappa (m"*.(context)*")"),
                                         ylab = bquote("Genes"),
                                         xtrans = "identity",
                                         ytrans = "identity",
@@ -452,7 +474,7 @@ ggTrend_fk_kappa_all_genes <- ggTrend_fk_kappa_all_genes +
 ggTrend_fk_kappa_all_gypsy <- trendPlot(dataFrame = cbind(tab, gypsy[,3:4]),
                                         xvar = fk_kappa_all,
                                         yvar = features,
-                                        xlab = bquote("Fleiss' kappa per-read m"*.(context)),
+                                        xlab = bquote("Fleiss' kappa (m"*.(context)*")"),
                                         ylab = bquote(italic("GYPSY")),
                                         xtrans = "identity",
                                         ytrans = "identity",
@@ -466,7 +488,7 @@ ggTrend_fk_kappa_all_gypsy <- ggTrend_fk_kappa_all_gypsy +
 ggTrend_mean_stocha_all_genes <- trendPlot(dataFrame = cbind(tab, genes[,3:4]),
                                            xvar = mean_stocha_all,
                                            yvar = features,
-                                           xlab = bquote("Mean stoch. per-read m"*.(context)),
+                                           xlab = bquote("Mean stochasticity (m"*.(context)*")"),
                                            ylab = bquote("Genes"),
                                            xtrans = "identity",
                                            ytrans = "identity",
@@ -480,7 +502,7 @@ ggTrend_mean_stocha_all_genes <- ggTrend_mean_stocha_all_genes +
 ggTrend_mean_stocha_all_gypsy <- trendPlot(dataFrame = cbind(tab, gypsy[,3:4]),
                                            xvar = mean_stocha_all,
                                            yvar = features,
-                                           xlab = bquote("Mean stoch. per-read m"*.(context)),
+                                           xlab = bquote("Mean stochasticity (m"*.(context)*")"),
                                            ylab = bquote(italic("GYPSY")),
                                            xtrans = "identity",
                                            ytrans = "identity",
@@ -494,7 +516,7 @@ ggTrend_mean_stocha_all_gypsy <- ggTrend_mean_stocha_all_gypsy +
 ggTrend_mean_mean_acf_all_genes <- trendPlot(dataFrame = cbind(tab, genes[,3:4]),
                                            xvar = mean_mean_acf_all,
                                            yvar = features,
-                                           xlab = bquote("Mean mean ACF per-read m"*.(context)),
+                                           xlab = bquote("Mean mean ACF (m"*.(context)*")"),
                                            ylab = bquote("Genes"),
                                            xtrans = "identity",
                                            ytrans = "identity",
@@ -508,7 +530,7 @@ ggTrend_mean_mean_acf_all_genes <- ggTrend_mean_mean_acf_all_genes +
 ggTrend_mean_mean_acf_all_gypsy <- trendPlot(dataFrame = cbind(tab, gypsy[,3:4]),
                                            xvar = mean_mean_acf_all,
                                            yvar = features,
-                                           xlab = bquote("Mean mean ACF per-read m"*.(context)),
+                                           xlab = bquote("Mean mean ACF (m"*.(context)*")"),
                                            ylab = bquote(italic("GYPSY")),
                                            xtrans = "identity",
                                            ytrans = "identity",
@@ -522,7 +544,7 @@ ggTrend_mean_mean_acf_all_gypsy <- ggTrend_mean_mean_acf_all_gypsy +
 ggTrend_mean_min_acf_all_genes <- trendPlot(dataFrame = cbind(tab, genes[,3:4]),
                                             xvar = mean_min_acf_all,
                                             yvar = features,
-                                            xlab = bquote("Mean min. ACF per-read m"*.(context)),
+                                            xlab = bquote("Mean min. ACF (m"*.(context)*")"),
                                             ylab = bquote("Genes"),
                                             xtrans = "identity",
                                             ytrans = "identity",
@@ -536,7 +558,7 @@ ggTrend_mean_min_acf_all_genes <- ggTrend_mean_min_acf_all_genes +
 ggTrend_mean_min_acf_all_gypsy <- trendPlot(dataFrame = cbind(tab, gypsy[,3:4]),
                                             xvar = mean_min_acf_all,
                                             yvar = features,
-                                            xlab = bquote("Mean min. ACF per-read m"*.(context)),
+                                            xlab = bquote("Mean min. ACF (m"*.(context)*")"),
                                             ylab = bquote(italic("GYPSY")),
                                             xtrans = "identity",
                                             ytrans = "identity",
