@@ -118,6 +118,11 @@ if(length(chrName) > 1) {
 }
 rm(tab_list); gc()
 
+# Get reads that overlap mito_ins_GR
+tab_mito <- tab[tab[,1] == as.character(seqnames(mito_ins_GR)) &
+                tab[,2] >= start(mito_ins_GR) &
+                tab[,2] <= end(mito_ins_GR),]
+tab_mito_reads <- unique(tab_mito[,5])
 
 # For each genomeBinSize-bp window with a step of genomeStepSize-bp,
 # calculate Fleiss' kappa statistic as a measure of among-read variation
