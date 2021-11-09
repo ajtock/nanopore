@@ -118,14 +118,41 @@ if(length(chrName) > 1) {
 }
 rm(tab_list); gc()
 
-# Get reads that overlap mito_ins_GR
-tab_mito <- tab[tab[,1] == as.character(seqnames(mito_ins_GR)) &
-                tab[,2] >= start(mito_ins_GR) &
-                tab[,2] <= end(mito_ins_GR),]
-tab_mito_reads <- unique(tab_mito[,5])
+# Identify and remove reads whose alignment start and end coordinates are both
+# contained wholly within the boundaries of the mitochondrial insertion on Chr2,
+# as we cannot be sure that these reads come from the nuclear genome
+if(length(chrName) == 1 && chrName == "Chr2") {
+
+  tab <- tab[tab[,1] == chrName,]
+ 
+  # Get reads that overlap mito_ins_GR
+  tab_mito <- tab[tab[,1] == as.character(seqnames(mito_ins_GR)) &
+                  tab[,2] >= start(mito_ins_GR) &
+                  tab[,2] <= end(mito_ins_GR),]
+  tab_mito_reads <- unique(tab_mito[,5])
+ 
+  read_within_mito_ins <- function(DSrawDF, readID, mito_ins_GR) {
+    DSrawDF_read <- DSrawDF[DSrawDF[,5] == readID,]
+    stopifnot(unique(DSrawDF_read[,1]) == as.character(seqnames(mito_ins_GR)))
+    bool <- min(DSrawDF_read[,2], na.rm = T) >= start(mito_ins_GR) &&
+            max(DSrawDF_read[,2], na.rm = T) <= end(mito_ins_GR)
+    return(bool)
+  }
+ 
+  tab_mito_reads_bool <- mclapply(tab_mito_reads, function(x) {
+    read_within_mito_ins(DSrawDF = tab,
+                         readID = x,
+                         mito_ins_GR = mito_ins_GR)
+  }, mc.cores = detectCores(), mc.preschedule = T)
+
+  tab_within_mito_reads <- tab_mito_reads[unlist(tab_mito_reads_bool)]
+
+  tab <- tab[!(tab[,5] %in% tab_within_mito_reads),]
+
+}
 
 # For each genomeBinSize-bp window with a step of genomeStepSize-bp,
-# calculate Fleiss' kappa statistic as a measure of among-read variation
+# calculate Fleiss' kappa statistic as a measure of among-read agreement
 # in methylation state
 print(genomeBinName)
 print(genomeStepName)
