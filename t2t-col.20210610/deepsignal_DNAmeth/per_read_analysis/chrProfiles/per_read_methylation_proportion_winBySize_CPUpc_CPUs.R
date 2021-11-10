@@ -1,10 +1,10 @@
 #!/applications/R/R-4.0.0/bin/Rscript
 
 # Usage on hydrogen node7:
-# csmit -m 300G -c 47 "/applications/R/R-4.0.0/bin/Rscript per_read_methylation_proportion_winBySize_CPUpc_CPUs.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 1000 CHG 0.30"
-# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript per_read_methylation_proportion_winBySize_CPUpc_CPUs.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 1000 CpG 0.20"
+# csmit -m 300G -c 47 "/applications/R/R-4.0.0/bin/Rscript per_read_methylation_proportion_winBySize_CPUpc_CPUs.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 1000 CHG 0.30 Chr2"
+# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript per_read_methylation_proportion_winBySize_CPUpc_CPUs.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 1000 CpG 0.20 Chr2"
 
-# Divide each read into adjacent segments each consisting of a given number of consecutive cytosines,
+# Divide each read into adjacent segments each consisting of a given physical size,
 # and calculate the methylation proportion for each segment of each read
 
 #sampleName <- "Col_0_deepsignalDNAmeth_30kb_90pc"
@@ -12,6 +12,7 @@
 #readBinSize <- 1000
 #context <- "CpG"
 #CPUpc <- 0.20
+#chrName <- unlist(strsplit("Chr2", split = ","))
 
 args <- commandArgs(trailingOnly = T)
 sampleName <- args[1]
@@ -19,11 +20,12 @@ refbase <- args[2]
 readBinSize <- as.integer(args[3])
 context <- args[4]
 CPUpc <- as.numeric(args[5])
+chrName <- unlist(strsplit(args[6], split = ","))
 
 print(paste0("Proportion of CPUs:", CPUpc))
 options(stringsAsFactors = F)
 library(parallel)
-library(GenomeRanges)
+library(GenomicRanges)
 library(dplyr)
  
 if(floor(log10(readBinSize)) + 1 < 4) {
@@ -35,10 +37,17 @@ if(floor(log10(readBinSize)) + 1 < 4) {
   readBinName <- paste0(readBinSize/1e6, "Mb")
 }
 
+outDir <- paste0("winBySize/")
+system(paste0("[ -d ", outDir, " ] || mkdir -p ", outDir))
+
 # Genomic definitions
 fai <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase, "/", refbase, ".fa.fai"), header = F)
-chrs <- fai[,1][1:5]
-chrLens <- fai[,2][1:5]
+if(!grepl("Chr", fai[,1][1])) {
+  chrs <- paste0("Chr", fai[,1])[which(paste0("Chr", fai[,1]) %in% chrName)]
+} else {
+  chrs <- fai[,1][which(fai[,1] %in% chrName)]
+}
+chrLens <- fai[,2][which(fai[,1] %in% chrName)]
 
 # Load coordinates for mitochondrial insertion on Chr2, in BED format
 mito_ins <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase, "/annotation/", refbase , ".mitochondrial_insertion.bed"),
@@ -52,45 +61,53 @@ mito_ins_GR <- GRanges(seqnames = "Chr2",
                        strand = "*")
 
 # Read in the raw output .tsv file from Deepsignal methylation model
-tab_list <- mclapply(seq_along(chrs), function(x) {
+tab_list <- mclapply(seq_along(chrName), function(x) {
   read.table(paste0("/home/ajt200/analysis/nanopore/", refbase, "/deepsignal_DNAmeth/",
-                    sampleName, "_MappedOn_", refbase, "_", context, "_raw_", chrs[x], ".tsv"),
+                    sampleName, "_MappedOn_", refbase, "_", context, "_raw_", chrName[x], ".tsv"),
              header = F)
-}, mc.cores = length(chrs), mc.preschedule = F)
+}, mc.cores = length(chrName), mc.preschedule = F)
 
-if(length(chrs) > 1) {
+if(length(chrName) > 1) {
   tab <- dplyr::bind_rows(tab_list)
 } else {
   tab <- tab_list[[1]]
 }
 rm(tab_list); gc()
 
-# Get reads that overlap mito_ins_GR
-tab_mito <- tab[tab[,1] == as.character(seqnames(mito_ins_GR)) &
-                tab[,2] >= start(mito_ins_GR) &
-                tab[,2] <= end(mito_ins_GR),]
-tab_mito_reads <- unique(tab_mito[,5])
+# Identify and remove reads whose alignment start and end coordinates are both
+# contained wholly within the boundaries of the mitochondrial insertion on Chr2,
+# as we cannot be sure that these reads come from the nuclear genome
+if(length(chrName) == 1 && chrName == "Chr2") {
 
-read_within_mito_ins <- function(DSrawDF, readID, mito_ins_GR) {
-  DSrawDF_read <- DSrawDF[DSrawDF[,5] == readID,]
-  stopifnot(unique(DSrawDF_read[,1]) == as.character(seqnames(mito_ins_GR)))
-  bool <- min(DSrawDF_read[,2], na.rm = T) >= start(mito_ins_GR) &&
-          max(DSrawDF_read[,2], na.rm = T) <= end(mito_ins_GR)
-  return(bool)
+  # Get reads that overlap mito_ins_GR
+  tab_mito <- tab[tab[,1] == as.character(seqnames(mito_ins_GR)) &
+                  tab[,2] >= start(mito_ins_GR) &
+                  tab[,2] <= end(mito_ins_GR),]
+  tab_mito_reads <- unique(tab_mito[,5])
+
+  read_within_mito_ins <- function(DSrawDF, readID, mito_ins_GR) {
+    DSrawDF_read <- DSrawDF[DSrawDF[,5] == readID,]
+    stopifnot(unique(DSrawDF_read[,1]) == as.character(seqnames(mito_ins_GR)))
+    bool <- min(DSrawDF_read[,2], na.rm = T) >= start(mito_ins_GR) &&
+            max(DSrawDF_read[,2], na.rm = T) <= end(mito_ins_GR)
+    return(bool)
+  }
+
+  tab_mito_reads_bool <- mclapply(tab_mito_reads, function(x) {
+    read_within_mito_ins(DSrawDF = tab,
+                         readID = x,
+                         mito_ins_GR = mito_ins_GR)
+  }, mc.cores = detectCores(), mc.preschedule = T)
+
+  tab_within_mito_reads <- tab_mito_reads[unlist(tab_mito_reads_bool)]
+
+  tab <- tab[!(tab[,5] %in% tab_within_mito_reads),]
+
 }
 
-tab_mito_reads_bool <- mclapply(tab_mito_reads, function(x) {
-  read_within_mito_ins(DSrawDF = tab,
-                       readID = x,
-                       mito_ins_GR = mito_ins_GR)
-}, mc.cores = detectCores(), mc.preschedule = T)
-
-tab_within_mito_reads <- tab_mito_reads[unlist(tab_mito_reads_bool)]
-
-tab <- tab[!(tab[,5] %in% tab_within_mito_reads),]
 
 # Generate a character vector of the unique readIDs in the file
-readIDs <- unique(tab$V5)
+readIDs <- unique(tab[,5])
 
 # Loop within parallelised loop to calculate the per-read methylation proportion
 # across sequential adjacent noOfCs-Cs-containing windows along each read
@@ -98,46 +115,28 @@ per_read_DNAmeth_DF <- do.call(rbind, mclapply(readIDs, function(x) {
   y <- tab[tab[,5] == x,]              # Get rows (cytosine positions) for read x
   y <- y[order(y$V2, decreasing = F),] # Order the rows by ascending position in the chromosome
  
-  # Define window start and end coordinates within read
+  # Define window start coordinates within read
   winStarts <- seq(from = min(y[,2]),
                    to = max(y[,2]),
                    by = readBinSize)
+  # Remove the last winStart value if it is equal to the read end coordinate
   if(winStarts[length(winStarts)] == max(y[,2])) {
     winStarts <- winStarts[-length(winStarts)]
   }
-  if(max(y[,2]) - min(y[,2]) + 1 >= readBinSize) {
-    winEnds <- seq(from = winStarts[1] + readBinSize - 1,
-                   to = max(y[,2]),
-                   by = readBinSize)
-    if(winEnds[length(winEnds)] != max(y[,2])) {
-      winEnds <- c(winEnds, max(y[,2]))
-    }
-  } else {
-    winEnds <- max(y[,2])
-  }
-
-  # Define window start coordinates within read
-  winStarts <- seq(from = 1,
-                   to = nrow(y),
-                   by = noOfCs)
-  # Remove the last winStart value if is the same as the number of rows (total number of Cs in read)
-  if(winStarts[length(winStarts)] == nrow(y)) {
-    winStarts <- winStarts[-length(winStarts)]
-  }
-  # Remove the last winStart value if there are fewer than noOfCs Cs from
-  # this value to the last C in the read (the last row), so that the last window
-  # always has as much or more methylation-state information than the other windows
+  # Remove the last winStart value if there are fewer than readBinSize bases from
+  # this value to the read end coordinate (the last row in y), so that the last window
+  # always has as many or more bases than the other windows
   tryCatch(
     {
-      if(length(winStarts) > 1 && nrow(y) - winStarts[length(winStarts)] + 1 < noOfCs) {
+      if(( length(winStarts) > 1 ) && ( max(y[,2]) - winStarts[length(winStarts)] + 1 < readBinSize )) {
         winStarts <- winStarts[-length(winStarts)]
       }
     },
-    error=function(cond) {
+    error = function(cond) {
       message(paste(x, "read is problematic for winStarts"))
       message("Here's the original error message:")
       message(cond)
-      # Choose a return value in case of error
+      # Choose a return value in case of error 
       return(NA)
     }
   )
@@ -145,24 +144,24 @@ per_read_DNAmeth_DF <- do.call(rbind, mclapply(readIDs, function(x) {
   # Define window end coordinates within read
   tryCatch(
     {
-      if(nrow(y) >= noOfCs) {
-        winEnds <- seq(from = noOfCs,
-                       to = nrow(y),
-                       by = noOfCs)
-        if(winEnds[length(winEnds)] != nrow(y)) {
-          winEnds <- c(winEnds, nrow(y))
-        }
-        # Remove the penultimate winEnd value if there are fewer than noOfCs Cs from
-        # this value to the last C in the read (the last row), so that the last window
-        # always has as much methylation-state information as, or more than, the other windows
-        if(nrow(y) - winEnds[(length(winEnds) - 1)] < noOfCs) {
+      if(max(y[,2]) - min(y[,2]) + 1 >= readBinSize) {
+        winEnds <- seq(from = winStarts[1] + readBinSize - 1,
+                       to = max(y[,2]),
+                       by = readBinSize)
+        if(winEnds[length(winEnds)] != max(y[,2])) {
+          winEnds <- c(winEnds, max(y[,2]))
+        } 
+        # Remove the penultimate winEnd value if there are fewer than readBinSize bases from
+        # this value to the read end coordinate (the last row in y), so that the last window
+        # always has as many or more bases than the other windows
+        if(max(y[,2]) - winEnds[(length(winEnds) - 1)] < readBinSize) {
           winEnds <- winEnds[-(length(winEnds) - 1)]
         }
       } else {
-        winEnds <- nrow(y)
+        winEnds <- max(y[,2])
       }
     },
-    error=function(cond) {
+    error = function(cond) {
       message(paste(x, "read is problematic for winEnds"))
       message("Here's the original error message:")
       message(cond)
@@ -186,7 +185,8 @@ per_read_DNAmeth_DF <- do.call(rbind, mclapply(readIDs, function(x) {
 
   methDat <- NULL
   for(i in 1:length(winStarts)) {
-    readwin <- y[winStarts[i] : winEnds[i],]
+    readwin <- y[y[,2] >= winStarts[i] &
+                 y[,2] <= winEnds[i],]
     # Proceed only if readwin contains rows (cytosine positions)
     if(dim(readwin)[1] > 0) {
       midpoint <- ( min(readwin[,2]) + max(readwin[,2]) ) / 2
@@ -205,9 +205,6 @@ per_read_DNAmeth_DF <- do.call(rbind, mclapply(readIDs, function(x) {
     }
   }
  
-  # Andy to Matt: Removed return(methDat) as return() works only within a function
-  #               (this may be the source of the issue you mentioned);
-  #               Replaced with methDat :
   methDat
   # Due to the large numbers of reads that are forked to each CPU, these are
   # RAM-heavy combined processes, which calls for using fewer CPUs than are
@@ -221,6 +218,7 @@ per_read_DNAmeth_DF <- per_read_DNAmeth_DF[
                        ]
 
 write.table(per_read_DNAmeth_DF,
-            file = paste0(sampleName, "_MappedOn_", refbase, "_", context,
-                          "_raw_readBinSize", readBinName, "_per_readWin_midpoint.tsv"),
+            file = paste0(outDir, sampleName, "_MappedOn_", refbase, "_", context,
+                          "_raw_readBinSize", readBinName, "_per_readWin_midpoint_",
+                          chrName, ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
