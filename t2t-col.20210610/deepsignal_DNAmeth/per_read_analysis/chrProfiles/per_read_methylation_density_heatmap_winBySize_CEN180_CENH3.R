@@ -44,9 +44,9 @@ library(viridis)
 library(scales)
 library(circlize)
 
-plotDir <- paste0("winBySize/")
+outDir <- paste0("winBySize/")
+plotDir <- paste0(outDir, "plots/")
 system(paste0("[ -d ", plotDir, " ] || mkdir -p ", plotDir))
-
 
 # Genomic definitions
 fai <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase, "/", refbase, ".fa.fai"), header = F)
@@ -75,12 +75,22 @@ print(sumchr)
 # each coordinate corresponds to the midpoint between the
 # first and last cytosine position with methylation info in the read
 #tab <- read.table(paste0(sampleName, "_MappedOn_", refbase, "_", context,
-#                         "_raw_readBinSize", readBinSize, "_per_readWin_midpoint.tsv"),
+#                         "_raw_readBinSize", readBinName, "_per_readWin_midpoint.tsv"),
 #                  header = T, colClasses = c(rep(NA, 3), rep("NULL", 3)))
-tab <- fread(paste0(sampleName, "_MappedOn_", refbase, "_", context,
-                    "_raw_readBinSize", readBinSize, "_per_readWin_midpoint.tsv"),
-             sep = "\t", data.table = FALSE, colClasses = c(rep(NA, 3), rep("NULL", 3)))
-print("Done reading per-read-window methylation table")
+tab_list <- mclapply(seq_along(chrs), function(x) {
+  fread(paste0(outDir,
+               sampleName, "_MappedOn_", refbase, "_", context,
+               "_raw_readBinSize", readBinName, "_per_readWin_midpoint_", chrs[x], ".tsv"),
+        sep = "\t", data.table = FALSE, colClasses = c(rep(NA, 3), rep("NULL", 4)))
+}, mc.cores = length(chrs), mc.preschedule = F)
+
+if(length(chrs) > 1) {
+  tab <- dplyr::bind_rows(tab_list)
+} else {
+  tab <- tab_list[[1]]
+}
+rm(tab_list); gc()
+
 #colnames(tab) <- c("chr", "midpoint", "per_readwin_methyl_mean", "start", "end", "read")
 colnames(tab) <- c("chr", "midpoint", "per_readwin_methyl_mean")
 tab[,2] <- round(tab[,2])
@@ -270,7 +280,7 @@ for(i in seq_along(chrs)) {
 
 pdf(paste0(plotDir,
            sampleName, "_MappedOn_", refbase, "_", context,
-           "_prop_raw_readBinSize", readBinSize, "_per_readWin_midpoint_density_heatmap_genomeBinSize", genomeBinName, ".pdf"), 
+           "_prop_raw_readBinSize", readBinName, "_per_readWin_midpoint_density_heatmap_genomeBinSize", genomeBinName, ".pdf"), 
     height = 4, width = 12 * length(htmps))
 draw(htmps,
      heatmap_legend_side = "right",
