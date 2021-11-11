@@ -97,7 +97,7 @@ if(length(chrName) == 1 && chrName == "Chr2") {
     read_within_mito_ins(DSrawDF = tab,
                          readID = x,
                          mito_ins_GR = mito_ins_GR)
-  }, mc.cores = detectCores(), mc.preschedule = T)
+  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
 
   tab_within_mito_reads <- tab_mito_reads[unlist(tab_mito_reads_bool)]
 
