@@ -97,7 +97,7 @@ chrLens <- fai[,2][which(fai[,1] %in% chrName)]
 mito_ins <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase, "/annotation/", refbase , ".mitochondrial_insertion.bed"),
                        header = F)
 colnames(mito_ins) <- c("chr", "start", "end", "name", "score", "strand")
-mito_ins <- mito_ins[ mito_ins$chr %in% chrName,]
+mito_ins <- mito_ins[ mito_ins$chr %in% "Chr2",]
 mito_ins <- mito_ins[ with(mito_ins, order(chr, start, end)) , ]
 mito_ins_GR <- GRanges(seqnames = "Chr2",
                        ranges = IRanges(start = min(mito_ins$start)+1,
