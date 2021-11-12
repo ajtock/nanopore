@@ -5,14 +5,14 @@
 # at increasing physical distances (e.g., 1 to 10,000 nucleotides)
 
 # Usage on hydrogen node7:
-# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript autocorrelation.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 10000 10000 CpG + 1.00 Chr1,Chr2,Chr3,Chr4,Chr5"
+# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript autocorrelation.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 10000 10000 CpG + 1e3 Chr1,Chr2,Chr3,Chr4,Chr5"
 
 #sampleName <- "Col_0_deepsignalDNAmeth_30kb_90pc"
 #refbase <- "t2t-col.20210610"
 #genomeBinSize <- 10000
 #genomeStepSize <- 10000
 #context <- "CpG"
-#strand <- "+"
+#perms <- 1e3
 #CPUpc <- 1.00
 #chrName <- unlist(strsplit("Chr1,Chr2,Chr3,Chr4,Chr5", split = ","))
 
@@ -22,7 +22,7 @@ refbase <- args[2]
 genomeBinSize <- as.integer(args[3])
 genomeStepSize <- as.integer(args[4])
 context <- args[5]
-strand <- args[6]
+perms <- as.numeric(args[6])
 CPUpc <- as.numeric(args[7])
 chrName <- unlist(strsplit(args[8], split = ","))
 
@@ -166,6 +166,18 @@ tabGR_CEN180_fwd <- tabGR_CEN180[strand(tabGR_CEN180) == "+"]
 tabGR_CEN180_fwd <- sortSeqlevels(tabGR_CEN180_fwd)
 tabGR_CEN180_fwd <- sort(tabGR_CEN180_fwd, by = ~ seqnames + start + end)
 
+# Randomly shuffle methylation proportion values over the cytosine coordinates
+tabGR_CEN180_fwd_random <- mclapply(1:perms, function(y) {
+  tabGR_CEN180_fwd_chr_list_y <- lapply(seq_along(chrName), function(x) {
+    GRanges(seqnames = seqnames(tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == chrName[x]]),
+            ranges = ranges(tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == chrName[x]]),
+            strand = strand(tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == chrName[x]]),
+            prop = sample(tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == chrName[x]]$prop))
+  })
+  do.call(c, as(tabGR_CEN180_fwd_chr_list_y, "GRangesList")) 
+}, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
+
+
 tabGR_CEN180_rev <- tabGR_CEN180[strand(tabGR_CEN180) == "-"]
 tabGR_CEN180_rev <- sortSeqlevels(tabGR_CEN180_rev)
 tabGR_CEN180_rev <- sort(tabGR_CEN180_rev, by = ~ seqnames + start + end)
@@ -204,6 +216,16 @@ tabGR_CEN180_fwd_acf <- lapply(seq_along(chrName), function(x) {
                 bpDistance = y)
   }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T))
 })
+
+
+tabGR_CEN180_fwd_random_acf <- mclapply(seq_along(tabGR_CEN180_fwd_random), function(w) {
+  lapply(seq_along(chrName), function(x) {
+    unlist(lapply(tabGR_CEN180_fwd_dists_list[[x]], function(y) {
+      acfDistance(DSfreqGR = tabGR_CEN180_fwd_random[[w]][seqnames(tabGR_CEN180_fwd_random[[w]]) == chrName[x]],
+                  bpDistance = y)
+    }))
+  })
+}, mc.cores = round(detectCores()*CPUpc), mc.preschedule = F)
 
 tabGR_CEN180_fwd_acf_df <- dplyr::bind_rows(lapply(seq_along(tabGR_CEN180_fwd_acf), function(x) {
   data.frame(chr = chrName[x],
