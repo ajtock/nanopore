@@ -5,7 +5,7 @@
 # at increasing physical distances (e.g., 1 to 10,000 nucleotides)
 
 # Usage on hydrogen node7:
-# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript autocorrelation.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 10000 10000 CpG + 1.00 Chr1"
+# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript autocorrelation.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 10000 10000 CpG + 1.00 Chr1,Chr2,Chr3,Chr4,Chr5"
 
 #sampleName <- "Col_0_deepsignalDNAmeth_30kb_90pc"
 #refbase <- "t2t-col.20210610"
@@ -14,7 +14,7 @@
 #context <- "CpG"
 #strand <- "+"
 #CPUpc <- 1.00
-#chrName <- unlist(strsplit("Chr1", split = ","))
+#chrName <- unlist(strsplit("Chr1,Chr2,Chr3,Chr4,Chr5", split = ","))
 
 args <- commandArgs(trailingOnly = T)
 sampleName <- args[1]
@@ -98,29 +98,102 @@ mito_ins_GR <- GRanges(seqnames = "Chr2",
                                         end = max(mito_ins$end)),
                        strand = "*")
 
-# Read in the raw output .tsv file from Deepsignal methylation model
+# Read in CEN180 annotation
+CEN180 <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase,
+                            "/annotation/CEN180/CEN180_in_", refbase,
+                            "_", paste0(chrName, collapse = "_"), ".bed"),
+                     header = F)
+colnames(CEN180) <- c("chr", "start0based", "end", "name", "score", "strand", "HORlengthsSum", "HORcount")
+CEN180GR <- GRanges(seqnames = CEN180$chr,
+                    ranges = IRanges(start = CEN180$start0based+1,
+                                     end = CEN180$end),
+                    strand = CEN180$strand)
+
+# Read in gene annotation
+genes <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase,
+                           "/annotation/genes/", refbase, "_representative_mRNA",
+                           "_", paste0(chrName, collapse = "_"), ".bed"),
+                    header = F)
+colnames(genes) <- c("chr", "start0based", "end", "name", "score", "strand")
+genesGR <- GRanges(seqnames = genes$chr,
+                   ranges = IRanges(start = genes$start0based+1,
+                                    end = genes$end),
+                   strand = genes$strand)
+
+# Read in gypsy annotation
+gypsy <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase,
+                           "/annotation/TEs_EDTA/", refbase, "_TEs_Gypsy_LTR",
+                           "_", paste0(chrName, collapse = "_"), ".bed"),
+                    header = F)
+colnames(gypsy) <- c("chr", "start0based", "end", "name", "score", "strand")
+gypsyGR <- GRanges(seqnames = gypsy$chr,
+                   ranges = IRanges(start = gypsy$start0based+1,
+                                    end = gypsy$end),
+                   strand = gypsy$strand)
+
+
+# Read in the "methylation frequency" output .tsv file from Deepsignal methylation model
 tab <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase, "/deepsignal_DNAmeth/",
                          sampleName, "_MappedOn_", refbase, "_", context, ".tsv"),
                   header = F)
+tab <- tab[ order(tab[,1], tab[,2], tab[,3], decreasing = F), ]
+tab <- tab[tab[,1] %in% chrName,]
+tabGR <- GRanges(seqnames = tab[,1],
+                 ranges = IRanges(start = tab[,2],
+                                  end = tab[,2]),
+                 strand = tab[,3],
+                 prop = tab[,10])
 
-tab <- tab[tab[,1] %in% chrName &
-           tab[,3] == strand,]
-tab <- tab[ order(tab[,2], decreasing = F), ]
+# Mask out methylation info within mitochondrial insertion on Chr2
+fOverlaps_tab_mito_ins <- findOverlaps(query = tabGR,
+                                       subject = mito_ins_GR,
+                                       type = "any",
+                                       select = "all",
+                                       ignore.strand = T)
+if(length(fOverlaps_tab_mito_ins) > 0) {
+  tabGR <- tabGR[-unique(queryHits(fOverlaps_tab_mito_ins))]
+}
 
-acfDistance <- function(DSfreqDF, bpDistance) {
-  cor.test(x = DSfreqDF[ which(diff(DSfreqDF[,2]) == bpDistance), 10],
-           y = DSfreqDF[ ( which(diff(DSfreqDF[,2]) == bpDistance) + 1), 10],
+# Find context-specific cytosine sites that overlap CEN180
+fOverlaps_tab_CEN180 <- findOverlaps(query = tabGR,
+                                     subject = CEN180GR,
+                                     type = "any",
+                                     select = "all",
+                                     ignore.strand = T)
+tabGR_CEN180 <- tabGR[unique(queryHits(fOverlaps_tab_CEN180))]
+
+# Analyse each strand separately
+tabGR_CEN180_fwd <- tabGR_CEN180[strand(tabGR_CEN180) == "+"]
+tabGR_CEN180_fwd <- sortSeqlevels(tabGR_CEN180_fwd)
+tabGR_CEN180_fwd <- sort(tabGR_CEN180_fwd, by = ~ seqnames + start + end)
+
+tabGR_CEN180_rev <- tabGR_CEN180[strand(tabGR_CEN180) == "-"]
+tabGR_CEN180_rev <- sortSeqlevels(tabGR_CEN180_rev)
+tabGR_CEN180_rev <- sort(tabGR_CEN180_rev, by = ~ seqnames + start + end)
+
+#  sort( unique ( start( tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == x][2:(length(tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == x]))] ) -
+#                 start( tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == x][1:(length(tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == x])-1)] ) ) )
+
+tabGR_CEN180_fwd_dists_list <- mclapply(seq_along(chrName), function(x) {
+  sort( unique ( diff( start( tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == chrName[x]] ) ) ) )
+}, mc.cores = length(chrName), mc.preschedule = F)
+
+
+acfDistance <- function(DSfreqGR, bpDistance) {
+  cor.test(x = DSfreqGR[ ( which( diff( start(DSfreqGR)) == bpDistance) )]$prop,
+           y = DSfreqGR[ ( which( diff( start(DSfreqGR)) == bpDistance) + 1)]$prop,
            alternative = "two.sided",
            method = "pearson")$estimate
 }
 
-bpDistances <- seq(from = 2, to = 1000, by = 2)
-bpDistances <- 2:480
 
-out <- mclapply(bpDistances, function(x) {
-  acfDistance(DSfreqDF = tab,
-              bpDistance = x)
-}, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
+tabGR_CEN180_fwd_acf <- lapply(seq_along(chrName), function(x) {
+  mclapply(tabGR_CEN180_fwd_dists_list[[x]], function(y) {
+    acfDistance(DSfreqGR = tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == chrName[x]],
+                bpDistance = y)
+  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
+})
+
  
 
 
