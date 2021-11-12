@@ -174,10 +174,23 @@ tabGR_CEN180_rev <- sort(tabGR_CEN180_rev, by = ~ seqnames + start + end)
 #  sort( unique ( start( tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == x][2:(length(tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == x]))] ) -
 #                 start( tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == x][1:(length(tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == x])-1)] ) ) )
 
+# Get context-specific inter-cytosine bp distances that occur more than once
 tabGR_CEN180_fwd_dists_list <- mclapply(seq_along(chrName), function(x) {
-  sort( unique ( diff( start( tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == chrName[x]] ) ) ) )
+  as.integer( names (
+    which( table(
+      sort( diff( start( tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == chrName[x]] ) ) )
+   ) > 2 )
+  ) )
 }, mc.cores = length(chrName), mc.preschedule = F)
 
+# Get the distance that is the lowest common denominator among the chromsomes
+tabGR_CEN180_fwd_dists_min_max <- min(sapply(tabGR_CEN180_fwd_dists_list, function(x) {
+  max(x, na.rm = T)
+}))
+
+tabGR_CEN180_fwd_dists_list <- lapply(tabGR_CEN180_fwd_dists_list, function(x) {
+  x[which(x <= tabGR_CEN180_fwd_dists_min_max)]
+})
 
 acfDistance <- function(DSfreqGR, bpDistance) {
   cor.test(x = DSfreqGR[ ( which( diff( start(DSfreqGR)) == bpDistance) )]$prop,
@@ -186,13 +199,63 @@ acfDistance <- function(DSfreqGR, bpDistance) {
            method = "pearson")$estimate
 }
 
-
 tabGR_CEN180_fwd_acf <- lapply(seq_along(chrName), function(x) {
-  mclapply(tabGR_CEN180_fwd_dists_list[[x]], function(y) {
+  unlist(mclapply(tabGR_CEN180_fwd_dists_list[[x]], function(y) {
     acfDistance(DSfreqGR = tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == chrName[x]],
                 bpDistance = y)
-  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
+  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T))
 })
+
+tabGR_CEN180_fwd_acf_df <- dplyr::bind_rows(lapply(seq_along(tabGR_CEN180_fwd_acf), function(x) {
+  data.frame(chr = chrName[x],
+             distance = tabGR_CEN180_fwd_dists_list[[x]],
+             acf = tabGR_CEN180_fwd_acf[[x]])
+}))
+
+
+chrPlot <- function(dataFrame, xvar, yvar, xlab, ylab, colour) {
+  xvar <- enquo(xvar)
+  yvar <- enquo(yvar)
+  ggplot(data = dataFrame,
+         mapping = aes(x = !!xvar,
+                       y = !!yvar)) +
+#  geom_line(size = 1, colour = colour) +
+  geom_ma(ma_fun = SMA, n = 10, colour = colour, linetype = 1, size = 1) +
+  scale_x_continuous(
+                     labels = function(x) x/1e6) +
+  labs(x = xlab,
+       y = ylab) +
+  theme_bw() +
+  theme(
+        axis.ticks = element_line(size = 0.5, colour = "black"),
+        axis.ticks.length = unit(0.25, "cm"),
+        axis.text.x = element_text(size = 16, colour = "black"),
+        axis.text.y = element_text(size = 16, colour = "black"),
+        axis.title = element_text(size = 18, colour = "black"),
+        axis.line = element_line(size = 1.5, colour = "black"),
+        panel.background = element_blank(),
+        panel.border = element_blank(),
+#        panel.border = element_rect(size = 1.0, colour = "black"),
+#        panel.grid = element_blank(),
+        strip.text.x = element_text(size = 30, colour = "white"),
+        strip.background = element_rect(fill = "black", colour = "black"),
+        plot.margin = unit(c(0.3,1.2,0.3,0.3), "cm"))
+}
+
+
+
+
+pdf("test_CEN180.pdf", height = 5*5, width = 10)
+par(mfrow = c(5, 1))
+plot(x = tabGR_CEN180_fwd_dists_list[[1]], y = tabGR_CEN180_fwd_acf[[1]], type = "l", col = "red")
+plot(x = tabGR_CEN180_fwd_dists_list[[2]], y = tabGR_CEN180_fwd_acf[[2]], type = "l", col = "red")
+plot(x = tabGR_CEN180_fwd_dists_list[[3]], y = tabGR_CEN180_fwd_acf[[3]], type = "l", col = "red")
+plot(x = tabGR_CEN180_fwd_dists_list[[4]], y = tabGR_CEN180_fwd_acf[[4]], type = "l", col = "red")
+plot(x = tabGR_CEN180_fwd_dists_list[[5]], y = tabGR_CEN180_fwd_acf[[5]], type = "l", col = "red")
+dev.off()
+
+
+
 
  
 
