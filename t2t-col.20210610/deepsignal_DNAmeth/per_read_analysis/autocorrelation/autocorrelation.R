@@ -287,6 +287,7 @@ tabGR_CEN180_all_acf_df <- dplyr::bind_rows(lapply(seq_along(tabGR_CEN180_all_ac
   data.frame(chr = chrName[x],
              distance = tabGR_CEN180_all_dists_list[[x]],
              acf = tabGR_CEN180_all_acf[[x]],
+             fft = fft(tabGR_CEN180_all_acf[[x]]),
              pval = -log10(tabGR_CEN180_all_acf_permTest_pval[[x]]),
              exp = tabGR_CEN180_all_acf_permTest_pval[[x]])
 }))
@@ -447,9 +448,19 @@ gg_tabGR_CEN180_all_exp <- chrPlot(dataFrame = tabGR_CEN180_all_acf_df,
 gg_tabGR_CEN180_all_exp <- gg_tabGR_CEN180_all_exp +
   facet_grid(cols = vars(chr), scales = "free_x")
 
+gg_tabGR_CEN180_all_fft <- chrPlot(dataFrame = tabGR_CEN180_all_acf_df,
+                                   xvar = distance,
+                                   yvar = fft,
+                                   xlab = bquote("Distance between "*italic("CEN180")*" cytosines (bp)"),
+                                   ylab = bquote("FFT (m"*.(context)*")"),
+                                   colour = "lightseagreen")
+gg_tabGR_CEN180_all_fft <- gg_tabGR_CEN180_all_fft +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
 gg_cow_all_list <- list(
                         gg_tabGR_CEN180_all_acf,
                         gg_tabGR_CEN180_all_pval,
+                        gg_tabGR_CEN180_all_fft,
                         gg_tabGR_CEN180_all_exp
                        )
 gg_cow_all <- plot_grid(plotlist = gg_cow_all_list,
