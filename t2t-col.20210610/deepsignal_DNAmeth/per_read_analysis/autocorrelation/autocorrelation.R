@@ -5,7 +5,7 @@
 # at increasing physical distances (e.g., 1 to 10,000 nucleotides)
 
 # Usage on hydrogen node7:
-# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript autocorrelation.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 10000 10000 CpG + 1e3 Chr1,Chr2,Chr3,Chr4,Chr5"
+# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript autocorrelation.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 10000 10000 CpG 1e3 1.00 Chr1,Chr2,Chr3,Chr4,Chr5"
 
 #sampleName <- "Col_0_deepsignalDNAmeth_30kb_90pc"
 #refbase <- "t2t-col.20210610"
