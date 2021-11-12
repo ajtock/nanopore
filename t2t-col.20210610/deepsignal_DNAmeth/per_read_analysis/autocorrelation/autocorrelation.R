@@ -42,13 +42,13 @@ library(dplyr)
 ##library(scales)
 ##library(circlize)
  
-#library(ggplot2)
-#library(cowplot)
-##library(ggcorrplot)
-#library(viridis)
-#library(ggthemes)
-#library(tidyquant)
-##library(grid)
+library(ggplot2)
+library(cowplot)
+#library(ggcorrplot)
+library(viridis)
+library(ggthemes)
+library(tidyquant)
+#library(grid)
 
 if(floor(log10(genomeBinSize)) + 1 < 4) {
   genomeBinName <- paste0(genomeBinSize, "bp")
@@ -74,8 +74,7 @@ if(floor(log10(genomeStepSize)) + 1 < 4) {
   genomeStepNamePlot <- paste0(genomeStepSize/1e6, "-Mb")
 }
 
-outDir <- paste0("genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName, "/")
-plotDir <- paste0(outDir, "plots/")
+plotDir <- paste0("plots/")
 system(paste0("[ -d ", plotDir, " ] || mkdir -p ", plotDir))
 
 # Genomic definitions
@@ -212,7 +211,6 @@ tabGR_CEN180_fwd_acf_df <- dplyr::bind_rows(lapply(seq_along(tabGR_CEN180_fwd_ac
              acf = tabGR_CEN180_fwd_acf[[x]])
 }))
 
-
 chrPlot <- function(dataFrame, xvar, yvar, xlab, ylab, colour) {
   xvar <- enquo(xvar)
   yvar <- enquo(yvar)
@@ -220,9 +218,9 @@ chrPlot <- function(dataFrame, xvar, yvar, xlab, ylab, colour) {
          mapping = aes(x = !!xvar,
                        y = !!yvar)) +
 #  geom_line(size = 1, colour = colour) +
-  geom_ma(ma_fun = SMA, n = 10, colour = colour, linetype = 1, size = 1) +
+  geom_ma(ma_fun = SMA, n = 2, colour = colour, linetype = 1, size = 1) +
   scale_x_continuous(
-                     labels = function(x) x/1e6) +
+                     labels = function(x) x) +
   labs(x = xlab,
        y = ylab) +
   theme_bw() +
@@ -241,6 +239,33 @@ chrPlot <- function(dataFrame, xvar, yvar, xlab, ylab, colour) {
         strip.background = element_rect(fill = "black", colour = "black"),
         plot.margin = unit(c(0.3,1.2,0.3,0.3), "cm"))
 }
+
+gg_tabGR_CEN180_fwd_acf <- chrPlot(dataFrame = tabGR_CEN180_fwd_acf_df,
+                                   xvar = distance,
+                                   yvar = acf,
+                                   xlab = paste0("Distance (bp)"),
+                                   ylab = bquote("Correlation (m"*.(context)*")"),
+                                   colour = "dodgerblue")
+gg_tabGR_CEN180_fwd_acf <- gg_tabGR_CEN180_fwd_acf +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+gg_cow_list <- list(
+                    gg_tabGR_CEN180_fwd_acf
+                   )
+gg_cow <- plot_grid(plotlist = gg_cow_list,
+                    labels = c("AUTO"), label_size = 30,
+                    align = "hv",
+                    axis = "l",
+                    nrow = length(gg_cow_list), ncol = 1)
+
+ggsave(paste0(plotDir,
+              sampleName, "_MappedOn_", refbase, "_", context,
+              "_autocorrelation_CEN180_", paste0(chrName, collapse = "_"),
+              ".pdf"),
+       plot = gg_cow,
+       height = 5*length(gg_cow_list), width = 10*length(chrName), limitsize = F)
+
+
 
 
 
