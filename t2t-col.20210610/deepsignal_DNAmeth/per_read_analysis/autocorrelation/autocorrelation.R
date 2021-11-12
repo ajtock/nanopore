@@ -217,7 +217,6 @@ tabGR_CEN180_fwd_acf <- lapply(seq_along(chrName), function(x) {
   }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T))
 })
 
-
 tabGR_CEN180_fwd_random_acf <- mclapply(seq_along(tabGR_CEN180_fwd_random), function(w) {
   lapply(seq_along(chrName), function(x) {
     unlist(lapply(tabGR_CEN180_fwd_dists_list[[x]], function(y) {
@@ -226,6 +225,12 @@ tabGR_CEN180_fwd_random_acf <- mclapply(seq_along(tabGR_CEN180_fwd_random), func
     }))
   })
 }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = F)
+
+1 - ( sum(sapply(seq_along(tabGR_CEN180_fwd_random_acf), function(w) {
+  tabGR_CEN180_fwd_acf[[1]][1] > tabGR_CEN180_fwd_random_acf[[w]][[1]][1]
+})) / perms )
+
+
 
 tabGR_CEN180_fwd_acf_df <- dplyr::bind_rows(lapply(seq_along(tabGR_CEN180_fwd_acf), function(x) {
   data.frame(chr = chrName[x],
