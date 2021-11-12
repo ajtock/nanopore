@@ -15,6 +15,7 @@
 #perms <- 1e3
 #CPUpc <- 1.00
 #chrName <- unlist(strsplit("Chr1,Chr2,Chr3,Chr4,Chr5", split = ","))
+#min_pval <- 1 - ( (perms - 1) / perms )
 
 args <- commandArgs(trailingOnly = T)
 sampleName <- args[1]
@@ -25,6 +26,7 @@ context <- args[5]
 perms <- as.numeric(args[6])
 CPUpc <- as.numeric(args[7])
 chrName <- unlist(strsplit(args[8], split = ","))
+min_pval <- 1 - ( (perms - 1) / perms )
 
 print(paste0("Proportion of CPUs:", CPUpc))
 options(stringsAsFactors = F)
@@ -177,11 +179,6 @@ tabGR_CEN180_fwd_random <- mclapply(1:perms, function(y) {
   do.call(c, as(tabGR_CEN180_fwd_chr_list_y, "GRangesList")) 
 }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
 
-
-tabGR_CEN180_rev <- tabGR_CEN180[strand(tabGR_CEN180) == "-"]
-tabGR_CEN180_rev <- sortSeqlevels(tabGR_CEN180_rev)
-tabGR_CEN180_rev <- sort(tabGR_CEN180_rev, by = ~ seqnames + start + end)
-
 #  sort( unique ( start( tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == x][2:(length(tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == x]))] ) -
 #                 start( tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == x][1:(length(tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == x])-1)] ) ) )
 
@@ -226,17 +223,135 @@ tabGR_CEN180_fwd_random_acf <- mclapply(seq_along(tabGR_CEN180_fwd_random), func
   })
 }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = F)
 
-1 - ( sum(sapply(seq_along(tabGR_CEN180_fwd_random_acf), function(w) {
-  tabGR_CEN180_fwd_acf[[1]][1] > tabGR_CEN180_fwd_random_acf[[w]][[1]][1]
-})) / perms )
+tabGR_CEN180_fwd_acf_permTest_exp <- lapply(seq_along(chrName), function(x) {
+  unlist(lapply(seq_along(tabGR_CEN180_fwd_dists_list[[x]]), function(y) {
+    mean(
+      sapply(seq_along(tabGR_CEN180_fwd_random_acf), function(w) {
+        tabGR_CEN180_fwd_random_acf[[w]][[x]][y]
+      })
+    , na.rm = T)
+  }))
+})
 
+tabGR_CEN180_fwd_acf_permTest_pval <- lapply(seq_along(chrName), function(x) {
+  unlist(lapply(seq_along(tabGR_CEN180_fwd_dists_list[[x]]), function(y) {
+    1 - ( sum(
+      sapply(seq_along(tabGR_CEN180_fwd_random_acf), function(w) {
+        tabGR_CEN180_fwd_acf[[x]][y] > tabGR_CEN180_fwd_random_acf[[w]][[x]][y]
+      })
+    , na.rm = T) / perms )
+  }))
+})
 
+# Set minimum p-value
+for(x in seq_along(chrName)) {
+  tabGR_CEN180_fwd_acf_permTest_pval[[x]][which(tabGR_CEN180_fwd_acf_permTest_pval[[x]] == 0)] <- min_pval
+}
 
 tabGR_CEN180_fwd_acf_df <- dplyr::bind_rows(lapply(seq_along(tabGR_CEN180_fwd_acf), function(x) {
   data.frame(chr = chrName[x],
              distance = tabGR_CEN180_fwd_dists_list[[x]],
-             acf = tabGR_CEN180_fwd_acf[[x]])
+             acf = tabGR_CEN180_fwd_acf[[x]],
+             pval = -log10(tabGR_CEN180_fwd_acf_permTest_pval[[x]]),
+             exp = tabGR_CEN180_fwd_acf_permTest_pval[[x]])
 }))
+
+
+# Analyse each strand separately
+tabGR_CEN180_rev <- tabGR_CEN180[strand(tabGR_CEN180) == "-"]
+tabGR_CEN180_rev <- sortSeqlevels(tabGR_CEN180_rev)
+tabGR_CEN180_rev <- sort(tabGR_CEN180_rev, by = ~ seqnames + start + end)
+
+# Randomly shuffle methylation proportion values over the cytosine coordinates
+tabGR_CEN180_rev_random <- mclapply(1:perms, function(y) {
+  tabGR_CEN180_rev_chr_list_y <- lapply(seq_along(chrName), function(x) {
+    GRanges(seqnames = seqnames(tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == chrName[x]]),
+            ranges = ranges(tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == chrName[x]]),
+            strand = strand(tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == chrName[x]]),
+            prop = sample(tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == chrName[x]]$prop))
+  })
+  do.call(c, as(tabGR_CEN180_rev_chr_list_y, "GRangesList")) 
+}, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
+
+#  sort( unique ( start( tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == x][2:(length(tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == x]))] ) -
+#                 start( tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == x][1:(length(tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == x])-1)] ) ) )
+
+# Get context-specific inter-cytosine bp distances that occur more than once
+tabGR_CEN180_rev_dists_list <- mclapply(seq_along(chrName), function(x) {
+  as.integer( names (
+    which( table(
+      sort( diff( start( tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == chrName[x]] ) ) )
+   ) > 2 )
+  ) )
+}, mc.cores = length(chrName), mc.preschedule = F)
+
+# Get the distance that is the lowest common denominator among the chromsomes
+tabGR_CEN180_rev_dists_min_max <- min(sapply(tabGR_CEN180_rev_dists_list, function(x) {
+  max(x, na.rm = T)
+}))
+
+tabGR_CEN180_rev_dists_list <- lapply(tabGR_CEN180_rev_dists_list, function(x) {
+  x[which(x <= tabGR_CEN180_rev_dists_min_max)]
+})
+
+acfDistance <- function(DSfreqGR, bpDistance) {
+  cor.test(x = DSfreqGR[ ( which( diff( start(DSfreqGR)) == bpDistance) )]$prop,
+           y = DSfreqGR[ ( which( diff( start(DSfreqGR)) == bpDistance) + 1)]$prop,
+           alternative = "two.sided",
+           method = "pearson")$estimate
+}
+
+tabGR_CEN180_rev_acf <- lapply(seq_along(chrName), function(x) {
+  unlist(mclapply(tabGR_CEN180_rev_dists_list[[x]], function(y) {
+    acfDistance(DSfreqGR = tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == chrName[x]],
+                bpDistance = y)
+  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T))
+})
+
+tabGR_CEN180_rev_random_acf <- mclapply(seq_along(tabGR_CEN180_rev_random), function(w) {
+  lapply(seq_along(chrName), function(x) {
+    unlist(lapply(tabGR_CEN180_rev_dists_list[[x]], function(y) {
+      acfDistance(DSfreqGR = tabGR_CEN180_rev_random[[w]][seqnames(tabGR_CEN180_rev_random[[w]]) == chrName[x]],
+                  bpDistance = y)
+    }))
+  })
+}, mc.cores = round(detectCores()*CPUpc), mc.preschedule = F)
+
+tabGR_CEN180_rev_acf_permTest_exp <- lapply(seq_along(chrName), function(x) {
+  unlist(lapply(seq_along(tabGR_CEN180_rev_dists_list[[x]]), function(y) {
+    mean(
+      sapply(seq_along(tabGR_CEN180_rev_random_acf), function(w) {
+        tabGR_CEN180_rev_random_acf[[w]][[x]][y]
+      })
+    , na.rm = T)
+  }))
+})
+
+tabGR_CEN180_rev_acf_permTest_pval <- lapply(seq_along(chrName), function(x) {
+  unlist(lapply(seq_along(tabGR_CEN180_rev_dists_list[[x]]), function(y) {
+    1 - ( sum(
+      sapply(seq_along(tabGR_CEN180_rev_random_acf), function(w) {
+        tabGR_CEN180_rev_acf[[x]][y] > tabGR_CEN180_rev_random_acf[[w]][[x]][y]
+      })
+    , na.rm = T) / perms )
+  }))
+})
+
+# Set minimum p-value
+for(x in seq_along(chrName)) {
+  tabGR_CEN180_rev_acf_permTest_pval[[x]][which(tabGR_CEN180_rev_acf_permTest_pval[[x]] == 0)] <- min_pval
+}
+
+tabGR_CEN180_rev_acf_df <- dplyr::bind_rows(lapply(seq_along(tabGR_CEN180_rev_acf), function(x) {
+  data.frame(chr = chrName[x],
+             distance = tabGR_CEN180_rev_dists_list[[x]],
+             acf = tabGR_CEN180_rev_acf[[x]],
+             pval = -log10(tabGR_CEN180_rev_acf_permTest_pval[[x]]),
+             exp = tabGR_CEN180_rev_acf_permTest_pval[[x]])
+}))
+
+tabGR_CEN180_all_acf_df <- rbind(tabGR_CEN180_fwd_acf_df, tabGR_CEN180_rev_acf_df)
+tabGR_CEN180_all_acf_df <- tabGR_CEN180_all_acf_df[ order(tabGR_CEN180_all_acf_df[,1], tabGR_CEN180_all_acf_df[,2], decreasing = F) , ]
 
 chrPlot <- function(dataFrame, xvar, yvar, xlab, ylab, colour) {
   xvar <- enquo(xvar)
@@ -244,8 +359,8 @@ chrPlot <- function(dataFrame, xvar, yvar, xlab, ylab, colour) {
   ggplot(data = dataFrame,
          mapping = aes(x = !!xvar,
                        y = !!yvar)) +
-#  geom_line(size = 1, colour = colour) +
-  geom_ma(ma_fun = SMA, n = 2, colour = colour, linetype = 1, size = 1) +
+  geom_line(colour = colour, size = 1) +
+  geom_ma(ma_fun = SMA, n = 6, colour = colour, linetype = 1, size = 2.5) +
   scale_x_continuous(
                      labels = function(x) x) +
   labs(x = xlab,
@@ -267,17 +382,37 @@ chrPlot <- function(dataFrame, xvar, yvar, xlab, ylab, colour) {
         plot.margin = unit(c(0.3,1.2,0.3,0.3), "cm"))
 }
 
-gg_tabGR_CEN180_fwd_acf <- chrPlot(dataFrame = tabGR_CEN180_fwd_acf_df,
+gg_tabGR_CEN180_all_acf <- chrPlot(dataFrame = tabGR_CEN180_all_acf_df,
                                    xvar = distance,
                                    yvar = acf,
-                                   xlab = paste0("Distance (bp)"),
-                                   ylab = bquote("Correlation (m"*.(context)*")"),
+                                   xlab = bquote("Distance between "*italic(CEN180)*" cytosines (bp)"),
+                                   ylab = bquote("Observed correlation (m"*.(context)*")"),
                                    colour = "dodgerblue")
-gg_tabGR_CEN180_fwd_acf <- gg_tabGR_CEN180_fwd_acf +
+gg_tabGR_CEN180_all_acf <- gg_tabGR_CEN180_all_acf +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+gg_tabGR_CEN180_all_pval <- chrPlot(dataFrame = tabGR_CEN180_all_acf_df,
+                                    xvar = distance,
+                                    yvar = pval,
+                                    xlab = bquote("Distance between "*italic(CEN180)*" cytosines (bp)"),
+                                    ylab = bquote("-"*Log[10]*"("*italic(P)*"-value) (m"*.(context)*")"),
+                                    colour = "red")
+gg_tabGR_CEN180_all_pval <- gg_tabGR_CEN180_all_pval +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+gg_tabGR_CEN180_all_exp <- chrPlot(dataFrame = tabGR_CEN180_all_acf_df,
+                                   xvar = distance,
+                                   yvar = exp,
+                                   xlab = bquote("Distance between "*italic(CEN180)*" cytosines (bp)"),
+                                   ylab = bquote("Mean permuted correlation (m"*.(context)*")"),
+                                   colour = "lightseagreen")
+gg_tabGR_CEN180_all_exp <- gg_tabGR_CEN180_all_exp +
   facet_grid(cols = vars(chr), scales = "free_x")
 
 gg_cow_list <- list(
-                    gg_tabGR_CEN180_fwd_acf
+                    gg_tabGR_CEN180_all_acf,
+                    gg_tabGR_CEN180_all_pval,
+                    gg_tabGR_CEN180_all_exp
                    )
 gg_cow <- plot_grid(plotlist = gg_cow_list,
                     labels = c("AUTO"), label_size = 30,
