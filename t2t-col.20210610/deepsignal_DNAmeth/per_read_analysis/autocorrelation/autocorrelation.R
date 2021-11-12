@@ -460,7 +460,7 @@ gg_tabGR_CEN180_all_fft <- gg_tabGR_CEN180_all_fft +
 gg_cow_all_list <- list(
                         gg_tabGR_CEN180_all_acf,
                         gg_tabGR_CEN180_all_pval,
-                        gg_tabGR_CEN180_all_fft,
+#                        gg_tabGR_CEN180_all_fft,
                         gg_tabGR_CEN180_all_exp
                        )
 gg_cow_all <- plot_grid(plotlist = gg_cow_all_list,
