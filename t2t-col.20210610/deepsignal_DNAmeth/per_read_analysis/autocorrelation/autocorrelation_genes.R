@@ -5,7 +5,7 @@
 # at increasing physical distances (e.g., 1 to 10,000 nucleotides)
 
 # Usage on hydrogen node7:
-# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript autocorrelation.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 10000 10000 CpG 1e4 1.00 Chr1,Chr2,Chr3,Chr4,Chr5"
+# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript autocorrelation_genes.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 10000 10000 CpG 1e3 1.00 Chr1,Chr2,Chr3,Chr4,Chr5"
 
 #sampleName <- "Col_0_deepsignalDNAmeth_30kb_90pc"
 #refbase <- "t2t-col.20210610"
@@ -155,82 +155,82 @@ if(length(fOverlaps_tab_mito_ins) > 0) {
   tabGR <- tabGR[-unique(queryHits(fOverlaps_tab_mito_ins))]
 }
 
-# Find context-specific cytosine sites that overlap CEN180
-fOverlaps_tab_CEN180 <- findOverlaps(query = tabGR,
-                                     subject = CEN180GR,
+# Find context-specific cytosine sites that overlap genes
+fOverlaps_tab_genes <- findOverlaps(query = tabGR,
+                                     subject = genesGR,
                                      type = "any",
                                      select = "all",
                                      ignore.strand = T)
-tabGR_CEN180 <- tabGR[unique(queryHits(fOverlaps_tab_CEN180))]
+tabGR_genes <- tabGR[unique(queryHits(fOverlaps_tab_genes))]
 
 # Analyse each strand separately
-tabGR_CEN180_fwd <- tabGR_CEN180[strand(tabGR_CEN180) == "+"]
-tabGR_CEN180_fwd <- sortSeqlevels(tabGR_CEN180_fwd)
-tabGR_CEN180_fwd <- sort(tabGR_CEN180_fwd, by = ~ seqnames + start + end)
+tabGR_genes_fwd <- tabGR_genes[strand(tabGR_genes) == "+"]
+tabGR_genes_fwd <- sortSeqlevels(tabGR_genes_fwd)
+tabGR_genes_fwd <- sort(tabGR_genes_fwd, by = ~ seqnames + start + end)
 
 # Randomly shuffle methylation proportion values over the cytosine coordinates
-tabGR_CEN180_fwd_random <- mclapply(1:perms, function(y) {
-  tabGR_CEN180_fwd_chr_list_y <- lapply(seq_along(chrName), function(x) {
-    GRanges(seqnames = seqnames(tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == chrName[x]]),
-            ranges = ranges(tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == chrName[x]]),
-            strand = strand(tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == chrName[x]]),
-            prop = sample(tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == chrName[x]]$prop))
+tabGR_genes_fwd_random <- mclapply(1:perms, function(y) {
+  tabGR_genes_fwd_chr_list_y <- lapply(seq_along(chrName), function(x) {
+    GRanges(seqnames = seqnames(tabGR_genes_fwd[seqnames(tabGR_genes_fwd) == chrName[x]]),
+            ranges = ranges(tabGR_genes_fwd[seqnames(tabGR_genes_fwd) == chrName[x]]),
+            strand = strand(tabGR_genes_fwd[seqnames(tabGR_genes_fwd) == chrName[x]]),
+            prop = sample(tabGR_genes_fwd[seqnames(tabGR_genes_fwd) == chrName[x]]$prop))
   })
-  do.call(c, as(tabGR_CEN180_fwd_chr_list_y, "GRangesList")) 
+  do.call(c, as(tabGR_genes_fwd_chr_list_y, "GRangesList")) 
 }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
 
-#  sort( unique ( start( tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == x][2:(length(tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == x]))] ) -
-#                 start( tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == x][1:(length(tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == x])-1)] ) ) )
+#  sort( unique ( start( tabGR_genes_fwd[seqnames(tabGR_genes_fwd) == x][2:(length(tabGR_genes_fwd[seqnames(tabGR_genes_fwd) == x]))] ) -
+#                 start( tabGR_genes_fwd[seqnames(tabGR_genes_fwd) == x][1:(length(tabGR_genes_fwd[seqnames(tabGR_genes_fwd) == x])-1)] ) ) )
 
 # Get context-specific inter-cytosine bp distances that occur more than once
-tabGR_CEN180_fwd_dists_list <- mclapply(seq_along(chrName), function(x) {
+tabGR_genes_fwd_dists_list <- mclapply(seq_along(chrName), function(x) {
   as.integer( names (
     which( table(
-      sort( diff( start( tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == chrName[x]] ) ) )
+      sort( diff( start( tabGR_genes_fwd[seqnames(tabGR_genes_fwd) == chrName[x]] ) ) )
    ) > 2 )
   ) )
 }, mc.cores = length(chrName), mc.preschedule = F)
 
 
 # Analyse each strand separately
-tabGR_CEN180_rev <- tabGR_CEN180[strand(tabGR_CEN180) == "-"]
-tabGR_CEN180_rev <- sortSeqlevels(tabGR_CEN180_rev)
-tabGR_CEN180_rev <- sort(tabGR_CEN180_rev, by = ~ seqnames + start + end)
+tabGR_genes_rev <- tabGR_genes[strand(tabGR_genes) == "-"]
+tabGR_genes_rev <- sortSeqlevels(tabGR_genes_rev)
+tabGR_genes_rev <- sort(tabGR_genes_rev, by = ~ seqnames + start + end)
 
 # Randomly shuffle methylation proportion values over the cytosine coordinates
-tabGR_CEN180_rev_random <- mclapply(1:perms, function(y) {
-  tabGR_CEN180_rev_chr_list_y <- lapply(seq_along(chrName), function(x) {
-    GRanges(seqnames = seqnames(tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == chrName[x]]),
-            ranges = ranges(tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == chrName[x]]),
-            strand = strand(tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == chrName[x]]),
-            prop = sample(tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == chrName[x]]$prop))
+tabGR_genes_rev_random <- mclapply(1:perms, function(y) {
+  tabGR_genes_rev_chr_list_y <- lapply(seq_along(chrName), function(x) {
+    GRanges(seqnames = seqnames(tabGR_genes_rev[seqnames(tabGR_genes_rev) == chrName[x]]),
+            ranges = ranges(tabGR_genes_rev[seqnames(tabGR_genes_rev) == chrName[x]]),
+            strand = strand(tabGR_genes_rev[seqnames(tabGR_genes_rev) == chrName[x]]),
+            prop = sample(tabGR_genes_rev[seqnames(tabGR_genes_rev) == chrName[x]]$prop))
   })
-  do.call(c, as(tabGR_CEN180_rev_chr_list_y, "GRangesList")) 
+  do.call(c, as(tabGR_genes_rev_chr_list_y, "GRangesList")) 
 }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
 
-#  sort( unique ( start( tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == x][2:(length(tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == x]))] ) -
-#                 start( tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == x][1:(length(tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == x])-1)] ) ) )
+#  sort( unique ( start( tabGR_genes_rev[seqnames(tabGR_genes_rev) == x][2:(length(tabGR_genes_rev[seqnames(tabGR_genes_rev) == x]))] ) -
+#                 start( tabGR_genes_rev[seqnames(tabGR_genes_rev) == x][1:(length(tabGR_genes_rev[seqnames(tabGR_genes_rev) == x])-1)] ) ) )
 
 # Get context-specific inter-cytosine bp distances that occur more than once
-tabGR_CEN180_rev_dists_list <- mclapply(seq_along(chrName), function(x) {
+tabGR_genes_rev_dists_list <- mclapply(seq_along(chrName), function(x) {
   as.integer( names (
     which( table(
-      sort( diff( start( tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == chrName[x]] ) ) )
+      sort( diff( start( tabGR_genes_rev[seqnames(tabGR_genes_rev) == chrName[x]] ) ) )
    ) > 2 )
   ) )
 }, mc.cores = length(chrName), mc.preschedule = F)
 
 # Get the distance that is the lowest common denominator among the chromsomes
-tabGR_CEN180_all_dists_min_max <- min(sapply(c(tabGR_CEN180_fwd_dists_list, tabGR_CEN180_rev_dists_list), function(x) {
+tabGR_genes_all_dists_min_max <- min(sapply(c(tabGR_genes_fwd_dists_list, tabGR_genes_rev_dists_list), function(x) {
   max(x, na.rm = T)
 }))
 
-tabGR_CEN180_all_dists_list <- lapply(seq_along(chrName), function(x) {
-  unique(tabGR_CEN180_fwd_dists_list[[x]], tabGR_CEN180_rev_dists_list[[x]])
+tabGR_genes_all_dists_list <- lapply(seq_along(chrName), function(x) {
+  unique(tabGR_genes_fwd_dists_list[[x]], tabGR_genes_rev_dists_list[[x]])
 })
 
-tabGR_CEN180_all_dists_list <- lapply(tabGR_CEN180_all_dists_list, function(x) {
-  x[which(x <= tabGR_CEN180_all_dists_min_max)]
+tabGR_genes_all_dists_list <- lapply(tabGR_genes_all_dists_list, function(x) {
+  x[which(x <= tabGR_genes_all_dists_min_max)]
 })
 
 acfDistance <- function(DSfreqGR, bpDistance) {
@@ -240,39 +240,39 @@ acfDistance <- function(DSfreqGR, bpDistance) {
            method = "pearson")$estimate
 }
 
-tabGR_CEN180_all_acf <- lapply(seq_along(chrName), function(x) {
-  unlist(mclapply(tabGR_CEN180_all_dists_list[[x]], function(y) {
-    acfDistance(DSfreqGR = c(tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == chrName[x]],
-                             tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == chrName[x]]),
+tabGR_genes_all_acf <- lapply(seq_along(chrName), function(x) {
+  unlist(mclapply(tabGR_genes_all_dists_list[[x]], function(y) {
+    acfDistance(DSfreqGR = c(tabGR_genes_fwd[seqnames(tabGR_genes_fwd) == chrName[x]],
+                             tabGR_genes_rev[seqnames(tabGR_genes_rev) == chrName[x]]),
                 bpDistance = y)
   }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T))
 })
 
-tabGR_CEN180_all_random_acf <- mclapply(1:perms, function(w) {
+tabGR_genes_all_random_acf <- mclapply(1:perms, function(w) {
   lapply(seq_along(chrName), function(x) {
-    unlist(lapply(tabGR_CEN180_all_dists_list[[x]], function(y) {
-      acfDistance(DSfreqGR = c(tabGR_CEN180_fwd_random[[w]][seqnames(tabGR_CEN180_fwd_random[[w]]) == chrName[x]],
-                               tabGR_CEN180_rev_random[[w]][seqnames(tabGR_CEN180_rev_random[[w]]) == chrName[x]]),
+    unlist(lapply(tabGR_genes_all_dists_list[[x]], function(y) {
+      acfDistance(DSfreqGR = c(tabGR_genes_fwd_random[[w]][seqnames(tabGR_genes_fwd_random[[w]]) == chrName[x]],
+                               tabGR_genes_rev_random[[w]][seqnames(tabGR_genes_rev_random[[w]]) == chrName[x]]),
                   bpDistance = y)
     }))
   })
 }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = F)
 
-tabGR_CEN180_all_acf_permTest_exp <- lapply(seq_along(chrName), function(x) {
-  unlist(lapply(seq_along(tabGR_CEN180_all_dists_list[[x]]), function(y) {
+tabGR_genes_all_acf_permTest_exp <- lapply(seq_along(chrName), function(x) {
+  unlist(lapply(seq_along(tabGR_genes_all_dists_list[[x]]), function(y) {
     mean(
-      sapply(seq_along(tabGR_CEN180_all_random_acf), function(w) {
-        tabGR_CEN180_all_random_acf[[w]][[x]][y]
+      sapply(seq_along(tabGR_genes_all_random_acf), function(w) {
+        tabGR_genes_all_random_acf[[w]][[x]][y]
       })
     , na.rm = T)
   }))
 })
 
-tabGR_CEN180_all_acf_permTest_pval <- lapply(seq_along(chrName), function(x) {
-  unlist(lapply(seq_along(tabGR_CEN180_all_dists_list[[x]]), function(y) {
+tabGR_genes_all_acf_permTest_pval <- lapply(seq_along(chrName), function(x) {
+  unlist(lapply(seq_along(tabGR_genes_all_dists_list[[x]]), function(y) {
     1 - ( sum(
-      sapply(seq_along(tabGR_CEN180_all_random_acf), function(w) {
-        tabGR_CEN180_all_acf[[x]][y] > tabGR_CEN180_all_random_acf[[w]][[x]][y]
+      sapply(seq_along(tabGR_genes_all_random_acf), function(w) {
+        tabGR_genes_all_acf[[x]][y] > tabGR_genes_all_random_acf[[w]][[x]][y]
       })
     , na.rm = T) / perms )
   }))
@@ -280,54 +280,54 @@ tabGR_CEN180_all_acf_permTest_pval <- lapply(seq_along(chrName), function(x) {
 
 # Set minimum p-value
 for(x in seq_along(chrName)) {
-  tabGR_CEN180_all_acf_permTest_pval[[x]][which(tabGR_CEN180_all_acf_permTest_pval[[x]] == 0)] <- min_pval
+  tabGR_genes_all_acf_permTest_pval[[x]][which(tabGR_genes_all_acf_permTest_pval[[x]] == 0)] <- min_pval
 }
 
-tabGR_CEN180_all_acf_df <- dplyr::bind_rows(lapply(seq_along(tabGR_CEN180_all_acf), function(x) {
+tabGR_genes_all_acf_df <- dplyr::bind_rows(lapply(seq_along(tabGR_genes_all_acf), function(x) {
   data.frame(chr = chrName[x],
-             distance = tabGR_CEN180_all_dists_list[[x]],
-             acf = tabGR_CEN180_all_acf[[x]],
-             fft = fft(tabGR_CEN180_all_acf[[x]]),
-             pval = -log10(tabGR_CEN180_all_acf_permTest_pval[[x]]),
-             exp = tabGR_CEN180_all_acf_permTest_pval[[x]])
+             distance = tabGR_genes_all_dists_list[[x]],
+             acf = tabGR_genes_all_acf[[x]],
+             fft = fft(tabGR_genes_all_acf[[x]]),
+             pval = -log10(tabGR_genes_all_acf_permTest_pval[[x]]),
+             exp = tabGR_genes_all_acf_permTest_pval[[x]])
 }))
 
 
 ## Analyse each strand separately
-#tabGR_CEN180_rev <- tabGR_CEN180[strand(tabGR_CEN180) == "-"]
-#tabGR_CEN180_rev <- sortSeqlevels(tabGR_CEN180_rev)
-#tabGR_CEN180_rev <- sort(tabGR_CEN180_rev, by = ~ seqnames + start + end)
+#tabGR_genes_rev <- tabGR_genes[strand(tabGR_genes) == "-"]
+#tabGR_genes_rev <- sortSeqlevels(tabGR_genes_rev)
+#tabGR_genes_rev <- sort(tabGR_genes_rev, by = ~ seqnames + start + end)
 #
 ## Randomly shuffle methylation proportion values over the cytosine coordinates
-#tabGR_CEN180_rev_random <- mclapply(1:perms, function(y) {
-#  tabGR_CEN180_rev_chr_list_y <- lapply(seq_along(chrName), function(x) {
-#    GRanges(seqnames = seqnames(tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == chrName[x]]),
-#            ranges = ranges(tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == chrName[x]]),
-#            strand = strand(tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == chrName[x]]),
-#            prop = sample(tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == chrName[x]]$prop))
+#tabGR_genes_rev_random <- mclapply(1:perms, function(y) {
+#  tabGR_genes_rev_chr_list_y <- lapply(seq_along(chrName), function(x) {
+#    GRanges(seqnames = seqnames(tabGR_genes_rev[seqnames(tabGR_genes_rev) == chrName[x]]),
+#            ranges = ranges(tabGR_genes_rev[seqnames(tabGR_genes_rev) == chrName[x]]),
+#            strand = strand(tabGR_genes_rev[seqnames(tabGR_genes_rev) == chrName[x]]),
+#            prop = sample(tabGR_genes_rev[seqnames(tabGR_genes_rev) == chrName[x]]$prop))
 #  })
-#  do.call(c, as(tabGR_CEN180_rev_chr_list_y, "GRangesList")) 
+#  do.call(c, as(tabGR_genes_rev_chr_list_y, "GRangesList")) 
 #}, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
 #
-##  sort( unique ( start( tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == x][2:(length(tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == x]))] ) -
-##                 start( tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == x][1:(length(tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == x])-1)] ) ) )
+##  sort( unique ( start( tabGR_genes_rev[seqnames(tabGR_genes_rev) == x][2:(length(tabGR_genes_rev[seqnames(tabGR_genes_rev) == x]))] ) -
+##                 start( tabGR_genes_rev[seqnames(tabGR_genes_rev) == x][1:(length(tabGR_genes_rev[seqnames(tabGR_genes_rev) == x])-1)] ) ) )
 #
 ## Get context-specific inter-cytosine bp distances that occur more than once
-#tabGR_CEN180_rev_dists_list <- mclapply(seq_along(chrName), function(x) {
+#tabGR_genes_rev_dists_list <- mclapply(seq_along(chrName), function(x) {
 #  as.integer( names (
 #    which( table(
-#      sort( diff( start( tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == chrName[x]] ) ) )
+#      sort( diff( start( tabGR_genes_rev[seqnames(tabGR_genes_rev) == chrName[x]] ) ) )
 #   ) > 2 )
 #  ) )
 #}, mc.cores = length(chrName), mc.preschedule = F)
 #
 ## Get the distance that is the lowest common denominator among the chromsomes
-#tabGR_CEN180_rev_dists_min_max <- min(sapply(tabGR_CEN180_rev_dists_list, function(x) {
+#tabGR_genes_rev_dists_min_max <- min(sapply(tabGR_genes_rev_dists_list, function(x) {
 #  max(x, na.rm = T)
 #}))
 #
-#tabGR_CEN180_rev_dists_list <- lapply(tabGR_CEN180_rev_dists_list, function(x) {
-#  x[which(x <= tabGR_CEN180_rev_dists_min_max)]
+#tabGR_genes_rev_dists_list <- lapply(tabGR_genes_rev_dists_list, function(x) {
+#  x[which(x <= tabGR_genes_rev_dists_min_max)]
 #})
 #
 #acfDistance <- function(DSfreqGR, bpDistance) {
@@ -337,37 +337,37 @@ tabGR_CEN180_all_acf_df <- dplyr::bind_rows(lapply(seq_along(tabGR_CEN180_all_ac
 #           method = "pearson")$estimate
 #}
 #
-#tabGR_CEN180_rev_acf <- lapply(seq_along(chrName), function(x) {
-#  unlist(mclapply(tabGR_CEN180_rev_dists_list[[x]], function(y) {
-#    acfDistance(DSfreqGR = tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == chrName[x]],
+#tabGR_genes_rev_acf <- lapply(seq_along(chrName), function(x) {
+#  unlist(mclapply(tabGR_genes_rev_dists_list[[x]], function(y) {
+#    acfDistance(DSfreqGR = tabGR_genes_rev[seqnames(tabGR_genes_rev) == chrName[x]],
 #                bpDistance = y)
 #  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T))
 #})
 #
-#tabGR_CEN180_rev_random_acf <- mclapply(seq_along(tabGR_CEN180_rev_random), function(w) {
+#tabGR_genes_rev_random_acf <- mclapply(seq_along(tabGR_genes_rev_random), function(w) {
 #  lapply(seq_along(chrName), function(x) {
-#    unlist(lapply(tabGR_CEN180_rev_dists_list[[x]], function(y) {
-#      acfDistance(DSfreqGR = tabGR_CEN180_rev_random[[w]][seqnames(tabGR_CEN180_rev_random[[w]]) == chrName[x]],
+#    unlist(lapply(tabGR_genes_rev_dists_list[[x]], function(y) {
+#      acfDistance(DSfreqGR = tabGR_genes_rev_random[[w]][seqnames(tabGR_genes_rev_random[[w]]) == chrName[x]],
 #                  bpDistance = y)
 #    }))
 #  })
 #}, mc.cores = round(detectCores()*CPUpc), mc.preschedule = F)
 #
-#tabGR_CEN180_rev_acf_permTest_exp <- lapply(seq_along(chrName), function(x) {
-#  unlist(lapply(seq_along(tabGR_CEN180_rev_dists_list[[x]]), function(y) {
+#tabGR_genes_rev_acf_permTest_exp <- lapply(seq_along(chrName), function(x) {
+#  unlist(lapply(seq_along(tabGR_genes_rev_dists_list[[x]]), function(y) {
 #    mean(
-#      sapply(seq_along(tabGR_CEN180_rev_random_acf), function(w) {
-#        tabGR_CEN180_rev_random_acf[[w]][[x]][y]
+#      sapply(seq_along(tabGR_genes_rev_random_acf), function(w) {
+#        tabGR_genes_rev_random_acf[[w]][[x]][y]
 #      })
 #    , na.rm = T)
 #  }))
 #})
 #
-#tabGR_CEN180_rev_acf_permTest_pval <- lapply(seq_along(chrName), function(x) {
-#  unlist(lapply(seq_along(tabGR_CEN180_rev_dists_list[[x]]), function(y) {
+#tabGR_genes_rev_acf_permTest_pval <- lapply(seq_along(chrName), function(x) {
+#  unlist(lapply(seq_along(tabGR_genes_rev_dists_list[[x]]), function(y) {
 #    1 - ( sum(
-#      sapply(seq_along(tabGR_CEN180_rev_random_acf), function(w) {
-#        tabGR_CEN180_rev_acf[[x]][y] > tabGR_CEN180_rev_random_acf[[w]][[x]][y]
+#      sapply(seq_along(tabGR_genes_rev_random_acf), function(w) {
+#        tabGR_genes_rev_acf[[x]][y] > tabGR_genes_rev_random_acf[[w]][[x]][y]
 #      })
 #    , na.rm = T) / perms )
 #  }))
@@ -375,20 +375,20 @@ tabGR_CEN180_all_acf_df <- dplyr::bind_rows(lapply(seq_along(tabGR_CEN180_all_ac
 #
 ## Set minimum p-value
 #for(x in seq_along(chrName)) {
-#  tabGR_CEN180_rev_acf_permTest_pval[[x]][which(tabGR_CEN180_rev_acf_permTest_pval[[x]] == 0)] <- min_pval
+#  tabGR_genes_rev_acf_permTest_pval[[x]][which(tabGR_genes_rev_acf_permTest_pval[[x]] == 0)] <- min_pval
 #}
 #
-#tabGR_CEN180_rev_acf_df <- dplyr::bind_rows(lapply(seq_along(tabGR_CEN180_rev_acf), function(x) {
+#tabGR_genes_rev_acf_df <- dplyr::bind_rows(lapply(seq_along(tabGR_genes_rev_acf), function(x) {
 #  data.frame(chr = chrName[x],
-#             distance = tabGR_CEN180_rev_dists_list[[x]],
-#             acf = tabGR_CEN180_rev_acf[[x]],
-#             pval = -log10(tabGR_CEN180_rev_acf_permTest_pval[[x]]),
-#             exp = tabGR_CEN180_rev_acf_permTest_pval[[x]])
+#             distance = tabGR_genes_rev_dists_list[[x]],
+#             acf = tabGR_genes_rev_acf[[x]],
+#             pval = -log10(tabGR_genes_rev_acf_permTest_pval[[x]]),
+#             exp = tabGR_genes_rev_acf_permTest_pval[[x]])
 #}))
 
 
-#tabGR_CEN180_all_acf_df <- rbind(tabGR_CEN180_fwd_acf_df, tabGR_CEN180_rev_acf_df)
-#tabGR_CEN180_all_acf_df <- tabGR_CEN180_all_acf_df[ order(tabGR_CEN180_all_acf_df[,1], tabGR_CEN180_all_acf_df[,2], decreasing = F) , ]
+#tabGR_genes_all_acf_df <- rbind(tabGR_genes_fwd_acf_df, tabGR_genes_rev_acf_df)
+#tabGR_genes_all_acf_df <- tabGR_genes_all_acf_df[ order(tabGR_genes_all_acf_df[,1], tabGR_genes_all_acf_df[,2], decreasing = F) , ]
 
 
 chrPlot <- function(dataFrame, xvar, yvar, xlab, ylab, colour) {
@@ -421,47 +421,47 @@ chrPlot <- function(dataFrame, xvar, yvar, xlab, ylab, colour) {
 }
 
 
-gg_tabGR_CEN180_all_acf <- chrPlot(dataFrame = tabGR_CEN180_all_acf_df,
+gg_tabGR_genes_all_acf <- chrPlot(dataFrame = tabGR_genes_all_acf_df,
                                    xvar = distance,
                                    yvar = acf,
-                                   xlab = bquote("Distance between "*italic("CEN180")*" cytosines (bp)"),
+                                   xlab = bquote("Distance between "*italic("gene")*" cytosines (bp)"),
                                    ylab = bquote("Observed correlation (m"*.(context)*")"),
                                    colour = "dodgerblue")
-gg_tabGR_CEN180_all_acf <- gg_tabGR_CEN180_all_acf +
+gg_tabGR_genes_all_acf <- gg_tabGR_genes_all_acf +
   facet_grid(cols = vars(chr), scales = "free_x")
 
-gg_tabGR_CEN180_all_pval <- chrPlot(dataFrame = tabGR_CEN180_all_acf_df,
+gg_tabGR_genes_all_pval <- chrPlot(dataFrame = tabGR_genes_all_acf_df,
                                     xvar = distance,
                                     yvar = pval,
-                                    xlab = bquote("Distance between "*italic("CEN180")*" cytosines (bp)"),
+                                    xlab = bquote("Distance between "*italic("gene")*" cytosines (bp)"),
                                     ylab = bquote("-"*Log[10]*"("*italic(P)*"-value) (m"*.(context)*")"),
                                     colour = "red")
-gg_tabGR_CEN180_all_pval <- gg_tabGR_CEN180_all_pval +
+gg_tabGR_genes_all_pval <- gg_tabGR_genes_all_pval +
   facet_grid(cols = vars(chr), scales = "free_x")
 
-gg_tabGR_CEN180_all_exp <- chrPlot(dataFrame = tabGR_CEN180_all_acf_df,
+gg_tabGR_genes_all_exp <- chrPlot(dataFrame = tabGR_genes_all_acf_df,
                                    xvar = distance,
                                    yvar = exp,
-                                   xlab = bquote("Distance between "*italic("CEN180")*" cytosines (bp)"),
+                                   xlab = bquote("Distance between "*italic("gene")*" cytosines (bp)"),
                                    ylab = bquote("Mean permuted correlation (m"*.(context)*")"),
                                    colour = "lightseagreen")
-gg_tabGR_CEN180_all_exp <- gg_tabGR_CEN180_all_exp +
+gg_tabGR_genes_all_exp <- gg_tabGR_genes_all_exp +
   facet_grid(cols = vars(chr), scales = "free_x")
 
-gg_tabGR_CEN180_all_fft <- chrPlot(dataFrame = tabGR_CEN180_all_acf_df,
+gg_tabGR_genes_all_fft <- chrPlot(dataFrame = tabGR_genes_all_acf_df,
                                    xvar = distance,
                                    yvar = fft,
-                                   xlab = bquote("Distance between "*italic("CEN180")*" cytosines (bp)"),
+                                   xlab = bquote("Distance between "*italic("gene")*" cytosines (bp)"),
                                    ylab = bquote("FFT (m"*.(context)*")"),
                                    colour = "lightseagreen")
-gg_tabGR_CEN180_all_fft <- gg_tabGR_CEN180_all_fft +
+gg_tabGR_genes_all_fft <- gg_tabGR_genes_all_fft +
   facet_grid(cols = vars(chr), scales = "free_x")
 
 gg_cow_all_list <- list(
-                        gg_tabGR_CEN180_all_acf,
-                        gg_tabGR_CEN180_all_pval,
-#                        gg_tabGR_CEN180_all_fft,
-                        gg_tabGR_CEN180_all_exp
+                        gg_tabGR_genes_all_acf,
+                        gg_tabGR_genes_all_pval,
+#                        gg_tabGR_genes_all_fft,
+                        gg_tabGR_genes_all_exp
                        )
 gg_cow_all <- plot_grid(plotlist = gg_cow_all_list,
                         labels = c("AUTO"), label_size = 30,
@@ -471,43 +471,43 @@ gg_cow_all <- plot_grid(plotlist = gg_cow_all_list,
 
 ggsave(paste0(plotDir,
               sampleName, "_MappedOn_", refbase, "_", context,
-              "_autocorrelation_all_CEN180_", paste0(chrName, collapse = "_"),
+              "_autocorrelation_all_genes_", paste0(chrName, collapse = "_"),
               ".pdf"),
        plot = gg_cow_all,
        height = 5*length(gg_cow_all_list), width = 10*length(chrName), limitsize = F)
 
 
-#gg_tabGR_CEN180_rev_acf <- chrPlot(dataFrame = tabGR_CEN180_rev_acf_df,
+#gg_tabGR_genes_rev_acf <- chrPlot(dataFrame = tabGR_genes_rev_acf_df,
 #                                   xvar = distance,
 #                                   yvar = acf,
-#                                   xlab = bquote("Distance between "*italic("CEN180")*" cytosines (bp)"),
+#                                   xlab = bquote("Distance between "*italic("gene")*" cytosines (bp)"),
 #                                   ylab = bquote("Observed correlation (m"*.(context)*")"),
 #                                   colour = "dodgerblue")
-#gg_tabGR_CEN180_rev_acf <- gg_tabGR_CEN180_rev_acf +
+#gg_tabGR_genes_rev_acf <- gg_tabGR_genes_rev_acf +
 #  facet_grid(cols = vars(chr), scales = "free_x")
 #
-#gg_tabGR_CEN180_rev_pval <- chrPlot(dataFrame = tabGR_CEN180_rev_acf_df,
+#gg_tabGR_genes_rev_pval <- chrPlot(dataFrame = tabGR_genes_rev_acf_df,
 #                                    xvar = distance,
 #                                    yvar = pval,
-#                                    xlab = bquote("Distance between "*italic("CEN180")*" cytosines (bp)"),
+#                                    xlab = bquote("Distance between "*italic("gene")*" cytosines (bp)"),
 #                                    ylab = bquote("-"*Log[10]*"("*italic(P)*"-value) (m"*.(context)*")"),
 #                                    colour = "red")
-#gg_tabGR_CEN180_rev_pval <- gg_tabGR_CEN180_rev_pval +
+#gg_tabGR_genes_rev_pval <- gg_tabGR_genes_rev_pval +
 #  facet_grid(cols = vars(chr), scales = "free_x")
 #
-#gg_tabGR_CEN180_rev_exp <- chrPlot(dataFrame = tabGR_CEN180_rev_acf_df,
+#gg_tabGR_genes_rev_exp <- chrPlot(dataFrame = tabGR_genes_rev_acf_df,
 #                                   xvar = distance,
 #                                   yvar = exp,
-#                                   xlab = bquote("Distance between "*italic("CEN180")*" cytosines (bp)"),
+#                                   xlab = bquote("Distance between "*italic("gene")*" cytosines (bp)"),
 #                                   ylab = bquote("Mean permuted correlation (m"*.(context)*")"),
 #                                   colour = "lightseagreen")
-#gg_tabGR_CEN180_rev_exp <- gg_tabGR_CEN180_rev_exp +
+#gg_tabGR_genes_rev_exp <- gg_tabGR_genes_rev_exp +
 #  facet_grid(cols = vars(chr), scales = "free_x")
 #
 #gg_cow_rev_list <- list(
-#                        gg_tabGR_CEN180_rev_acf,
-#                        gg_tabGR_CEN180_rev_pval,
-#                        gg_tabGR_CEN180_rev_exp
+#                        gg_tabGR_genes_rev_acf,
+#                        gg_tabGR_genes_rev_pval,
+#                        gg_tabGR_genes_rev_exp
 #                       )
 #gg_cow_rev <- plot_grid(plotlist = gg_cow_rev_list,
 #                        labels = c("AUTO"), label_size = 30,
@@ -517,7 +517,7 @@ ggsave(paste0(plotDir,
 #
 #ggsave(paste0(plotDir,
 #              sampleName, "_MappedOn_", refbase, "_", context,
-#              "_autocorrelation_rev_CEN180_", paste0(chrName, collapse = "_"),
+#              "_autocorrelation_rev_genes_", paste0(chrName, collapse = "_"),
 #              ".pdf"),
 #       plot = gg_cow_rev,
 #       height = 5*length(gg_cow_rev_list), width = 10*length(chrName), limitsize = F)
