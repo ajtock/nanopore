@@ -12,10 +12,10 @@
 #genomeBinSize <- 10000
 #genomeStepSize <- 10000
 #context <- "CpG"
-#perms <- 1e3
+#nperm <- 1e3
 #CPUpc <- 1.00
 #chrName <- unlist(strsplit("Chr1,Chr2,Chr3,Chr4,Chr5", split = ","))
-#min_pval <- 1 - ( (perms - 1) / perms )
+#min_pval <- 1 - ( (nperm - 1) / nperm )
 
 args <- commandArgs(trailingOnly = T)
 sampleName <- args[1]
@@ -23,10 +23,10 @@ refbase <- args[2]
 genomeBinSize <- as.integer(args[3])
 genomeStepSize <- as.integer(args[4])
 context <- args[5]
-perms <- as.numeric(args[6])
+nperm <- as.numeric(args[6])
 CPUpc <- as.numeric(args[7])
 chrName <- unlist(strsplit(args[8], split = ","))
-min_pval <- 1 - ( (perms - 1) / perms )
+min_pval <- 1 - ( (nperm - 1) / nperm )
 
 print(paste0("Proportion of CPUs:", CPUpc))
 options(stringsAsFactors = F)
@@ -157,10 +157,10 @@ if(length(fOverlaps_tab_mito_ins) > 0) {
 
 # Find context-specific cytosine sites that overlap genes
 fOverlaps_tab_genes <- findOverlaps(query = tabGR,
-                                     subject = genesGR,
-                                     type = "any",
-                                     select = "all",
-                                     ignore.strand = T)
+                                    subject = genesGR,
+                                    type = "any",
+                                    select = "all",
+                                    ignore.strand = T)
 tabGR_genes <- tabGR[unique(queryHits(fOverlaps_tab_genes))]
 
 # Analyse each strand separately
@@ -169,7 +169,7 @@ tabGR_genes_fwd <- sortSeqlevels(tabGR_genes_fwd)
 tabGR_genes_fwd <- sort(tabGR_genes_fwd, by = ~ seqnames + start + end)
 
 # Randomly shuffle methylation proportion values over the cytosine coordinates
-tabGR_genes_fwd_random <- mclapply(1:perms, function(y) {
+tabGR_genes_fwd_random <- mclapply(1:nperm, function(y) {
   tabGR_genes_fwd_chr_list_y <- lapply(seq_along(chrName), function(x) {
     GRanges(seqnames = seqnames(tabGR_genes_fwd[seqnames(tabGR_genes_fwd) == chrName[x]]),
             ranges = ranges(tabGR_genes_fwd[seqnames(tabGR_genes_fwd) == chrName[x]]),
@@ -198,7 +198,7 @@ tabGR_genes_rev <- sortSeqlevels(tabGR_genes_rev)
 tabGR_genes_rev <- sort(tabGR_genes_rev, by = ~ seqnames + start + end)
 
 # Randomly shuffle methylation proportion values over the cytosine coordinates
-tabGR_genes_rev_random <- mclapply(1:perms, function(y) {
+tabGR_genes_rev_random <- mclapply(1:nperm, function(y) {
   tabGR_genes_rev_chr_list_y <- lapply(seq_along(chrName), function(x) {
     GRanges(seqnames = seqnames(tabGR_genes_rev[seqnames(tabGR_genes_rev) == chrName[x]]),
             ranges = ranges(tabGR_genes_rev[seqnames(tabGR_genes_rev) == chrName[x]]),
@@ -248,7 +248,7 @@ tabGR_genes_all_acf <- lapply(seq_along(chrName), function(x) {
   }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T))
 })
 
-tabGR_genes_all_random_acf <- mclapply(1:perms, function(w) {
+tabGR_genes_all_random_acf <- mclapply(1:nperm, function(w) {
   lapply(seq_along(chrName), function(x) {
     unlist(lapply(tabGR_genes_all_dists_list[[x]], function(y) {
       acfDistance(DSfreqGR = c(tabGR_genes_fwd_random[[w]][seqnames(tabGR_genes_fwd_random[[w]]) == chrName[x]],
@@ -274,7 +274,7 @@ tabGR_genes_all_acf_permTest_pval <- lapply(seq_along(chrName), function(x) {
       sapply(seq_along(tabGR_genes_all_random_acf), function(w) {
         tabGR_genes_all_acf[[x]][y] > tabGR_genes_all_random_acf[[w]][[x]][y]
       })
-    , na.rm = T) / perms )
+    , na.rm = T) / nperm )
   }))
 })
 
@@ -299,7 +299,7 @@ tabGR_genes_all_acf_df <- dplyr::bind_rows(lapply(seq_along(tabGR_genes_all_acf)
 #tabGR_genes_rev <- sort(tabGR_genes_rev, by = ~ seqnames + start + end)
 #
 ## Randomly shuffle methylation proportion values over the cytosine coordinates
-#tabGR_genes_rev_random <- mclapply(1:perms, function(y) {
+#tabGR_genes_rev_random <- mclapply(1:nperm, function(y) {
 #  tabGR_genes_rev_chr_list_y <- lapply(seq_along(chrName), function(x) {
 #    GRanges(seqnames = seqnames(tabGR_genes_rev[seqnames(tabGR_genes_rev) == chrName[x]]),
 #            ranges = ranges(tabGR_genes_rev[seqnames(tabGR_genes_rev) == chrName[x]]),
@@ -369,7 +369,7 @@ tabGR_genes_all_acf_df <- dplyr::bind_rows(lapply(seq_along(tabGR_genes_all_acf)
 #      sapply(seq_along(tabGR_genes_rev_random_acf), function(w) {
 #        tabGR_genes_rev_acf[[x]][y] > tabGR_genes_rev_random_acf[[w]][[x]][y]
 #      })
-#    , na.rm = T) / perms )
+#    , na.rm = T) / nperm )
 #  }))
 #})
 #
@@ -424,7 +424,7 @@ chrPlot <- function(dataFrame, xvar, yvar, xlab, ylab, colour) {
 gg_tabGR_genes_all_acf <- chrPlot(dataFrame = tabGR_genes_all_acf_df,
                                    xvar = distance,
                                    yvar = acf,
-                                   xlab = bquote("Distance between "*italic("gene")*" cytosines (bp)"),
+                                   xlab = bquote("Distance between genic cytosines (bp)"),
                                    ylab = bquote("Observed correlation (m"*.(context)*")"),
                                    colour = "dodgerblue")
 gg_tabGR_genes_all_acf <- gg_tabGR_genes_all_acf +
@@ -433,7 +433,7 @@ gg_tabGR_genes_all_acf <- gg_tabGR_genes_all_acf +
 gg_tabGR_genes_all_pval <- chrPlot(dataFrame = tabGR_genes_all_acf_df,
                                     xvar = distance,
                                     yvar = pval,
-                                    xlab = bquote("Distance between "*italic("gene")*" cytosines (bp)"),
+                                    xlab = bquote("Distance between genic cytosines (bp)"),
                                     ylab = bquote("-"*Log[10]*"("*italic(P)*"-value) (m"*.(context)*")"),
                                     colour = "red")
 gg_tabGR_genes_all_pval <- gg_tabGR_genes_all_pval +
@@ -442,7 +442,7 @@ gg_tabGR_genes_all_pval <- gg_tabGR_genes_all_pval +
 gg_tabGR_genes_all_exp <- chrPlot(dataFrame = tabGR_genes_all_acf_df,
                                    xvar = distance,
                                    yvar = exp,
-                                   xlab = bquote("Distance between "*italic("gene")*" cytosines (bp)"),
+                                   xlab = bquote("Distance between genic cytosines (bp)"),
                                    ylab = bquote("Mean permuted correlation (m"*.(context)*")"),
                                    colour = "lightseagreen")
 gg_tabGR_genes_all_exp <- gg_tabGR_genes_all_exp +
@@ -451,7 +451,7 @@ gg_tabGR_genes_all_exp <- gg_tabGR_genes_all_exp +
 gg_tabGR_genes_all_fft <- chrPlot(dataFrame = tabGR_genes_all_acf_df,
                                    xvar = distance,
                                    yvar = fft,
-                                   xlab = bquote("Distance between "*italic("gene")*" cytosines (bp)"),
+                                   xlab = bquote("Distance between genic cytosines (bp)"),
                                    ylab = bquote("FFT (m"*.(context)*")"),
                                    colour = "lightseagreen")
 gg_tabGR_genes_all_fft <- gg_tabGR_genes_all_fft +
@@ -480,7 +480,7 @@ ggsave(paste0(plotDir,
 #gg_tabGR_genes_rev_acf <- chrPlot(dataFrame = tabGR_genes_rev_acf_df,
 #                                   xvar = distance,
 #                                   yvar = acf,
-#                                   xlab = bquote("Distance between "*italic("gene")*" cytosines (bp)"),
+#                                   xlab = bquote("Distance between genic cytosines (bp)"),
 #                                   ylab = bquote("Observed correlation (m"*.(context)*")"),
 #                                   colour = "dodgerblue")
 #gg_tabGR_genes_rev_acf <- gg_tabGR_genes_rev_acf +
@@ -489,7 +489,7 @@ ggsave(paste0(plotDir,
 #gg_tabGR_genes_rev_pval <- chrPlot(dataFrame = tabGR_genes_rev_acf_df,
 #                                    xvar = distance,
 #                                    yvar = pval,
-#                                    xlab = bquote("Distance between "*italic("gene")*" cytosines (bp)"),
+#                                    xlab = bquote("Distance between genic cytosines (bp)"),
 #                                    ylab = bquote("-"*Log[10]*"("*italic(P)*"-value) (m"*.(context)*")"),
 #                                    colour = "red")
 #gg_tabGR_genes_rev_pval <- gg_tabGR_genes_rev_pval +
@@ -498,7 +498,7 @@ ggsave(paste0(plotDir,
 #gg_tabGR_genes_rev_exp <- chrPlot(dataFrame = tabGR_genes_rev_acf_df,
 #                                   xvar = distance,
 #                                   yvar = exp,
-#                                   xlab = bquote("Distance between "*italic("gene")*" cytosines (bp)"),
+#                                   xlab = bquote("Distance between genic cytosines (bp)"),
 #                                   ylab = bquote("Mean permuted correlation (m"*.(context)*")"),
 #                                   colour = "lightseagreen")
 #gg_tabGR_genes_rev_exp <- gg_tabGR_genes_rev_exp +

@@ -12,10 +12,10 @@
 #genomeBinSize <- 10000
 #genomeStepSize <- 10000
 #context <- "CpG"
-#perms <- 1e3
+#nperm <- 1e3
 #CPUpc <- 1.00
 #chrName <- unlist(strsplit("Chr1,Chr2,Chr3,Chr4,Chr5", split = ","))
-#min_pval <- 1 - ( (perms - 1) / perms )
+#min_pval <- 1 - ( (nperm - 1) / nperm )
 
 args <- commandArgs(trailingOnly = T)
 sampleName <- args[1]
@@ -23,10 +23,10 @@ refbase <- args[2]
 genomeBinSize <- as.integer(args[3])
 genomeStepSize <- as.integer(args[4])
 context <- args[5]
-perms <- as.numeric(args[6])
+nperm <- as.numeric(args[6])
 CPUpc <- as.numeric(args[7])
 chrName <- unlist(strsplit(args[8], split = ","))
-min_pval <- 1 - ( (perms - 1) / perms )
+min_pval <- 1 - ( (nperm - 1) / nperm )
 
 print(paste0("Proportion of CPUs:", CPUpc))
 options(stringsAsFactors = F)
@@ -169,7 +169,7 @@ tabGR_CEN180_fwd <- sortSeqlevels(tabGR_CEN180_fwd)
 tabGR_CEN180_fwd <- sort(tabGR_CEN180_fwd, by = ~ seqnames + start + end)
 
 # Randomly shuffle methylation proportion values over the cytosine coordinates
-tabGR_CEN180_fwd_random <- mclapply(1:perms, function(y) {
+tabGR_CEN180_fwd_random <- mclapply(1:nperm, function(y) {
   tabGR_CEN180_fwd_chr_list_y <- lapply(seq_along(chrName), function(x) {
     GRanges(seqnames = seqnames(tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == chrName[x]]),
             ranges = ranges(tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == chrName[x]]),
@@ -198,7 +198,7 @@ tabGR_CEN180_rev <- sortSeqlevels(tabGR_CEN180_rev)
 tabGR_CEN180_rev <- sort(tabGR_CEN180_rev, by = ~ seqnames + start + end)
 
 # Randomly shuffle methylation proportion values over the cytosine coordinates
-tabGR_CEN180_rev_random <- mclapply(1:perms, function(y) {
+tabGR_CEN180_rev_random <- mclapply(1:nperm, function(y) {
   tabGR_CEN180_rev_chr_list_y <- lapply(seq_along(chrName), function(x) {
     GRanges(seqnames = seqnames(tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == chrName[x]]),
             ranges = ranges(tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == chrName[x]]),
@@ -248,7 +248,7 @@ tabGR_CEN180_all_acf <- lapply(seq_along(chrName), function(x) {
   }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T))
 })
 
-tabGR_CEN180_all_random_acf <- mclapply(1:perms, function(w) {
+tabGR_CEN180_all_random_acf <- mclapply(1:nperm, function(w) {
   lapply(seq_along(chrName), function(x) {
     unlist(lapply(tabGR_CEN180_all_dists_list[[x]], function(y) {
       acfDistance(DSfreqGR = c(tabGR_CEN180_fwd_random[[w]][seqnames(tabGR_CEN180_fwd_random[[w]]) == chrName[x]],
@@ -274,7 +274,7 @@ tabGR_CEN180_all_acf_permTest_pval <- lapply(seq_along(chrName), function(x) {
       sapply(seq_along(tabGR_CEN180_all_random_acf), function(w) {
         tabGR_CEN180_all_acf[[x]][y] > tabGR_CEN180_all_random_acf[[w]][[x]][y]
       })
-    , na.rm = T) / perms )
+    , na.rm = T) / nperm )
   }))
 })
 
@@ -293,13 +293,32 @@ tabGR_CEN180_all_acf_df <- dplyr::bind_rows(lapply(seq_along(tabGR_CEN180_all_ac
 }))
 
 
+## Function to plot a frequency spectrum of a given fft()-transformed trajectory or signal
+#plot.frequency.spectrum <- function(signal, dists) {
+#  X.k <- fft(signal)
+#  plot.data <- cbind(dists, Mod(X.k))
+#
+##  # TODO: why is this scaling necessary?
+##  plot.data[2:length(X.k), 2] <- 2 * plot.data[2:length(X.k), 2]
+#
+#  plot(plot.data, t = "h", lwd = 2, main = "",
+#       xlab = "Cycles", ylab = "Strength")
+#}
+#for(x in 1:5) {
+#  pdf(paste0("plots/freq_spectrum_CEN180_Chr", x, ".pdf"))
+#  plot.frequency.spectrum(signal = tabGR_CEN180_all_acf[[x]], dists = tabGR_CEN180_all_dists_list[[x]])
+#  dev.off()
+#}
+#
+
+
 ## Analyse each strand separately
 #tabGR_CEN180_rev <- tabGR_CEN180[strand(tabGR_CEN180) == "-"]
 #tabGR_CEN180_rev <- sortSeqlevels(tabGR_CEN180_rev)
 #tabGR_CEN180_rev <- sort(tabGR_CEN180_rev, by = ~ seqnames + start + end)
 #
 ## Randomly shuffle methylation proportion values over the cytosine coordinates
-#tabGR_CEN180_rev_random <- mclapply(1:perms, function(y) {
+#tabGR_CEN180_rev_random <- mclapply(1:nperm, function(y) {
 #  tabGR_CEN180_rev_chr_list_y <- lapply(seq_along(chrName), function(x) {
 #    GRanges(seqnames = seqnames(tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == chrName[x]]),
 #            ranges = ranges(tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == chrName[x]]),
@@ -369,7 +388,7 @@ tabGR_CEN180_all_acf_df <- dplyr::bind_rows(lapply(seq_along(tabGR_CEN180_all_ac
 #      sapply(seq_along(tabGR_CEN180_rev_random_acf), function(w) {
 #        tabGR_CEN180_rev_acf[[x]][y] > tabGR_CEN180_rev_random_acf[[w]][[x]][y]
 #      })
-#    , na.rm = T) / perms )
+#    , na.rm = T) / nperm )
 #  }))
 #})
 #
