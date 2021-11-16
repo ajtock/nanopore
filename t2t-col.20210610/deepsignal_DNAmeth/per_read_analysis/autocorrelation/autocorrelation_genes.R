@@ -5,7 +5,7 @@
 # at increasing physical distances (e.g., 1 to 10,000 nucleotides)
 
 # Usage on hydrogen node7:
-# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript autocorrelation_genes.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 10000 10000 CpG 1e3 1.00 Chr1,Chr2,Chr3,Chr4,Chr5" 1000
+# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript autocorrelation_genes.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 10000 10000 CpG 1e3 1.00 Chr1,Chr2,Chr3,Chr4,Chr5 1000"
 
 #sampleName <- "Col_0_deepsignalDNAmeth_30kb_90pc"
 #refbase <- "t2t-col.20210610"
@@ -15,7 +15,7 @@
 #nperm <- 1e3
 #CPUpc <- 1.00
 #chrName <- unlist(strsplit("Chr1,Chr2,Chr3,Chr4,Chr5", split = ","))
-#maxDist <- 500
+#maxDist <- 1000
 #min_pval <- 1 - ( (nperm - 1) / nperm )
 
 args <- commandArgs(trailingOnly = T)
@@ -453,14 +453,14 @@ gg_tabGR_genes_all_exp <- chrPlot(dataFrame = tabGR_genes_all_acf_df,
 gg_tabGR_genes_all_exp <- gg_tabGR_genes_all_exp +
   facet_grid(cols = vars(chr), scales = "free_x")
 
-gg_tabGR_genes_all_fft <- chrPlot(dataFrame = tabGR_genes_all_acf_df,
-                                   xvar = distance,
-                                   yvar = fft,
-                                   xlab = bquote("Distance between genic cytosines (bp)"),
-                                   ylab = bquote("FFT (m"*.(context)*")"),
-                                   colour = "lightseagreen")
-gg_tabGR_genes_all_fft <- gg_tabGR_genes_all_fft +
-  facet_grid(cols = vars(chr), scales = "free_x")
+#gg_tabGR_genes_all_fft <- chrPlot(dataFrame = tabGR_genes_all_acf_df,
+#                                   xvar = distance,
+#                                   yvar = fft,
+#                                   xlab = bquote("Distance between genic cytosines (bp)"),
+#                                   ylab = bquote("FFT (m"*.(context)*")"),
+#                                   colour = "lightseagreen")
+#gg_tabGR_genes_all_fft <- gg_tabGR_genes_all_fft +
+#  facet_grid(cols = vars(chr), scales = "free_x")
 
 gg_cow_all_list <- list(
                         gg_tabGR_genes_all_acf,
