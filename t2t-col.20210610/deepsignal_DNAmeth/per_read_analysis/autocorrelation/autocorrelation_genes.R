@@ -5,7 +5,7 @@
 # at increasing physical distances (e.g., 1 to 10,000 nucleotides)
 
 # Usage on hydrogen node7:
-# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript autocorrelation_genes.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 10000 10000 CpG 1e3 1.00 Chr1,Chr2,Chr3,Chr4,Chr5"
+# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript autocorrelation_genes.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 10000 10000 CpG 1e3 1.00 Chr1,Chr2,Chr3,Chr4,Chr5" 1000
 
 #sampleName <- "Col_0_deepsignalDNAmeth_30kb_90pc"
 #refbase <- "t2t-col.20210610"
@@ -15,6 +15,7 @@
 #nperm <- 1e3
 #CPUpc <- 1.00
 #chrName <- unlist(strsplit("Chr1,Chr2,Chr3,Chr4,Chr5", split = ","))
+#maxDist <- 500
 #min_pval <- 1 - ( (nperm - 1) / nperm )
 
 args <- commandArgs(trailingOnly = T)
@@ -26,6 +27,7 @@ context <- args[5]
 nperm <- as.numeric(args[6])
 CPUpc <- as.numeric(args[7])
 chrName <- unlist(strsplit(args[8], split = ","))
+maxDist <- as.numeric(args[9])
 min_pval <- 1 - ( (nperm - 1) / nperm )
 
 print(paste0("Proportion of CPUs:", CPUpc))
@@ -225,6 +227,10 @@ tabGR_genes_all_dists_min_max <- min(sapply(c(tabGR_genes_fwd_dists_list, tabGR_
   max(x, na.rm = T)
 }))
 
+if(tabGR_genes_all_dists_min_max > maxDist) {
+  tabGR_genes_all_dists_min_max <- maxDist
+}
+
 tabGR_genes_all_dists_list <- lapply(seq_along(chrName), function(x) {
   unique(tabGR_genes_fwd_dists_list[[x]], tabGR_genes_rev_dists_list[[x]])
 })
@@ -234,10 +240,9 @@ tabGR_genes_all_dists_list <- lapply(tabGR_genes_all_dists_list, function(x) {
 })
 
 acfDistance <- function(DSfreqGR, bpDistance) {
-  cor.test(x = DSfreqGR[ ( which( diff( start(DSfreqGR)) == bpDistance) )]$prop,
-           y = DSfreqGR[ ( which( diff( start(DSfreqGR)) == bpDistance) + 1)]$prop,
-           alternative = "two.sided",
-           method = "pearson")$estimate
+  cor(x = DSfreqGR[ ( which( diff( start(DSfreqGR)) == bpDistance) )]$prop,
+      y = DSfreqGR[ ( which( diff( start(DSfreqGR)) == bpDistance) + 1)]$prop,
+      method = "pearson")
 }
 
 tabGR_genes_all_acf <- lapply(seq_along(chrName), function(x) {
