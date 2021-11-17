@@ -196,17 +196,23 @@ library(fastmatch)
   fmatch(x, table, nomatch = 0L) > 0L
 }
 
-tabGR_CEN180_fwd_chr_dist_bool_list <- mclapply(seq_along(tabGR_CEN180_fwd_chr_dist_list), function(y) {
-  sapply(1:maxDist, function(z) {
-    z %fin% tabGR_CEN180_fwd_chr_dist_list[[y]]
-  })
-}, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
-
+#tabGR_CEN180_fwd_chr_dist_bool_list <- mclapply(seq_along(tabGR_CEN180_fwd_chr_dist_list), function(y) {
+#  sapply(1:maxDist, function(z) {
+#    z %fin% tabGR_CEN180_fwd_chr_dist_list[[y]]
+#  })
+#}, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
+#
 tabGR_CEN180_fwd_chr_dist_bool_list <- lapply(1:maxDist, function(z) {
   unlist(mclapply(seq_along(tabGR_CEN180_fwd_chr_dist_list), function(y) {
     z %fin% tabGR_CEN180_fwd_chr_dist_list[[y]]
   }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T))
 })
+
+#tabGR_CEN180_fwd_chr_dist_bool_list <- mclapply(1:maxDist, function(z) {
+#  sapply(seq_along(tabGR_CEN180_fwd_chr_dist_list), function(y) {
+#    z %fin% tabGR_CEN180_fwd_chr_dist_list[[y]]
+#  })
+#}, mc.cores = round(detectCores()*CPUpc), mc.preschedule = F)
 
 
 tabGR_CEN180_fwd_chr_dist <- dplyr::bind_cols(tabGR_CEN180_fwd_chr_dist_list)
