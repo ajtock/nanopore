@@ -233,25 +233,20 @@ tabGR_CEN180_fwd_dists_bool_list <- lapply(seq_along(chrName), function(x) {
 })
 
 
-tabGR_CEN180_fwd_chr_dist_bool_list_gt2 <- which(sapply(tabGR_CEN180_fwd_chr_dist_bool_list, function(z) {
+tabGR_CEN180_fwd_dists_bool_list_gt2 <- which(sapply(tabGR_CEN180_fwd_dists_bool_list, function(z) {
   sum(z) > 2
 }))
 
-z <- 2
-
 DSfreqGR <- tabGR_CEN180_fwd_chr
 
-DSfreqGR[ start(DSfreqGR) %in%
-            ( start(DSfreqGR[ ( which( tabGR_CEN180_fwd_chr_dist_bool_list[[bpDistance]] ) ) ]) + bpDistance ) &&
-          strand(DSfreqGR) ==
-            ( strand(DSfreqGR[ ( which( tabGR_CEN180_fwd_chr_dist_bool_list[[bpDistance]] ) ) ]) ) ]$prop
-
-cor(x = DSfreqGR[ ( which( tabGR_CEN180_fwd_chr_dist_bool_list[[bpDistance]] ) ) ]$prop,
+acfDistance <- function(DSfreqGR, dists_bool_list, bpDistance) { 
+cor(x = DSfreqGR[ ( which( dists_bool_list[[bpDistance]] ) ) ]$prop,
     y = DSfreqGR[ start(DSfreqGR) %in%
-                    ( start(DSfreqGR[ ( which( tabGR_CEN180_fwd_chr_dist_bool_list[[bpDistance]] ) ) ]) + bpDistance ) &
+                    ( start(DSfreqGR[ ( which( dists_bool_list[[bpDistance]] ) ) ]) + bpDistance ) &
                   strand(DSfreqGR) ==
-                    ( unique( as.character( strand(DSfreqGR[ ( which( tabGR_CEN180_fwd_chr_dist_bool_list[[bpDistance]] ) ) ]) ) ) ) ]$prop,
+                    ( unique( as.character( strand(DSfreqGR[ ( which( dists_bool_list[[bpDistance]] ) ) ]) ) ) ) ]$prop,
     method = "pearson")
+}
 
 
 acfDistance <- function(DSfreqGR, bpDistance) {
