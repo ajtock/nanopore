@@ -196,14 +196,16 @@ tabGR_CEN180_fwd_dists_list <- lapply(seq_along(chrName), function(x) {
   }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
 })
 
+# NOT SURE DOUBLE-mclapplying IS A GOOD IDEA HERE - NEED TO REDUCE CPUpc (E.G. TO 0.50 ?)
+# TO AVOID EXCEEDING RAM LIMIT
 # For each chromosome, get row (GRanges) indices for each inter-cytosine distance
-tabGR_CEN180_fwd_dists_bool_list <- lapply(seq_along(chrName), function(x) {
+tabGR_CEN180_fwd_dists_bool_list <- mclapply(seq_along(chrName), function(x) {
   lapply(1:maxDist, function(z) {
     unlist(mclapply(seq_along(tabGR_CEN180_fwd_dists_list[[x]]), function(y) {
       z %fin% tabGR_CEN180_fwd_dists_list[[x]][[y]]
     }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T))
   })
-})
+}, mc.cores = length(chrName), mc.preschedule = F)
 
 # For each chromosome, get inter-cytosine distances for which there are > 2
 # data points to allow correlation coefficient calculation
@@ -212,11 +214,6 @@ tabGR_CEN180_fwd_dists_bool_list_gt2 <- unlist( lapply(seq_along(chrName), funct
     sum(z) > 2
   }))
 }) )
-
-# Get inter-cytosine distances that are shared across all chromosomes
-tabGR_CEN180_fwd_dists_bool_list_gt2 <- as.integer( names(
-    which( table( tabGR_CEN180_fwd_dists_bool_list_gt2 ) == length(chrName) )
-) )
 
 
 # Analyse each strand separately
@@ -243,14 +240,16 @@ tabGR_CEN180_rev_dists_list <- lapply(seq_along(chrName), function(x) {
   }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
 })
 
+# NOT SURE DOUBLE-mclapplying IS A GOOD IDEA HERE - NEED TO REDUCE CPUpc (E.G. TO 0.50 ?)
+# TO AVOID EXCEEDING RAM LIMIT
 # For each chromosome, get row (GRanges) indices for each inter-cytosine distance
-tabGR_CEN180_rev_dists_bool_list <- lapply(seq_along(chrName), function(x) {
+tabGR_CEN180_rev_dists_bool_list <- mclapply(seq_along(chrName), function(x) {
   lapply(1:maxDist, function(z) {
     unlist(mclapply(seq_along(tabGR_CEN180_rev_dists_list[[x]]), function(y) {
       z %fin% tabGR_CEN180_rev_dists_list[[x]][[y]]
     }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T))
   })
-})
+}, mc.cores = length(chrName), mc.preschedule = F)
 
 # For each chromosome, get inter-cytosine distances for which there are > 2
 # data points to allow correlation coefficient calculation
