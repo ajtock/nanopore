@@ -53,6 +53,12 @@ library(viridis)
 library(ggthemes)
 library(tidyquant)
 #library(grid)
+library(fastmatch)
+
+# Define more efficient matching function %fin%
+`%fin%` <- function(x, table) {
+  fmatch(x, table, nomatch = 0L) > 0L
+}
 
 #if(floor(log10(genomeBinSize)) + 1 < 4) {
 #  genomeBinName <- paste0(genomeBinSize, "bp")
@@ -165,6 +171,7 @@ fOverlaps_tab_CEN180 <- findOverlaps(query = tabGR,
                                      ignore.strand = T)
 tabGR_CEN180 <- tabGR[unique(queryHits(fOverlaps_tab_CEN180))]
 
+
 # Analyse each strand separately
 tabGR_CEN180_fwd <- tabGR_CEN180[strand(tabGR_CEN180) == "+"]
 tabGR_CEN180_fwd <- sortSeqlevels(tabGR_CEN180_fwd)
@@ -181,16 +188,7 @@ tabGR_CEN180_fwd_random <- mclapply(1:nperm, function(y) {
   do.call(c, as(tabGR_CEN180_fwd_chr_list_y, "GRangesList")) 
 }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
 
-#  sort( unique ( start( tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == x][2:(length(tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == x]))] ) -
-#                 start( tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == x][1:(length(tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == x])-1)] ) ) )
-
-#x <- 1
-#tabGR_CEN180_fwd_chr <- tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == chrName[x]]
-#tabGR_CEN180_fwd_chr_dist_list <- mclapply(seq_along(tabGR_CEN180_fwd_chr), function(y) {
-#  start(tabGR_CEN180_fwd_chr) - start(tabGR_CEN180_fwd_chr[y])
-#}, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
-
-
+# For each chromosome, get context-specific inter-cytosine distances
 tabGR_CEN180_fwd_dists_list <- lapply(seq_along(chrName), function(x) {
   tabGR_CEN180_fwd_chr <- tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == chrName[x]]
   mclapply(seq_along(tabGR_CEN180_fwd_chr), function(y) {
@@ -198,32 +196,7 @@ tabGR_CEN180_fwd_dists_list <- lapply(seq_along(chrName), function(x) {
   }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
 })
 
-
-# Define more efficient matching function %fin%
-library(fastmatch)
-`%fin%` <- function(x, table) {
-  fmatch(x, table, nomatch = 0L) > 0L
-}
-
-#tabGR_CEN180_fwd_chr_dist_bool_list <- mclapply(seq_along(tabGR_CEN180_fwd_chr_dist_list), function(y) {
-#  sapply(1:maxDist, function(z) {
-#    z %fin% tabGR_CEN180_fwd_chr_dist_list[[y]]
-#  })
-#}, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
-#
-#tabGR_CEN180_fwd_chr_dist_bool_list <- lapply(seq_alonglapply(1:maxDist, function(z) {
-#  unlist(mclapply(seq_along(tabGR_CEN180_fwd_chr_dist_list), function(y) {
-#    z %fin% tabGR_CEN180_fwd_chr_dist_list[[y]]
-#  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T))
-#})
-
-#tabGR_CEN180_fwd_chr_dist_bool_list <- mclapply(1:maxDist, function(z) {
-#  sapply(seq_along(tabGR_CEN180_fwd_chr_dist_list), function(y) {
-#    z %fin% tabGR_CEN180_fwd_chr_dist_list[[y]]
-#  })
-#}, mc.cores = round(detectCores()*CPUpc), mc.preschedule = F)
-
-
+# For each chromosome, get row (GRanges) indices for each inter-cytosine distance
 tabGR_CEN180_fwd_dists_bool_list <- lapply(seq_along(chrName), function(x) {
   lapply(1:maxDist, function(z) {
     unlist(mclapply(seq_along(tabGR_CEN180_fwd_dists_list[[x]]), function(y) {
@@ -232,54 +205,22 @@ tabGR_CEN180_fwd_dists_bool_list <- lapply(seq_along(chrName), function(x) {
   })
 })
 
+# For each chromosome, get inter-cytosine distances for which there are > 2
+# data points to allow correlation coefficient calculation
+tabGR_CEN180_fwd_dists_bool_list_gt2 <- unlist( lapply(seq_along(chrName), function(x) {
+  which(sapply(tabGR_CEN180_fwd_dists_bool_list[[x]], function(z) {
+    sum(z) > 2
+  }))
+}) )
 
-tabGR_CEN180_fwd_dists_bool_list_gt2 <- which(sapply(tabGR_CEN180_fwd_dists_bool_list, function(z) {
-  sum(z) > 2
-}))
-
-DSfreqGR <- tabGR_CEN180_fwd_chr
-
-acfDistance <- function(DSfreqGR, dists_bool_list, bpDistance) { 
-cor(x = DSfreqGR[ ( which( dists_bool_list[[bpDistance]] ) ) ]$prop,
-    y = DSfreqGR[ start(DSfreqGR) %in%
-                    ( start(DSfreqGR[ ( which( dists_bool_list[[bpDistance]] ) ) ]) + bpDistance ) &
-                  strand(DSfreqGR) ==
-                    ( unique( as.character( strand(DSfreqGR[ ( which( dists_bool_list[[bpDistance]] ) ) ]) ) ) ) ]$prop,
-    method = "pearson")
-}
-
-
-acfDistance <- function(DSfreqGR, bpDistance) {
-  cor(x = DSfreqGR[ ( which( diff( start(DSfreqGR)) == bpDistance) )]$prop,
-      y = DSfreqGR[ ( which( diff( start(DSfreqGR)) == bpDistance) + 1)]$prop,
-      method = "pearson")
-}
-
-tabGR_CEN180_all_acf <- lapply(seq_along(chrName), function(x) {
-  unlist(mclapply(tabGR_CEN180_all_dists_list[[x]], function(y) {
-    acfDistance(DSfreqGR = c(tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == chrName[x]],
-                             tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == chrName[x]]),
-                bpDistance = y)
-  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T))
-})
-
-
-
-
-
-
-# Get context-specific inter-cytosine bp distances that occur more than once
-tabGR_CEN180_fwd_dists_list <- mclapply(seq_along(chrName), function(x) {
-  as.integer( names (
-    which( table(
-      sort( diff( start( tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == chrName[x]] ) ) )
-   ) > 2 )
-  ) )
-}, mc.cores = length(chrName), mc.preschedule = F)
+# Get inter-cytosine distances that are shared across all chromosomes
+tabGR_CEN180_fwd_dists_bool_list_gt2 <- as.integer( names(
+    which( table( tabGR_CEN180_fwd_dists_bool_list_gt2 ) == length(chrName) )
+) )
 
 
 # Analyse each strand separately
-tabGR_CEN180_rev <- tabGR_CEN180[strand(tabGR_CEN180) == "-"]
+tabGR_CEN180_rev <- tabGR_CEN180[strand(tabGR_CEN180) == "+"]
 tabGR_CEN180_rev <- sortSeqlevels(tabGR_CEN180_rev)
 tabGR_CEN180_rev <- sort(tabGR_CEN180_rev, by = ~ seqnames + start + end)
 
@@ -294,17 +235,71 @@ tabGR_CEN180_rev_random <- mclapply(1:nperm, function(y) {
   do.call(c, as(tabGR_CEN180_rev_chr_list_y, "GRangesList")) 
 }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
 
-#  sort( unique ( start( tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == x][2:(length(tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == x]))] ) -
-#                 start( tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == x][1:(length(tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == x])-1)] ) ) )
+# For each chromosome, get context-specific inter-cytosine distances
+tabGR_CEN180_rev_dists_list <- lapply(seq_along(chrName), function(x) {
+  tabGR_CEN180_rev_chr <- tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == chrName[x]]
+  mclapply(seq_along(tabGR_CEN180_rev_chr), function(y) {
+    start(tabGR_CEN180_rev_chr) - start(tabGR_CEN180_rev_chr[y])
+  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
+})
 
-# Get context-specific inter-cytosine bp distances that occur more than once
-tabGR_CEN180_rev_dists_list <- mclapply(seq_along(chrName), function(x) {
-  as.integer( names (
-    which( table(
-      sort( diff( start( tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == chrName[x]] ) ) )
-   ) > 2 )
-  ) )
+# For each chromosome, get row (GRanges) indices for each inter-cytosine distance
+tabGR_CEN180_rev_dists_bool_list <- lapply(seq_along(chrName), function(x) {
+  lapply(1:maxDist, function(z) {
+    unlist(mclapply(seq_along(tabGR_CEN180_rev_dists_list[[x]]), function(y) {
+      z %fin% tabGR_CEN180_rev_dists_list[[x]][[y]]
+    }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T))
+  })
+})
+
+# For each chromosome, get inter-cytosine distances for which there are > 2
+# data points to allow correlation coefficient calculation
+tabGR_CEN180_rev_dists_bool_list_gt2 <- unlist( lapply(seq_along(chrName), function(x) {
+  which(sapply(tabGR_CEN180_rev_dists_bool_list[[x]], function(z) {
+    sum(z) > 2
+  }))
+}) )
+
+
+# Get inter-cytosine distances that are shared across all chromosomes and
+# across fwd and rev analyses
+tabGR_CEN180_all_dists_bool_list_gt2 <- c(tabGR_CEN180_fwd_dists_bool_list_gt2,
+                                          tabGR_CEN180_rev_dists_bool_list_gt2)
+tabGR_CEN180_all_dists_bool_list_gt2 <- as.integer( names(
+    which( table( tabGR_CEN180_all_dists_bool_list_gt2 ) == length(chrName) * 2 )
+) )
+
+
+
+#### 
+
+acfDistance <- function(fwd_DSfreqGR, rev_DSfreqGR, rev_dists_bool_list, fwd_dists_bool_list, bpDistance) { 
+  cor(x = c( fwd_DSfreqGR[ ( which( fwd_dists_bool_list[[bpDistance]] ) ) ]$prop,
+             rev_DSfreqGR[ ( which( rev_dists_bool_list[[bpDistance]] ) ) ]$prop ),
+      y = c( fwd_DSfreqGR[ start(fwd_DSfreqGR) %in%
+                             ( start(fwd_DSfreqGR[ ( which( fwd_dists_bool_list[[bpDistance]] ) ) ]) + bpDistance ) &
+                           strand(fwd_DSfreqGR) ==
+                             ( unique( as.character( strand(fwd_DSfreqGR[ ( which( fwd_dists_bool_list[[bpDistance]] ) ) ]) ) ) ) ]$prop,
+             rev_DSfreqGR[ start(rev_DSfreqGR) %in%
+                             ( start(rev_DSfreqGR[ ( which( rev_dists_bool_list[[bpDistance]] ) ) ]) + bpDistance ) & 
+                           strand(rev_DSfreqGR) ==
+                             ( unique( as.character( strand(rev_DSfreqGR[ ( which( rev_dists_bool_list[[bpDistance]] ) ) ]) ) ) ) ]$prop ),
+      method = "pearson")
+}
+
+tabGR_CEN180_all_acf <- mclapply(seq_along(chrName), function(x) {
+ sapply(tabGR_CEN180_fwd_dists_bool_list_gt2, function(y) {
+    acfDistance(fwd_DSfreqGR = tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == chrName[x]],
+                rev_DSfreqGR = tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == chrName[x]],
+                fwd_dists_bool_list = tabGR_CEN180_fwd_dists_bool_list[[x]],
+                rev_dists_bool_list = tabGR_CEN180_fwd_dists_bool_list[[x]],
+                bpDistance = y)
+  })
 }, mc.cores = length(chrName), mc.preschedule = F)
+
+####
+
+
 
 # Get the distance that is the lowest common denominator among the chromsomes
 tabGR_CEN180_all_dists_min_max <- min(sapply(c(tabGR_CEN180_fwd_dists_list, tabGR_CEN180_rev_dists_list), function(x) {
@@ -374,7 +369,7 @@ for(x in seq_along(chrName)) {
 
 tabGR_CEN180_all_acf_df <- dplyr::bind_rows(lapply(seq_along(tabGR_CEN180_all_acf), function(x) {
   data.frame(chr = chrName[x],
-             distance = tabGR_CEN180_all_dists_list[[x]],
+             distance = tabGR_CEN180_fwd_dists_bool_list_gt2,
              acf = tabGR_CEN180_all_acf[[x]],
              fft = fft(tabGR_CEN180_all_acf[[x]]),
              pval = -log10(tabGR_CEN180_all_acf_permTest_pval[[x]]),
@@ -382,123 +377,7 @@ tabGR_CEN180_all_acf_df <- dplyr::bind_rows(lapply(seq_along(tabGR_CEN180_all_ac
 }))
 
 
-## Function to plot a frequency spectrum of a given fft()-transformed trajectory or signal
-#plot.frequency.spectrum <- function(signal, dists) {
-#  X.k <- fft(signal)
-#  plot.data <- cbind(dists, Mod(X.k))
-#
-##  # TODO: why is this scaling necessary?
-##  plot.data[2:length(X.k), 2] <- 2 * plot.data[2:length(X.k), 2]
-#
-#  plot(plot.data, t = "h", lwd = 2, main = "",
-#       xlab = "Cycles", ylab = "Strength")
-#}
-#for(x in 1:5) {
-#  pdf(paste0("plots/freq_spectrum_CEN180_Chr", x, ".pdf"))
-#  plot.frequency.spectrum(signal = tabGR_CEN180_all_acf[[x]], dists = tabGR_CEN180_all_dists_list[[x]])
-#  dev.off()
-#}
-#
-
-
-## Analyse each strand separately
-#tabGR_CEN180_rev <- tabGR_CEN180[strand(tabGR_CEN180) == "-"]
-#tabGR_CEN180_rev <- sortSeqlevels(tabGR_CEN180_rev)
-#tabGR_CEN180_rev <- sort(tabGR_CEN180_rev, by = ~ seqnames + start + end)
-#
-## Randomly shuffle methylation proportion values over the cytosine coordinates
-#tabGR_CEN180_rev_random <- mclapply(1:nperm, function(y) {
-#  tabGR_CEN180_rev_chr_list_y <- lapply(seq_along(chrName), function(x) {
-#    GRanges(seqnames = seqnames(tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == chrName[x]]),
-#            ranges = ranges(tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == chrName[x]]),
-#            strand = strand(tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == chrName[x]]),
-#            prop = sample(tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == chrName[x]]$prop))
-#  })
-#  do.call(c, as(tabGR_CEN180_rev_chr_list_y, "GRangesList")) 
-#}, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
-#
-##  sort( unique ( start( tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == x][2:(length(tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == x]))] ) -
-##                 start( tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == x][1:(length(tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == x])-1)] ) ) )
-#
-## Get context-specific inter-cytosine bp distances that occur more than once
-#tabGR_CEN180_rev_dists_list <- mclapply(seq_along(chrName), function(x) {
-#  as.integer( names (
-#    which( table(
-#      sort( diff( start( tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == chrName[x]] ) ) )
-#   ) > 2 )
-#  ) )
-#}, mc.cores = length(chrName), mc.preschedule = F)
-#
-## Get the distance that is the lowest common denominator among the chromsomes
-#tabGR_CEN180_rev_dists_min_max <- min(sapply(tabGR_CEN180_rev_dists_list, function(x) {
-#  max(x, na.rm = T)
-#}))
-#
-#tabGR_CEN180_rev_dists_list <- lapply(tabGR_CEN180_rev_dists_list, function(x) {
-#  x[which(x <= tabGR_CEN180_rev_dists_min_max)]
-#})
-#
-#acfDistance <- function(DSfreqGR, bpDistance) {
-#  cor.test(x = DSfreqGR[ ( which( diff( start(DSfreqGR)) == bpDistance) )]$prop,
-#           y = DSfreqGR[ ( which( diff( start(DSfreqGR)) == bpDistance) + 1)]$prop,
-#           alternative = "two.sided",
-#           method = "pearson")$estimate
-#}
-#
-#tabGR_CEN180_rev_acf <- lapply(seq_along(chrName), function(x) {
-#  unlist(mclapply(tabGR_CEN180_rev_dists_list[[x]], function(y) {
-#    acfDistance(DSfreqGR = tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == chrName[x]],
-#                bpDistance = y)
-#  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T))
-#})
-#
-#tabGR_CEN180_rev_random_acf <- mclapply(seq_along(tabGR_CEN180_rev_random), function(w) {
-#  lapply(seq_along(chrName), function(x) {
-#    unlist(lapply(tabGR_CEN180_rev_dists_list[[x]], function(y) {
-#      acfDistance(DSfreqGR = tabGR_CEN180_rev_random[[w]][seqnames(tabGR_CEN180_rev_random[[w]]) == chrName[x]],
-#                  bpDistance = y)
-#    }))
-#  })
-#}, mc.cores = round(detectCores()*CPUpc), mc.preschedule = F)
-#
-#tabGR_CEN180_rev_acf_permTest_exp <- lapply(seq_along(chrName), function(x) {
-#  unlist(lapply(seq_along(tabGR_CEN180_rev_dists_list[[x]]), function(y) {
-#    mean(
-#      sapply(seq_along(tabGR_CEN180_rev_random_acf), function(w) {
-#        tabGR_CEN180_rev_random_acf[[w]][[x]][y]
-#      })
-#    , na.rm = T)
-#  }))
-#})
-#
-#tabGR_CEN180_rev_acf_permTest_pval <- lapply(seq_along(chrName), function(x) {
-#  unlist(lapply(seq_along(tabGR_CEN180_rev_dists_list[[x]]), function(y) {
-#    1 - ( sum(
-#      sapply(seq_along(tabGR_CEN180_rev_random_acf), function(w) {
-#        tabGR_CEN180_rev_acf[[x]][y] > tabGR_CEN180_rev_random_acf[[w]][[x]][y]
-#      })
-#    , na.rm = T) / nperm )
-#  }))
-#})
-#
-## Set minimum p-value
-#for(x in seq_along(chrName)) {
-#  tabGR_CEN180_rev_acf_permTest_pval[[x]][which(tabGR_CEN180_rev_acf_permTest_pval[[x]] == 0)] <- min_pval
-#}
-#
-#tabGR_CEN180_rev_acf_df <- dplyr::bind_rows(lapply(seq_along(tabGR_CEN180_rev_acf), function(x) {
-#  data.frame(chr = chrName[x],
-#             distance = tabGR_CEN180_rev_dists_list[[x]],
-#             acf = tabGR_CEN180_rev_acf[[x]],
-#             pval = -log10(tabGR_CEN180_rev_acf_permTest_pval[[x]]),
-#             exp = tabGR_CEN180_rev_acf_permTest_pval[[x]])
-#}))
-
-
-#tabGR_CEN180_all_acf_df <- rbind(tabGR_CEN180_fwd_acf_df, tabGR_CEN180_rev_acf_df)
-#tabGR_CEN180_all_acf_df <- tabGR_CEN180_all_acf_df[ order(tabGR_CEN180_all_acf_df[,1], tabGR_CEN180_all_acf_df[,2], decreasing = F) , ]
-
-
+# Chromosome-scale plotting function
 chrPlot <- function(dataFrame, xvar, yvar, xlab, ylab, colour) {
   xvar <- enquo(xvar)
   yvar <- enquo(yvar)
@@ -629,4 +508,24 @@ ggsave(paste0(plotDir,
 #              ".pdf"),
 #       plot = gg_cow_rev,
 #       height = 5*length(gg_cow_rev_list), width = 10*length(chrName), limitsize = F)
+
+
+#tabGR_CEN180_fwd_chr_dist_bool_list <- mclapply(seq_along(tabGR_CEN180_fwd_chr_dist_list), function(y) {
+#  sapply(1:maxDist, function(z) {
+#    z %fin% tabGR_CEN180_fwd_chr_dist_list[[y]]
+#  })
+#}, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
+#
+#tabGR_CEN180_fwd_chr_dist_bool_list <- lapply(seq_alonglapply(1:maxDist, function(z) {
+#  unlist(mclapply(seq_along(tabGR_CEN180_fwd_chr_dist_list), function(y) {
+#    z %fin% tabGR_CEN180_fwd_chr_dist_list[[y]]
+#  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T))
+#})
+
+#tabGR_CEN180_fwd_chr_dist_bool_list <- mclapply(1:maxDist, function(z) {
+#  sapply(seq_along(tabGR_CEN180_fwd_chr_dist_list), function(y) {
+#    z %fin% tabGR_CEN180_fwd_chr_dist_list[[y]]
+#  })
+#}, mc.cores = round(detectCores()*CPUpc), mc.preschedule = F)
+
 
