@@ -269,9 +269,7 @@ tabGR_CEN180_all_dists_bool_list_gt2 <- as.integer( names(
 ) )
 
 
-
-#### 
-
+# Define "autocorrelation" function 
 acfDistance <- function(fwd_DSfreqGR, rev_DSfreqGR, rev_dists_bool_list, fwd_dists_bool_list, bpDistance) { 
   cor(x = c( fwd_DSfreqGR[ ( which( fwd_dists_bool_list[[bpDistance]] ) ) ]$prop,
              rev_DSfreqGR[ ( which( rev_dists_bool_list[[bpDistance]] ) ) ]$prop ),
@@ -286,19 +284,68 @@ acfDistance <- function(fwd_DSfreqGR, rev_DSfreqGR, rev_dists_bool_list, fwd_dis
       method = "pearson")
 }
 
+# Apply "autocorrelation" function
 tabGR_CEN180_all_acf <- mclapply(seq_along(chrName), function(x) {
- sapply(tabGR_CEN180_fwd_dists_bool_list_gt2, function(y) {
+ sapply(tabGR_CEN180_all_dists_bool_list_gt2, function(y) {
     acfDistance(fwd_DSfreqGR = tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == chrName[x]],
-                rev_DSfreqGR = tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == chrName[x]],
+                rev_DSfreqGR = tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == chrName[x]],
                 fwd_dists_bool_list = tabGR_CEN180_fwd_dists_bool_list[[x]],
-                rev_dists_bool_list = tabGR_CEN180_fwd_dists_bool_list[[x]],
+                rev_dists_bool_list = tabGR_CEN180_rev_dists_bool_list[[x]],
                 bpDistance = y)
   })
 }, mc.cores = length(chrName), mc.preschedule = F)
 
-####
+tabGR_CEN180_all_random_acf <- mclapply(1:nperm, function(w) {
+  lapply(seq_along(chrName), function(x) {
+    sapply(tabGR_CEN180_all_dists_bool_list_gt2, function(y) {
+      acfDistance(fwd_DSfreqGR = tabGR_CEN180_fwd_random[[w]][seqnames(tabGR_CEN180_fwd_random[[w]]) == chrName[x]],
+                  rev_DSfreqGR = tabGR_CEN180_rev_random[[w]][seqnames(tabGR_CEN180_rev_random[[w]]) == chrName[x]],
+                  fwd_dists_bool_list = tabGR_CEN180_fwd_dists_bool_list[[x]],
+                  rev_dists_bool_list = tabGR_CEN180_rev_dists_bool_list[[x]],
+                  bpDistance = y)
+    })
+  })
+}, mc.cores = round(detectCores()*CPUpc), mc.preschedule = F)
+
+tabGR_CEN180_all_acf_permTest_exp <- lapply(seq_along(chrName), function(x) {
+  sapply(seq_along(tabGR_CEN180_all_dists_bool_list_gt2), function(y) {
+    mean(
+      sapply(seq_along(tabGR_CEN180_all_random_acf), function(w) {
+        tabGR_CEN180_all_random_acf[[w]][[x]][y]
+      })
+    , na.rm = T)
+  })
+})
+
+tabGR_CEN180_all_acf_permTest_pval <- lapply(seq_along(chrName), function(x) {
+  sapply(seq_along(tabGR_CEN180_all_dists_bool_list_gt2), function(y) {
+    1 - ( sum(
+      sapply(seq_along(tabGR_CEN180_all_random_acf), function(w) {
+        tabGR_CEN180_all_acf[[x]][y] > tabGR_CEN180_all_random_acf[[w]][[x]][y]
+      })
+    , na.rm = T) / nperm )
+  })
+})
+
+# Set minimum p-value
+for(x in seq_along(chrName)) {
+  tabGR_CEN180_all_acf_permTest_pval[[x]][which(tabGR_CEN180_all_acf_permTest_pval[[x]] == 0)] <- min_pval
+}
+
+tabGR_CEN180_all_acf_df <- dplyr::bind_rows(lapply(seq_along(tabGR_CEN180_all_acf), function(x) {
+  data.frame(chr = chrName[x],
+             distance = tabGR_CEN180_all_dists_bool_list_gt2,
+             acf = tabGR_CEN180_all_acf[[x]],
+             fft = fft(tabGR_CEN180_all_acf[[x]]),
+             pval = -log10(tabGR_CEN180_all_acf_permTest_pval[[x]]),
+             exp = tabGR_CEN180_all_acf_permTest_pval[[x]])
+}))
 
 
+
+
+
+#######
 
 # Get the distance that is the lowest common denominator among the chromsomes
 tabGR_CEN180_all_dists_min_max <- min(sapply(c(tabGR_CEN180_fwd_dists_list, tabGR_CEN180_rev_dists_list), function(x) {
