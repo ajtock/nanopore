@@ -92,8 +92,6 @@ if(!grepl("Chr", fai[,1][1])) {
 }
 chrLens <- fai[,2][which(fai[,1] %in% chrName)]
 
-# Read in the raw output .tsv file from Deepsignal methylation model
-
 # Read in methylation statistics files
 tab_list <- mclapply(seq_along(chrName), function(x) {
   read.table(paste0(outDir,
