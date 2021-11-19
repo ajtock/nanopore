@@ -217,7 +217,7 @@ tabGR_CEN180_fwd_dists_bool_list_gt2 <- unlist( lapply(seq_along(chrName), funct
 
 
 # Analyse each strand separately
-tabGR_CEN180_rev <- tabGR_CEN180[strand(tabGR_CEN180) == "+"]
+tabGR_CEN180_rev <- tabGR_CEN180[strand(tabGR_CEN180) == "-"]
 tabGR_CEN180_rev <- sortSeqlevels(tabGR_CEN180_rev)
 tabGR_CEN180_rev <- sort(tabGR_CEN180_rev, by = ~ seqnames + start + end)
 
@@ -336,7 +336,6 @@ tabGR_CEN180_all_acf_df <- dplyr::bind_rows(lapply(seq_along(tabGR_CEN180_all_ac
   data.frame(chr = chrName[x],
              distance = tabGR_CEN180_all_dists_bool_list_gt2,
              acf = tabGR_CEN180_all_acf[[x]],
-             fft = fft(tabGR_CEN180_all_acf[[x]]),
              pval = -log10(tabGR_CEN180_all_acf_permTest_pval[[x]]),
              exp = tabGR_CEN180_all_acf_permTest_pval[[x]])
 }))
@@ -421,6 +420,19 @@ tabGR_CEN180_all_acf_df <- dplyr::bind_rows(lapply(seq_along(tabGR_CEN180_all_ac
              pval = -log10(tabGR_CEN180_all_acf_permTest_pval[[x]]),
              exp = tabGR_CEN180_all_acf_permTest_pval[[x]])
 }))
+
+write.table(tabGR_CEN180_all_acf_df,
+            paste0(sampleName, "_MappedOn_", refbase, "_", context,
+                   "_autocorrelation_all_CEN180_", paste0(chrName, collapse = "_"),
+                   ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+
+ggsave(paste0(plotDir,
+              sampleName, "_MappedOn_", refbase, "_", context,
+              "_autocorrelation_all_CEN180_", paste0(chrName, collapse = "_"),
+              ".pdf"),
+       plot = gg_cow_all,
+       height = 5*length(gg_cow_all_list), width = 10*length(chrName), limitsize = F)
 
 
 # Chromosome-scale plotting function
