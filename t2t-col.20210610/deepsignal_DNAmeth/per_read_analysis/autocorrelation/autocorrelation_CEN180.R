@@ -5,7 +5,7 @@
 # at increasing physical distances (e.g., 1 to 10,000 nucleotides)
 
 # Usage on hydrogen node7:
-# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript autocorrelation_CEN180.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 10000 10000 CpG 1e4 1.00 Chr1,Chr2,Chr3,Chr4,Chr5 200"
+# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript autocorrelation_CEN180.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 10000 10000 CpG 1e4 1.00 Chr1,Chr2,Chr3,Chr4,Chr5 200 CEN180"
 
 #sampleName <- "Col_0_deepsignalDNAmeth_30kb_90pc"
 #refbase <- "t2t-col.20210610"
@@ -16,6 +16,7 @@
 #CPUpc <- 1.00
 #chrName <- unlist(strsplit("Chr1,Chr2,Chr3,Chr4,Chr5", split = ","))
 #maxDist <- 200
+#featName <- "CEN180"
 #min_pval <- 1 - ( (nperm - 1) / nperm )
 
 args <- commandArgs(trailingOnly = T)
@@ -28,61 +29,25 @@ nperm <- as.numeric(args[6])
 CPUpc <- as.numeric(args[7])
 chrName <- unlist(strsplit(args[8], split = ","))
 maxDist <- as.numeric(args[9])
+featName <- args[10]
 min_pval <- 1 - ( (nperm - 1) / nperm )
 
 print(paste0("Proportion of CPUs:", CPUpc))
 options(stringsAsFactors = F)
 library(parallel)
 library(GenomicRanges)
-#library(irr)
 library(dplyr)
-#library(tidyr)
-#library(fpc)
-##library(data.table)
-##library(segmentSeq)
-#library(ComplexHeatmap)
-##library(RColorBrewer)
-##library(viridis)
-##library(scales)
-##library(circlize)
- 
 library(ggplot2)
 library(cowplot)
-#library(ggcorrplot)
 library(viridis)
 library(ggthemes)
 library(tidyquant)
-#library(grid)
 library(fastmatch)
 
 # Define more efficient matching function %fin%
 `%fin%` <- function(x, table) {
   fmatch(x, table, nomatch = 0L) > 0L
 }
-
-#if(floor(log10(genomeBinSize)) + 1 < 4) {
-#  genomeBinName <- paste0(genomeBinSize, "bp")
-#  genomeBinNamePlot <- paste0(genomeBinSize, "-bp")
-#} else if(floor(log10(genomeBinSize)) + 1 >= 4 &
-#          floor(log10(genomeBinSize)) + 1 <= 6) {
-#  genomeBinName <- paste0(genomeBinSize/1e3, "kb")
-#  genomeBinNamePlot <- paste0(genomeBinSize/1e3, "-kb")
-#} else if(floor(log10(genomeBinSize)) + 1 >= 7) {
-#  genomeBinName <- paste0(genomeBinSize/1e6, "Mb")
-#  genomeBinNamePlot <- paste0(genomeBinSize/1e6, "-Mb")
-#}
-#
-#if(floor(log10(genomeStepSize)) + 1 < 4) {
-#  genomeStepName <- paste0(genomeStepSize, "bp")
-#  genomeStepNamePlot <- paste0(genomeStepSize, "-bp")
-#} else if(floor(log10(genomeStepSize)) + 1 >= 4 &
-#          floor(log10(genomeStepSize)) + 1 <= 6) {
-#  genomeStepName <- paste0(genomeStepSize/1e3, "kb")
-#  genomeStepNamePlot <- paste0(genomeStepSize/1e3, "-kb")
-#} else if(floor(log10(genomeStepSize)) + 1 >= 7) {
-#  genomeStepName <- paste0(genomeStepSize/1e6, "Mb")
-#  genomeStepNamePlot <- paste0(genomeStepSize/1e6, "-Mb")
-#}
 
 plotDir <- paste0("plots/")
 system(paste0("[ -d ", plotDir, " ] || mkdir -p ", plotDir))
@@ -107,38 +72,40 @@ mito_ins_GR <- GRanges(seqnames = "Chr2",
                                         end = max(mito_ins$end)),
                        strand = "*")
 
-# Read in CEN180 annotation
-CEN180 <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase,
-                            "/annotation/CEN180/CEN180_in_", refbase,
-                            "_", paste0(chrName, collapse = "_"), ".bed"),
-                     header = F)
-colnames(CEN180) <- c("chr", "start0based", "end", "name", "score", "strand", "HORlengthsSum", "HORcount")
-CEN180GR <- GRanges(seqnames = CEN180$chr,
-                    ranges = IRanges(start = CEN180$start0based+1,
-                                     end = CEN180$end),
-                    strand = CEN180$strand)
-
-## Read in gene annotation
-#genes <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase,
-#                           "/annotation/genes/", refbase, "_representative_mRNA",
-#                           "_", paste0(chrName, collapse = "_"), ".bed"),
-#                    header = F)
-#colnames(genes) <- c("chr", "start0based", "end", "name", "score", "strand")
-#genesGR <- GRanges(seqnames = genes$chr,
-#                   ranges = IRanges(start = genes$start0based+1,
-#                                    end = genes$end),
-#                   strand = genes$strand)
-#
-## Read in gypsy annotation
-#gypsy <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase,
-#                           "/annotation/TEs_EDTA/", refbase, "_TEs_Gypsy_LTR",
-#                           "_", paste0(chrName, collapse = "_"), ".bed"),
-#                    header = F)
-#colnames(gypsy) <- c("chr", "start0based", "end", "name", "score", "strand")
-#gypsyGR <- GRanges(seqnames = gypsy$chr,
-#                   ranges = IRanges(start = gypsy$start0based+1,
-#                                    end = gypsy$end),
-#                   strand = gypsy$strand)
+# Read in feature annotation
+if(featName == "CEN180") {
+  CEN180 <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase,
+                              "/annotation/CEN180/CEN180_in_", refbase,
+                              "_", paste0(chrName, collapse = "_"), ".bed"),
+                       header = F)
+  colnames(CEN180) <- c("chr", "start0based", "end", "name", "score", "strand", "HORlengthsSum", "HORcount")
+  CEN180GR <- GRanges(seqnames = CEN180$chr,
+                      ranges = IRanges(start = CEN180$start0based+1,
+                                       end = CEN180$end),
+                      strand = CEN180$strand)
+} else if(featName == "gene") {
+  genes <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase,
+                             "/annotation/genes/", refbase, "_representative_mRNA",
+                             "_", paste0(chrName, collapse = "_"), ".bed"),
+                      header = F)
+  colnames(genes) <- c("chr", "start0based", "end", "name", "score", "strand")
+  genesGR <- GRanges(seqnames = genes$chr,
+                     ranges = IRanges(start = genes$start0based+1,
+                                      end = genes$end),
+                     strand = genes$strand)
+} else if(featName == "GYPSY") {
+  gypsy <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase,
+                             "/annotation/TEs_EDTA/", refbase, "_TEs_Gypsy_LTR",
+                             "_", paste0(chrName, collapse = "_"), ".bed"),
+                      header = F)
+  colnames(gypsy) <- c("chr", "start0based", "end", "name", "score", "strand")
+  gypsyGR <- GRanges(seqnames = gypsy$chr,
+                     ranges = IRanges(start = gypsy$start0based+1,
+                                      end = gypsy$end),
+                     strand = gypsy$strand)
+} else {
+  stop(print("featName not one of CEN180, gene or GYPSY"))
+}
 
 
 # Read in the "methylation frequency" output .tsv file from Deepsignal methylation model
@@ -340,100 +307,11 @@ tabGR_CEN180_all_acf_df <- dplyr::bind_rows(lapply(seq_along(tabGR_CEN180_all_ac
              exp = tabGR_CEN180_all_acf_permTest_pval[[x]])
 }))
 
-
-
-
-
-#######
-
-# Get the distance that is the lowest common denominator among the chromsomes
-tabGR_CEN180_all_dists_min_max <- min(sapply(c(tabGR_CEN180_fwd_dists_list, tabGR_CEN180_rev_dists_list), function(x) {
-  max(x, na.rm = T)
-}))
-
-if(tabGR_genes_all_dists_min_max > maxDist) {
-  tabGR_genes_all_dists_min_max <- maxDist
-}
-
-tabGR_CEN180_all_dists_list <- lapply(seq_along(chrName), function(x) {
-  unique(tabGR_CEN180_fwd_dists_list[[x]], tabGR_CEN180_rev_dists_list[[x]])
-})
-
-tabGR_CEN180_all_dists_list <- lapply(tabGR_CEN180_all_dists_list, function(x) {
-  x[which(x <= tabGR_CEN180_all_dists_min_max)]
-})
-
-acfDistance <- function(DSfreqGR, bpDistance) {
-  cor(x = DSfreqGR[ ( which( diff( start(DSfreqGR)) == bpDistance) )]$prop,
-      y = DSfreqGR[ ( which( diff( start(DSfreqGR)) == bpDistance) + 1)]$prop,
-      method = "pearson")
-}
-
-tabGR_CEN180_all_acf <- lapply(seq_along(chrName), function(x) {
-  unlist(mclapply(tabGR_CEN180_all_dists_list[[x]], function(y) {
-    acfDistance(DSfreqGR = c(tabGR_CEN180_fwd[seqnames(tabGR_CEN180_fwd) == chrName[x]],
-                             tabGR_CEN180_rev[seqnames(tabGR_CEN180_rev) == chrName[x]]),
-                bpDistance = y)
-  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T))
-})
-
-tabGR_CEN180_all_random_acf <- mclapply(1:nperm, function(w) {
-  lapply(seq_along(chrName), function(x) {
-    unlist(lapply(tabGR_CEN180_all_dists_list[[x]], function(y) {
-      acfDistance(DSfreqGR = c(tabGR_CEN180_fwd_random[[w]][seqnames(tabGR_CEN180_fwd_random[[w]]) == chrName[x]],
-                               tabGR_CEN180_rev_random[[w]][seqnames(tabGR_CEN180_rev_random[[w]]) == chrName[x]]),
-                  bpDistance = y)
-    }))
-  })
-}, mc.cores = round(detectCores()*CPUpc), mc.preschedule = F)
-
-tabGR_CEN180_all_acf_permTest_exp <- lapply(seq_along(chrName), function(x) {
-  unlist(lapply(seq_along(tabGR_CEN180_all_dists_list[[x]]), function(y) {
-    mean(
-      sapply(seq_along(tabGR_CEN180_all_random_acf), function(w) {
-        tabGR_CEN180_all_random_acf[[w]][[x]][y]
-      })
-    , na.rm = T)
-  }))
-})
-
-tabGR_CEN180_all_acf_permTest_pval <- lapply(seq_along(chrName), function(x) {
-  unlist(lapply(seq_along(tabGR_CEN180_all_dists_list[[x]]), function(y) {
-    1 - ( sum(
-      sapply(seq_along(tabGR_CEN180_all_random_acf), function(w) {
-        tabGR_CEN180_all_acf[[x]][y] > tabGR_CEN180_all_random_acf[[w]][[x]][y]
-      })
-    , na.rm = T) / nperm )
-  }))
-})
-
-# Set minimum p-value
-for(x in seq_along(chrName)) {
-  tabGR_CEN180_all_acf_permTest_pval[[x]][which(tabGR_CEN180_all_acf_permTest_pval[[x]] == 0)] <- min_pval
-}
-
-tabGR_CEN180_all_acf_df <- dplyr::bind_rows(lapply(seq_along(tabGR_CEN180_all_acf), function(x) {
-  data.frame(chr = chrName[x],
-             distance = tabGR_CEN180_fwd_dists_bool_list_gt2,
-             acf = tabGR_CEN180_all_acf[[x]],
-             fft = fft(tabGR_CEN180_all_acf[[x]]),
-             pval = -log10(tabGR_CEN180_all_acf_permTest_pval[[x]]),
-             exp = tabGR_CEN180_all_acf_permTest_pval[[x]])
-}))
-
 write.table(tabGR_CEN180_all_acf_df,
             paste0(sampleName, "_MappedOn_", refbase, "_", context,
-                   "_autocorrelation_all_CEN180_", paste0(chrName, collapse = "_"),
+                   "_all_autocorrelation_", featName, "_", paste0(chrName, collapse = "_"),
                    ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
-
-ggsave(paste0(plotDir,
-              sampleName, "_MappedOn_", refbase, "_", context,
-              "_autocorrelation_all_CEN180_", paste0(chrName, collapse = "_"),
-              ".pdf"),
-       plot = gg_cow_all,
-       height = 5*length(gg_cow_all_list), width = 10*length(chrName), limitsize = F)
-
 
 # Chromosome-scale plotting function
 chrPlot <- function(dataFrame, xvar, yvar, xlab, ylab, colour) {
@@ -443,7 +321,7 @@ chrPlot <- function(dataFrame, xvar, yvar, xlab, ylab, colour) {
          mapping = aes(x = !!xvar,
                        y = !!yvar)) +
 #  geom_line(colour = colour, size = 1) +
-  geom_ma(ma_fun = SMA, n = 6, colour = colour, linetype = 1, size = 2.5) +
+  geom_ma(ma_fun = SMA, n = 6, colour = colour, linetype = 1, size = 2) +
   scale_x_continuous(
                      labels = function(x) x) +
   labs(x = xlab,
@@ -458,8 +336,6 @@ chrPlot <- function(dataFrame, xvar, yvar, xlab, ylab, colour) {
         axis.line = element_line(size = 1.5, colour = "black"),
         panel.background = element_blank(),
         panel.border = element_blank(),
-#        panel.border = element_rect(size = 1.0, colour = "black"),
-#        panel.grid = element_blank(),
         strip.text.x = element_text(size = 30, colour = "white"),
         strip.background = element_rect(fill = "black", colour = "black"),
         plot.margin = unit(c(0.3,1.2,0.3,0.3), "cm"))
@@ -469,7 +345,7 @@ chrPlot <- function(dataFrame, xvar, yvar, xlab, ylab, colour) {
 gg_tabGR_CEN180_all_acf <- chrPlot(dataFrame = tabGR_CEN180_all_acf_df,
                                    xvar = distance,
                                    yvar = acf,
-                                   xlab = bquote("Distance between "*italic("CEN180")*" cytosines (bp)"),
+                                   xlab = bquote("Distance between "*italic(.(featName))*" cytosines (bp)"),
                                    ylab = bquote("Observed correlation (m"*.(context)*")"),
                                    colour = "dodgerblue")
 gg_tabGR_CEN180_all_acf <- gg_tabGR_CEN180_all_acf +
@@ -478,7 +354,7 @@ gg_tabGR_CEN180_all_acf <- gg_tabGR_CEN180_all_acf +
 gg_tabGR_CEN180_all_pval <- chrPlot(dataFrame = tabGR_CEN180_all_acf_df,
                                     xvar = distance,
                                     yvar = pval,
-                                    xlab = bquote("Distance between "*italic("CEN180")*" cytosines (bp)"),
+                                    xlab = bquote("Distance between "*italic(.(featName))*" cytosines (bp)"),
                                     ylab = bquote("-"*Log[10]*"("*italic(P)*"-value) (m"*.(context)*")"),
                                     colour = "red")
 gg_tabGR_CEN180_all_pval <- gg_tabGR_CEN180_all_pval +
@@ -487,25 +363,15 @@ gg_tabGR_CEN180_all_pval <- gg_tabGR_CEN180_all_pval +
 gg_tabGR_CEN180_all_exp <- chrPlot(dataFrame = tabGR_CEN180_all_acf_df,
                                    xvar = distance,
                                    yvar = exp,
-                                   xlab = bquote("Distance between "*italic("CEN180")*" cytosines (bp)"),
+                                   xlab = bquote("Distance between "*italic(.(featName))*" cytosines (bp)"),
                                    ylab = bquote("Mean permuted correlation (m"*.(context)*")"),
                                    colour = "lightseagreen")
 gg_tabGR_CEN180_all_exp <- gg_tabGR_CEN180_all_exp +
   facet_grid(cols = vars(chr), scales = "free_x")
 
-gg_tabGR_CEN180_all_fft <- chrPlot(dataFrame = tabGR_CEN180_all_acf_df,
-                                   xvar = distance,
-                                   yvar = fft,
-                                   xlab = bquote("Distance between "*italic("CEN180")*" cytosines (bp)"),
-                                   ylab = bquote("FFT (m"*.(context)*")"),
-                                   colour = "lightseagreen")
-gg_tabGR_CEN180_all_fft <- gg_tabGR_CEN180_all_fft +
-  facet_grid(cols = vars(chr), scales = "free_x")
-
 gg_cow_all_list <- list(
                         gg_tabGR_CEN180_all_acf,
                         gg_tabGR_CEN180_all_pval,
-#                        gg_tabGR_CEN180_all_fft,
                         gg_tabGR_CEN180_all_exp
                        )
 gg_cow_all <- plot_grid(plotlist = gg_cow_all_list,
@@ -516,56 +382,12 @@ gg_cow_all <- plot_grid(plotlist = gg_cow_all_list,
 
 ggsave(paste0(plotDir,
               sampleName, "_MappedOn_", refbase, "_", context,
-              "_autocorrelation_all_CEN180_", paste0(chrName, collapse = "_"),
+              "_all_autocorrelation_", featName, "_", paste0(chrName, collapse = "_"),
               ".pdf"),
        plot = gg_cow_all,
        height = 5*length(gg_cow_all_list), width = 10*length(chrName), limitsize = F)
 
 
-#gg_tabGR_CEN180_rev_acf <- chrPlot(dataFrame = tabGR_CEN180_rev_acf_df,
-#                                   xvar = distance,
-#                                   yvar = acf,
-#                                   xlab = bquote("Distance between "*italic("CEN180")*" cytosines (bp)"),
-#                                   ylab = bquote("Observed correlation (m"*.(context)*")"),
-#                                   colour = "dodgerblue")
-#gg_tabGR_CEN180_rev_acf <- gg_tabGR_CEN180_rev_acf +
-#  facet_grid(cols = vars(chr), scales = "free_x")
-#
-#gg_tabGR_CEN180_rev_pval <- chrPlot(dataFrame = tabGR_CEN180_rev_acf_df,
-#                                    xvar = distance,
-#                                    yvar = pval,
-#                                    xlab = bquote("Distance between "*italic("CEN180")*" cytosines (bp)"),
-#                                    ylab = bquote("-"*Log[10]*"("*italic(P)*"-value) (m"*.(context)*")"),
-#                                    colour = "red")
-#gg_tabGR_CEN180_rev_pval <- gg_tabGR_CEN180_rev_pval +
-#  facet_grid(cols = vars(chr), scales = "free_x")
-#
-#gg_tabGR_CEN180_rev_exp <- chrPlot(dataFrame = tabGR_CEN180_rev_acf_df,
-#                                   xvar = distance,
-#                                   yvar = exp,
-#                                   xlab = bquote("Distance between "*italic("CEN180")*" cytosines (bp)"),
-#                                   ylab = bquote("Mean permuted correlation (m"*.(context)*")"),
-#                                   colour = "lightseagreen")
-#gg_tabGR_CEN180_rev_exp <- gg_tabGR_CEN180_rev_exp +
-#  facet_grid(cols = vars(chr), scales = "free_x")
-#
-#gg_cow_rev_list <- list(
-#                        gg_tabGR_CEN180_rev_acf,
-#                        gg_tabGR_CEN180_rev_pval,
-#                        gg_tabGR_CEN180_rev_exp
-#                       )
-#gg_cow_rev <- plot_grid(plotlist = gg_cow_rev_list,
-#                        labels = c("AUTO"), label_size = 30,
-#                        align = "hv",
-#                        axis = "l",
-#                        nrow = length(gg_cow_rev_list), ncol = 1)
-#
-#ggsave(paste0(plotDir,
-#              sampleName, "_MappedOn_", refbase, "_", context,
-#              "_autocorrelation_rev_CEN180_", paste0(chrName, collapse = "_"),
-#              ".pdf"),
-#       plot = gg_cow_rev,
-#       height = 5*length(gg_cow_rev_list), width = 10*length(chrName), limitsize = F)
 
 
 #tabGR_CEN180_fwd_chr_dist_bool_list <- mclapply(seq_along(tabGR_CEN180_fwd_chr_dist_list), function(y) {
@@ -579,11 +401,9 @@ ggsave(paste0(plotDir,
 #    z %fin% tabGR_CEN180_fwd_chr_dist_list[[y]]
 #  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T))
 #})
-
+#
 #tabGR_CEN180_fwd_chr_dist_bool_list <- mclapply(1:maxDist, function(z) {
 #  sapply(seq_along(tabGR_CEN180_fwd_chr_dist_list), function(y) {
 #    z %fin% tabGR_CEN180_fwd_chr_dist_list[[y]]
 #  })
 #}, mc.cores = round(detectCores()*CPUpc), mc.preschedule = F)
-
-
