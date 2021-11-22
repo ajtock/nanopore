@@ -162,13 +162,13 @@ tabGR_feat_fwd_dists_list <- mclapply(seq_along(chrName), function(x) {
 # For each chromosome, get row (GRanges) indices for each inter-cytosine distance
 # A lot more time-efficient to parallelise over chrName (small n; mc.preschedule = F)
 # rather than over tabGR_feat_fwd_dists_list[[x]] (big n; mc.preschedule = T)
-tabGR_feat_fwd_dists_bool_list <- mclapply(seq_along(chrName), function(x) {
+tabGR_feat_fwd_dists_bool_list <- lapply(seq_along(chrName), function(x) {
   lapply(1:maxDist, function(z) {
     sapply(seq_along(tabGR_feat_fwd_dists_list[[x]]), function(y) {
       z %fin% tabGR_feat_fwd_dists_list[[x]][[y]]
     })
   })
-}, mc.cores = length(chrName), mc.preschedule = F)
+})
 
 # For each chromosome, get inter-cytosine distances for which there are > 2
 # data points to allow correlation coefficient calculation
@@ -206,13 +206,13 @@ tabGR_feat_rev_dists_list <- mclapply(seq_along(chrName), function(x) {
 # For each chromosome, get row (GRanges) indices for each inter-cytosine distance
 # A lot more time-efficient to parallelise over chrName (small n; mc.preschedule = F)
 # rather than over tabGR_feat_rev_dists_list[[x]] (big n; mc.preschedule = T)
-tabGR_feat_rev_dists_bool_list <- mclapply(seq_along(chrName), function(x) {
+tabGR_feat_rev_dists_bool_list <- lapply(seq_along(chrName), function(x) {
   lapply(1:maxDist, function(z) {
     sapply(seq_along(tabGR_feat_rev_dists_list[[x]]), function(y) {
       z %fin% tabGR_feat_rev_dists_list[[x]][[y]]
     })
   })
-}, mc.cores = length(chrName), mc.preschedule = F)
+})
 
 # For each chromosome, get inter-cytosine distances for which there are > 2
 # data points to allow correlation coefficient calculation
