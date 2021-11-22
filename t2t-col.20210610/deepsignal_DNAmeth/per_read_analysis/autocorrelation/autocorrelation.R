@@ -5,7 +5,7 @@
 # at increasing physical distances (e.g., 1 to 10,000 nucleotides)
 
 # Usage on hydrogen node7:
-# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript autocorrelation.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 1e4 1.00 Chr1,Chr2,Chr3,Chr4,Chr5 200 CEN180"
+# csmit -m 500G -c 47 "/applications/R/R-4.0.0/bin/Rscript autocorrelation.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 1e4 1.00 Chr1,Chr2,Chr3,Chr4,Chr5 500 CEN180"
 
 #sampleName <- "Col_0_deepsignalDNAmeth_30kb_90pc"
 #refbase <- "t2t-col.20210610"
@@ -170,6 +170,8 @@ tabGR_feat_fwd_dists_bool_list <- lapply(seq_along(chrName), function(x) {
   })
 })
 
+rm(tabGR_feat_fwd_dists_list); gc()
+
 # For each chromosome, get inter-cytosine distances for which there are > 2
 # data points to allow correlation coefficient calculation
 tabGR_feat_fwd_dists_bool_list_gt2 <- unlist( lapply(seq_along(chrName), function(x) {
@@ -193,6 +195,7 @@ tabGR_feat_rev_random <- mclapply(1:nperm, function(y) {
             prop = sample(tabGR_feat_rev[seqnames(tabGR_feat_rev) == chrName[x]]$prop))
   })
   do.call(c, as(tabGR_feat_rev_chr_list_y, "GRangesList")) 
+#})
 }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
 
 # For each chromosome, get context-specific inter-cytosine distances
@@ -201,6 +204,7 @@ tabGR_feat_rev_dists_list <- mclapply(seq_along(chrName), function(x) {
   lapply(seq_along(tabGR_feat_rev_chr), function(y) {
     start(tabGR_feat_rev_chr) - start(tabGR_feat_rev_chr[y])
   })
+#})
 }, mc.cores = length(chrName), mc.preschedule = F)
 
 # For each chromosome, get row (GRanges) indices for each inter-cytosine distance
@@ -222,11 +226,12 @@ tabGR_feat_rev_dists_bool_list_gt2 <- unlist( lapply(seq_along(chrName), functio
   }))
 }) )
 
+rm(tabGR_feat_rev_dists_list); gc()
 
 # Get inter-cytosine distances that are shared across all chromosomes and
 # across fwd and rev analyses
 tabGR_feat_all_dists_bool_list_gt2 <- c(tabGR_feat_fwd_dists_bool_list_gt2,
-                                          tabGR_feat_rev_dists_bool_list_gt2)
+                                        tabGR_feat_rev_dists_bool_list_gt2)
 tabGR_feat_all_dists_bool_list_gt2 <- as.integer( names(
     which( table( tabGR_feat_all_dists_bool_list_gt2 ) == length(chrName) * 2 )
 ) )
@@ -248,7 +253,7 @@ acfDistance <- function(fwd_DSfreqGR, rev_DSfreqGR, rev_dists_bool_list, fwd_dis
 }
 
 # Apply "autocorrelation" function
-tabGR_feat_all_acf <- mclapply(seq_along(chrName), function(x) {
+tabGR_feat_all_acf <- lapply(seq_along(chrName), function(x) {
   sapply(tabGR_feat_all_dists_bool_list_gt2, function(y) {
      acfDistance(fwd_DSfreqGR = tabGR_feat_fwd[seqnames(tabGR_feat_fwd) == chrName[x]],
                  rev_DSfreqGR = tabGR_feat_rev[seqnames(tabGR_feat_rev) == chrName[x]],
@@ -256,7 +261,8 @@ tabGR_feat_all_acf <- mclapply(seq_along(chrName), function(x) {
                  rev_dists_bool_list = tabGR_feat_rev_dists_bool_list[[x]],
                  bpDistance = y)
   })
-}, mc.cores = length(chrName), mc.preschedule = F)
+})
+#}, mc.cores = length(chrName), mc.preschedule = F)
 
 tabGR_feat_all_random_acf <- mclapply(1:nperm, function(w) {
   lapply(seq_along(chrName), function(x) {
@@ -268,6 +274,7 @@ tabGR_feat_all_random_acf <- mclapply(1:nperm, function(w) {
                   bpDistance = y)
     })
   })
+#})
 }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = F)
 
 tabGR_feat_all_acf_permTest_exp <- lapply(seq_along(chrName), function(x) {
