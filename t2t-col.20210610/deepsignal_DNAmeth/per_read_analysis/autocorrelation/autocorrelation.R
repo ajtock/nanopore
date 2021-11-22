@@ -5,12 +5,12 @@
 # at increasing physical distances (e.g., 1 to 10,000 nucleotides)
 
 # Usage on hydrogen node7:
-# csmit -m 500G -c 47 "/applications/R/R-4.0.0/bin/Rscript autocorrelation.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 1e4 1.00 Chr1,Chr2,Chr3,Chr4,Chr5 500 CEN180"
+# csmit -m 500G -c 47 "/applications/R/R-4.0.0/bin/Rscript autocorrelation.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 1e4 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 500 CEN180"
 
 #sampleName <- "Col_0_deepsignalDNAmeth_30kb_90pc"
 #refbase <- "t2t-col.20210610"
 #context <- "CpG"
-#nperm <- 1e3
+#nperm <- 1e2
 #CPUpc <- 1.00
 #chrName <- unlist(strsplit("Chr1,Chr2,Chr3,Chr4,Chr5", split = ","))
 #maxDist <- 200
@@ -35,7 +35,6 @@ library(GenomicRanges)
 library(dplyr)
 library(ggplot2)
 library(cowplot)
-library(viridis)
 library(ggthemes)
 library(tidyquant)
 library(fastmatch)
@@ -134,6 +133,8 @@ fOverlaps_tab_feat <- findOverlaps(query = tabGR,
                                    ignore.strand = T)
 tabGR_feat <- tabGR[unique(queryHits(fOverlaps_tab_feat))]
 
+rm(feat, featGR, tab, tabGR, mito_ins, mito_ins_GR,
+   fOverlaps_tab_feat, fOverlaps_tab_mito_ins); gc()
 
 # Analyse each strand separately
 tabGR_feat_fwd <- tabGR_feat[strand(tabGR_feat) == "+"]
@@ -164,9 +165,9 @@ tabGR_feat_fwd_dists_list <- mclapply(seq_along(chrName), function(x) {
 # rather than over tabGR_feat_fwd_dists_list[[x]] (big n; mc.preschedule = T)
 tabGR_feat_fwd_dists_bool_list <- lapply(seq_along(chrName), function(x) {
   lapply(1:maxDist, function(z) {
-    sapply(seq_along(tabGR_feat_fwd_dists_list[[x]]), function(y) {
+    unlist( mclapply(seq_along(tabGR_feat_fwd_dists_list[[x]]), function(y) {
       z %fin% tabGR_feat_fwd_dists_list[[x]][[y]]
-    })
+    }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T) )
   })
 })
 
@@ -186,6 +187,8 @@ tabGR_feat_rev <- tabGR_feat[strand(tabGR_feat) == "-"]
 tabGR_feat_rev <- sortSeqlevels(tabGR_feat_rev)
 tabGR_feat_rev <- sort(tabGR_feat_rev, by = ~ seqnames + start + end)
 
+rm(tabGR_feat); gc()
+
 # Randomly shuffle methylation proportion values over the cytosine coordinates
 tabGR_feat_rev_random <- mclapply(1:nperm, function(y) {
   tabGR_feat_rev_chr_list_y <- lapply(seq_along(chrName), function(x) {
@@ -195,7 +198,6 @@ tabGR_feat_rev_random <- mclapply(1:nperm, function(y) {
             prop = sample(tabGR_feat_rev[seqnames(tabGR_feat_rev) == chrName[x]]$prop))
   })
   do.call(c, as(tabGR_feat_rev_chr_list_y, "GRangesList")) 
-#})
 }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
 
 # For each chromosome, get context-specific inter-cytosine distances
@@ -204,7 +206,6 @@ tabGR_feat_rev_dists_list <- mclapply(seq_along(chrName), function(x) {
   lapply(seq_along(tabGR_feat_rev_chr), function(y) {
     start(tabGR_feat_rev_chr) - start(tabGR_feat_rev_chr[y])
   })
-#})
 }, mc.cores = length(chrName), mc.preschedule = F)
 
 # For each chromosome, get row (GRanges) indices for each inter-cytosine distance
@@ -212,9 +213,9 @@ tabGR_feat_rev_dists_list <- mclapply(seq_along(chrName), function(x) {
 # rather than over tabGR_feat_rev_dists_list[[x]] (big n; mc.preschedule = T)
 tabGR_feat_rev_dists_bool_list <- lapply(seq_along(chrName), function(x) {
   lapply(1:maxDist, function(z) {
-    sapply(seq_along(tabGR_feat_rev_dists_list[[x]]), function(y) {
+    unlist( mclapply(seq_along(tabGR_feat_rev_dists_list[[x]]), function(y) {
       z %fin% tabGR_feat_rev_dists_list[[x]][[y]]
-    })
+    }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T) )
   })
 })
 
@@ -274,7 +275,6 @@ tabGR_feat_all_random_acf <- mclapply(1:nperm, function(w) {
                   bpDistance = y)
     })
   })
-#})
 }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = F)
 
 tabGR_feat_all_acf_permTest_exp <- lapply(seq_along(chrName), function(x) {
