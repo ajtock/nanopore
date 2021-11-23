@@ -245,10 +245,10 @@ for(i in seq_along(chrName)) {
       prop_Cs_retained_fwd_x <- sum(!(mask_rows)) / nrow(pwider_fwd_x) 
       # Report number of rows (cytosines) to be retained:
       num_Cs_retained_fwd_x <- sum(!(mask_rows))
-#      # Conditionally remove rows (cytosines) containing any NAs
-#      if(sum(mask_rows) > 0) {
-#        pwider_fwd_x <- pwider_fwd_x[ !(mask_rows), , drop = F]
-#      }
+      # Conditionally remove rows (cytosines) containing any NAs
+      if(sum(mask_rows) > 0) {
+        pwider_fwd_x <- pwider_fwd_x[ !(mask_rows), , drop = F]
+      }
 
       # Define clusters of reads within each window using
       # cluster::pam() (for predefined k) or fpc::pamk() (for dynamic k determination)
@@ -289,8 +289,11 @@ for(i in seq_along(chrName)) {
 
       } else {
 
-      # Calculate Fleiss' kappa
-      fkappa_pwider_fwd_x <- kappam.fleiss(pwider_fwd_x, detail = F)
+      # Calculate Fleiss' kappa for each cluster
+      fkappa_pwider_fwd_x_k_list <- lapply(1:k, function(x) {
+        kappam.fleiss(pwider_fwd_x[,which(pamk_pwider_fwd_x$clustering == x)],
+                      detail = F)
+      })
 
       # Sanity checks
       stopifnot(fkappa_pwider_fwd_x$raters == num_reads_retained_fwd_x)
