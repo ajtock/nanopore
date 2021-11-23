@@ -260,56 +260,103 @@ for(i in seq_along(chrName)) {
                                  k = k,
                                  metric = "euclidean",
                                  do.swap = T,
-                                 cluster.only = F,
+                                 cluster.only = T,
                                  diss = F,
                                  pamonce = 0)
   
-        htmp <- Heatmap(t(as.matrix(pwider_fwd_x)),
-                        col = c("0" = "blue", "1" = "red"),
-                        row_split = paste0("Cluster", pamk_pwider_fwd_x$clustering),
-                        show_column_dend = F, 
-                        cluster_columns = F,
-                        heatmap_legend_param = list(title = context,
-                                                    title_position = "topcenter",
-                                                    title_gp = gpar(font = 2, fontsize = 12),
-                                                    legend_direction = "horizontal",
-                                                    labels_gp = gpar(fontsize = 10)),
-                        column_title = paste0(chrName[i], ":", start(chr_featGR[x]), "-" , end(chr_featGR[x])))
-        pdf(paste0(plotDir,
-                   sampleName, "_MappedOn_", refbase, "_", context,
-                   "_read_clusters", k, "_",
-                   "_NAmax", NAmax, "_", featName, "_", x,
-                   "_", chrName[i], "_", start(chr_featGR[x]), "_", end(chr_featGR[x]), "_fwd",
-                   ".pdf"),
-            height = 10, width = 50)
-        draw(htmp,
-             heatmap_legend_side = "bottom",
-             gap = unit(c(1), "mm"))
-        dev.off()
+#        htmp <- Heatmap(t(as.matrix(pwider_fwd_x)),
+#                        col = c("0" = "blue", "1" = "red"),
+#                        row_split = paste0("Cluster", pamk_pwider_fwd_x$clustering),
+#                        show_column_dend = F, 
+#                        cluster_columns = F,
+#                        heatmap_legend_param = list(title = context,
+#                                                    title_position = "topcenter",
+#                                                    title_gp = gpar(font = 2, fontsize = 12),
+#                                                    legend_direction = "horizontal",
+#                                                    labels_gp = gpar(fontsize = 10)),
+#                        column_title = paste0(chrName[i], ":", start(chr_featGR[x]), "-" , end(chr_featGR[x])))
+#        pdf(paste0(plotDir,
+#                   sampleName, "_MappedOn_", refbase, "_", context,
+#                   "_read_clusters", k, "_",
+#                   "_NAmax", NAmax, "_", featName, "_", x,
+#                   "_", chrName[i], "_", start(chr_featGR[x]), "_", end(chr_featGR[x]), "_fwd",
+#                   ".pdf"),
+#            height = 10, width = 50)
+#        draw(htmp,
+#             heatmap_legend_side = "bottom",
+#             gap = unit(c(1), "mm"))
+#        dev.off()
+
+        # Calculate Fleiss' kappa for each cluster
+        fkappa_pwider_fwd_x_k_list <- lapply(1:k, function(x) {
+          kappam.fleiss(pwider_fwd_x[,which(pamk_pwider_fwd_x == x)],
+                        detail = F)
+        })
+
+        fkappa_pwider_fwd_x_kappa_median <- median( sapply(fkappa_pwider_fwd_x_k_list, function(x) x$value ) )
+        fkappa_pwider_fwd_x_kappa_mean <- mean( sapply(fkappa_pwider_fwd_x_k_list, function(x) x$value ) )
+        fkappa_pwider_fwd_x_kappa_sd <- sd( sapply(fkappa_pwider_fwd_x_k_list, function(x) x$value ) )
+
+        fkappa_pwider_fwd_x_pval_median <- median( sapply(fkappa_pwider_fwd_x_k_list, function(x) x$p.value ) )
+        fkappa_pwider_fwd_x_pval_mean <- mean( sapply(fkappa_pwider_fwd_x_k_list, function(x) x$p.value ) )
+        fkappa_pwider_fwd_x_pval_sd <- sd( sapply(fkappa_pwider_fwd_x_k_list, function(x) x$p.value ) )
+
+        fkappa_pwider_fwd_x_zstat_median <- median( sapply(fkappa_pwider_fwd_x_k_list, function(x) x$statistic ) )
+        fkappa_pwider_fwd_x_zstat_mean <- mean( sapply(fkappa_pwider_fwd_x_k_list, function(x) x$statistic ) )
+        fkappa_pwider_fwd_x_zstat_sd <- sd( sapply(fkappa_pwider_fwd_x_k_list, function(x) x$statistic ) )
+
+        fkappa_pwider_fwd_x_k_reads <- sapply(1:k, function(x) fkappa_pwider_fwd_x_k_list[[x]]$raters )
+        fkappa_pwider_fwd_x_k_reads_df <- as.data.frame(t(matrix(fkappa_pwider_fwd_x_k_reads)))
+        colnames(fkappa_pwider_fwd_x_k_reads_df) <- paste0("k", 1:k, "_reads")
+
+        fkappa_pwider_fwd_x_k_Cs <- sapply(1:k, function(x) fkappa_pwider_fwd_x_k_list[[x]]$subjects )
+        fkappa_pwider_fwd_x_k_Cs_df <- as.data.frame(t(matrix(fkappa_pwider_fwd_x_k_Cs)))
+        colnames(fkappa_pwider_fwd_x_k_Cs_df) <- paste0("k", 1:k, "_Cs")
 
       } else {
 
-      # Calculate Fleiss' kappa for each cluster
-      fkappa_pwider_fwd_x_k_list <- lapply(1:k, function(x) {
-        kappam.fleiss(pwider_fwd_x[,which(pamk_pwider_fwd_x$clustering == x)],
-                      detail = F)
-      })
+        fkappa_pwider_fwd_x_kappa_median <- NaN 
+        fkappa_pwider_fwd_x_kappa_mean <- NaN 
+        fkappa_pwider_fwd_x_kappa_sd <- NaN 
 
-      # Sanity checks
-      stopifnot(fkappa_pwider_fwd_x$raters == num_reads_retained_fwd_x)
-      stopifnot(fkappa_pwider_fwd_x$subjects == num_Cs_retained_fwd_x)
+        fkappa_pwider_fwd_x_pval_median <- NaN 
+        fkappa_pwider_fwd_x_pval_mean <- NaN 
+        fkappa_pwider_fwd_x_pval_sd <- NaN 
 
+        fkappa_pwider_fwd_x_zstat_median <- NaN 
+        fkappa_pwider_fwd_x_zstat_mean <- NaN 
+        fkappa_pwider_fwd_x_zstat_sd <- NaN 
 
+        fkappa_pwider_fwd_x_k_reads <- sapply(1:k, function(x) NaN)
+        fkappa_pwider_fwd_x_k_reads_df <- as.data.frame(t(matrix(fkappa_pwider_fwd_x_k_reads)))
+        colnames(fkappa_pwider_fwd_x_k_reads_df) <- paste0("k", 1:k, "_reads")
+
+        fkappa_pwider_fwd_x_k_Cs <- sapply(1:k, function(x) NaN)
+        fkappa_pwider_fwd_x_k_Cs_df <- as.data.frame(t(matrix(fkappa_pwider_fwd_x_k_Cs)))
+        colnames(fkappa_pwider_fwd_x_k_Cs_df) <- paste0("k", 1:k, "_Cs")
+
+      }
 
       fk_df_fwd_win_x <- data.frame(chr = seqnames(chr_featGR[x]),
                                     start = start(chr_featGR[x]),
                                     end = end(chr_featGR[x]),
                                     midpoint = round((start(chr_featGR[x])+end(chr_featGR[x]))/2),
 
-                                    fk_kappa_fwd = fkappa_pwider_fwd_x$value,
-                                    fk_pval_fwd = fkappa_pwider_fwd_x$p.value,
-                                    fk_zstat_fwd = fkappa_pwider_fwd_x$statistic,
-                                    fk_num_reads_fwd = fkappa_pwider_fwd_x$raters,
+                                    fk_kappa_median_fwd = fkappa_pwider_fwd_x_kappa_median,
+                                    fk_kappa_mean_fwd = fkappa_pwider_fwd_x_kappa_mean,
+                                    fk_kappa_sd_fwd = fkappa_pwider_fwd_x_kappa_sd,
+
+                                    fk_pval_median_fwd = fkappa_pwider_fwd_x_pval_median,
+                                    fk_pval_mean_fwd = fkappa_pwider_fwd_x_pval_mean,
+                                    fk_pval_sd_fwd = fkappa_pwider_fwd_x_pval_sd,
+
+                                    fk_zstat_median_fwd = fkappa_pwider_fwd_x_zstat_median,
+                                    fk_zstat_mean_fwd = fkappa_pwider_fwd_x_zstat_mean,
+                                    fk_zstat_sd_fwd = fkappa_pwider_fwd_x_zstat_sd,
+
+                                    fkappa_pwider_fwd_x_k_reads_df,
+                                    fkappa_pwider_fwd_x_k_Cs_df
+               
                                     fk_num_Cs_fwd = fkappa_pwider_fwd_x$subjects,
                                     fk_prop_reads_fwd = prop_reads_retained_fwd_x,
                                     fk_prop_Cs_fwd = prop_Cs_retained_fwd_x,
