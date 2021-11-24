@@ -1,7 +1,7 @@
 #!/applications/R/R-4.0.0/bin/Rscript
 
 # Analysis:
-# 1. Group reads overlapping each feature into, e.g., 2 clusters (e.g., by k-means)
+# 1. Group reads overlapping each feature into a constant number of clusters (e.g., 2, by pam or k-means)
 # 2. Score among-read variation/agreement (e.g., Fleiss' kappa) for each cluster
 # 3. Identify features with high among-read agreement for each cluster,
 # with low variance between clusters in among-read agreement scores
@@ -250,11 +250,28 @@ for(i in seq_along(chrName)) {
         pwider_fwd_x <- pwider_fwd_x[ !(mask_rows), , drop = F]
       }
 
+      if(context == "CpG") {
+        min_Cs <- 2
+        max_Cs <- Inf
+        min_reads <- 2
+        max_reads <- Inf 
+      } else if(context == "CHG") {
+        min_Cs <- 2
+        max_Cs <- Inf
+        min_reads <- 2
+        max_reads <- Inf 
+      } else if(context == "CHH") {
+        min_Cs <- 2
+        max_Cs <- Inf
+        min_reads <- 2
+        max_reads <- Inf 
+      }
+
       # Define clusters of reads within each window using
       # cluster::pam() (for predefined k) or fpc::pamk() (for dynamic k determination)
       # ("partitioning around medoids with estimation of number of clusters")
-      if(nrow(pwider_fwd_x) >= 10 && nrow(pwider_fwd_x) <= 50 &&
-         ncol(pwider_fwd_x) >= 10 && ncol(pwider_fwd_x) <= 50) {
+      if(nrow(pwider_fwd_x) >= min_Cs && nrow(pwider_fwd_x) <= max_Cs &&
+         ncol(pwider_fwd_x) >= min_reads && ncol(pwider_fwd_x) <= max_reads) {
         set.seed(20000)
         pamk_pwider_fwd_x <- pam(x = t(pwider_fwd_x),
                                  k = k,
@@ -307,11 +324,11 @@ for(i in seq_along(chrName)) {
 
         fkappa_pwider_fwd_x_k_reads <- sapply(1:k, function(x) fkappa_pwider_fwd_x_k_list[[x]]$raters )
         fkappa_pwider_fwd_x_k_reads_df <- as.data.frame(t(matrix(fkappa_pwider_fwd_x_k_reads)))
-        colnames(fkappa_pwider_fwd_x_k_reads_df) <- paste0("k", 1:k, "_reads")
+        colnames(fkappa_pwider_fwd_x_k_reads_df) <- paste0("k", 1:k, "_reads_fwd")
 
         fkappa_pwider_fwd_x_k_Cs <- sapply(1:k, function(x) fkappa_pwider_fwd_x_k_list[[x]]$subjects )
         fkappa_pwider_fwd_x_k_Cs_df <- as.data.frame(t(matrix(fkappa_pwider_fwd_x_k_Cs)))
-        colnames(fkappa_pwider_fwd_x_k_Cs_df) <- paste0("k", 1:k, "_Cs")
+        colnames(fkappa_pwider_fwd_x_k_Cs_df) <- paste0("k", 1:k, "_Cs_fwd")
 
       } else {
 
@@ -329,11 +346,11 @@ for(i in seq_along(chrName)) {
 
         fkappa_pwider_fwd_x_k_reads <- sapply(1:k, function(x) NaN)
         fkappa_pwider_fwd_x_k_reads_df <- as.data.frame(t(matrix(fkappa_pwider_fwd_x_k_reads)))
-        colnames(fkappa_pwider_fwd_x_k_reads_df) <- paste0("k", 1:k, "_reads")
+        colnames(fkappa_pwider_fwd_x_k_reads_df) <- paste0("k", 1:k, "_reads_fwd")
 
         fkappa_pwider_fwd_x_k_Cs <- sapply(1:k, function(x) NaN)
         fkappa_pwider_fwd_x_k_Cs_df <- as.data.frame(t(matrix(fkappa_pwider_fwd_x_k_Cs)))
-        colnames(fkappa_pwider_fwd_x_k_Cs_df) <- paste0("k", 1:k, "_Cs")
+        colnames(fkappa_pwider_fwd_x_k_Cs_df) <- paste0("k", 1:k, "_Cs_fwd")
 
       }
 
@@ -362,11 +379,11 @@ for(i in seq_along(chrName)) {
 
       fkappa_pwider_fwd_x_k_reads <- sapply(1:k, function(x) NaN)
       fkappa_pwider_fwd_x_k_reads_df <- as.data.frame(t(matrix(fkappa_pwider_fwd_x_k_reads)))
-      colnames(fkappa_pwider_fwd_x_k_reads_df) <- paste0("k", 1:k, "_reads")
+      colnames(fkappa_pwider_fwd_x_k_reads_df) <- paste0("k", 1:k, "_reads_fwd")
 
       fkappa_pwider_fwd_x_k_Cs <- sapply(1:k, function(x) NaN)
       fkappa_pwider_fwd_x_k_Cs_df <- as.data.frame(t(matrix(fkappa_pwider_fwd_x_k_Cs)))
-      colnames(fkappa_pwider_fwd_x_k_Cs_df) <- paste0("k", 1:k, "_Cs")
+      colnames(fkappa_pwider_fwd_x_k_Cs_df) <- paste0("k", 1:k, "_Cs_fwd")
 
       fk_df_fwd_win_x <- data.frame(chr = seqnames(chr_featGR[x]),
                                     start = start(chr_featGR[x]),
@@ -446,7 +463,7 @@ for(i in seq_along(chrName)) {
       }
 
       # Define clusters of reads within each window using
-      # cluster::pam() (for predefined k) or fpc::pamk() (for dynamic k determination)
+      # cluster::pam() (for predefined constant k) or fpc::pamk() (for dynamic k determination)
       # ("partitioning around medoids with estimation of number of clusters")
       if(nrow(pwider_rev_x) >= 10 && nrow(pwider_rev_x) <= 50 &&
          ncol(pwider_rev_x) >= 10 && ncol(pwider_rev_x) <= 50) {
@@ -502,11 +519,11 @@ for(i in seq_along(chrName)) {
 
         fkappa_pwider_rev_x_k_reads <- sapply(1:k, function(x) fkappa_pwider_rev_x_k_list[[x]]$raters )
         fkappa_pwider_rev_x_k_reads_df <- as.data.frame(t(matrix(fkappa_pwider_rev_x_k_reads)))
-        colnames(fkappa_pwider_rev_x_k_reads_df) <- paste0("k", 1:k, "_reads")
+        colnames(fkappa_pwider_rev_x_k_reads_df) <- paste0("k", 1:k, "_reads_rev")
 
         fkappa_pwider_rev_x_k_Cs <- sapply(1:k, function(x) fkappa_pwider_rev_x_k_list[[x]]$subjects )
         fkappa_pwider_rev_x_k_Cs_df <- as.data.frame(t(matrix(fkappa_pwider_rev_x_k_Cs)))
-        colnames(fkappa_pwider_rev_x_k_Cs_df) <- paste0("k", 1:k, "_Cs")
+        colnames(fkappa_pwider_rev_x_k_Cs_df) <- paste0("k", 1:k, "_Cs_rev")
 
       } else {
 
@@ -524,11 +541,11 @@ for(i in seq_along(chrName)) {
 
         fkappa_pwider_rev_x_k_reads <- sapply(1:k, function(x) NaN)
         fkappa_pwider_rev_x_k_reads_df <- as.data.frame(t(matrix(fkappa_pwider_rev_x_k_reads)))
-        colnames(fkappa_pwider_rev_x_k_reads_df) <- paste0("k", 1:k, "_reads")
+        colnames(fkappa_pwider_rev_x_k_reads_df) <- paste0("k", 1:k, "_reads_rev")
 
         fkappa_pwider_rev_x_k_Cs <- sapply(1:k, function(x) NaN)
         fkappa_pwider_rev_x_k_Cs_df <- as.data.frame(t(matrix(fkappa_pwider_rev_x_k_Cs)))
-        colnames(fkappa_pwider_rev_x_k_Cs_df) <- paste0("k", 1:k, "_Cs")
+        colnames(fkappa_pwider_rev_x_k_Cs_df) <- paste0("k", 1:k, "_Cs_rev")
 
       }
 
@@ -557,11 +574,11 @@ for(i in seq_along(chrName)) {
 
       fkappa_pwider_rev_x_k_reads <- sapply(1:k, function(x) NaN)
       fkappa_pwider_rev_x_k_reads_df <- as.data.frame(t(matrix(fkappa_pwider_rev_x_k_reads)))
-      colnames(fkappa_pwider_rev_x_k_reads_df) <- paste0("k", 1:k, "_reads")
+      colnames(fkappa_pwider_rev_x_k_reads_df) <- paste0("k", 1:k, "_reads_rev")
 
       fkappa_pwider_rev_x_k_Cs <- sapply(1:k, function(x) NaN)
       fkappa_pwider_rev_x_k_Cs_df <- as.data.frame(t(matrix(fkappa_pwider_rev_x_k_Cs)))
-      colnames(fkappa_pwider_rev_x_k_Cs_df) <- paste0("k", 1:k, "_Cs")
+      colnames(fkappa_pwider_rev_x_k_Cs_df) <- paste0("k", 1:k, "_Cs_rev")
 
       fk_df_rev_win_x <- data.frame(chr = seqnames(chr_featGR[x]),
                                     start = start(chr_featGR[x]),
