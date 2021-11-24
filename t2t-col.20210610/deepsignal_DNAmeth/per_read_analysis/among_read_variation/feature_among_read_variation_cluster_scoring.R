@@ -7,7 +7,7 @@
 # with low variance between clusters in among-read agreement scores
 
 # Usage on hydrogen node7:
-# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript feature_among_read_variation_cluster_scoring.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 2 CpG 0.50 1.00 Chr1,Chr2,Chr3,Chr4,Chr5"
+# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript feature_among_read_variation_cluster_scoring.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 2 CpG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' CEN180"
 
 # Divide each read into adjacent segments each consisting of a given number of consecutive cytosines,
 # and calculate the methylation proportion for each segment of each read
@@ -603,6 +603,17 @@ for(i in seq_along(chrName)) {
 
     }
 
+    fkappa_pwider_all_x_k_reads <- sapply(1:k, function(x) {
+      mean(c(fkappa_pwider_fwd_x_k_list[[x]]$raters, fkappa_pwider_rev_x_k_list[[x]]$raters), na.rm = T) })
+    fkappa_pwider_all_x_k_reads_df <- as.data.frame(t(matrix(fkappa_pwider_all_x_k_reads)))
+    colnames(fkappa_pwider_all_x_k_reads_df) <- paste0("k", 1:k, "_reads_all")
+
+    fkappa_pwider_all_x_k_Cs <- sapply(1:k, function(x) {
+      mean(c(fkappa_pwider_fwd_x_k_list[[x]]$raters, fkappa_pwider_rev_x_k_list[[x]]$subjects), na.rm = T) })
+    fkappa_pwider_all_x_k_Cs_df <- as.data.frame(t(matrix(fkappa_pwider_all_x_k_Cs)))
+    colnames(fkappa_pwider_all_x_k_Cs_df) <- paste0("k", 1:k, "_Cs_all")
+
+
     # Make data.frame with relevant info for genomic window
     fk_df_win_x <- data.frame(chr = seqnames(chr_featGR[x]),
                               start = start(chr_featGR[x]),
@@ -624,6 +635,8 @@ for(i in seq_along(chrName)) {
                               fk_zstat_mean_all = mean(c(fk_df_fwd_win_x$fk_zstat_mean_fwd, fk_df_rev_win_x$fk_zstat_mean_rev), na.rm = T),
                               fk_zstat_sd_all = mean(c(fk_df_fwd_win_x$fk_zstat_sd_fwd, fk_df_rev_win_x$fk_zstat_sd_rev), na.rm = T),
 
+                              fkappa_pwider_all_x_k_reads_df,
+                              fkappa_pwider_all_x_k_Cs_df
                               
                              )
 
@@ -634,15 +647,26 @@ for(i in seq_along(chrName)) {
   fk_df <- dplyr::bind_rows(fk_df_win_list, .id = "column_label")
 
   fk_df <- data.frame(fk_df,
-                      fk_adj_pval_fwd = p.adjust(fk_df$fk_pval_fwd, method = "BH"),
-                      fk_adj_pval_rev = p.adjust(fk_df$fk_pval_rev, method = "BH"),
-                      fk_adj_pval_all = p.adjust(fk_df$fk_pval_all, method = "BH"))
+                      fk_adj_pval_median_fwd = p.adjust(fk_df$fk_pval_median_fwd, method = "BH"),
+                      fk_adj_pval_mean_fwd = p.adjust(fk_df$fk_pval_median_fwd, method = "BH"),
+                      fk_adj_pval_sd_fwd = p.adjust(fk_df$fk_pval_sd_fwd, method = "BH"),
+
+                      fk_adj_pval_median_rev = p.adjust(fk_df$fk_pval_median_rev, method = "BH"),
+                      fk_adj_pval_mean_rev = p.adjust(fk_df$fk_pval_median_rev, method = "BH"),
+                      fk_adj_pval_sd_rev = p.adjust(fk_df$fk_pval_sd_rev, method = "BH"),
+
+                      fk_adj_pval_median_all = p.adjust(fk_df$fk_pval_median_all, method = "BH"),
+                      fk_adj_pval_mean_all = p.adjust(fk_df$fk_pval_median_all, method = "BH"),
+                      fk_adj_pval_sd_all = p.adjust(fk_df$fk_pval_sd_all, method = "BH"))
 
   write.table(fk_df,
               file = paste0(outDir,
                             sampleName, "_MappedOn_", refbase, "_", context,
-                            "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
-                            "_NAmax", NAmax, "_per_read_var_df_", chrName[i], ".tsv"),
+                            "_read_clusters", k, "_", featName,  genomeBinName, "_genomeStepSize", genomeStepName,
+                            "_NAmax", NAmax,
+                            "_min_reads", min_reads, "_max_reads", max_reads,
+                            "_min_Cs", min_Cs, "_max_Cs", max_Cs,
+                            "_per_read_cluster_var_df_", chrName[i], ".tsv"),
               quote = F, sep = "\t", row.names = F, col.names = T)
 }
 
