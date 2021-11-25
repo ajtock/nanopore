@@ -155,7 +155,7 @@ rm(tab_list); gc()
 print(outDir)
 for(i in seq_along(chrName)) {
   # Get DNA methylation proportions that overlap each featName
-  chr_featGR <- featGR[seqnames(featGR) == chrName[i]] 
+  chr_featGR <- featGR[seqnames(featGR) == chrName[i]]
   chr_tab <- tab[tab[,1] == chrName[i],]
   chr_tabGR <- GRanges(seqnames = chrName[i],
                        ranges = IRanges(start = chr_tab[,2],
@@ -197,13 +197,6 @@ for(i in seq_along(chrName)) {
                              read = chr_tabGR_fwd_x$read,
                              call = chr_tabGR_fwd_x$call)
 
-#      # tidyr::spread() is deprecated; use tidyr::pivot_wider() instead 
-#      spread_fwd_x <- tidyr::spread(data = df_fwd_x,
-#                                    key = read,
-#                                    value = call)
-##                                    sep = "_")
-#      spread_fwd_x <- spread_x[ with(data = spread_x, expr = order(pos)), ]
- 
       pwider_fwd_x <- as.data.frame(tidyr::pivot_wider(data = df_fwd_x,
                                                        names_from = read,
 #                                                       names_prefix = "read_",
@@ -415,13 +408,6 @@ for(i in seq_along(chrName)) {
                              read = chr_tabGR_rev_x$read,
                              call = chr_tabGR_rev_x$call)
 
-#      # tidyr::spread() is deprecated; use tidyr::pivot_wider() instead 
-#      spread_rev_x <- tidyr::spread(data = df_rev_x,
-#                                    key = read,
-#                                    value = call)
-##                                    sep = "_")
-#      spread_rev_x <- spread_x[ with(data = spread_x, expr = order(pos)), ]
- 
       pwider_rev_x <- as.data.frame(tidyr::pivot_wider(data = df_rev_x,
                                                        names_from = read,
 #                                                       names_prefix = "read_",
