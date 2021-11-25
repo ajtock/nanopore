@@ -31,6 +31,23 @@ CPUpc <- as.numeric(args[6])
 chrName <- unlist(strsplit(args[7], split = ","))
 featName <- args[8]
 
+if(context == "CpG") {
+  min_Cs <- 2
+  max_Cs <- Inf
+  min_reads <- 2
+  max_reads <- Inf 
+} else if(context == "CHG") {
+  min_Cs <- 2
+  max_Cs <- Inf
+  min_reads <- 2
+  max_reads <- Inf 
+} else if(context == "CHH") {
+  min_Cs <- 2
+  max_Cs <- Inf
+  min_reads <- 2
+  max_reads <- Inf 
+}
+
 print(paste0("Proportion of CPUs:", CPUpc))
 options(stringsAsFactors = F)
 library(parallel)
@@ -232,23 +249,6 @@ for(i in seq_along(chrName)) {
         pwider_fwd_x <- pwider_fwd_x[ !(mask_rows), , drop = F]
       }
 
-      if(context == "CpG") {
-        min_Cs <- 2
-        max_Cs <- Inf
-        min_reads <- 2
-        max_reads <- Inf 
-      } else if(context == "CHG") {
-        min_Cs <- 2
-        max_Cs <- Inf
-        min_reads <- 2
-        max_reads <- Inf 
-      } else if(context == "CHH") {
-        min_Cs <- 2
-        max_Cs <- Inf
-        min_reads <- 2
-        max_reads <- Inf 
-      }
-
       # Define clusters of reads within each window using
       # cluster::pam() (for predefined k) or fpc::pamk() (for dynamic k determination)
       # ("partitioning around medoids with estimation of number of clusters")
@@ -446,8 +446,8 @@ for(i in seq_along(chrName)) {
       # Define clusters of reads within each window using
       # cluster::pam() (for predefined constant k) or fpc::pamk() (for dynamic k determination)
       # ("partitioning around medoids with estimation of number of clusters")
-      if(nrow(pwider_rev_x) >= 10 && nrow(pwider_rev_x) <= 50 &&
-         ncol(pwider_rev_x) >= 10 && ncol(pwider_rev_x) <= 50) {
+      if(nrow(pwider_rev_x) >= min_Cs && nrow(pwider_rev_x) <= max_Cs &&
+         ncol(pwider_rev_x) >= min_reads && ncol(pwider_rev_x) <= max_reads) {
         set.seed(20000)
         pamk_pwider_rev_x <- pam(x = t(pwider_rev_x),
                                  k = k,
@@ -596,7 +596,7 @@ for(i in seq_along(chrName)) {
     colnames(fkappa_pwider_all_x_k_reads_df) <- paste0("k", 1:k, "_reads_all")
 
     fkappa_pwider_all_x_k_Cs <- sapply(1:k, function(x) {
-      mean(c(fkappa_pwider_fwd_x_k_list[[x]]$raters, fkappa_pwider_rev_x_k_list[[x]]$subjects), na.rm = T) })
+      mean(c(fkappa_pwider_fwd_x_k_list[[x]]$subjects, fkappa_pwider_rev_x_k_list[[x]]$subjects), na.rm = T) })
     fkappa_pwider_all_x_k_Cs_df <- as.data.frame(t(matrix(fkappa_pwider_all_x_k_Cs)))
     colnames(fkappa_pwider_all_x_k_Cs_df) <- paste0("k", 1:k, "_Cs_all")
 
