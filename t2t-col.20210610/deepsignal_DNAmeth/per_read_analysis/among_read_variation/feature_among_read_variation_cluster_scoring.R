@@ -7,7 +7,7 @@
 # with low variance between clusters in among-read agreement scores
 
 # Usage on hydrogen node7:
-# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript feature_among_read_variation_cluster_scoring.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 2 CpG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' CEN180"
+# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript feature_among_read_variation_cluster_scoring.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 2 CpG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' gene"
 
 # Divide each read into adjacent segments each consisting of a given number of consecutive cytosines,
 # and calculate the methylation proportion for each segment of each read
@@ -19,7 +19,7 @@
 #NAmax <- 0.50
 #CPUpc <- 1.00
 #chrName <- unlist(strsplit("Chr1,Chr2,Chr3,Chr4,Chr5", split = ","))
-#featName <- "CEN180"
+#featName <- "gene"
 
 args <- commandArgs(trailingOnly = T)
 sampleName <- args[1]
@@ -80,7 +80,9 @@ if(featName == "CEN180") {
   featGR <- GRanges(seqnames = feat$chr,
                     ranges = IRanges(start = feat$start0based+1,
                                      end = feat$end),
-                    strand = feat$strand)
+                    strand = feat$strand,
+                    name = feat$name,
+                    score = feat$score)
 } else if(featName == "gene") {
   feat <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase,
                             "/annotation/genes/", refbase, "_representative_mRNA",
@@ -90,7 +92,9 @@ if(featName == "CEN180") {
   featGR <- GRanges(seqnames = feat$chr,
                     ranges = IRanges(start = feat$start0based+1,
                                      end = feat$end),
-                    strand = feat$strand)
+                    strand = feat$strand,
+                    name = feat$name,
+                    score = feat$score)
 } else if(featName == "GYPSY") {
   feat <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase,
                             "/annotation/TEs_EDTA/", refbase, "_TEs_Gypsy_LTR",
@@ -100,7 +104,9 @@ if(featName == "CEN180") {
   featGR <- GRanges(seqnames = feat$chr,
                     ranges = IRanges(start = feat$start0based+1,
                                      end = feat$end),
-                    strand = feat$strand)
+                    strand = feat$strand,
+                    name = feat$name,
+                    score = feat$score)
 } else {
   stop(print("featName not one of CEN180, gene or GYPSY"))
 }
@@ -117,6 +123,16 @@ mito_ins_GR <- GRanges(seqnames = "Chr2",
                                         end = max(mito_ins$end)),
                        strand = "*")
 
+# Mask out featGR within mitochondrial insertion on Chr2
+fOverlaps_feat_mito_ins <- findOverlaps(query = featGR,
+                                        subject = mito_ins_GR,
+                                        type = "any",
+                                        select = "all",
+                                        ignore.strand = T)
+if(length(fOverlaps_feat_mito_ins) > 0) {
+  featGR <- featGR[-unique(queryHits(fOverlaps_feat_mito_ins))]
+}
+
 # Read in the raw output .tsv file from Deepsignal methylation model
 tab_list <- mclapply(seq_along(chrName), function(x) {
   read.table(paste0("/home/ajt200/analysis/nanopore/", refbase, "/deepsignal_DNAmeth/",
@@ -131,34 +147,7 @@ if(length(chrName) > 1) {
 }
 rm(tab_list); gc()
 
-## Identify and remove reads whose alignment start and end coordinates are both
-## contained wholly within the boundaries of the mitochondrial insertion on Chr2,
-## as we cannot be sure that these reads come from the nuclear genome
-#  # Get reads that overlap mito_ins_GR
-#  tab_mito <- tab[tab[,1] == as.character(seqnames(mito_ins_GR)) &
-#                  tab[,2] >= start(mito_ins_GR) &
-#                  tab[,2] <= end(mito_ins_GR),]
-#  tab_mito_reads <- unique(tab_mito[,5])
-# 
-#  read_within_mito_ins <- function(DSrawDF, readID, mito_ins_GR) {
-#    DSrawDF_read <- DSrawDF[DSrawDF[,5] == readID,]
-#    stopifnot(unique(DSrawDF_read[,1]) == as.character(seqnames(mito_ins_GR)))
-#    bool <- min(DSrawDF_read[,2], na.rm = T) >= start(mito_ins_GR) &&
-#            max(DSrawDF_read[,2], na.rm = T) <= end(mito_ins_GR)
-#    return(bool)
-#  }
-# 
-#  tab_mito_reads_bool <- mclapply(tab_mito_reads, function(x) {
-#    read_within_mito_ins(DSrawDF = tab,
-#                         readID = x,
-#                         mito_ins_GR = mito_ins_GR)
-#  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
-#
-#  tab_within_mito_reads <- tab_mito_reads[unlist(tab_mito_reads_bool)]
-#
-#  tab <- tab[!(tab[,5] %in% tab_within_mito_reads),]
-
-# For each featName:
+# For each feat:
 # 1. group overlapping reads into k clusters,
 # 2. calculate a measure of among-read agreement in methylation state (e.g., Fleiss' kappa)
 # for each read cluster,
@@ -358,6 +347,9 @@ for(i in seq_along(chrName)) {
                                     start = start(chr_featGR[x]),
                                     end = end(chr_featGR[x]),
                                     midpoint = round((start(chr_featGR[x])+end(chr_featGR[x]))/2),
+                                    strand = strand(chr_featGR[x]),
+                                    name = chr_featGR[x]$name,
+                                    score = chr_featGR[x]$score,
 
                                     fk_kappa_median_fwd = fkappa_pwider_fwd_x_kappa_median,
                                     fk_kappa_mean_fwd = fkappa_pwider_fwd_x_kappa_mean,
@@ -389,6 +381,9 @@ for(i in seq_along(chrName)) {
                                     start = start(chr_featGR[x]),
                                     end = end(chr_featGR[x]),
                                     midpoint = round((start(chr_featGR[x])+end(chr_featGR[x]))/2),
+                                    strand = strand(chr_featGR[x]),
+                                    name = chr_featGR[x]$name,
+                                    score = chr_featGR[x]$score,
 
                                     fk_kappa_median_fwd = NaN,
                                     fk_kappa_mean_fwd = NaN,
@@ -553,6 +548,9 @@ for(i in seq_along(chrName)) {
                                     start = start(chr_featGR[x]),
                                     end = end(chr_featGR[x]),
                                     midpoint = round((start(chr_featGR[x])+end(chr_featGR[x]))/2),
+                                    strand = strand(chr_featGR[x]),
+                                    name = chr_featGR[x]$name,
+                                    score = chr_featGR[x]$score,
 
                                     fk_kappa_median_rev = fkappa_pwider_rev_x_kappa_median,
                                     fk_kappa_mean_rev = fkappa_pwider_rev_x_kappa_mean,
@@ -584,6 +582,9 @@ for(i in seq_along(chrName)) {
                                     start = start(chr_featGR[x]),
                                     end = end(chr_featGR[x]),
                                     midpoint = round((start(chr_featGR[x])+end(chr_featGR[x]))/2),
+                                    strand = strand(chr_featGR[x]),
+                                    name = chr_featGR[x]$name,
+                                    score = chr_featGR[x]$score,
 
                                     fk_kappa_median_rev = NaN,
                                     fk_kappa_mean_rev = NaN,
@@ -619,9 +620,12 @@ for(i in seq_along(chrName)) {
                               start = start(chr_featGR[x]),
                               end = end(chr_featGR[x]),
                               midpoint = round((start(chr_featGR[x])+end(chr_featGR[x]))/2),
+                              strand = strand(chr_featGR[x]),
+                              name = chr_featGR[x]$name,
+                              score = chr_featGR[x]$score,
                               
-                              fk_df_fwd_win_x[,5:ncol(fk_df_fwd_win_x)],
-                              fk_df_rev_win_x[,5:ncol(fk_df_rev_win_x)],
+                              fk_df_fwd_win_x[,8:ncol(fk_df_fwd_win_x)],
+                              fk_df_rev_win_x[,8:ncol(fk_df_rev_win_x)],
 
                               fk_kappa_median_all = mean(c(fk_df_fwd_win_x$fk_kappa_median_fwd, fk_df_rev_win_x$fk_kappa_median_rev), na.rm = T),
                               fk_kappa_mean_all = mean(c(fk_df_fwd_win_x$fk_kappa_mean_fwd, fk_df_rev_win_x$fk_kappa_mean_rev), na.rm = T),
