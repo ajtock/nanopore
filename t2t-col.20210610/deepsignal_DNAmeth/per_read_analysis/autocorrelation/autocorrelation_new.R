@@ -5,7 +5,7 @@
 # at increasing physical distances (e.g., 1 to 10,000 nucleotides)
 
 # Usage on hydrogen node7:
-# csmit -m 500G -c 47 "/applications/R/R-4.0.0/bin/Rscript autocorrelation.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 1e4 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 500 CEN180"
+# csmit -m 500G -c 47 "/applications/R/R-4.0.0/bin/Rscript autocorrelation_new.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 1e4 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 500 CEN180"
 
 #sampleName <- "Col_0_deepsignalDNAmeth_30kb_90pc"
 #refbase <- "t2t-col.20210610"
@@ -181,6 +181,12 @@ tabGR_feat_fwd_dists_bool_list_gt2 <- unlist( lapply(seq_along(chrName), functio
   }))
 }) )
 
+tabGR_feat_fwd_dists_bool_list_gt2_counts <- lapply(seq_along(chrName), function(x) {
+  sapply(sort(unique(tabGR_feat_fwd_dists_bool_list_gt2)), function(z) {
+    sum(tabGR_feat_fwd_dists_bool_list[[x]][[z]], na.rm = T)
+  })
+})
+
 
 # Analyse each strand separately
 tabGR_feat_rev <- tabGR_feat[strand(tabGR_feat) == "-"]
@@ -228,6 +234,16 @@ tabGR_feat_rev_dists_bool_list_gt2 <- unlist( lapply(seq_along(chrName), functio
     sum(z) > 2
   }))
 }) )
+
+tabGR_feat_rev_dists_bool_list_gt2_counts <- lapply(seq_along(chrName), function(x) {
+  sapply(sort(unique(tabGR_feat_rev_dists_bool_list_gt2)), function(z) {
+    sum(tabGR_feat_rev_dists_bool_list[[x]][[z]], na.rm = T)
+  })
+})
+
+tabGR_feat_all_dists_bool_list_gt2_counts <- lapply(seq_along(chrName), function(x) {
+  tabGR_feat_fwd_dists_bool_list_gt2_counts[[x]] + tabGR_feat_rev_dists_bool_list_gt2_counts[[x]]
+})
 
 # Get inter-cytosine distances that are shared across all chromosomes and
 # across fwd and rev analyses
@@ -306,8 +322,12 @@ tabGR_feat_all_acf_df <- dplyr::bind_rows(lapply(seq_along(tabGR_feat_all_acf), 
   data.frame(chr = chrName[x],
              distance = tabGR_feat_all_dists_bool_list_gt2,
              acf = tabGR_feat_all_acf[[x]],
-             pval = -log10(tabGR_feat_all_acf_permTest_pval[[x]]),
-             exp = tabGR_feat_all_acf_permTest_pval[[x]])
+             pval = tabGR_feat_all_acf_permTest_pval[[x]],
+             adj_pval = p.adjust(tabGR_feat_all_acf_permTest_pval[[x]], method = "BH"),
+             log10_pval = -log10(tabGR_feat_all_acf_permTest_pval[[x]]),
+             log10_adj_pval = -log10(p.adjust(tabGR_feat_all_acf_permTest_pval[[x]], method = "BH")),
+             exp = tabGR_feat_all_acf_permTest_pval[[x]],
+             counts = tabGR_feat_all_dists_bool_list_gt2_counts[[x]])
 }))
 
 write.table(tabGR_feat_all_acf_df,
@@ -324,7 +344,7 @@ chrPlot <- function(dataFrame, xvar, yvar, xlab, ylab, colour) {
          mapping = aes(x = !!xvar,
                        y = !!yvar)) +
 #  geom_line(colour = colour, size = 1) +
-  geom_ma(ma_fun = SMA, n = 6, colour = colour, linetype = 1, size = 2) +
+  geom_ma(ma_fun = SMA, n = maxDist/100, colour = colour, linetype = 1, size = 2) +
   scale_x_continuous(
                      labels = function(x) x) +
   labs(x = xlab,
@@ -354,13 +374,14 @@ gg_tabGR_feat_all_acf <- chrPlot(dataFrame = tabGR_feat_all_acf_df,
 gg_tabGR_feat_all_acf <- gg_tabGR_feat_all_acf +
   facet_grid(cols = vars(chr), scales = "free_x")
 
-gg_tabGR_feat_all_pval <- chrPlot(dataFrame = tabGR_feat_all_acf_df,
-                                    xvar = distance,
-                                    yvar = pval,
-                                    xlab = bquote("Distance between "*italic(.(featName))*" cytosines (bp)"),
-                                    ylab = bquote("-"*Log[10]*"("*italic(P)*"-value) (m"*.(context)*")"),
-                                    colour = "red")
-gg_tabGR_feat_all_pval <- gg_tabGR_feat_all_pval +
+gg_tabGR_feat_all_log10_adj_pval <- chrPlot(dataFrame = tabGR_feat_all_acf_df,
+                                            xvar = distance,
+                                            yvar = log10_adj_pval,
+                                            xlab = bquote("Distance between "*italic(.(featName))*" cytosines (bp)"),
+                                            ylab = bquote("-"*Log[10]*"(BH-adj. "*italic(P)*"-value) (m"*.(context)*")"),
+                                            colour = "red") +
+  geom_hline(yintercept = -log10(0.05), colour = "black", size = 1, linetype = "dashed")
+gg_tabGR_feat_all_log10_adj_pval <- gg_tabGR_feat_all_log10_adj_pval +
   facet_grid(cols = vars(chr), scales = "free_x")
 
 gg_tabGR_feat_all_exp <- chrPlot(dataFrame = tabGR_feat_all_acf_df,
@@ -372,10 +393,20 @@ gg_tabGR_feat_all_exp <- chrPlot(dataFrame = tabGR_feat_all_acf_df,
 gg_tabGR_feat_all_exp <- gg_tabGR_feat_all_exp +
   facet_grid(cols = vars(chr), scales = "free_x")
 
+gg_tabGR_feat_all_counts <- chrPlot(dataFrame = tabGR_feat_all_acf_df,
+                                    xvar = distance,
+                                    yvar = counts,
+                                    xlab = bquote("Distance between "*italic(.(featName))*" cytosines (bp)"),
+                                    ylab = bquote("No. of cytosine pairs (m"*.(context)*")"),
+                                    colour = "purple4")
+gg_tabGR_feat_all_counts <- gg_tabGR_feat_all_counts +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
 gg_cow_all_list <- list(
                         gg_tabGR_feat_all_acf,
-                        gg_tabGR_feat_all_pval,
-                        gg_tabGR_feat_all_exp
+                        gg_tabGR_feat_all_log10_adj_pval,
+                        gg_tabGR_feat_all_exp,
+                        gg_tabGR_feat_all_counts
                        )
 gg_cow_all <- plot_grid(plotlist = gg_cow_all_list,
                         labels = c("AUTO"), label_size = 30,
@@ -386,7 +417,7 @@ gg_cow_all <- plot_grid(plotlist = gg_cow_all_list,
 ggsave(paste0(plotDir,
               sampleName, "_MappedOn_", refbase, "_", context,
               "_all_autocorrelation_", featName, "_", paste0(chrName, collapse = "_"),
-              ".pdf"),
+              "_counts.pdf"),
        plot = gg_cow_all,
        height = 5*length(gg_cow_all_list), width = 10*length(chrName), limitsize = F)
 
