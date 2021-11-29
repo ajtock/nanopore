@@ -7,11 +7,9 @@
 #! Partition to run on
 #SBATCH -p production
 
-#! Number of nodes to allocate
-#SBATCH --nodes=2
-
 #! Email notification for job conditions (e.g., START, END,FAIL, HOLD or none)
 #SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=ajt200@cam.ac.uk # Doesn't seem to send these to my email inbox
 
 #! Do not re-queue job after system fail
 #SBATCH --no-requeue
@@ -22,11 +20,17 @@
 #! Per-array-task-ID error file (NOTE: enclosing directory must exist)
 #SBATCH -e logs/among_read_variation_plotting_error_%a.txt
 
-#! Number of CPUs. Default: 1
-#SBATCH -c 5
+#! Number of nodes to allocate
+#SBATCH --nodes=2
 
-#! RAM. Default: 1G
-#SBATCH --mem=1G
+#! Number of CPUs per task. Default: 1
+#SBATCH --cpus-per-task=5
+
+#! Minimum RAM needed for all tasks
+#! NOTE: Doesn't work with > 1M ; e.g., with 10M, 100M, 1G, get these errors:
+#! sbatch: error: Memory specification can not be satisfied
+#! sbatch: error: Batch job submission failed: Requested node configuration is not available
+#SBATCH --mem=1M
 
 #! Time in HH:MM:SS. Default: 14 days (currently)
 #SBATCH -t 00:01:00
