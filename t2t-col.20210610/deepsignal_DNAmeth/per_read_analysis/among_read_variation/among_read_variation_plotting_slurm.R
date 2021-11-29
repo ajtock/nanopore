@@ -79,7 +79,7 @@ if(floor(log10(genomeStepSize)) + 1 < 4) {
   genomeStepNamePlot <- paste0(genomeStepSize/1e6, "-Mb")
 }
 
-outDir <- paste0("genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName, "/")
+outDir <- paste0("genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName, "_slurm/")
 plotDir <- paste0(outDir, "plots/")
 system(paste0("[ -d ", plotDir, " ] || mkdir -p ", plotDir))
 
