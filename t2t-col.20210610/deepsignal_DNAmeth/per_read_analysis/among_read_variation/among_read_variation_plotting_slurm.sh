@@ -8,7 +8,7 @@
 #SBATCH -p production
 
 #! Number of nodes to allocate
-#SBATCH --nodes=2
+#!SBATCH --nodes=1
 
 #! Email notification for job conditions (e.g., START, END,FAIL, HOLD or none)
 #SBATCH --mail-type=END,FAIL
@@ -23,7 +23,7 @@
 #SBATCH -c 5
 
 #! RAM. Default: 1G
-#SBATCH --mem=10G
+#!SBATCH --mem=1G
 
 #! Time in HH:MM:SS. Default: 14 days (currently)
 #SBATCH -t 00:01:00
