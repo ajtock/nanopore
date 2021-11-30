@@ -7,7 +7,7 @@
 # with low variance between clusters in among-read agreement scores
 
 # Usage on hydrogen node7:
-# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript feature_among_read_variation_cluster_scoring.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 2 CpG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' gene"
+# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript feature_among_read_variation_cluster_scoring_func.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 2 CpG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' gene"
 
 # Divide each read into adjacent segments each consisting of a given number of consecutive cytosines,
 # and calculate the methylation proportion for each segment of each read
@@ -128,7 +128,6 @@ if(featName == "CEN180") {
   stop(print("featName not one of CEN180, gene or GYPSY"))
 }
 
-
 # Load coordinates for mitochondrial insertion on Chr2, in BED format
 mito_ins <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase, "/annotation/", refbase , ".mitochondrial_insertion.bed"),
                        header = F)
@@ -170,48 +169,266 @@ rm(tab_list); gc()
 # for each read cluster,
 # 3. calculate mean and sd cluster among-read agreement
 print(outDir)
-for(i in seq_along(chrName)) {
-  # Get DNA methylation proportions that overlap each featName
-  chr_featGR <- featGR[seqnames(featGR) == chrName[i]]
-  chr_tab <- tab[tab[,1] == chrName[i],]
-  chr_tabGR <- GRanges(seqnames = chrName[i],
+#for(i in seq_along(chrName)) {
+#  chr_featGR <- featGR[seqnames(featGR) == chrName[i]]
+#  chr_tab <- tab[tab[,1] == chrName[i],]
+#  chr_tabGR <- GRanges(seqnames = chrName[i],
+#                       ranges = IRanges(start = chr_tab[,2],
+#                                        width = 1),
+#                       strand = chr_tab[,3],
+#                       read = chr_tab[,5],
+#                       call = chr_tab[,9])
+
+  
+for(chrIndex in 1:length(chrName) {
+  chr_featGR <- featGR[seqnames(featGR) == chrName[chrIndex]]
+  chr_tab <- tab[tab[,1] == chrName[chrIndex],]
+  chr_tabGR <- GRanges(seqnames = chrName[chrIndex],
                        ranges = IRanges(start = chr_tab[,2],
                                         width = 1),
                        strand = chr_tab[,3],
                        read = chr_tab[,5],
                        call = chr_tab[,9])
-
-
-  
-  fOverlapsStrand <- function(chr, strand, tab, featGR) {
-    chr_featGR <- featGR[seqnames(featGR) == chr]
-    chr_tab <- tab[tab[,1] == chr,]
-    chr_tabGR <- GRanges(seqnames = chr,
-                         ranges = IRanges(start = chr_tab[,2],
-                                          width = 1),
-                         strand = chr_tab[,3],
-                         read = chr_tab[,5],
-                         call = chr_tab[,9])
-    chr_tabGR_strand <- chr_tabGR[strand(chr_tabGR) == strand]
-  }
   chr_tabGR_fwd <- chr_tabGR[strand(chr_tabGR) == "+"]
   chr_tabGR_rev <- chr_tabGR[strand(chr_tabGR) == "-"]
+}
 
+# Get DNA methylation proportions that overlap each featName
+fOverlapsStrand <- function(strand, chr_featGR, chr_tabGR_str) {
   ## Note: findOverlaps() approach does not work where a window does not overlap
   ##       any positions in chr_tabGR, which can occur with smaller genomeBinSize
   # Identify overlapping windows and midpoint coordinates
-  fOverlaps_fwd <- findOverlaps(query = chr_featGR,
-                                subject = chr_tabGR_fwd,
+  fOverlaps_str <- findOverlaps(query = chr_featGR,
+                                subject = chr_tabGR_str,
                                 type = "any",
                                 select = "all",
                                 ignore.strand = T)
+  fOverlaps_str
+}
 
-  fOverlaps_rev <- findOverlaps(query = chr_featGR,
-                                subject = chr_tabGR_rev,
-                                type = "any",
-                                select = "all",
-                                ignore.strand = T)
+fOverlaps_fwd <- fOverlapsStrand(strand = "+", chr_tabGR_str = chr_tabGR_fwd, chr_featGR = chr_featGR)
 
+ 
+makeDFx_strand <- function(chr_tabGR_str, chr_featGR, fOverlaps_str, x) {
+  chr_tabGR_str_x <- chr_tabGR_str[subjectHits(fOverlaps_str[queryHits(fOverlaps_str) == x])]
+  if(length(chr_tabGR_fwd_x) > 0) {
+    chr_tabGR_fwd_x <- sortSeqlevels(chr_tabGR_fwd_x)
+    chr_tabGR_fwd_x <- sort(chr_tabGR_fwd_x, by = ~ read + start)
+
+    df_fwd_x <- data.frame(pos = start(chr_tabGR_fwd_x),
+                           read = chr_tabGR_fwd_x$read,
+                           call = chr_tabGR_fwd_x$call)
+
+    pwider_fwd_x <- as.data.frame(tidyr::pivot_wider(data = df_fwd_x,
+                                                     names_from = read,
+#                                                      names_prefix = "read_",
+                                                     values_from = call))
+    pwider_fwd_x <- pwider_fwd_x[ with(data = pwider_fwd_x, expr = order(pos)), ]
+    rownames(pwider_fwd_x) <- pwider_fwd_x[,1]
+    pwider_fwd_x <- pwider_fwd_x[ , -1, drop = F]
+
+    # kappam.fleiss() uses only rows (cytosines) with complete information
+    # across all columns (reads)
+    # Therefore, remove columns (reads) containing > NAmax proportion NAs to
+    # to retain more cytosines in the data.frame for kappa calculation
+
+    mask_cols <- apply(pwider_fwd_x, MARGIN = 2, FUN = function(col) sum(is.na(col)) >= nrow(pwider_fwd_x) * NAmax)    
+    # Report proportion of columns (reads) to be retained:
+    prop_reads_retained_fwd_x <- sum(!(mask_cols)) / ncol(pwider_fwd_x)
+    # Report number of columns (reads) to be retained:
+    num_reads_retained_fwd_x <- sum(!(mask_cols)) 
+    # Conditionally remove columns (reads) containing > NAmax proportion NAs
+    if(sum(mask_cols) > 0) {
+      pwider_fwd_x <- pwider_fwd_x[ , !(mask_cols), drop = F]
+    }
+
+    # Identify rows (cytosines) containing any NAs across the retained columns (reads),
+    # as these will not be used by kappam.fleiss() in any case
+    mask_rows <- apply(pwider_fwd_x, MARGIN = 1, FUN = function(row) sum(is.na(row)) > 0)
+    # Report proportion of rows (cytosines) to be retained:
+    prop_Cs_retained_fwd_x <- sum(!(mask_rows)) / nrow(pwider_fwd_x) 
+    # Report number of rows (cytosines) to be retained:
+    num_Cs_retained_fwd_x <- sum(!(mask_rows))
+    # Conditionally remove rows (cytosines) containing any NAs
+    if(sum(mask_rows) > 0) {
+      pwider_fwd_x <- pwider_fwd_x[ !(mask_rows), , drop = F]
+    }
+
+    # Define clusters of reads within each window using
+    # cluster::pam() (for predefined k) or fpc::pamk() (for dynamic k determination)
+    # ("partitioning around medoids with estimation of number of clusters")
+    if(nrow(pwider_fwd_x) >= min_Cs && nrow(pwider_fwd_x) <= max_Cs &&
+       ncol(pwider_fwd_x) >= min_reads && ncol(pwider_fwd_x) <= max_reads) {
+      set.seed(20000)
+      pamk_pwider_fwd_x <- pam(x = t(pwider_fwd_x),
+                               k = k,
+                               metric = "euclidean",
+                               do.swap = T,
+                               cluster.only = T,
+                               diss = F,
+                               pamonce = 0)
+
+#       htmp <- Heatmap(t(as.matrix(pwider_fwd_x)),
+#                       col = c("0" = "blue", "1" = "red"),
+#                       row_split = paste0("Cluster", pamk_pwider_fwd_x$clustering),
+#                       show_column_dend = F, 
+#                       cluster_columns = F,
+#                       heatmap_legend_param = list(title = context,
+#                                                   title_position = "topcenter",
+#                                                   title_gp = gpar(font = 2, fontsize = 12),
+#                                                   legend_direction = "horizontal",
+#                                                   labels_gp = gpar(fontsize = 10)),
+#                       column_title = paste0(chrName[i], ":", start(chr_featGR[x]), "-" , end(chr_featGR[x])))
+#       pdf(paste0(plotDir,
+#                  sampleName, "_MappedOn_", refbase, "_", context,
+#                  "_read_clusters", k, "_",
+#                  "_NAmax", NAmax, "_", featName, "_", x,
+#                  "_", chrName[i], "_", start(chr_featGR[x]), "_", end(chr_featGR[x]), "_fwd",
+#                  ".pdf"),
+#           height = 10, width = 50)
+#       draw(htmp,
+#            heatmap_legend_side = "bottom",
+#            gap = unit(c(1), "mm"))
+#       dev.off()
+
+      # Calculate Fleiss' kappa for each cluster
+      fkappa_pwider_fwd_x_k_list <- lapply(1:k, function(x) {
+        kappam.fleiss(pwider_fwd_x[,which(pamk_pwider_fwd_x == x)],
+                      detail = F)
+      })
+
+      fkappa_pwider_fwd_x_kappa_median <- median( sapply(fkappa_pwider_fwd_x_k_list, function(x) x$value ) )
+      fkappa_pwider_fwd_x_kappa_mean <- mean( sapply(fkappa_pwider_fwd_x_k_list, function(x) x$value ) )
+      fkappa_pwider_fwd_x_kappa_sd <- sd( sapply(fkappa_pwider_fwd_x_k_list, function(x) x$value ) )
+
+      fkappa_pwider_fwd_x_pval_median <- median( sapply(fkappa_pwider_fwd_x_k_list, function(x) x$p.value ) )
+      fkappa_pwider_fwd_x_pval_mean <- mean( sapply(fkappa_pwider_fwd_x_k_list, function(x) x$p.value ) )
+      fkappa_pwider_fwd_x_pval_sd <- sd( sapply(fkappa_pwider_fwd_x_k_list, function(x) x$p.value ) )
+
+      fkappa_pwider_fwd_x_zstat_median <- median( sapply(fkappa_pwider_fwd_x_k_list, function(x) x$statistic ) )
+      fkappa_pwider_fwd_x_zstat_mean <- mean( sapply(fkappa_pwider_fwd_x_k_list, function(x) x$statistic ) )
+      fkappa_pwider_fwd_x_zstat_sd <- sd( sapply(fkappa_pwider_fwd_x_k_list, function(x) x$statistic ) )
+
+      fkappa_pwider_fwd_x_k_reads <- sapply(1:k, function(x) fkappa_pwider_fwd_x_k_list[[x]]$raters )
+      fkappa_pwider_fwd_x_k_reads_df <- as.data.frame(t(matrix(fkappa_pwider_fwd_x_k_reads)))
+      colnames(fkappa_pwider_fwd_x_k_reads_df) <- paste0("k", 1:k, "_reads_fwd")
+
+      fkappa_pwider_fwd_x_k_Cs <- sapply(1:k, function(x) fkappa_pwider_fwd_x_k_list[[x]]$subjects )
+      fkappa_pwider_fwd_x_k_Cs_df <- as.data.frame(t(matrix(fkappa_pwider_fwd_x_k_Cs)))
+      colnames(fkappa_pwider_fwd_x_k_Cs_df) <- paste0("k", 1:k, "_Cs_fwd")
+
+    } else {
+
+      fkappa_pwider_fwd_x_kappa_median <- NaN 
+      fkappa_pwider_fwd_x_kappa_mean <- NaN 
+      fkappa_pwider_fwd_x_kappa_sd <- NaN 
+
+      fkappa_pwider_fwd_x_pval_median <- NaN 
+      fkappa_pwider_fwd_x_pval_mean <- NaN 
+      fkappa_pwider_fwd_x_pval_sd <- NaN 
+
+      fkappa_pwider_fwd_x_zstat_median <- NaN 
+      fkappa_pwider_fwd_x_zstat_mean <- NaN 
+      fkappa_pwider_fwd_x_zstat_sd <- NaN 
+
+      fkappa_pwider_fwd_x_k_reads <- sapply(1:k, function(x) NaN)
+      fkappa_pwider_fwd_x_k_reads_df <- as.data.frame(t(matrix(fkappa_pwider_fwd_x_k_reads)))
+      colnames(fkappa_pwider_fwd_x_k_reads_df) <- paste0("k", 1:k, "_reads_fwd")
+
+      fkappa_pwider_fwd_x_k_Cs <- sapply(1:k, function(x) NaN)
+      fkappa_pwider_fwd_x_k_Cs_df <- as.data.frame(t(matrix(fkappa_pwider_fwd_x_k_Cs)))
+      colnames(fkappa_pwider_fwd_x_k_Cs_df) <- paste0("k", 1:k, "_Cs_fwd")
+
+    }
+
+    fk_df_fwd_win_x <- data.frame(chr = seqnames(chr_featGR[x]),
+                                  start = start(chr_featGR[x]),
+                                  end = end(chr_featGR[x]),
+                                  midpoint = round((start(chr_featGR[x])+end(chr_featGR[x]))/2),
+                                  strand = strand(chr_featGR[x]),
+                                  name = chr_featGR[x]$name,
+                                  score = chr_featGR[x]$score,
+
+                                  fk_kappa_median_fwd = fkappa_pwider_fwd_x_kappa_median,
+                                  fk_kappa_mean_fwd = fkappa_pwider_fwd_x_kappa_mean,
+                                  fk_kappa_sd_fwd = fkappa_pwider_fwd_x_kappa_sd,
+
+                                  fk_pval_median_fwd = fkappa_pwider_fwd_x_pval_median,
+                                  fk_pval_mean_fwd = fkappa_pwider_fwd_x_pval_mean,
+                                  fk_pval_sd_fwd = fkappa_pwider_fwd_x_pval_sd,
+
+                                  fk_zstat_median_fwd = fkappa_pwider_fwd_x_zstat_median,
+                                  fk_zstat_mean_fwd = fkappa_pwider_fwd_x_zstat_mean,
+                                  fk_zstat_sd_fwd = fkappa_pwider_fwd_x_zstat_sd,
+
+                                  fkappa_pwider_fwd_x_k_reads_df,
+                                  fkappa_pwider_fwd_x_k_Cs_df
+                                 ) 
+
+  } else {
+
+    fkappa_pwider_fwd_x_k_reads <- sapply(1:k, function(x) NaN)
+    fkappa_pwider_fwd_x_k_reads_df <- as.data.frame(t(matrix(fkappa_pwider_fwd_x_k_reads)))
+    colnames(fkappa_pwider_fwd_x_k_reads_df) <- paste0("k", 1:k, "_reads_fwd")
+
+    fkappa_pwider_fwd_x_k_Cs <- sapply(1:k, function(x) NaN)
+    fkappa_pwider_fwd_x_k_Cs_df <- as.data.frame(t(matrix(fkappa_pwider_fwd_x_k_Cs)))
+    colnames(fkappa_pwider_fwd_x_k_Cs_df) <- paste0("k", 1:k, "_Cs_fwd")
+
+    fk_df_fwd_win_x <- data.frame(chr = seqnames(chr_featGR[x]),
+                                  start = start(chr_featGR[x]),
+                                  end = end(chr_featGR[x]),
+                                  midpoint = round((start(chr_featGR[x])+end(chr_featGR[x]))/2),
+                                  strand = strand(chr_featGR[x]),
+                                  name = chr_featGR[x]$name,
+                                  score = chr_featGR[x]$score,
+
+                                  fk_kappa_median_fwd = NaN,
+                                  fk_kappa_mean_fwd = NaN,
+                                  fk_kappa_sd_fwd = NaN,
+
+                                  fk_pval_median_fwd = NaN,
+                                  fk_pval_mean_fwd = NaN,
+                                  fk_pval_sd_fwd = NaN,
+
+                                  fk_zstat_median_fwd = NaN,
+                                  fk_zstat_mean_fwd = NaN,
+                                  fk_zstat_sd_fwd = NaN,
+
+                                  fkappa_pwider_fwd_x_k_reads_df,
+                                  fkappa_pwider_fwd_x_k_Cs_df
+                                 ) 
+
+    fk_df_fwd_win_x
+
+  }
+fk_df <- dplyr::bind_rows(fk_df_win_list, .id = "column_label")
+
+fk_df <- data.frame(fk_df,
+                    fk_adj_pval_median_fwd = p.adjust(fk_df$fk_pval_median_fwd, method = "BH"),
+                    fk_adj_pval_mean_fwd = p.adjust(fk_df$fk_pval_median_fwd, method = "BH"),
+                    fk_adj_pval_sd_fwd = p.adjust(fk_df$fk_pval_sd_fwd, method = "BH"),
+
+                    fk_adj_pval_median_rev = p.adjust(fk_df$fk_pval_median_rev, method = "BH"),
+                    fk_adj_pval_mean_rev = p.adjust(fk_df$fk_pval_median_rev, method = "BH"),
+                    fk_adj_pval_sd_rev = p.adjust(fk_df$fk_pval_sd_rev, method = "BH"),
+
+                    fk_adj_pval_median_all = p.adjust(fk_df$fk_pval_median_all, method = "BH"),
+                    fk_adj_pval_mean_all = p.adjust(fk_df$fk_pval_median_all, method = "BH"),
+                    fk_adj_pval_sd_all = p.adjust(fk_df$fk_pval_sd_all, method = "BH"))
+
+
+}
+
+  }
+
+  fOverlaps_fwd_list <- mclapply(seq_along(chrName), function(i) {
+    fOverlapsStrand(chrIndex = i, strand = "+",
+                    tab = tab, featGR = featGR)
+  }, mc.cores = length(chrName), mc.preschedule = F)
+
+  function(fOverlaps_strand_list, chr_t
+  
   fk_df_win_list <- mclapply(seq_along(chr_featGR), function(x) {
 #  fk_df_win_list <- lapply(seq_along(chr_featGR), function(x) {
 #    print(x)
