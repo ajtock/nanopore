@@ -61,8 +61,7 @@ library(fpc)
 #library(segmentSeq)
 library(ComplexHeatmap)
 #library(RColorBrewer)
-#library(viridis)
-#library(scales)
+library(scales)
 #library(circlize)
  
 library(ggplot2)
@@ -449,7 +448,7 @@ for(chrIndex in 1:length(chrName)) {
 
 }
 
-con_fk_df_all_filt <- cond_fk_df_all %>%
+con_fk_df_all_filt <- con_fk_df_all %>%
   dplyr::filter(k1_reads_all >= 10) %>%
   dplyr::filter(k2_reads_all >= 10) %>%
   dplyr::filter(k1_Cs_all >= 2) %>%
@@ -502,13 +501,13 @@ trendPlot <- function(dataFrame, xvar, yvar, xlab, ylab, xtrans, ytrans, xbreaks
 ggTrend_score_fk_kappa_mean_all <- trendPlot(dataFrame = con_fk_df_all,
                                              xvar = score,
                                              yvar = fk_kappa_mean_all,
-                                             xlab = bquote(italic(.(featName))*" divergence (m"*.(context)*")"),
+                                             xlab = bquote(italic(.(featName))*" divergence"),
                                              ylab = bquote(italic(.(featName))*" Fleiss' kappa (m"*.(context)*")"),
-                                             xtrans = "identity",
+                                             xtrans = log10_trans(),
                                              ytrans = "identity",
-                                             xbreaks = waiver(),
+                                             xbreaks = trans_breaks("log10", function(x) 10^x),
                                              ybreaks = waiver(),
-                                             xlabels = waiver(),
+                                             xlabels = trans_format("log10", math_format(10^.x)),
                                              ylabels = waiver())
 ggTrend_score_fk_kappa_mean_all <- ggTrend_score_fk_kappa_mean_all +
   facet_grid(cols = vars(chr), scales = "free_x")
@@ -516,13 +515,13 @@ ggTrend_score_fk_kappa_mean_all <- ggTrend_score_fk_kappa_mean_all +
 ggTrend_score_fk_kappa_mean_all_filt <- trendPlot(dataFrame = con_fk_df_all_filt,
                                              xvar = score,
                                              yvar = fk_kappa_mean_all,
-                                             xlab = bquote(italic(.(featName))*" divergence (m"*.(context)*")"),
+                                             xlab = bquote(italic(.(featName))*" divergence"),
                                              ylab = bquote(italic(.(featName))*" Fleiss' kappa (m"*.(context)*")"),
-                                             xtrans = "identity",
+                                             xtrans = log10_trans(),
                                              ytrans = "identity",
-                                             xbreaks = waiver(),
+                                             xbreaks = trans_breaks("log10", function(x) 10^x),
                                              ybreaks = waiver(),
-                                             xlabels = waiver(),
+                                             xlabels = trans_format("log10", math_format(10^.x)),
                                              ylabels = waiver())
 ggTrend_score_fk_kappa_mean_all_filt <- ggTrend_score_fk_kappa_mean_all_filt +
   facet_grid(cols = vars(chr), scales = "free_x")
