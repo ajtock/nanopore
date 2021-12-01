@@ -439,7 +439,6 @@ fk_df_rev <- dplyr::bind_rows(makeDFx_list_rev, .id = "column_label")
 
 
 
-fk_df <- dplyr::bind_rows(fk_df_win_list, .id = "column_label")
 
 fk_df <- data.frame(fk_df,
                     fk_adj_pval_median_str = p.adjust(fk_df$fk_pval_median_str, method = "BH"),
