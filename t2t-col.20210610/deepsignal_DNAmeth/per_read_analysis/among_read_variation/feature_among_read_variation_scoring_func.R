@@ -324,7 +324,8 @@ for(chrIndex in 1:length(chrName)) {
   
   chr_fk_df_fwd <- data.frame(chr_fk_df_fwd,
                               fk_adj_pval_str = p.adjust(chr_fk_df_fwd$fk_pval_str, method = "BH"))
-  
+
+  # rev  
   makeDFx_list_rev <- mclapply(1:length(chr_featGR), function(x) {
     makeDFx_strand(strand = "rev",
                    fOverlaps_str = fOverlaps_rev,
@@ -339,7 +340,8 @@ for(chrIndex in 1:length(chrName)) {
                               fk_adj_pval_str = p.adjust(chr_fk_df_rev$fk_pval_str, method = "BH"))
   
   stopifnot(identical(chr_fk_df_fwd[,1:8], chr_fk_df_rev[,1:8]))
-  
+ 
+  # Take mean of fwd and rev equivalent columns 
   chr_fk_df_all_mean_list <- lapply(9:ncol(chr_fk_df_fwd), function(x) {
     sapply(1:nrow(chr_fk_df_fwd), function(y) {
       mean(c(chr_fk_df_fwd[y, x], chr_fk_df_rev[y, x]), na.rm = T)
@@ -355,11 +357,8 @@ for(chrIndex in 1:length(chrName)) {
 }
 
 con_fk_df_all_filt <- con_fk_df_all %>%
-  dplyr::filter(k1_reads_all >= 10) %>%
-  dplyr::filter(k2_reads_all >= 10) %>%
-  dplyr::filter(k1_Cs_all >= 2) %>%
-  dplyr::filter(k2_Cs_all >= 2) %>%
-  dplyr::filter(fk_kappa_sd_all <= 0.5)
+  dplyr::filter(fk_reads_all >= 10) %>%
+  dplyr::filter(fk_Cs_all >= 2)
 
 
 trendPlot <- function(dataFrame, xvar, yvar, xlab, ylab, xtrans, ytrans, xbreaks, ybreaks, xlabels, ylabels) {
@@ -404,23 +403,23 @@ trendPlot <- function(dataFrame, xvar, yvar, xlab, ylab, xtrans, ytrans, xbreaks
                          digits = 5))))
 }
 
-ggTrend_score_fk_kappa_mean_all <- trendPlot(dataFrame = con_fk_df_all,
-                                             xvar = score,
-                                             yvar = fk_kappa_mean_all,
-                                             xlab = bquote(italic(.(featName))*" divergence"),
-                                             ylab = bquote(italic(.(featName))*" Fleiss' kappa (m"*.(context)*")"),
-                                             xtrans = log10_trans(),
-                                             ytrans = "identity",
-                                             xbreaks = trans_breaks("log10", function(x) 10^x),
-                                             ybreaks = waiver(),
-                                             xlabels = trans_format("log10", math_format(10^.x)),
-                                             ylabels = waiver())
-ggTrend_score_fk_kappa_mean_all <- ggTrend_score_fk_kappa_mean_all +
+ggTrend_score_fk_kappa_all <- trendPlot(dataFrame = con_fk_df_all,
+                                        xvar = score,
+                                        yvar = fk_kappa_all,
+                                        xlab = bquote(italic(.(featName))*" divergence"),
+                                        ylab = bquote(italic(.(featName))*" Fleiss' kappa (m"*.(context)*")"),
+                                        xtrans = log10_trans(),
+                                        ytrans = "identity",
+                                        xbreaks = trans_breaks("log10", function(x) 10^x),
+                                        ybreaks = waiver(),
+                                        xlabels = trans_format("log10", math_format(10^.x)),
+                                        ylabels = waiver())
+ggTrend_score_fk_kappa_all <- ggTrend_score_fk_kappa_all +
   facet_grid(cols = vars(chr), scales = "free_x")
 
-ggTrend_score_fk_kappa_mean_all_filt <- trendPlot(dataFrame = con_fk_df_all_filt,
+ggTrend_score_fk_kappa_all_filt <- trendPlot(dataFrame = con_fk_df_all_filt,
                                              xvar = score,
-                                             yvar = fk_kappa_mean_all,
+                                             yvar = fk_kappa_all,
                                              xlab = bquote(italic(.(featName))*" divergence"),
                                              ylab = bquote(italic(.(featName))*" Fleiss' kappa (m"*.(context)*")"),
                                              xtrans = log10_trans(),
@@ -429,12 +428,12 @@ ggTrend_score_fk_kappa_mean_all_filt <- trendPlot(dataFrame = con_fk_df_all_filt
                                              ybreaks = waiver(),
                                              xlabels = trans_format("log10", math_format(10^.x)),
                                              ylabels = waiver())
-ggTrend_score_fk_kappa_mean_all_filt <- ggTrend_score_fk_kappa_mean_all_filt +
+ggTrend_score_fk_kappa_all_filt <- ggTrend_score_fk_kappa_all_filt +
   facet_grid(cols = vars(chr), scales = "free_x")
 
 gg_cow_list1 <- list(
-                     ggTrend_score_fk_kappa_mean_all,
-                     ggTrend_score_fk_kappa_mean_all_filt
+                     ggTrend_score_fk_kappa_all,
+                     ggTrend_score_fk_kappa_all_filt
                     )
 
 gg_cow1 <- plot_grid(plotlist = gg_cow_list1,
