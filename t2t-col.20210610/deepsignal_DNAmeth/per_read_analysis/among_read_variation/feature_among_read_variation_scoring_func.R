@@ -162,7 +162,7 @@ rm(tab_list); gc()
 
 # For each feat:
 # 1. calculate a measure of among-read agreement in methylation state (e.g., Fleiss' kappa)
- 
+
 # Get DNA methylation proportions that overlap each featName
 fOverlapsStrand <- function(chr_featGR, chr_tabGR_str) {
   ## Note: findOverlaps() approach does not work where a window does not overlap
@@ -176,6 +176,10 @@ fOverlapsStrand <- function(chr_featGR, chr_tabGR_str) {
   fOverlaps_str
 }
 
+#strand = "+"
+#fOverlaps_str = fOverlaps_fwd
+#chr_tabGR_str = chr_tabGR_fwd
+#x = 10
 
 makeDFx_strand <- function(strand, fOverlaps_str, chr_tabGR_str, chr_featGR, x) {
 
@@ -231,62 +235,22 @@ makeDFx_strand <- function(strand, fOverlaps_str, chr_tabGR_str, chr_featGR, x) 
     if(nrow(pwider_str_x) >= min_Cs && nrow(pwider_str_x) <= max_Cs &&
        ncol(pwider_str_x) >= min_reads && ncol(pwider_str_x) <= max_reads) {
 
-      set.seed(20000)
-      pamk_pwider_str_x <- pam(x = t(pwider_str_x),
-                               k = k,
-                               metric = "euclidean",
-                               do.swap = T,
-                               cluster.only = T,
-                               diss = F,
-                               pamonce = 0)
-
       # Calculate Fleiss' kappa for each cluster
-      fkappa_pwider_str_x_k_list <- lapply(1:k, function(x) {
-        kappam.fleiss(pwider_str_x[,which(pamk_pwider_str_x == x)],
-                      detail = F)
-      })
+      fkappa_pwider_str_x <- kappam.fleiss(pwider_str_x, detail = F)
 
-      fkappa_pwider_str_x_kappa_median <- median( sapply(fkappa_pwider_str_x_k_list, function(x) x$value ) )
-      fkappa_pwider_str_x_kappa_mean <- mean( sapply(fkappa_pwider_str_x_k_list, function(x) x$value ) )
-      fkappa_pwider_str_x_kappa_sd <- sd( sapply(fkappa_pwider_str_x_k_list, function(x) x$value ) )
-
-      fkappa_pwider_str_x_pval_median <- median( sapply(fkappa_pwider_str_x_k_list, function(x) x$p.value ) )
-      fkappa_pwider_str_x_pval_mean <- mean( sapply(fkappa_pwider_str_x_k_list, function(x) x$p.value ) )
-      fkappa_pwider_str_x_pval_sd <- sd( sapply(fkappa_pwider_str_x_k_list, function(x) x$p.value ) )
-
-      fkappa_pwider_str_x_zstat_median <- median( sapply(fkappa_pwider_str_x_k_list, function(x) x$statistic ) )
-      fkappa_pwider_str_x_zstat_mean <- mean( sapply(fkappa_pwider_str_x_k_list, function(x) x$statistic ) )
-      fkappa_pwider_str_x_zstat_sd <- sd( sapply(fkappa_pwider_str_x_k_list, function(x) x$statistic ) )
-
-      fkappa_pwider_str_x_k_reads <- sapply(1:k, function(x) fkappa_pwider_str_x_k_list[[x]]$raters )
-      fkappa_pwider_str_x_k_reads_df <- as.data.frame(t(matrix(fkappa_pwider_str_x_k_reads)))
-      colnames(fkappa_pwider_str_x_k_reads_df) <- paste0("k", 1:k, "_reads_str")
-
-      fkappa_pwider_str_x_k_Cs <- sapply(1:k, function(x) fkappa_pwider_str_x_k_list[[x]]$subjects )
-      fkappa_pwider_str_x_k_Cs_df <- as.data.frame(t(matrix(fkappa_pwider_str_x_k_Cs)))
-      colnames(fkappa_pwider_str_x_k_Cs_df) <- paste0("k", 1:k, "_Cs_str")
+      fkappa_pwider_str_x_kappa <- fkappa_pwider_str_x$value
+      fkappa_pwider_str_x_pval <- fkappa_pwider_str_x$p.value
+      fkappa_pwider_str_x_zstat <- fkappa_pwider_str_x$statistic
+      fkappa_pwider_str_x_reads <- fkappa_pwider_str_x$raters
+      fkappa_pwider_str_x_Cs <- fkappa_pwider_str_x$subjects
 
     } else {
 
-      fkappa_pwider_str_x_kappa_median <- NaN 
-      fkappa_pwider_str_x_kappa_mean <- NaN 
-      fkappa_pwider_str_x_kappa_sd <- NaN 
-
-      fkappa_pwider_str_x_pval_median <- NaN 
-      fkappa_pwider_str_x_pval_mean <- NaN 
-      fkappa_pwider_str_x_pval_sd <- NaN 
-
-      fkappa_pwider_str_x_zstat_median <- NaN 
-      fkappa_pwider_str_x_zstat_mean <- NaN 
-      fkappa_pwider_str_x_zstat_sd <- NaN 
-
-      fkappa_pwider_str_x_k_reads <- sapply(1:k, function(x) NaN)
-      fkappa_pwider_str_x_k_reads_df <- as.data.frame(t(matrix(fkappa_pwider_str_x_k_reads)))
-      colnames(fkappa_pwider_str_x_k_reads_df) <- paste0("k", 1:k, "_reads_str")
-
-      fkappa_pwider_str_x_k_Cs <- sapply(1:k, function(x) NaN)
-      fkappa_pwider_str_x_k_Cs_df <- as.data.frame(t(matrix(fkappa_pwider_str_x_k_Cs)))
-      colnames(fkappa_pwider_str_x_k_Cs_df) <- paste0("k", 1:k, "_Cs_str")
+      fkappa_pwider_str_x_kappa <- NaN
+      fkappa_pwider_str_x_pval <- NaN
+      fkappa_pwider_str_x_zstat <- NaN
+      fkappa_pwider_str_x_reads <- NaN
+      fkappa_pwider_str_x_Cs <- NaN
 
     }
 
@@ -298,31 +262,14 @@ makeDFx_strand <- function(strand, fOverlaps_str, chr_tabGR_str, chr_featGR, x) 
                                   name = chr_featGR[x]$name,
                                   score = chr_featGR[x]$score,
 
-                                  fk_kappa_median_str = fkappa_pwider_str_x_kappa_median,
-                                  fk_kappa_mean_str = fkappa_pwider_str_x_kappa_mean,
-                                  fk_kappa_sd_str = fkappa_pwider_str_x_kappa_sd,
-
-                                  fk_pval_median_str = fkappa_pwider_str_x_pval_median,
-                                  fk_pval_mean_str = fkappa_pwider_str_x_pval_mean,
-                                  fk_pval_sd_str = fkappa_pwider_str_x_pval_sd,
-
-                                  fk_zstat_median_str = fkappa_pwider_str_x_zstat_median,
-                                  fk_zstat_mean_str = fkappa_pwider_str_x_zstat_mean,
-                                  fk_zstat_sd_str = fkappa_pwider_str_x_zstat_sd,
-
-                                  fkappa_pwider_str_x_k_reads_df,
-                                  fkappa_pwider_str_x_k_Cs_df
+                                  fk_kappa_str = fkappa_pwider_str_x_kappa,
+                                  fk_pval_str = fkappa_pwider_str_x_pval,
+                                  fk_zstat_str = fkappa_pwider_str_x_zstat,
+                                  fk_reads_str = fkappa_pwider_str_x_reads,
+                                  fk_Cs_str = fkappa_pwider_str_x_Cs
                                  ) 
 
   } else {
-
-    fkappa_pwider_str_x_k_reads <- sapply(1:k, function(x) NaN)
-    fkappa_pwider_str_x_k_reads_df <- as.data.frame(t(matrix(fkappa_pwider_str_x_k_reads)))
-    colnames(fkappa_pwider_str_x_k_reads_df) <- paste0("k", 1:k, "_reads_str")
-
-    fkappa_pwider_str_x_k_Cs <- sapply(1:k, function(x) NaN)
-    fkappa_pwider_str_x_k_Cs_df <- as.data.frame(t(matrix(fkappa_pwider_str_x_k_Cs)))
-    colnames(fkappa_pwider_str_x_k_Cs_df) <- paste0("k", 1:k, "_Cs_str")
 
     fk_df_str_win_x <- data.frame(chr = seqnames(chr_featGR[x]),
                                   start = start(chr_featGR[x]),
@@ -332,20 +279,11 @@ makeDFx_strand <- function(strand, fOverlaps_str, chr_tabGR_str, chr_featGR, x) 
                                   name = chr_featGR[x]$name,
                                   score = chr_featGR[x]$score,
 
-                                  fk_kappa_median_str = NaN,
-                                  fk_kappa_mean_str = NaN,
-                                  fk_kappa_sd_str = NaN,
-
-                                  fk_pval_median_str = NaN,
-                                  fk_pval_mean_str = NaN,
-                                  fk_pval_sd_str = NaN,
-
-                                  fk_zstat_median_str = NaN,
-                                  fk_zstat_mean_str = NaN,
-                                  fk_zstat_sd_str = NaN,
-
-                                  fkappa_pwider_str_x_k_reads_df,
-                                  fkappa_pwider_str_x_k_Cs_df
+                                  fk_kappa_str = NaN,
+                                  fk_pval_str = NaN,
+                                  fk_zstat_str = NaN,
+                                  fk_reads_str = NaN,
+                                  fk_Cs_str = NaN
                                  ) 
 
   }
@@ -385,9 +323,7 @@ for(chrIndex in 1:length(chrName)) {
   chr_fk_df_fwd <- dplyr::bind_rows(makeDFx_list_fwd, .id = "column_label")
   
   chr_fk_df_fwd <- data.frame(chr_fk_df_fwd,
-                              fk_adj_pval_median_str = p.adjust(chr_fk_df_fwd$fk_pval_median_str, method = "BH"),
-                              fk_adj_pval_mean_str = p.adjust(chr_fk_df_fwd$fk_pval_median_str, method = "BH"),
-                              fk_adj_pval_sd_str = p.adjust(chr_fk_df_fwd$fk_pval_sd_str, method = "BH"))
+                              fk_adj_pval_str = p.adjust(chr_fk_df_fwd$fk_pval_str, method = "BH"))
   
   makeDFx_list_rev <- mclapply(1:length(chr_featGR), function(x) {
     makeDFx_strand(strand = "rev",
@@ -400,9 +336,7 @@ for(chrIndex in 1:length(chrName)) {
   chr_fk_df_rev <- dplyr::bind_rows(makeDFx_list_rev, .id = "column_label")
   
   chr_fk_df_rev <- data.frame(chr_fk_df_rev,
-                              fk_adj_pval_median_str = p.adjust(chr_fk_df_rev$fk_pval_median_str, method = "BH"),
-                              fk_adj_pval_mean_str = p.adjust(chr_fk_df_rev$fk_pval_median_str, method = "BH"),
-                              fk_adj_pval_sd_str = p.adjust(chr_fk_df_rev$fk_pval_sd_str, method = "BH"))
+                              fk_adj_pval_str = p.adjust(chr_fk_df_rev$fk_pval_str, method = "BH"))
   
   stopifnot(identical(chr_fk_df_fwd[,1:8], chr_fk_df_rev[,1:8]))
   
