@@ -452,36 +452,6 @@ trendPlot <- function(dataFrame, mapping, xvar, yvar, xlab, ylab, xaxtrans, yaxt
 #ggTrend_score_fk_reads_all_filt <- ggTrend_score_fk_reads_all_filt +
 #  facet_grid(cols = vars(chr), scales = "free_x")
 
-ggTrend_fk_reads_all_fk_kappa_all <- trendPlot(dataFrame = con_fk_df_all,
-                                               mapping = aes(x = fk_reads_all, y = fk_kappa_all),
-                                               xvar = fk_reads_all,
-                                               yvar = fk_kappa_all,
-                                               xlab = bquote(.(featName)*" read coverage"),
-                                               ylab = bquote(.(featName)*" Fleiss' kappa (m"*.(context)*")"),
-                                               xaxtrans = log10_trans(),
-                                               yaxtrans = "identity",
-                                               xbreaks = trans_breaks("log10", function(x) 10^x),
-                                               ybreaks = waiver(),
-                                               xlabels = trans_format("log10", math_format(10^.x)),
-                                               ylabels = waiver())
-ggTrend_fk_reads_all_fk_kappa_all <- ggTrend_fk_reads_all_fk_kappa_all +
-  facet_grid(cols = vars(chr), scales = "free_x")
-
-ggTrend_fk_reads_all_fk_kappa_all_filt <- trendPlot(dataFrame = con_fk_df_all_filt,
-                                                    mapping = aes(x = fk_reads_all, y = fk_kappa_all),
-                                                    xvar = fk_reads_all,
-                                                    yvar = fk_kappa_all,
-                                                    xlab = bquote(.(featName)*" read coverage"),
-                                                    ylab = bquote(.(featName)*" Fleiss' kappa (m"*.(context)*")"),
-                                                    xaxtrans = log10_trans(),
-                                                    yaxtrans = "identity",
-                                                    xbreaks = trans_breaks("log10", function(x) 10^x),
-                                                    ybreaks = waiver(),
-                                                    xlabels = trans_format("log10", math_format(10^.x)),
-                                                    ylabels = waiver())
-ggTrend_fk_reads_all_fk_kappa_all_filt <- ggTrend_fk_reads_all_fk_kappa_all_filt +
-  facet_grid(cols = vars(chr), scales = "free_x")
-
 ggTrend_mean_mC_all_fk_kappa_all <- trendPlot(dataFrame = con_fk_df_all,
                                               mapping = aes(x = mean_mC_all, y = fk_kappa_all),
                                               xvar = mean_mC_all,
@@ -495,6 +465,9 @@ ggTrend_mean_mC_all_fk_kappa_all <- trendPlot(dataFrame = con_fk_df_all,
                                               xlabels = trans_format("log10", math_format(10^.x)),
                                               ylabels = trans_format("log10", math_format(10^.x)))
 ggTrend_mean_mC_all_fk_kappa_all <- ggTrend_mean_mC_all_fk_kappa_all +
+  geom_hline(yintercept = 0.75, linetype = "dashed", size = 1, colour = "magenta") +
+  geom_hline(yintercept = 0.50, linetype = "dashed", size = 1, colour = "magenta2") +
+  geom_hline(yintercept = 0.25, linetype = "dashed", size = 1, colour = "magenta4") +
   facet_grid(cols = vars(chr), scales = "free_x")
 
 ggTrend_mean_mC_all_fk_kappa_all_filt <- trendPlot(dataFrame = con_fk_df_all_filt,
@@ -510,6 +483,45 @@ ggTrend_mean_mC_all_fk_kappa_all_filt <- trendPlot(dataFrame = con_fk_df_all_fil
                                                    xlabels = trans_format("log10", math_format(10^.x)),
                                                    ylabels = trans_format("log10", math_format(10^.x)))
 ggTrend_mean_mC_all_fk_kappa_all_filt <- ggTrend_mean_mC_all_fk_kappa_all_filt +
+  geom_hline(yintercept = 0.75, linetype = "dashed", size = 1, colour = "magenta") +
+  geom_hline(yintercept = 0.50, linetype = "dashed", size = 1, colour = "magenta2") +
+  geom_hline(yintercept = 0.25, linetype = "dashed", size = 1, colour = "magenta4") +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+ggTrend_fk_reads_all_fk_kappa_all <- trendPlot(dataFrame = con_fk_df_all,
+                                               mapping = aes(x = fk_reads_all, y = fk_kappa_all),
+                                               xvar = fk_reads_all,
+                                               yvar = fk_kappa_all,
+                                               xlab = bquote(.(featName)*" read coverage"),
+                                               ylab = bquote(.(featName)*" Fleiss' kappa (m"*.(context)*")"),
+                                               xaxtrans = log10_trans(),
+                                               yaxtrans = log10_trans(),
+                                               xbreaks = trans_breaks("log10", function(x) 10^x),
+                                               ybreaks = trans_breaks("log10", function(x) 10^x),
+                                               xlabels = trans_format("log10", math_format(10^.x)),
+                                               ylabels = trans_format("log10", math_format(10^.x)))
+ggTrend_fk_reads_all_fk_kappa_all <- ggTrend_fk_reads_all_fk_kappa_all +
+  geom_hline(yintercept = 0.75, linetype = "dashed", size = 1, colour = "magenta") +
+  geom_hline(yintercept = 0.50, linetype = "dashed", size = 1, colour = "magenta2") +
+  geom_hline(yintercept = 0.25, linetype = "dashed", size = 1, colour = "magenta4") +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+ggTrend_fk_reads_all_fk_kappa_all_filt <- trendPlot(dataFrame = con_fk_df_all_filt,
+                                                    mapping = aes(x = fk_reads_all, y = fk_kappa_all),
+                                                    xvar = fk_reads_all,
+                                                    yvar = fk_kappa_all,
+                                                    xlab = bquote(.(featName)*" read coverage"),
+                                                    ylab = bquote(.(featName)*" Fleiss' kappa (m"*.(context)*")"),
+                                                    xaxtrans = log10_trans(),
+                                                    yaxtrans = log10_trans(),
+                                                    xbreaks = trans_breaks("log10", function(x) 10^x),
+                                                    ybreaks = trans_breaks("log10", function(x) 10^x),
+                                                    xlabels = trans_format("log10", math_format(10^.x)),
+                                                    ylabels = trans_format("log10", math_format(10^.x)))
+ggTrend_fk_reads_all_fk_kappa_all_filt <- ggTrend_fk_reads_all_fk_kappa_all_filt +
+  geom_hline(yintercept = 0.75, linetype = "dashed", size = 1, colour = "magenta") +
+  geom_hline(yintercept = 0.50, linetype = "dashed", size = 1, colour = "magenta2") +
+  geom_hline(yintercept = 0.25, linetype = "dashed", size = 1, colour = "magenta4") +
   facet_grid(cols = vars(chr), scales = "free_x")
 
 gg_cow_list1 <- list(
