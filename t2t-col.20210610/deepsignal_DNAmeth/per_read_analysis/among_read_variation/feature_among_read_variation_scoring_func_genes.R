@@ -223,13 +223,13 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, x) {
       pwider_str_x <- pwider_str_x[ !(mask_rows), , drop = F]
     }
 
-    # Define clusters of reads within each window using
-    # cluster::pam() (for predefined k) or fpc::pamk() (for dynamic k determination)
-    # ("partitioning around medoids with estimation of number of clusters")
+    mean_mC_pwider_str_x <- mean(as.matrix(pwider_str_x), na.rm = T)
+
+    # Calculate Fleiss' kappa
     if(nrow(pwider_str_x) >= min_Cs && nrow(pwider_str_x) <= max_Cs &&
        ncol(pwider_str_x) >= min_reads && ncol(pwider_str_x) <= max_reads) {
 
-      # Calculate Fleiss' kappa for each cluster
+      # Calculate Fleiss' kappa
       fkappa_pwider_str_x <- kappam.fleiss(pwider_str_x, detail = F)
 
       fkappa_pwider_str_x_kappa <- fkappa_pwider_str_x$value
@@ -256,6 +256,7 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, x) {
                                   name = chr_featGR[x]$name,
                                   score = chr_featGR[x]$score,
 
+                                  mean_mC_str = mean_mC_pwider_str_x,
                                   fk_kappa_str = fkappa_pwider_str_x_kappa,
                                   fk_pval_str = fkappa_pwider_str_x_pval,
                                   fk_zstat_str = fkappa_pwider_str_x_zstat,
@@ -273,6 +274,7 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, x) {
                                   name = chr_featGR[x]$name,
                                   score = chr_featGR[x]$score,
 
+                                  mean_mC_str = mean_mC_pwider_str_x,
                                   fk_kappa_str = NaN,
                                   fk_pval_str = NaN,
                                   fk_zstat_str = NaN,
@@ -353,17 +355,16 @@ con_fk_df_all_filt <- con_fk_df_all %>%
   dplyr::filter(fk_Cs_all >= 10)
 
 
-trendPlot <- function(dataFrame, xvar, yvar, xlab, ylab, xtrans, ytrans, xbreaks, ybreaks, xlabels, ylabels) {
+trendPlot <- function(dataFrame, mapping, xvar, yvar, xlab, ylab, xaxtrans, yaxtrans, xbreaks, ybreaks, xlabels, ylabels) {
   xvar <- enquo(xvar)
   yvar <- enquo(yvar)
   ggplot(data = dataFrame,
-         mapping = aes(x = !!xvar,
-                       y = !!yvar)) +
+         mapping = mapping) +
   geom_hex(bins = 60) +
-  scale_x_continuous(trans = xtrans,
+  scale_x_continuous(trans = xaxtrans,
                      breaks = xbreaks,
                      labels = xlabels) +
-  scale_y_continuous(trans = ytrans,
+  scale_y_continuous(trans = yaxtrans,
                      breaks = ybreaks,
                      labels = ylabels) +
   scale_fill_viridis() +
@@ -395,69 +396,70 @@ trendPlot <- function(dataFrame, xvar, yvar, xlab, ylab, xtrans, ytrans, xbreaks
                          digits = 5))))
 }
 
-ggTrend_score_fk_kappa_all <- trendPlot(dataFrame = con_fk_df_all,
-                                        xvar = score,
-                                        yvar = fk_kappa_all,
-                                        xlab = bquote(italic(.(featName))*" repetitiveness"),
-                                        ylab = bquote(italic(.(featName))*" Fleiss' kappa (m"*.(context)*")"),
-                                        xtrans = log10_trans(),
-                                        ytrans = "identity",
-                                        xbreaks = trans_breaks("log10", function(x) 10^x),
-                                        ybreaks = waiver(),
-                                        xlabels = trans_format("log10", math_format(10^.x)),
-                                        ylabels = waiver())
-ggTrend_score_fk_kappa_all <- ggTrend_score_fk_kappa_all +
-  facet_grid(cols = vars(chr), scales = "free_x")
+#ggTrend_score_fk_kappa_all <- trendPlot(dataFrame = con_fk_df_all,
+#                                        xvar = score,
+#                                        yvar = fk_kappa_all,
+#                                        xlab = bquote(.(featName)*" repetitiveness"),
+#                                        ylab = bquote(.(featName)*" Fleiss' kappa (m"*.(context)*")"),
+#                                        xaxtrans = log10_trans(),
+#                                        yaxtrans = "identity",
+#                                        xbreaks = trans_breaks("log10", function(x) 10^x),
+#                                        ybreaks = waiver(),
+#                                        xlabels = trans_format("log10", math_format(10^.x)),
+#                                        ylabels = waiver())
+#ggTrend_score_fk_kappa_all <- ggTrend_score_fk_kappa_all +
+#  facet_grid(cols = vars(chr), scales = "free_x")
 
-ggTrend_score_fk_kappa_all_filt <- trendPlot(dataFrame = con_fk_df_all_filt,
-                                             xvar = score,
-                                             yvar = fk_kappa_all,
-                                             xlab = bquote(italic(.(featName))*" repetitiveness"),
-                                             ylab = bquote(italic(.(featName))*" Fleiss' kappa (m"*.(context)*")"),
-                                             xtrans = log10_trans(),
-                                             ytrans = "identity",
-                                             xbreaks = trans_breaks("log10", function(x) 10^x),
-                                             ybreaks = waiver(),
-                                             xlabels = trans_format("log10", math_format(10^.x)),
-                                             ylabels = waiver())
-ggTrend_score_fk_kappa_all_filt <- ggTrend_score_fk_kappa_all_filt +
-  facet_grid(cols = vars(chr), scales = "free_x")
+#ggTrend_score_fk_kappa_all_filt <- trendPlot(dataFrame = con_fk_df_all_filt,
+#                                             xvar = score,
+#                                             yvar = fk_kappa_all,
+#                                             xlab = bquote(.(featName)*" repetitiveness"),
+#                                             ylab = bquote(.(featName)*" Fleiss' kappa (m"*.(context)*")"),
+#                                             xaxtrans = log10_trans(),
+#                                             yaxtrans = "identity",
+#                                             xbreaks = trans_breaks("log10", function(x) 10^x),
+#                                             ybreaks = waiver(),
+#                                             xlabels = trans_format("log10", math_format(10^.x)),
+#                                             ylabels = waiver())
+#ggTrend_score_fk_kappa_all_filt <- ggTrend_score_fk_kappa_all_filt +
+#  facet_grid(cols = vars(chr), scales = "free_x")
 
-ggTrend_score_fk_reads_all <- trendPlot(dataFrame = con_fk_df_all,
-                                        xvar = score,
-                                        yvar = fk_reads_all,
-                                        xlab = bquote(italic(.(featName))*" repetitiveness"),
-                                        ylab = bquote(italic(.(featName))*" read coverage (m"*.(context)*")"),
-                                        xtrans = log10_trans(),
-                                        ytrans = "identity",
-                                        xbreaks = trans_breaks("log10", function(x) 10^x),
-                                        ybreaks = waiver(),
-                                        xlabels = trans_format("log10", math_format(10^.x)),
-                                        ylabels = waiver())
-ggTrend_score_fk_reads_all <- ggTrend_score_fk_reads_all +
-  facet_grid(cols = vars(chr), scales = "free_x")
-
-ggTrend_score_fk_reads_all_filt <- trendPlot(dataFrame = con_fk_df_all_filt,
-                                             xvar = score,
-                                             yvar = fk_reads_all,
-                                             xlab = bquote(italic(.(featName))*" repetitiveness"),
-                                             ylab = bquote(italic(.(featName))*" read coverage (m"*.(context)*")"),
-                                             xtrans = log10_trans(),
-                                             ytrans = "identity",
-                                             xbreaks = trans_breaks("log10", function(x) 10^x),
-                                             ybreaks = waiver(),
-                                             xlabels = trans_format("log10", math_format(10^.x)),
-                                             ylabels = waiver())
-ggTrend_score_fk_reads_all_filt <- ggTrend_score_fk_reads_all_filt +
-  facet_grid(cols = vars(chr), scales = "free_x")
+#ggTrend_score_fk_reads_all <- trendPlot(dataFrame = con_fk_df_all,
+#                                        xvar = score,
+#                                        yvar = fk_reads_all,
+#                                        xlab = bquote(.(featName)*" repetitiveness"),
+#                                        ylab = bquote(.(featName)*" read coverage (m"*.(context)*")"),
+#                                        xaxtrans = log10_trans(),
+#                                        yaxtrans = "identity",
+#                                        xbreaks = trans_breaks("log10", function(x) 10^x),
+#                                        ybreaks = waiver(),
+#                                        xlabels = trans_format("log10", math_format(10^.x)),
+#                                        ylabels = waiver())
+#ggTrend_score_fk_reads_all <- ggTrend_score_fk_reads_all +
+#  facet_grid(cols = vars(chr), scales = "free_x")
+#
+#ggTrend_score_fk_reads_all_filt <- trendPlot(dataFrame = con_fk_df_all_filt,
+#                                             xvar = score,
+#                                             yvar = fk_reads_all,
+#                                             xlab = bquote(.(featName)*" repetitiveness"),
+#                                             ylab = bquote(.(featName)*" read coverage (m"*.(context)*")"),
+#                                             xaxtrans = log10_trans(),
+#                                             yaxtrans = "identity",
+#                                             xbreaks = trans_breaks("log10", function(x) 10^x),
+#                                             ybreaks = waiver(),
+#                                             xlabels = trans_format("log10", math_format(10^.x)),
+#                                             ylabels = waiver())
+#ggTrend_score_fk_reads_all_filt <- ggTrend_score_fk_reads_all_filt +
+#  facet_grid(cols = vars(chr), scales = "free_x")
 
 ggTrend_fk_reads_all_fk_kappa_all <- trendPlot(dataFrame = con_fk_df_all,
+                                               mapping = aes(x = fk_reads_all, y = fk_kappa_all),
                                                xvar = fk_reads_all,
                                                yvar = fk_kappa_all,
-                                               xlab = bquote(italic(.(featName))*" read coverage"),
-                                               ylab = bquote(italic(.(featName))*" Fleiss' kappa (m"*.(context)*")"),
-                                               xtrans = log10_trans(),
-                                               ytrans = "identity",
+                                               xlab = bquote(.(featName)*" read coverage"),
+                                               ylab = bquote(.(featName)*" Fleiss' kappa (m"*.(context)*")"),
+                                               xaxtrans = log10_trans(),
+                                               yaxtrans = "identity",
                                                xbreaks = trans_breaks("log10", function(x) 10^x),
                                                ybreaks = waiver(),
                                                xlabels = trans_format("log10", math_format(10^.x)),
@@ -466,12 +468,13 @@ ggTrend_fk_reads_all_fk_kappa_all <- ggTrend_fk_reads_all_fk_kappa_all +
   facet_grid(cols = vars(chr), scales = "free_x")
 
 ggTrend_fk_reads_all_fk_kappa_all_filt <- trendPlot(dataFrame = con_fk_df_all_filt,
+                                                    mapping = aes(x = fk_reads_all, y = fk_kappa_all),
                                                     xvar = fk_reads_all,
                                                     yvar = fk_kappa_all,
-                                                    xlab = bquote(italic(.(featName))*" read coverage"),
-                                                    ylab = bquote(italic(.(featName))*" Fleiss' kappa (m"*.(context)*")"),
-                                                    xtrans = log10_trans(),
-                                                    ytrans = "identity",
+                                                    xlab = bquote(.(featName)*" read coverage"),
+                                                    ylab = bquote(.(featName)*" Fleiss' kappa (m"*.(context)*")"),
+                                                    xaxtrans = log10_trans(),
+                                                    yaxtrans = "identity",
                                                     xbreaks = trans_breaks("log10", function(x) 10^x),
                                                     ybreaks = waiver(),
                                                     xlabels = trans_format("log10", math_format(10^.x)),
@@ -479,11 +482,39 @@ ggTrend_fk_reads_all_fk_kappa_all_filt <- trendPlot(dataFrame = con_fk_df_all_fi
 ggTrend_fk_reads_all_fk_kappa_all_filt <- ggTrend_fk_reads_all_fk_kappa_all_filt +
   facet_grid(cols = vars(chr), scales = "free_x")
 
+ggTrend_mean_mC_all_fk_kappa_all <- trendPlot(dataFrame = con_fk_df_all,
+                                              mapping = aes(x = mean_mC_all, y = fk_kappa_all),
+                                              xvar = mean_mC_all,
+                                              yvar = fk_kappa_all,
+                                              xlab = bquote(.(featName)*" mean m"*.(context)),
+                                              ylab = bquote(.(featName)*" Fleiss' kappa (m"*.(context)*")"),
+                                              xaxtrans = log10_trans(),
+                                              yaxtrans = log10_trans(),
+                                              xbreaks = trans_breaks("log10", function(x) 10^x),
+                                              ybreaks = trans_breaks("log10", function(x) 10^x),
+                                              xlabels = trans_format("log10", math_format(10^.x)),
+                                              ylabels = trans_format("log10", math_format(10^.x)))
+ggTrend_mean_mC_all_fk_kappa_all <- ggTrend_mean_mC_all_fk_kappa_all +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+ggTrend_mean_mC_all_fk_kappa_all_filt <- trendPlot(dataFrame = con_fk_df_all_filt,
+                                                   mapping = aes(x = mean_mC_all, y = fk_kappa_all),
+                                                   xvar = mean_mC_all,
+                                                   yvar = fk_kappa_all,
+                                                   xlab = bquote(.(featName)*" mean m"*.(context)),
+                                                   ylab = bquote(.(featName)*" Fleiss' kappa (m"*.(context)*")"),
+                                                   xaxtrans = log10_trans(),
+                                                   yaxtrans = log10_trans(),
+                                                   xbreaks = trans_breaks("log10", function(x) 10^x),
+                                                   ybreaks = trans_breaks("log10", function(x) 10^x),
+                                                   xlabels = trans_format("log10", math_format(10^.x)),
+                                                   ylabels = trans_format("log10", math_format(10^.x)))
+ggTrend_mean_mC_all_fk_kappa_all_filt <- ggTrend_mean_mC_all_fk_kappa_all_filt +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
 gg_cow_list1 <- list(
-                     ggTrend_score_fk_kappa_all,
-                     ggTrend_score_fk_kappa_all_filt,
-                     ggTrend_score_fk_reads_all,
-                     ggTrend_score_fk_reads_all_filt,
+                     ggTrend_mean_mC_all_fk_kappa_all,
+                     ggTrend_mean_mC_all_fk_kappa_all_filt,
                      ggTrend_fk_reads_all_fk_kappa_all,
                      ggTrend_fk_reads_all_fk_kappa_all_filt
                     )
@@ -497,6 +528,6 @@ gg_cow1 <- plot_grid(plotlist = gg_cow_list1,
 ggsave(paste0(plotDir,
               featName, "_", sampleName, "_MappedOn_", refbase, "_", context,
               "_NAmax", NAmax, "_all_trendPlot_", paste0(chrName, collapse = "_"),
-              "_repetitiveness.pdf"),
+              ".pdf"),
        plot = gg_cow1,
        height = 5*length(gg_cow_list1), width = 5*length(chrName), limitsize = F)
