@@ -5,7 +5,7 @@
 # 2. Examine relationships between feature among-read agreement and other metrics
 
 # Usage on hydrogen node7:
-# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript feature_among_read_variation_scoring_func.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' CEN180"
+# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript feature_among_read_variation_scoring_func_genes.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' gene"
 
 # Divide each read into adjacent segments each consisting of a given number of consecutive cytosines,
 # and calculate the methylation proportion for each segment of each read
@@ -16,7 +16,7 @@
 #NAmax <- 0.50
 #CPUpc <- 1.00
 #chrName <- unlist(strsplit("Chr1,Chr2,Chr3,Chr4,Chr5", split = ","))
-#featName <- "CEN180"
+#featName <- "gene"
 
 args <- commandArgs(trailingOnly = T)
 sampleName <- args[1]
@@ -161,7 +161,7 @@ rm(tab_list); gc()
 # For each feat:
 # 1. calculate a measure of among-read agreement in methylation state (e.g., Fleiss' kappa)
 
-# Get DNA methylation proportions that overlap each featName
+# Get reads that overlap each featName
 fOverlapsStrand <- function(chr_featGR, chr_tabGR_str) {
   ## Note: findOverlaps() approach does not work where a window does not overlap
   ##       any positions in chr_tabGR, which can occur with smaller genomeBinSize
@@ -174,12 +174,8 @@ fOverlapsStrand <- function(chr_featGR, chr_tabGR_str) {
   fOverlaps_str
 }
 
-#strand = "+"
-#fOverlaps_str = fOverlaps_fwd
-#chr_tabGR_str = chr_tabGR_fwd
-#x = 10
-
-makeDFx_strand <- function(strand, fOverlaps_str, chr_tabGR_str, chr_featGR, x) {
+# Function to calculate among-read agreement for a given feature x
+makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, x) {
 
   chr_tabGR_str_x <- chr_tabGR_str[subjectHits(fOverlaps_str[queryHits(fOverlaps_str) == x])]
 
@@ -297,7 +293,7 @@ for(chrIndex in 1:length(chrName)) {
   chr_featGR <- featGR[seqnames(featGR) == chrName[chrIndex]]
   chr_tab <- tab[tab[,1] == chrName[chrIndex],]
   chr_tabGR <- GRanges(seqnames = chrName[chrIndex],
-                       ranges = IRanges(start = chr_tab[,2],
+                       ranges = IRanges(start = chr_tab[,2]+1,
                                         width = 1),
                        strand = chr_tab[,3],
                        read = chr_tab[,5],
@@ -311,8 +307,7 @@ for(chrIndex in 1:length(chrName)) {
   # Analyse each strand separately
   # fwd
   makeDFx_list_fwd <- mclapply(1:length(chr_featGR), function(x) {
-    makeDFx_strand(strand = "fwd",
-                   fOverlaps_str = fOverlaps_fwd,
+    makeDFx_strand(fOverlaps_str = fOverlaps_fwd,
                    chr_tabGR_str = chr_tabGR_fwd,
                    chr_featGR = chr_featGR,
                    x = x)
@@ -325,8 +320,7 @@ for(chrIndex in 1:length(chrName)) {
 
   # rev  
   makeDFx_list_rev <- mclapply(1:length(chr_featGR), function(x) {
-    makeDFx_strand(strand = "rev",
-                   fOverlaps_str = fOverlaps_rev,
+    makeDFx_strand(fOverlaps_str = fOverlaps_rev,
                    chr_tabGR_str = chr_tabGR_rev,
                    chr_featGR = chr_featGR,
                    x = x)
@@ -356,7 +350,7 @@ for(chrIndex in 1:length(chrName)) {
 
 con_fk_df_all_filt <- con_fk_df_all %>%
   dplyr::filter(fk_reads_all >= 10) %>%
-  dplyr::filter(fk_Cs_all >= 2)
+  dplyr::filter(fk_Cs_all >= 10)
 
 
 trendPlot <- function(dataFrame, xvar, yvar, xlab, ylab, xtrans, ytrans, xbreaks, ybreaks, xlabels, ylabels) {

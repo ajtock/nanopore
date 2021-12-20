@@ -127,15 +127,15 @@ if(length(chrName) == 1 && chrName == "Chr2") {
  
   # Get reads that overlap mito_ins_GR
   tab_mito <- tab[tab[,1] == as.character(seqnames(mito_ins_GR)) &
-                  tab[,2] >= start(mito_ins_GR) &
-                  tab[,2] <= end(mito_ins_GR),]
+                  tab[,2]+1 >= start(mito_ins_GR) &
+                  tab[,2]+1 <= end(mito_ins_GR),]
   tab_mito_reads <- unique(tab_mito[,5])
  
   read_within_mito_ins <- function(DSrawDF, readID, mito_ins_GR) {
     DSrawDF_read <- DSrawDF[DSrawDF[,5] == readID,]
     stopifnot(unique(DSrawDF_read[,1]) == as.character(seqnames(mito_ins_GR)))
-    bool <- min(DSrawDF_read[,2], na.rm = T) >= start(mito_ins_GR) &&
-            max(DSrawDF_read[,2], na.rm = T) <= end(mito_ins_GR)
+    bool <- min(DSrawDF_read[,2]+1, na.rm = T) >= start(mito_ins_GR) &&
+            max(DSrawDF_read[,2]+1, na.rm = T) <= end(mito_ins_GR)
     return(bool)
   }
  
@@ -202,7 +202,7 @@ for(i in seq_along(chrName)) {
   # and get corresponding DNA methylation proportions that overlap genomic windows
   chr_tab <- tab[tab[,1] == chrName[i],]
   chr_tab_GR <- GRanges(seqnames = chrName[i],
-                        ranges = IRanges(start = chr_tab[,2],
+                        ranges = IRanges(start = chr_tab[,2]+1,
                                          width = 1),
                         strand = chr_tab[,3],
                         read = chr_tab[,5],
