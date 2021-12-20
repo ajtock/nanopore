@@ -465,9 +465,12 @@ ggTrend_mean_mC_all_fk_kappa_all <- trendPlot(dataFrame = con_fk_df_all,
                                               xlabels = trans_format("log10", math_format(10^.x)),
                                               ylabels = trans_format("log10", math_format(10^.x)))
 ggTrend_mean_mC_all_fk_kappa_all <- ggTrend_mean_mC_all_fk_kappa_all +
-  geom_hline(yintercept = 0.75, linetype = "dashed", size = 1, colour = "magenta") +
-  geom_hline(yintercept = 0.50, linetype = "dashed", size = 1, colour = "magenta2") +
-  geom_hline(yintercept = 0.25, linetype = "dashed", size = 1, colour = "magenta4") +
+  geom_hline(yintercept = 0.50, linetype = "dashed", size = 1, colour = "darkorange1") +
+  geom_hline(yintercept = 0.30, linetype = "dashed", size = 1, colour = "magenta1") +
+  geom_hline(yintercept = 0.10, linetype = "dashed", size = 1, colour = "dodgerblue1") +
+  geom_vline(xintercept = 0.70, linetype = "dashed", size = 1, colour = "darkorange1") +
+  geom_vline(xintercept = 0.30, linetype = "dashed", size = 1, colour = "magenta1") +
+  geom_vline(xintercept = 0.10, linetype = "dashed", size = 1, colour = "dodgerblue1") +
   facet_grid(cols = vars(chr), scales = "free_x")
 
 ggTrend_mean_mC_all_fk_kappa_all_filt <- trendPlot(dataFrame = con_fk_df_all_filt,
@@ -483,9 +486,9 @@ ggTrend_mean_mC_all_fk_kappa_all_filt <- trendPlot(dataFrame = con_fk_df_all_fil
                                                    xlabels = trans_format("log10", math_format(10^.x)),
                                                    ylabels = trans_format("log10", math_format(10^.x)))
 ggTrend_mean_mC_all_fk_kappa_all_filt <- ggTrend_mean_mC_all_fk_kappa_all_filt +
-  geom_hline(yintercept = 0.75, linetype = "dashed", size = 1, colour = "magenta") +
-  geom_hline(yintercept = 0.50, linetype = "dashed", size = 1, colour = "magenta2") +
-  geom_hline(yintercept = 0.25, linetype = "dashed", size = 1, colour = "magenta4") +
+  geom_hline(yintercept = 0.75, linetype = "dashed", size = 1, colour = "darkorange1") +
+  geom_hline(yintercept = 0.50, linetype = "dashed", size = 1, colour = "magenta1") +
+  geom_hline(yintercept = 0.25, linetype = "dashed", size = 1, colour = "dodgerblue1") +
   facet_grid(cols = vars(chr), scales = "free_x")
 
 ggTrend_fk_reads_all_fk_kappa_all <- trendPlot(dataFrame = con_fk_df_all,
@@ -501,9 +504,9 @@ ggTrend_fk_reads_all_fk_kappa_all <- trendPlot(dataFrame = con_fk_df_all,
                                                xlabels = trans_format("log10", math_format(10^.x)),
                                                ylabels = trans_format("log10", math_format(10^.x)))
 ggTrend_fk_reads_all_fk_kappa_all <- ggTrend_fk_reads_all_fk_kappa_all +
-  geom_hline(yintercept = 0.75, linetype = "dashed", size = 1, colour = "magenta") +
-  geom_hline(yintercept = 0.50, linetype = "dashed", size = 1, colour = "magenta2") +
-  geom_hline(yintercept = 0.25, linetype = "dashed", size = 1, colour = "magenta4") +
+  geom_hline(yintercept = 0.75, linetype = "dashed", size = 1, colour = "darkorange1") +
+  geom_hline(yintercept = 0.50, linetype = "dashed", size = 1, colour = "magenta1") +
+  geom_hline(yintercept = 0.25, linetype = "dashed", size = 1, colour = "dodgerblue1") +
   facet_grid(cols = vars(chr), scales = "free_x")
 
 ggTrend_fk_reads_all_fk_kappa_all_filt <- trendPlot(dataFrame = con_fk_df_all_filt,
@@ -519,9 +522,9 @@ ggTrend_fk_reads_all_fk_kappa_all_filt <- trendPlot(dataFrame = con_fk_df_all_fi
                                                     xlabels = trans_format("log10", math_format(10^.x)),
                                                     ylabels = trans_format("log10", math_format(10^.x)))
 ggTrend_fk_reads_all_fk_kappa_all_filt <- ggTrend_fk_reads_all_fk_kappa_all_filt +
-  geom_hline(yintercept = 0.75, linetype = "dashed", size = 1, colour = "magenta") +
-  geom_hline(yintercept = 0.50, linetype = "dashed", size = 1, colour = "magenta2") +
-  geom_hline(yintercept = 0.25, linetype = "dashed", size = 1, colour = "magenta4") +
+  geom_hline(yintercept = 0.75, linetype = "dashed", size = 1, colour = "darkorange1") +
+  geom_hline(yintercept = 0.50, linetype = "dashed", size = 1, colour = "magenta1") +
+  geom_hline(yintercept = 0.25, linetype = "dashed", size = 1, colour = "dodgerblue1") +
   facet_grid(cols = vars(chr), scales = "free_x")
 
 gg_cow_list1 <- list(
