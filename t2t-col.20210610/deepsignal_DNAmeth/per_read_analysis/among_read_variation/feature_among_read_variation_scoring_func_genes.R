@@ -452,6 +452,29 @@ trendPlot <- function(dataFrame, mapping, xvar, yvar, xlab, ylab, xaxtrans, yaxt
 #ggTrend_score_fk_reads_all_filt <- ggTrend_score_fk_reads_all_filt +
 #  facet_grid(cols = vars(chr), scales = "free_x")
 
+if(context == "CpG") {
+  fk_kappa_all_high <- 0.50
+  fk_kappa_all_mid  <- 0.25
+  fk_kappa_all_low  <- 0.10
+  mean_mC_all_high  <- 0.75
+  mean_mC_all_mid   <- 0.25
+  mean_mC_all_low   <- 0.10
+} else if(context == "CHG") {
+  fk_kappa_all_high <- 0.50
+  fk_kappa_all_mid  <- 0.25
+  fk_kappa_all_low  <- 0.10
+  mean_mC_all_high  <- 0.50
+  mean_mC_all_mid   <- 0.15
+  mean_mC_all_low   <- 0.05
+} else if(context == "CHG") {
+  fk_kappa_all_high <- 0.50
+  fk_kappa_all_mid  <- 0.25
+  fk_kappa_all_low  <- 0.10
+  mean_mC_all_high  <- 0.18
+  mean_mC_all_mid   <- 0.06
+  mean_mC_all_low   <- 0.02
+}
+
 ggTrend_mean_mC_all_fk_kappa_all <- trendPlot(dataFrame = con_fk_df_all,
                                               mapping = aes(x = mean_mC_all, y = fk_kappa_all),
                                               xvar = mean_mC_all,
@@ -465,12 +488,12 @@ ggTrend_mean_mC_all_fk_kappa_all <- trendPlot(dataFrame = con_fk_df_all,
                                               xlabels = trans_format("log10", math_format(10^.x)),
                                               ylabels = trans_format("log10", math_format(10^.x)))
 ggTrend_mean_mC_all_fk_kappa_all <- ggTrend_mean_mC_all_fk_kappa_all +
-  geom_hline(yintercept = 0.50, linetype = "dashed", size = 1, colour = "darkorange1") +
-  geom_hline(yintercept = 0.30, linetype = "dashed", size = 1, colour = "magenta1") +
-  geom_hline(yintercept = 0.10, linetype = "dashed", size = 1, colour = "dodgerblue1") +
-  geom_vline(xintercept = 0.70, linetype = "dashed", size = 1, colour = "darkorange1") +
-  geom_vline(xintercept = 0.30, linetype = "dashed", size = 1, colour = "magenta1") +
-  geom_vline(xintercept = 0.10, linetype = "dashed", size = 1, colour = "dodgerblue1") +
+  geom_hline(yintercept = fk_kappa_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
+  geom_hline(yintercept = fk_kappa_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
+  geom_hline(yintercept = fk_kappa_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
+  geom_vline(xintercept = mean_mC_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
+  geom_vline(xintercept = mean_mC_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
+  geom_vline(xintercept = mean_mC_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
   facet_grid(cols = vars(chr), scales = "free_x")
 
 ggTrend_mean_mC_all_fk_kappa_all_filt <- trendPlot(dataFrame = con_fk_df_all_filt,
@@ -486,9 +509,12 @@ ggTrend_mean_mC_all_fk_kappa_all_filt <- trendPlot(dataFrame = con_fk_df_all_fil
                                                    xlabels = trans_format("log10", math_format(10^.x)),
                                                    ylabels = trans_format("log10", math_format(10^.x)))
 ggTrend_mean_mC_all_fk_kappa_all_filt <- ggTrend_mean_mC_all_fk_kappa_all_filt +
-  geom_hline(yintercept = 0.75, linetype = "dashed", size = 1, colour = "darkorange1") +
-  geom_hline(yintercept = 0.50, linetype = "dashed", size = 1, colour = "magenta1") +
-  geom_hline(yintercept = 0.25, linetype = "dashed", size = 1, colour = "dodgerblue1") +
+  geom_hline(yintercept = fk_kappa_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
+  geom_hline(yintercept = fk_kappa_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
+  geom_hline(yintercept = fk_kappa_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
+  geom_vline(xintercept = mean_mC_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
+  geom_vline(xintercept = mean_mC_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
+  geom_vline(xintercept = mean_mC_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
   facet_grid(cols = vars(chr), scales = "free_x")
 
 ggTrend_fk_reads_all_fk_kappa_all <- trendPlot(dataFrame = con_fk_df_all,
@@ -504,9 +530,9 @@ ggTrend_fk_reads_all_fk_kappa_all <- trendPlot(dataFrame = con_fk_df_all,
                                                xlabels = trans_format("log10", math_format(10^.x)),
                                                ylabels = trans_format("log10", math_format(10^.x)))
 ggTrend_fk_reads_all_fk_kappa_all <- ggTrend_fk_reads_all_fk_kappa_all +
-  geom_hline(yintercept = 0.75, linetype = "dashed", size = 1, colour = "darkorange1") +
-  geom_hline(yintercept = 0.50, linetype = "dashed", size = 1, colour = "magenta1") +
-  geom_hline(yintercept = 0.25, linetype = "dashed", size = 1, colour = "dodgerblue1") +
+  geom_hline(yintercept = fk_kappa_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
+  geom_hline(yintercept = fk_kappa_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
+  geom_hline(yintercept = fk_kappa_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
   facet_grid(cols = vars(chr), scales = "free_x")
 
 ggTrend_fk_reads_all_fk_kappa_all_filt <- trendPlot(dataFrame = con_fk_df_all_filt,
@@ -522,9 +548,9 @@ ggTrend_fk_reads_all_fk_kappa_all_filt <- trendPlot(dataFrame = con_fk_df_all_fi
                                                     xlabels = trans_format("log10", math_format(10^.x)),
                                                     ylabels = trans_format("log10", math_format(10^.x)))
 ggTrend_fk_reads_all_fk_kappa_all_filt <- ggTrend_fk_reads_all_fk_kappa_all_filt +
-  geom_hline(yintercept = 0.75, linetype = "dashed", size = 1, colour = "darkorange1") +
-  geom_hline(yintercept = 0.50, linetype = "dashed", size = 1, colour = "magenta1") +
-  geom_hline(yintercept = 0.25, linetype = "dashed", size = 1, colour = "dodgerblue1") +
+  geom_hline(yintercept = fk_kappa_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
+  geom_hline(yintercept = fk_kappa_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
+  geom_hline(yintercept = fk_kappa_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
   facet_grid(cols = vars(chr), scales = "free_x")
 
 gg_cow_list1 <- list(
@@ -546,3 +572,31 @@ ggsave(paste0(plotDir,
               ".pdf"),
        plot = gg_cow1,
        height = 5*length(gg_cow_list1), width = 5*length(chrName), limitsize = F)
+
+
+# Extract feature groups (based on trend plots) to enable enrichment analysis
+con_fk_df_all_filt_kappa_low_mC_low_group1 <- con_fk_df_all_filt %>%
+  dplyr::filter(fk_kappa_all <= fk_kappa_all_low) %>%
+  dplyr::filter(mean_mC_all  <= mean_mC_all_low)
+
+con_fk_df_all_filt_kappa_mid_mC_low_group2 <- con_fk_df_all_filt %>%
+  dplyr::filter(fk_kappa_all >  fk_kappa_all_low) %>%
+  dplyr::filter(mean_mC_all  <= mean_mC_all_low)
+
+con_fk_df_all_filt_kappa_mid_mC_mid_group3 <- con_fk_df_all_filt %>%
+  dplyr::filter(fk_kappa_all >  fk_kappa_all_low) %>%
+  dplyr::filter(mean_mC_all  >  mean_mC_all_low) %>%
+  dplyr::filter(mean_mC_all  <= mean_mC_all_mid)
+
+con_fk_df_all_filt_kappa_high_mC_high_group4 <- con_fk_df_all_filt %>%
+  dplyr::filter(fk_kappa_all >  fk_kappa_all_mid) %>%
+  dplyr::filter(mean_mC_all  >  mean_mC_all_mid) %>%
+  dplyr::filter(mean_mC_all  <= mean_mC_all_high)
+
+con_fk_df_all_filt_kappa_low_mC_vhigh_group5 <- con_fk_df_all_filt %>%
+  dplyr::filter(fk_kappa_all <= fk_kappa_all_low) %>%
+  dplyr::filter(mean_mC_all  >  mean_mC_all_high)
+
+
+
+
