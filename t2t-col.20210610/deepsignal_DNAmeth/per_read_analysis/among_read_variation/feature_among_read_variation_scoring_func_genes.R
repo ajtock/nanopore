@@ -530,11 +530,11 @@ trendPlot <- function(dataFrame, mapping, xvar, yvar, xlab, ylab, xaxtrans, yaxt
 
 if(context == "CpG") {
   fk_kappa_all_high <- 0.55
-  fk_kappa_all_mid  <- 0.30
-  fk_kappa_all_low  <- 0.03
-  mean_stocha_all_high <- 0.27
+  fk_kappa_all_mid  <- 0.35
+  fk_kappa_all_low  <- 0.04
+  mean_stocha_all_high <- 0.28
   mean_stocha_all_mid  <- 0.17
-  mean_stocha_all_low  <- 0.07
+  mean_stocha_all_low  <- 0.08
   mean_min_acf_all_high <- -0.05
   mean_min_acf_all_mid  <- -0.10
   mean_min_acf_all_low  <- -0.15
@@ -543,11 +543,11 @@ if(context == "CpG") {
   mean_mC_all_low   <- 0.10
 } else if(context == "CHG") {
   fk_kappa_all_high <- 0.55
-  fk_kappa_all_mid  <- 0.30
-  fk_kappa_all_low  <- 0.03
-  mean_stocha_all_high <- 0.27
+  fk_kappa_all_mid  <- 0.35
+  fk_kappa_all_low  <- 0.04
+  mean_stocha_all_high <- 0.28
   mean_stocha_all_mid  <- 0.17
-  mean_stocha_all_low  <- 0.07
+  mean_stocha_all_low  <- 0.08
   mean_min_acf_all_high <- -0.05
   mean_min_acf_all_mid  <- -0.10
   mean_min_acf_all_low  <- -0.15
@@ -556,11 +556,11 @@ if(context == "CpG") {
   mean_mC_all_low   <- 0.05
 } else if(context == "CHH") {
   fk_kappa_all_high <- 0.55
-  fk_kappa_all_mid  <- 0.30
-  fk_kappa_all_low  <- 0.03
-  mean_stocha_all_high <- 0.27
+  fk_kappa_all_mid  <- 0.35
+  fk_kappa_all_low  <- 0.04
+  mean_stocha_all_high <- 0.28
   mean_stocha_all_mid  <- 0.17
-  mean_stocha_all_low  <- 0.07
+  mean_stocha_all_low  <- 0.08
   mean_min_acf_all_high <- -0.05
   mean_min_acf_all_mid  <- -0.10
   mean_min_acf_all_low  <- -0.15
@@ -654,47 +654,47 @@ ggTrend_mean_mC_all_mean_stocha_all_filt <- ggTrend_mean_mC_all_mean_stocha_all_
   geom_vline(xintercept = mean_mC_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
   facet_grid(cols = vars(chr), scales = "free_x")
 
-ggTrend_mean_mC_all_mean_min_acf_all <- trendPlot(dataFrame = con_fk_df_all,
-                                                  mapping = aes(x = mean_mC_all, y = mean_min_acf_all),
-                                                  xvar = mean_mC_all,
-                                                  yvar = mean_min_acf_all,
-                                                  xlab = bquote(.(featName)*" mean m"*.(context)),
-                                                  ylab = bquote(.(featName)*" mean min. ACF (m"*.(context)*")"),
-                                                  xaxtrans = log10_trans(),
-                                                  yaxtrans = log10_trans(),
-                                                  xbreaks = trans_breaks("log10", function(x) 10^x),
-                                                  ybreaks = trans_breaks("log10", function(x) 10^x),
-                                                  xlabels = trans_format("log10", math_format(10^.x)),
-                                                  ylabels = trans_format("log10", math_format(10^.x)))
-ggTrend_mean_mC_all_mean_min_acf_all <- ggTrend_mean_mC_all_mean_min_acf_all +
-#  geom_hline(yintercept = mean_min_acf_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
-#  geom_hline(yintercept = mean_min_acf_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
-#  geom_hline(yintercept = mean_min_acf_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
-  geom_vline(xintercept = mean_mC_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
-  geom_vline(xintercept = mean_mC_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
-  geom_vline(xintercept = mean_mC_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
-  facet_grid(cols = vars(chr), scales = "free_x")
-
-ggTrend_mean_mC_all_mean_min_acf_all_filt <- trendPlot(dataFrame = con_fk_df_all_filt,
-                                                       mapping = aes(x = mean_mC_all, y = mean_min_acf_all),
-                                                       xvar = mean_mC_all,
-                                                       yvar = mean_min_acf_all,
-                                                       xlab = bquote(.(featName)*" mean m"*.(context)),
-                                                       ylab = bquote(.(featName)*" mean min. ACF (m"*.(context)*")"),
-                                                       xaxtrans = log10_trans(),
-                                                       yaxtrans = log10_trans(),
-                                                       xbreaks = trans_breaks("log10", function(x) 10^x),
-                                                       ybreaks = trans_breaks("log10", function(x) 10^x),
-                                                       xlabels = trans_format("log10", math_format(10^.x)),
-                                                       ylabels = trans_format("log10", math_format(10^.x)))
-ggTrend_mean_mC_all_mean_min_acf_all_filt <- ggTrend_mean_mC_all_mean_min_acf_all_filt +
-#  geom_hline(yintercept = mean_min_acf_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
-#  geom_hline(yintercept = mean_min_acf_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
-#  geom_hline(yintercept = mean_min_acf_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
-  geom_vline(xintercept = mean_mC_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
-  geom_vline(xintercept = mean_mC_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
-  geom_vline(xintercept = mean_mC_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
-  facet_grid(cols = vars(chr), scales = "free_x")
+#ggTrend_mean_mC_all_mean_min_acf_all <- trendPlot(dataFrame = con_fk_df_all,
+#                                                  mapping = aes(x = mean_mC_all, y = mean_min_acf_all),
+#                                                  xvar = mean_mC_all,
+#                                                  yvar = mean_min_acf_all,
+#                                                  xlab = bquote(.(featName)*" mean m"*.(context)),
+#                                                  ylab = bquote(.(featName)*" mean min. ACF (m"*.(context)*")"),
+#                                                  xaxtrans = log10_trans(),
+#                                                  yaxtrans = log10_trans(),
+#                                                  xbreaks = trans_breaks("log10", function(x) 10^x),
+#                                                  ybreaks = trans_breaks("log10", function(x) 10^x),
+#                                                  xlabels = trans_format("log10", math_format(10^.x)),
+#                                                  ylabels = trans_format("log10", math_format(10^.x)))
+#ggTrend_mean_mC_all_mean_min_acf_all <- ggTrend_mean_mC_all_mean_min_acf_all +
+##  geom_hline(yintercept = mean_min_acf_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
+##  geom_hline(yintercept = mean_min_acf_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
+##  geom_hline(yintercept = mean_min_acf_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
+#  geom_vline(xintercept = mean_mC_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
+#  geom_vline(xintercept = mean_mC_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
+#  geom_vline(xintercept = mean_mC_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
+#  facet_grid(cols = vars(chr), scales = "free_x")
+#
+#ggTrend_mean_mC_all_mean_min_acf_all_filt <- trendPlot(dataFrame = con_fk_df_all_filt,
+#                                                       mapping = aes(x = mean_mC_all, y = mean_min_acf_all),
+#                                                       xvar = mean_mC_all,
+#                                                       yvar = mean_min_acf_all,
+#                                                       xlab = bquote(.(featName)*" mean m"*.(context)),
+#                                                       ylab = bquote(.(featName)*" mean min. ACF (m"*.(context)*")"),
+#                                                       xaxtrans = log10_trans(),
+#                                                       yaxtrans = log10_trans(),
+#                                                       xbreaks = trans_breaks("log10", function(x) 10^x),
+#                                                       ybreaks = trans_breaks("log10", function(x) 10^x),
+#                                                       xlabels = trans_format("log10", math_format(10^.x)),
+#                                                       ylabels = trans_format("log10", math_format(10^.x)))
+#ggTrend_mean_mC_all_mean_min_acf_all_filt <- ggTrend_mean_mC_all_mean_min_acf_all_filt +
+##  geom_hline(yintercept = mean_min_acf_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
+##  geom_hline(yintercept = mean_min_acf_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
+##  geom_hline(yintercept = mean_min_acf_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
+#  geom_vline(xintercept = mean_mC_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
+#  geom_vline(xintercept = mean_mC_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
+#  geom_vline(xintercept = mean_mC_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
+#  facet_grid(cols = vars(chr), scales = "free_x")
 
 ggTrend_fk_reads_all_fk_kappa_all <- trendPlot(dataFrame = con_fk_df_all,
                                                mapping = aes(x = fk_reads_all, y = fk_kappa_all),
@@ -914,56 +914,151 @@ write.table(con_fk_df_all_filt_kappa_low_mC_low_group1,
             paste0(outDir,
                    featName, "_", sampleName, "_MappedOn_", refbase, "_", context,
                    "_NAmax", NAmax,
-                   "_filt_df_kappa_mC_group1_",
+                   "_filt_df_fk_kappa_all_mean_mC_all_group1_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
 write.table(con_fk_df_all_filt_kappa_mid_mC_low_group2,
             paste0(outDir,
                    featName, "_", sampleName, "_MappedOn_", refbase, "_", context,
                    "_NAmax", NAmax,
-                   "_filt_df_kappa_mC_group2_",
+                   "_filt_df_fk_kappa_all_mean_mC_all_group2_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
 write.table(con_fk_df_all_filt_kappa_mid_mC_mid_group3,
             paste0(outDir,
                    featName, "_", sampleName, "_MappedOn_", refbase, "_", context,
                    "_NAmax", NAmax,
-                   "_filt_df_kappa_mC_group3_",
+                   "_filt_df_fk_kappa_all_mean_mC_all_group3_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
 write.table(con_fk_df_all_filt_kappa_high_mC_mid_group4,
             paste0(outDir,
                    featName, "_", sampleName, "_MappedOn_", refbase, "_", context,
                    "_NAmax", NAmax,
-                   "_filt_df_kappa_mC_group4_",
+                   "_filt_df_fk_kappa_all_mean_mC_all_group4_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
 write.table(con_fk_df_all_filt_kappa_high_mC_high_group5,
             paste0(outDir,
                    featName, "_", sampleName, "_MappedOn_", refbase, "_", context,
                    "_NAmax", NAmax,
-                   "_filt_df_kappa_mC_group5_",
+                   "_filt_df_fk_kappa_all_mean_mC_all_group5_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
 write.table(con_fk_df_all_filt_kappa_vhigh_mC_high_group6,
             paste0(outDir,
                    featName, "_", sampleName, "_MappedOn_", refbase, "_", context,
                    "_NAmax", NAmax,
-                   "_filt_df_kappa_mC_group6_",
+                   "_filt_df_fk_kappa_all_mean_mC_all_group6_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
 write.table(con_fk_df_all_filt_kappa_low_mC_vhigh_group7,
             paste0(outDir,
                    featName, "_", sampleName, "_MappedOn_", refbase, "_", context,
                    "_NAmax", NAmax,
-                   "_filt_df_kappa_mC_group7_",
+                   "_filt_df_fk_kappa_all_mean_mC_all_group7_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
 write.table(con_fk_df_all_filt_kappa_mid_mC_vhigh_group8,
             paste0(outDir,
                    featName, "_", sampleName, "_MappedOn_", refbase, "_", context,
                    "_NAmax", NAmax,
-                   "_filt_df_kappa_mC_group8_",
+                   "_filt_df_fk_kappa_all_mean_mC_all_group8_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+
+
+# Filter by mean_stocha_all and mean_mC_all
+con_fk_df_all_filt_stocha_low_mC_low_group1 <- con_fk_df_all_filt %>%
+  dplyr::filter(mean_stocha_all <= mean_stocha_all_low) %>%
+  dplyr::filter(mean_mC_all     <= mean_mC_all_low)
+
+con_fk_df_all_filt_stocha_mid_mC_low_group2 <- con_fk_df_all_filt %>%
+  dplyr::filter(mean_stocha_all >  mean_stocha_all_low) %>%
+  dplyr::filter(mean_mC_all     <= mean_mC_all_low)
+
+con_fk_df_all_filt_stocha_mid_mC_mid_group3 <- con_fk_df_all_filt %>%
+  dplyr::filter(mean_stocha_all <= mean_stocha_all_mid) %>%
+  dplyr::filter(mean_mC_all     >  mean_mC_all_low) %>%
+  dplyr::filter(mean_mC_all     <= mean_mC_all_mid)
+
+con_fk_df_all_filt_stocha_high_mC_mid_group4 <- con_fk_df_all_filt %>%
+  dplyr::filter(mean_stocha_all >  mean_stocha_all_mid) %>%
+  dplyr::filter(mean_mC_all     >  mean_mC_all_low) %>%
+  dplyr::filter(mean_mC_all     <= mean_mC_all_mid)
+
+con_fk_df_all_filt_stocha_high_mC_high_group5 <- con_fk_df_all_filt %>%
+  dplyr::filter(mean_stocha_all <=  mean_stocha_all_high) %>%
+  dplyr::filter(mean_mC_all     >  mean_mC_all_mid) %>%
+  dplyr::filter(mean_mC_all     <= mean_mC_all_high)
+
+con_fk_df_all_filt_stocha_vhigh_mC_high_group6 <- con_fk_df_all_filt %>%
+  dplyr::filter(mean_stocha_all >  mean_stocha_all_high) %>%
+  dplyr::filter(mean_mC_all     >  mean_mC_all_mid) %>%
+  dplyr::filter(mean_mC_all     <= mean_mC_all_high)
+
+con_fk_df_all_filt_stocha_mid_mC_vhigh_group7 <- con_fk_df_all_filt %>%
+  dplyr::filter(mean_stocha_all <= mean_stocha_all_mid) %>%
+  dplyr::filter(mean_mC_all     >  mean_mC_all_high)
+
+con_fk_df_all_filt_stocha_high_mC_vhigh_group8 <- con_fk_df_all_filt %>%
+  dplyr::filter(mean_stocha_all > mean_stocha_all_mid) %>%
+  dplyr::filter(mean_mC_all     >  mean_mC_all_high)
+
+write.table(con_fk_df_all_filt_stocha_low_mC_low_group1,
+            paste0(outDir,
+                   featName, "_", sampleName, "_MappedOn_", refbase, "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_mean_stocha_all_mean_mC_all_group1_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+write.table(con_fk_df_all_filt_stocha_mid_mC_low_group2,
+            paste0(outDir,
+                   featName, "_", sampleName, "_MappedOn_", refbase, "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_mean_stocha_all_mean_mC_all_group2_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+write.table(con_fk_df_all_filt_stocha_mid_mC_mid_group3,
+            paste0(outDir,
+                   featName, "_", sampleName, "_MappedOn_", refbase, "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_mean_stocha_all_mean_mC_all_group3_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+write.table(con_fk_df_all_filt_stocha_high_mC_mid_group4,
+            paste0(outDir,
+                   featName, "_", sampleName, "_MappedOn_", refbase, "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_mean_stocha_all_mean_mC_all_group4_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+write.table(con_fk_df_all_filt_stocha_high_mC_high_group5,
+            paste0(outDir,
+                   featName, "_", sampleName, "_MappedOn_", refbase, "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_mean_stocha_all_mean_mC_all_group5_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+write.table(con_fk_df_all_filt_stocha_vhigh_mC_high_group6,
+            paste0(outDir,
+                   featName, "_", sampleName, "_MappedOn_", refbase, "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_mean_stocha_all_mean_mC_all_group6_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+write.table(con_fk_df_all_filt_stocha_mid_mC_vhigh_group7,
+            paste0(outDir,
+                   featName, "_", sampleName, "_MappedOn_", refbase, "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_mean_stocha_all_mean_mC_all_group7_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+write.table(con_fk_df_all_filt_stocha_high_mC_vhigh_group8,
+            paste0(outDir,
+                   featName, "_", sampleName, "_MappedOn_", refbase, "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_mean_stocha_all_mean_mC_all_group8_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
 
