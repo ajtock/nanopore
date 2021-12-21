@@ -325,7 +325,7 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
                                   name = chr_featGR[featNum]$name,
                                   score = chr_featGR[featNum]$score,
 
-                                  mean_mC_str = mean_mC_pwider_str_x,
+                                  mean_mC_str = NaN,
 
                                   fk_kappa_str = NaN,
                                   fk_pval_str = NaN,
@@ -369,6 +369,7 @@ for(chrIndex in 1:length(chrName)) {
   # Analyse each strand separately
   # fwd
   makeDFx_list_fwd <- mclapply(1:length(chr_featGR), function(x) {
+    print(x)
     makeDFx_strand(fOverlaps_str = fOverlaps_fwd,
                    chr_tabGR_str = chr_tabGR_fwd,
                    chr_featGR = chr_featGR,
