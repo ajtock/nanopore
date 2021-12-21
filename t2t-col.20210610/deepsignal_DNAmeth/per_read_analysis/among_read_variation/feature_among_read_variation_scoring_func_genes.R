@@ -5,7 +5,7 @@
 # 2. Examine relationships between feature among-read agreement and other metrics
 
 # Usage on hydrogen node7:
-# csmit -m 200G -c 47 "/applications/R/R-4.0.0/bin/Rscript feature_among_read_variation_scoring_func_genes.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' gene"
+# csmit -m 260G -c 1 "/applications/R/R-4.0.0/bin/Rscript feature_among_read_variation_scoring_func_genes.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' gene"
 
 # Divide each read into adjacent segments each consisting of a given number of consecutive cytosines,
 # and calculate the methylation proportion for each segment of each read
@@ -349,6 +349,8 @@ fk_df_str_win_x
 
 con_fk_df_all <- data.frame()
 for(chrIndex in 1:length(chrName)) {
+
+  print(chrName[chrIndex])
 
   chr_featGR <- featGR[seqnames(featGR) == chrName[chrIndex]]
   chr_tab <- tab[tab[,1] == chrName[chrIndex],]
