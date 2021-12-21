@@ -529,47 +529,46 @@ trendPlot <- function(dataFrame, mapping, xvar, yvar, xlab, ylab, xaxtrans, yaxt
 #  facet_grid(cols = vars(chr), scales = "free_x")
 
 if(context == "CpG") {
-  fk_kappa_all_high <- 0.50
-  fk_kappa_all_mid  <- 0.25
+  fk_kappa_all_high <- 0.40
+  fk_kappa_all_mid  <- 0.20
   fk_kappa_all_low  <- 0.10
-  mean_stocha_all_high <- 0.50
-  mean_stocha_all_mid  <- 0.25
-  mean_stocha_all_low  <- 0.10
-  mean_min_acf_all_high <- 0.50
-  mean_min_acf_all_mid  <- 0.25
-  mean_min_acf_all_low  <- 0.10
+  mean_stocha_all_high <- 0.32
+  mean_stocha_all_mid  <- 0.18
+  mean_stocha_all_low  <- 0.15
+  mean_min_acf_all_high <- -0.05
+  mean_min_acf_all_mid  <- -0.10
+  mean_min_acf_all_low  <- -0.15
   mean_mC_all_high  <- 0.75
   mean_mC_all_mid   <- 0.25
   mean_mC_all_low   <- 0.10
 } else if(context == "CHG") {
-  fk_kappa_all_high <- 0.50
-  fk_kappa_all_mid  <- 0.25
+  fk_kappa_all_high <- 0.40
+  fk_kappa_all_mid  <- 0.20
   fk_kappa_all_low  <- 0.10
-  mean_stocha_all_high <- 0.50
-  mean_stocha_all_mid  <- 0.25
-  mean_stocha_all_low  <- 0.10
-  mean_min_acf_all_high <- 0.50
-  mean_min_acf_all_mid  <- 0.25
-  mean_min_acf_all_low  <- 0.10
+  mean_stocha_all_high <- 0.32
+  mean_stocha_all_mid  <- 0.18
+  mean_stocha_all_low  <- 0.15
+  mean_min_acf_all_high <- -0.05
+  mean_min_acf_all_mid  <- -0.10
+  mean_min_acf_all_low  <- -0.15
   mean_mC_all_high  <- 0.50
   mean_mC_all_mid   <- 0.15
   mean_mC_all_low   <- 0.05
 } else if(context == "CHG") {
-  fk_kappa_all_high <- 0.50
-  fk_kappa_all_mid  <- 0.25
+  fk_kappa_all_high <- 0.40
+  fk_kappa_all_mid  <- 0.20
   fk_kappa_all_low  <- 0.10
-  mean_stocha_all_high <- 0.50
-  mean_stocha_all_mid  <- 0.25
-  mean_stocha_all_low  <- 0.10
-  mean_min_acf_all_high <- 0.50
-  mean_min_acf_all_mid  <- 0.25
-  mean_min_acf_all_low  <- 0.10
+  mean_stocha_all_high <- 0.32
+  mean_stocha_all_mid  <- 0.18
+  mean_stocha_all_low  <- 0.15
+  mean_min_acf_all_high <- -0.05
+  mean_min_acf_all_mid  <- -0.10
+  mean_min_acf_all_low  <- -0.15
   mean_mC_all_high  <- 0.18
   mean_mC_all_mid   <- 0.06
   mean_mC_all_low   <- 0.02
 }
 
-mean_min_acf_str
 
 ggTrend_mean_mC_all_fk_kappa_all <- trendPlot(dataFrame = con_fk_df_all,
                                               mapping = aes(x = mean_mC_all, y = fk_kappa_all),
@@ -618,7 +617,7 @@ ggTrend_mean_mC_all_mean_stocha_all <- trendPlot(dataFrame = con_fk_df_all,
                                                  xvar = mean_mC_all,
                                                  yvar = mean_stocha_all,
                                                  xlab = bquote(.(featName)*" mean m"*.(context)),
-                                                 ylab = bquote(.(featName)*" Fleiss' kappa (m"*.(context)*")"),
+                                                 ylab = bquote(.(featName)*" mean stochasticity (m"*.(context)*")"),
                                                  xaxtrans = log10_trans(),
                                                  yaxtrans = log10_trans(),
                                                  xbreaks = trans_breaks("log10", function(x) 10^x),
@@ -626,9 +625,9 @@ ggTrend_mean_mC_all_mean_stocha_all <- trendPlot(dataFrame = con_fk_df_all,
                                                  xlabels = trans_format("log10", math_format(10^.x)),
                                                  ylabels = trans_format("log10", math_format(10^.x)))
 ggTrend_mean_mC_all_mean_stocha_all <- ggTrend_mean_mC_all_mean_stocha_all +
-  geom_hline(yintercept = mean_stocha_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
-  geom_hline(yintercept = mean_stocha_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
-  geom_hline(yintercept = mean_stocha_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
+#  geom_hline(yintercept = mean_stocha_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
+#  geom_hline(yintercept = mean_stocha_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
+#  geom_hline(yintercept = mean_stocha_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
   geom_vline(xintercept = mean_mC_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
   geom_vline(xintercept = mean_mC_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
   geom_vline(xintercept = mean_mC_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
@@ -639,7 +638,7 @@ ggTrend_mean_mC_all_mean_stocha_all_filt <- trendPlot(dataFrame = con_fk_df_all_
                                                       xvar = mean_mC_all,
                                                       yvar = mean_stocha_all,
                                                       xlab = bquote(.(featName)*" mean m"*.(context)),
-                                                      ylab = bquote(.(featName)*" Fleiss' kappa (m"*.(context)*")"),
+                                                      ylab = bquote(.(featName)*" mean stochasticity (m"*.(context)*")"),
                                                       xaxtrans = log10_trans(),
                                                       yaxtrans = log10_trans(),
                                                       xbreaks = trans_breaks("log10", function(x) 10^x),
@@ -647,9 +646,9 @@ ggTrend_mean_mC_all_mean_stocha_all_filt <- trendPlot(dataFrame = con_fk_df_all_
                                                       xlabels = trans_format("log10", math_format(10^.x)),
                                                       ylabels = trans_format("log10", math_format(10^.x)))
 ggTrend_mean_mC_all_mean_stocha_all_filt <- ggTrend_mean_mC_all_mean_stocha_all_filt +
-  geom_hline(yintercept = mean_stocha_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
-  geom_hline(yintercept = mean_stocha_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
-  geom_hline(yintercept = mean_stocha_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
+#  geom_hline(yintercept = mean_stocha_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
+#  geom_hline(yintercept = mean_stocha_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
+#  geom_hline(yintercept = mean_stocha_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
   geom_vline(xintercept = mean_mC_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
   geom_vline(xintercept = mean_mC_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
   geom_vline(xintercept = mean_mC_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
@@ -660,7 +659,7 @@ ggTrend_mean_mC_all_mean_min_acf_all <- trendPlot(dataFrame = con_fk_df_all,
                                                   xvar = mean_mC_all,
                                                   yvar = mean_min_acf_all,
                                                   xlab = bquote(.(featName)*" mean m"*.(context)),
-                                                  ylab = bquote(.(featName)*" Fleiss' kappa (m"*.(context)*")"),
+                                                  ylab = bquote(.(featName)*" mean min. ACF (m"*.(context)*")"),
                                                   xaxtrans = log10_trans(),
                                                   yaxtrans = log10_trans(),
                                                   xbreaks = trans_breaks("log10", function(x) 10^x),
@@ -668,9 +667,9 @@ ggTrend_mean_mC_all_mean_min_acf_all <- trendPlot(dataFrame = con_fk_df_all,
                                                   xlabels = trans_format("log10", math_format(10^.x)),
                                                   ylabels = trans_format("log10", math_format(10^.x)))
 ggTrend_mean_mC_all_mean_min_acf_all <- ggTrend_mean_mC_all_mean_min_acf_all +
-  geom_hline(yintercept = mean_min_acf_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
-  geom_hline(yintercept = mean_min_acf_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
-  geom_hline(yintercept = mean_min_acf_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
+#  geom_hline(yintercept = mean_min_acf_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
+#  geom_hline(yintercept = mean_min_acf_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
+#  geom_hline(yintercept = mean_min_acf_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
   geom_vline(xintercept = mean_mC_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
   geom_vline(xintercept = mean_mC_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
   geom_vline(xintercept = mean_mC_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
@@ -681,7 +680,7 @@ ggTrend_mean_mC_all_mean_min_acf_all_filt <- trendPlot(dataFrame = con_fk_df_all
                                                        xvar = mean_mC_all,
                                                        yvar = mean_min_acf_all,
                                                        xlab = bquote(.(featName)*" mean m"*.(context)),
-                                                       ylab = bquote(.(featName)*" Fleiss' kappa (m"*.(context)*")"),
+                                                       ylab = bquote(.(featName)*" mean min. ACF (m"*.(context)*")"),
                                                        xaxtrans = log10_trans(),
                                                        yaxtrans = log10_trans(),
                                                        xbreaks = trans_breaks("log10", function(x) 10^x),
@@ -689,9 +688,9 @@ ggTrend_mean_mC_all_mean_min_acf_all_filt <- trendPlot(dataFrame = con_fk_df_all
                                                        xlabels = trans_format("log10", math_format(10^.x)),
                                                        ylabels = trans_format("log10", math_format(10^.x)))
 ggTrend_mean_mC_all_mean_min_acf_all_filt <- ggTrend_mean_mC_all_mean_min_acf_all_filt +
-  geom_hline(yintercept = mean_min_acf_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
-  geom_hline(yintercept = mean_min_acf_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
-  geom_hline(yintercept = mean_min_acf_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
+#  geom_hline(yintercept = mean_min_acf_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
+#  geom_hline(yintercept = mean_min_acf_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
+#  geom_hline(yintercept = mean_min_acf_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
   geom_vline(xintercept = mean_mC_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
   geom_vline(xintercept = mean_mC_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
   geom_vline(xintercept = mean_mC_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
@@ -733,15 +732,53 @@ ggTrend_fk_reads_all_fk_kappa_all_filt <- ggTrend_fk_reads_all_fk_kappa_all_filt
   geom_hline(yintercept = fk_kappa_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
   facet_grid(cols = vars(chr), scales = "free_x")
 
+ggTrend_fk_reads_all_mean_stocha_all <- trendPlot(dataFrame = con_fk_df_all,
+                                                  mapping = aes(x = fk_reads_all, y = mean_stocha_all),
+                                                  xvar = fk_reads_all,
+                                                  yvar = mean_stocha_all,
+                                                  xlab = bquote(.(featName)*" read coverage"),
+                                                  ylab = bquote(.(featName)*" mean stochasticity (m"*.(context)*")"),
+                                                  xaxtrans = log10_trans(),
+                                                  yaxtrans = log10_trans(),
+                                                  xbreaks = trans_breaks("log10", function(x) 10^x),
+                                                  ybreaks = trans_breaks("log10", function(x) 10^x),
+                                                  xlabels = trans_format("log10", math_format(10^.x)),
+                                                  ylabels = trans_format("log10", math_format(10^.x)))
+ggTrend_fk_reads_all_mean_stocha_all <- ggTrend_fk_reads_all_mean_stocha_all +
+  geom_hline(yintercept = mean_stocha_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
+  geom_hline(yintercept = mean_stocha_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
+  geom_hline(yintercept = mean_stocha_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+ggTrend_fk_reads_all_mean_stocha_all_filt <- trendPlot(dataFrame = con_fk_df_all_filt,
+                                                       mapping = aes(x = fk_reads_all, y = mean_stocha_all),
+                                                       xvar = fk_reads_all,
+                                                       yvar = mean_stocha_all,
+                                                       xlab = bquote(.(featName)*" read coverage"),
+                                                       ylab = bquote(.(featName)*" mean stochasticity (m"*.(context)*")"),
+                                                       xaxtrans = log10_trans(),
+                                                       yaxtrans = log10_trans(),
+                                                       xbreaks = trans_breaks("log10", function(x) 10^x),
+                                                       ybreaks = trans_breaks("log10", function(x) 10^x),
+                                                       xlabels = trans_format("log10", math_format(10^.x)),
+                                                       ylabels = trans_format("log10", math_format(10^.x)))
+ggTrend_fk_reads_all_mean_stocha_all_filt <- ggTrend_fk_reads_all_mean_stocha_all_filt +
+  geom_hline(yintercept = mean_stocha_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
+  geom_hline(yintercept = mean_stocha_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
+  geom_hline(yintercept = mean_stocha_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
 gg_cow_list1 <- list(
                      ggTrend_mean_mC_all_fk_kappa_all,
                      ggTrend_mean_mC_all_fk_kappa_all_filt,
                      ggTrend_mean_mC_all_mean_stocha_all,
                      ggTrend_mean_mC_all_mean_stocha_all_filt,
-                     ggTrend_mean_mC_all_mean_min_acf_all,
-                     ggTrend_mean_mC_all_mean_min_acf_all_filt,
+#                     ggTrend_mean_mC_all_mean_min_acf_all,
+#                     ggTrend_mean_mC_all_mean_min_acf_all_filt,
                      ggTrend_fk_reads_all_fk_kappa_all,
-                     ggTrend_fk_reads_all_fk_kappa_all_filt
+                     ggTrend_fk_reads_all_fk_kappa_all_filt,
+                     ggTrend_fk_reads_all_mean_stocha_all,
+                     ggTrend_fk_reads_all_mean_stocha_all_filt
                     )
 
 gg_cow1 <- plot_grid(plotlist = gg_cow_list1,
