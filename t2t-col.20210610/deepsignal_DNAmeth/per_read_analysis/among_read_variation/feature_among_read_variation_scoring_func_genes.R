@@ -175,9 +175,9 @@ fOverlapsStrand <- function(chr_featGR, chr_tabGR_str) {
 }
 
 # Function to calculate among-read agreement for a given feature x
-makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, x) {
+makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
 
-  chr_tabGR_str_x <- chr_tabGR_str[subjectHits(fOverlaps_str[queryHits(fOverlaps_str) == x])]
+  chr_tabGR_str_x <- chr_tabGR_str[subjectHits(fOverlaps_str[queryHits(fOverlaps_str) == featNum])]
 
   if(length(chr_tabGR_str_x) > 0) {
 
@@ -292,13 +292,13 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, x) {
 
     }
 
-    fk_df_str_win_x <- data.frame(chr = seqnames(chr_featGR[x]),
-                                  start = start(chr_featGR[x]),
-                                  end = end(chr_featGR[x]),
-                                  midpoint = round((start(chr_featGR[x])+end(chr_featGR[x]))/2),
-                                  strand = strand(chr_featGR[x]),
-                                  name = chr_featGR[x]$name,
-                                  score = chr_featGR[x]$score,
+    fk_df_str_win_x <- data.frame(chr = seqnames(chr_featGR[featNum]),
+                                  start = start(chr_featGR[featNum]),
+                                  end = end(chr_featGR[featNum]),
+                                  midpoint = round((start(chr_featGR[featNum])+end(chr_featGR[featNum]))/2),
+                                  strand = strand(chr_featGR[featNum]),
+                                  name = chr_featGR[featNum]$name,
+                                  score = chr_featGR[featNum]$score,
 
                                   mean_mC_str = mean_mC_pwider_str_x,
 
@@ -317,13 +317,13 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, x) {
 
   } else {
 
-    fk_df_str_win_x <- data.frame(chr = seqnames(chr_featGR[x]),
-                                  start = start(chr_featGR[x]),
-                                  end = end(chr_featGR[x]),
-                                  midpoint = round((start(chr_featGR[x])+end(chr_featGR[x]))/2),
-                                  strand = strand(chr_featGR[x]),
-                                  name = chr_featGR[x]$name,
-                                  score = chr_featGR[x]$score,
+    fk_df_str_win_x <- data.frame(chr = seqnames(chr_featGR[featNum]),
+                                  start = start(chr_featGR[featNum]),
+                                  end = end(chr_featGR[featNum]),
+                                  midpoint = round((start(chr_featGR[featNum])+end(chr_featGR[featNum]))/2),
+                                  strand = strand(chr_featGR[featNum]),
+                                  name = chr_featGR[featNum]$name,
+                                  score = chr_featGR[featNum]$score,
 
                                   mean_mC_str = mean_mC_pwider_str_x,
 
@@ -372,7 +372,7 @@ for(chrIndex in 1:length(chrName)) {
     makeDFx_strand(fOverlaps_str = fOverlaps_fwd,
                    chr_tabGR_str = chr_tabGR_fwd,
                    chr_featGR = chr_featGR,
-                   x = x)
+                   featNum = x)
   }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
    
   chr_fk_df_fwd <- dplyr::bind_rows(makeDFx_list_fwd, .id = "column_label")
@@ -385,7 +385,7 @@ for(chrIndex in 1:length(chrName)) {
     makeDFx_strand(fOverlaps_str = fOverlaps_rev,
                    chr_tabGR_str = chr_tabGR_rev,
                    chr_featGR = chr_featGR,
-                   x = x)
+                   featNum = x)
   }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
    
   chr_fk_df_rev <- dplyr::bind_rows(makeDFx_list_rev, .id = "column_label")
