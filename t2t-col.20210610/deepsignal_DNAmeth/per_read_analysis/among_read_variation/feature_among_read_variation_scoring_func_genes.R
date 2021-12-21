@@ -529,8 +529,8 @@ trendPlot <- function(dataFrame, mapping, xvar, yvar, xlab, ylab, xaxtrans, yaxt
 #  facet_grid(cols = vars(chr), scales = "free_x")
 
 if(context == "CpG") {
-  fk_kappa_all_high <- 0.40
-  fk_kappa_all_mid  <- 0.20
+  fk_kappa_all_high <- 0.50
+  fk_kappa_all_mid  <- 0.25
   fk_kappa_all_low  <- 0.10
   mean_stocha_all_high <- 0.24
   mean_stocha_all_mid  <- 0.16
@@ -542,8 +542,8 @@ if(context == "CpG") {
   mean_mC_all_mid   <- 0.25
   mean_mC_all_low   <- 0.10
 } else if(context == "CHG") {
-  fk_kappa_all_high <- 0.40
-  fk_kappa_all_mid  <- 0.20
+  fk_kappa_all_high <- 0.50
+  fk_kappa_all_mid  <- 0.25
   fk_kappa_all_low  <- 0.10
   mean_stocha_all_high <- 0.24
   mean_stocha_all_mid  <- 0.16
@@ -555,8 +555,8 @@ if(context == "CpG") {
   mean_mC_all_mid   <- 0.15
   mean_mC_all_low   <- 0.05
 } else if(context == "CHH") {
-  fk_kappa_all_high <- 0.40
-  fk_kappa_all_mid  <- 0.20
+  fk_kappa_all_high <- 0.50
+  fk_kappa_all_mid  <- 0.25
   fk_kappa_all_low  <- 0.10
   mean_stocha_all_high <- 0.24
   mean_stocha_all_mid  <- 0.16
@@ -872,6 +872,8 @@ ggsave(paste0(plotDir,
 
 
 # Extract feature groups (based on trend plots) to enable enrichment analysis
+
+# Filter by fk_kappa_all and mean_mC_all
 con_fk_df_all_filt_kappa_low_mC_low_group1 <- con_fk_df_all_filt %>%
   dplyr::filter(fk_kappa_all <= fk_kappa_all_low) %>%
   dplyr::filter(mean_mC_all  <= mean_mC_all_low)
@@ -880,24 +882,89 @@ con_fk_df_all_filt_kappa_mid_mC_low_group2 <- con_fk_df_all_filt %>%
   dplyr::filter(fk_kappa_all >  fk_kappa_all_low) %>%
   dplyr::filter(mean_mC_all  <= mean_mC_all_low)
 
-con_fk_df_all_filt_kappa_high_mC_mid_group3 <- con_fk_df_all_filt %>%
+con_fk_df_all_filt_kappa_mid_mC_mid_group3 <- con_fk_df_all_filt %>%
+  dplyr::filter(fk_kappa_all <= fk_kappa_all_mid) %>%
+  dplyr::filter(mean_mC_all  >  mean_mC_all_low) %>%
+  dplyr::filter(mean_mC_all  <= mean_mC_all_mid)
+
+con_fk_df_all_filt_kappa_high_mC_mid_group4 <- con_fk_df_all_filt %>%
   dplyr::filter(fk_kappa_all >  fk_kappa_all_mid) %>%
   dplyr::filter(mean_mC_all  >  mean_mC_all_low) %>%
   dplyr::filter(mean_mC_all  <= mean_mC_all_mid)
 
-con_fk_df_all_filt_kappa_vhigh_mC_high_group4 <- con_fk_df_all_filt %>%
+con_fk_df_all_filt_kappa_high_mC_high_group5 <- con_fk_df_all_filt %>%
+  dplyr::filter(fk_kappa_all <=  fk_kappa_all_high) %>%
+  dplyr::filter(mean_mC_all  >  mean_mC_all_mid) %>%
+  dplyr::filter(mean_mC_all  <= mean_mC_all_high)
+
+con_fk_df_all_filt_kappa_vhigh_mC_high_group6 <- con_fk_df_all_filt %>%
   dplyr::filter(fk_kappa_all >  fk_kappa_all_high) %>%
   dplyr::filter(mean_mC_all  >  mean_mC_all_mid) %>%
   dplyr::filter(mean_mC_all  <= mean_mC_all_high)
 
-con_fk_df_all_filt_kappa_low_mC_vhigh_group5 <- con_fk_df_all_filt %>%
-  dplyr::filter(fk_kappa_all > fk_kappa_all_low) %>%
+con_fk_df_all_filt_kappa_low_mC_vhigh_group7 <- con_fk_df_all_filt %>%
+  dplyr::filter(fk_kappa_all <= fk_kappa_all_low) %>%
   dplyr::filter(mean_mC_all  > mean_mC_all_high)
 
-con_fk_df_all_filt_kappa_low_mC_vhigh_group6 <- con_fk_df_all_filt %>%
-  dplyr::filter(fk_kappa_all <= fk_kappa_all_low) %>%
+con_fk_df_all_filt_kappa_mid_mC_vhigh_group8 <- con_fk_df_all_filt %>%
+  dplyr::filter(fk_kappa_all > fk_kappa_all_low) %>%
   dplyr::filter(mean_mC_all  >  mean_mC_all_high)
 
-
+write.table(con_fk_df_all_filt_kappa_low_mC_low_group1,
+            paste0(outDir,
+                   featName, "_", sampleName, "_MappedOn_", refbase, "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_kappa_mC_group1_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+write.table(con_fk_df_all_filt_kappa_mid_mC_low_group2,
+            paste0(outDir,
+                   featName, "_", sampleName, "_MappedOn_", refbase, "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_kappa_mC_group2_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+write.table(con_fk_df_all_filt_kappa_mid_mC_mid_group3,
+            paste0(outDir,
+                   featName, "_", sampleName, "_MappedOn_", refbase, "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_kappa_mC_group3_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+write.table(con_fk_df_all_filt_kappa_high_mC_mid_group4,
+            paste0(outDir,
+                   featName, "_", sampleName, "_MappedOn_", refbase, "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_kappa_mC_group4_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+write.table(con_fk_df_all_filt_kappa_high_mC_high_group5,
+            paste0(outDir,
+                   featName, "_", sampleName, "_MappedOn_", refbase, "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_kappa_mC_group5_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+write.table(con_fk_df_all_filt_kappa_vhigh_mC_high_group6,
+            paste0(outDir,
+                   featName, "_", sampleName, "_MappedOn_", refbase, "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_kappa_mC_group6_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+write.table(con_fk_df_all_filt_kappa_low_mC_vhigh_group7,
+            paste0(outDir,
+                   featName, "_", sampleName, "_MappedOn_", refbase, "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_kappa_mC_group7_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+write.table(con_fk_df_all_filt_kappa_mid_mC_vhigh_group8,
+            paste0(outDir,
+                   featName, "_", sampleName, "_MappedOn_", refbase, "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_kappa_mC_group8_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
 
 
