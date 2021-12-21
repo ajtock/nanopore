@@ -880,17 +880,21 @@ con_fk_df_all_filt_kappa_mid_mC_low_group2 <- con_fk_df_all_filt %>%
   dplyr::filter(fk_kappa_all >  fk_kappa_all_low) %>%
   dplyr::filter(mean_mC_all  <= mean_mC_all_low)
 
-con_fk_df_all_filt_kappa_mid_mC_mid_group3 <- con_fk_df_all_filt %>%
-  dplyr::filter(fk_kappa_all >  fk_kappa_all_low) %>%
+con_fk_df_all_filt_kappa_high_mC_mid_group3 <- con_fk_df_all_filt %>%
+  dplyr::filter(fk_kappa_all >  fk_kappa_all_mid) %>%
   dplyr::filter(mean_mC_all  >  mean_mC_all_low) %>%
   dplyr::filter(mean_mC_all  <= mean_mC_all_mid)
 
-con_fk_df_all_filt_kappa_high_mC_high_group4 <- con_fk_df_all_filt %>%
-  dplyr::filter(fk_kappa_all >  fk_kappa_all_mid) %>%
+con_fk_df_all_filt_kappa_vhigh_mC_high_group4 <- con_fk_df_all_filt %>%
+  dplyr::filter(fk_kappa_all >  fk_kappa_all_high) %>%
   dplyr::filter(mean_mC_all  >  mean_mC_all_mid) %>%
   dplyr::filter(mean_mC_all  <= mean_mC_all_high)
 
 con_fk_df_all_filt_kappa_low_mC_vhigh_group5 <- con_fk_df_all_filt %>%
+  dplyr::filter(fk_kappa_all > fk_kappa_all_low) %>%
+  dplyr::filter(mean_mC_all  > mean_mC_all_high)
+
+con_fk_df_all_filt_kappa_low_mC_vhigh_group6 <- con_fk_df_all_filt %>%
   dplyr::filter(fk_kappa_all <= fk_kappa_all_low) %>%
   dplyr::filter(mean_mC_all  >  mean_mC_all_high)
 
