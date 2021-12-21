@@ -232,11 +232,49 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, x) {
       # Calculate Fleiss' kappa
       fkappa_pwider_str_x <- kappam.fleiss(pwider_str_x, detail = F)
 
+      # Sanity checks
+      stopifnot(fkappa_pwider_str_x$raters == num_reads_retained_str_x)
+      stopifnot(fkappa_pwider_str_x$subjects == num_Cs_retained_str_x)
+
       fkappa_pwider_str_x_kappa <- fkappa_pwider_str_x$value
       fkappa_pwider_str_x_pval <- fkappa_pwider_str_x$p.value
       fkappa_pwider_str_x_zstat <- fkappa_pwider_str_x$statistic
       fkappa_pwider_str_x_reads <- fkappa_pwider_str_x$raters
       fkappa_pwider_str_x_Cs <- fkappa_pwider_str_x$subjects
+
+      # Calculate absolute differences between methylation statuses of neighbouring Cs within each read 
+      absdiff_pwider_str_x <- abs(diff(as.matrix(pwider_str_x)))
+      # Calculate the mean absolute difference for each read
+      colMeans_absdiff_pwider_str_x <- colMeans(absdiff_pwider_str_x, na.rm = T)
+      # Across all reads overlapping a given feature, calculate the mean of mean absolute differences
+      mean_stocha_pwider_str_x <- mean(colMeans_absdiff_pwider_str_x, na.rm = T)
+      # Across all reads overlapping a given feature, calculate the sd of mean absolute differences
+      sd_stocha_pwider_str_x <- sd(colMeans_absdiff_pwider_str_x, na.rm = T)
+
+      # Calculate autocorrelations between methylation statuses of neighbouring Cs within each read
+      acf_pwider_str_x_list <- apply(pwider_str_x, MARGIN = 2,
+                                     FUN = function(col) acf(col, lag.max = 10, plot = F, na.action = na.pass))
+      mean_min_acf_pwider_str_x <- mean(sapply(seq_along(acf_pwider_str_x_list), function(col) {
+        if(sum(acf_pwider_str_x_list[[col]]$acf) != "NaN") {
+          min(as.vector(acf_pwider_str_x_list[[col]]$acf)[-1])
+        } else {
+          NA
+        }
+      }), na.rm = T)
+      mean_max_acf_pwider_str_x <- mean(sapply(seq_along(acf_pwider_str_x_list), function(col) {
+        if(sum(acf_pwider_str_x_list[[col]]$acf) != "NaN") {
+          max(as.vector(acf_pwider_str_x_list[[col]]$acf)[-1])
+        } else {
+          NA
+        }
+      }), na.rm = T)
+      mean_mean_acf_pwider_str_x <- mean(sapply(seq_along(acf_pwider_str_x_list), function(col) {
+        if(sum(acf_pwider_str_x_list[[col]]$acf) != "NaN") {
+          mean(as.vector(acf_pwider_str_x_list[[col]]$acf)[-1])
+        } else {
+          NA
+        }
+      }), na.rm = T)
 
     } else {
 
@@ -245,6 +283,12 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, x) {
       fkappa_pwider_str_x_zstat <- NaN
       fkappa_pwider_str_x_reads <- NaN
       fkappa_pwider_str_x_Cs <- NaN
+
+      mean_stocha_pwider_str_x <- NaN
+      sd_stocha_pwider_str_x <- NaN
+      mean_min_acf_pwider_str_x <- NaN
+      mean_max_acf_pwider_str_x <- NaN
+      mean_mean_acf_pwider_str_x <- NaN
 
     }
 
@@ -257,11 +301,18 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, x) {
                                   score = chr_featGR[x]$score,
 
                                   mean_mC_str = mean_mC_pwider_str_x,
+
                                   fk_kappa_str = fkappa_pwider_str_x_kappa,
                                   fk_pval_str = fkappa_pwider_str_x_pval,
                                   fk_zstat_str = fkappa_pwider_str_x_zstat,
                                   fk_reads_str = fkappa_pwider_str_x_reads,
-                                  fk_Cs_str = fkappa_pwider_str_x_Cs
+                                  fk_Cs_str = fkappa_pwider_str_x_Cs,
+
+                                  mean_stocha_str = mean_stocha_pwider_str_x,
+                                  sd_stocha_str = sd_stocha_pwider_str_x,
+                                  mean_min_acf_str = mean_min_acf_pwider_str_x,
+                                  mean_max_acf_str = mean_max_acf_pwider_str_x,
+                                  mean_mean_acf_str = mean_mean_acf_pwider_str_x
                                  ) 
 
   } else {
@@ -275,11 +326,18 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, x) {
                                   score = chr_featGR[x]$score,
 
                                   mean_mC_str = mean_mC_pwider_str_x,
+
                                   fk_kappa_str = NaN,
                                   fk_pval_str = NaN,
                                   fk_zstat_str = NaN,
                                   fk_reads_str = NaN,
-                                  fk_Cs_str = NaN
+                                  fk_Cs_str = NaN,
+
+                                  mean_stocha_str = NaN,
+                                  sd_stocha_str = NaN,
+                                  mean_min_acf_str = NaN,
+                                  mean_max_acf_str = NaN,
+                                  mean_mean_acf_str = NaN
                                  ) 
 
   }
@@ -350,9 +408,27 @@ for(chrIndex in 1:length(chrName)) {
 
 }
 
+if(context == "CpG") {
+  min_Cs <- 10
+  max_Cs <- Inf
+  min_reads <- 10
+  max_reads <- Inf
+} else if(context == "CHG") {
+  min_Cs <- 15
+  max_Cs <- Inf
+  min_reads <- 15
+  max_reads <- Inf
+} else if(context == "CHH") {
+  min_Cs <- 20
+  max_Cs <- Inf
+  min_reads <- 20
+  max_reads <- Inf
+}
+
+
 con_fk_df_all_filt <- con_fk_df_all %>%
-  dplyr::filter(fk_reads_all >= 10) %>%
-  dplyr::filter(fk_Cs_all >= 10)
+  dplyr::filter(fk_reads_all >= min_reads) %>%
+  dplyr::filter(fk_Cs_all >= min_Cs)
 
 
 trendPlot <- function(dataFrame, mapping, xvar, yvar, xlab, ylab, xaxtrans, yaxtrans, xbreaks, ybreaks, xlabels, ylabels) {
@@ -456,6 +532,12 @@ if(context == "CpG") {
   fk_kappa_all_high <- 0.50
   fk_kappa_all_mid  <- 0.25
   fk_kappa_all_low  <- 0.10
+  mean_stocha_all_high <- 0.50
+  mean_stocha_all_mid  <- 0.25
+  mean_stocha_all_low  <- 0.10
+  mean_min_acf_all_high <- 0.50
+  mean_min_acf_all_mid  <- 0.25
+  mean_min_acf_all_low  <- 0.10
   mean_mC_all_high  <- 0.75
   mean_mC_all_mid   <- 0.25
   mean_mC_all_low   <- 0.10
@@ -463,6 +545,12 @@ if(context == "CpG") {
   fk_kappa_all_high <- 0.50
   fk_kappa_all_mid  <- 0.25
   fk_kappa_all_low  <- 0.10
+  mean_stocha_all_high <- 0.50
+  mean_stocha_all_mid  <- 0.25
+  mean_stocha_all_low  <- 0.10
+  mean_min_acf_all_high <- 0.50
+  mean_min_acf_all_mid  <- 0.25
+  mean_min_acf_all_low  <- 0.10
   mean_mC_all_high  <- 0.50
   mean_mC_all_mid   <- 0.15
   mean_mC_all_low   <- 0.05
@@ -470,10 +558,18 @@ if(context == "CpG") {
   fk_kappa_all_high <- 0.50
   fk_kappa_all_mid  <- 0.25
   fk_kappa_all_low  <- 0.10
+  mean_stocha_all_high <- 0.50
+  mean_stocha_all_mid  <- 0.25
+  mean_stocha_all_low  <- 0.10
+  mean_min_acf_all_high <- 0.50
+  mean_min_acf_all_mid  <- 0.25
+  mean_min_acf_all_low  <- 0.10
   mean_mC_all_high  <- 0.18
   mean_mC_all_mid   <- 0.06
   mean_mC_all_low   <- 0.02
 }
+
+mean_min_acf_str
 
 ggTrend_mean_mC_all_fk_kappa_all <- trendPlot(dataFrame = con_fk_df_all,
                                               mapping = aes(x = mean_mC_all, y = fk_kappa_all),
@@ -512,6 +608,90 @@ ggTrend_mean_mC_all_fk_kappa_all_filt <- ggTrend_mean_mC_all_fk_kappa_all_filt +
   geom_hline(yintercept = fk_kappa_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
   geom_hline(yintercept = fk_kappa_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
   geom_hline(yintercept = fk_kappa_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
+  geom_vline(xintercept = mean_mC_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
+  geom_vline(xintercept = mean_mC_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
+  geom_vline(xintercept = mean_mC_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+ggTrend_mean_mC_all_mean_stocha_all <- trendPlot(dataFrame = con_fk_df_all,
+                                                 mapping = aes(x = mean_mC_all, y = mean_stocha_all),
+                                                 xvar = mean_mC_all,
+                                                 yvar = mean_stocha_all,
+                                                 xlab = bquote(.(featName)*" mean m"*.(context)),
+                                                 ylab = bquote(.(featName)*" Fleiss' kappa (m"*.(context)*")"),
+                                                 xaxtrans = log10_trans(),
+                                                 yaxtrans = log10_trans(),
+                                                 xbreaks = trans_breaks("log10", function(x) 10^x),
+                                                 ybreaks = trans_breaks("log10", function(x) 10^x),
+                                                 xlabels = trans_format("log10", math_format(10^.x)),
+                                                 ylabels = trans_format("log10", math_format(10^.x)))
+ggTrend_mean_mC_all_mean_stocha_all <- ggTrend_mean_mC_all_mean_stocha_all +
+  geom_hline(yintercept = mean_stocha_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
+  geom_hline(yintercept = mean_stocha_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
+  geom_hline(yintercept = mean_stocha_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
+  geom_vline(xintercept = mean_mC_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
+  geom_vline(xintercept = mean_mC_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
+  geom_vline(xintercept = mean_mC_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+ggTrend_mean_mC_all_mean_stocha_all_filt <- trendPlot(dataFrame = con_fk_df_all_filt,
+                                                      mapping = aes(x = mean_mC_all, y = mean_stocha_all),
+                                                      xvar = mean_mC_all,
+                                                      yvar = mean_stocha_all,
+                                                      xlab = bquote(.(featName)*" mean m"*.(context)),
+                                                      ylab = bquote(.(featName)*" Fleiss' kappa (m"*.(context)*")"),
+                                                      xaxtrans = log10_trans(),
+                                                      yaxtrans = log10_trans(),
+                                                      xbreaks = trans_breaks("log10", function(x) 10^x),
+                                                      ybreaks = trans_breaks("log10", function(x) 10^x),
+                                                      xlabels = trans_format("log10", math_format(10^.x)),
+                                                      ylabels = trans_format("log10", math_format(10^.x)))
+ggTrend_mean_mC_all_mean_stocha_all_filt <- ggTrend_mean_mC_all_mean_stocha_all_filt +
+  geom_hline(yintercept = mean_stocha_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
+  geom_hline(yintercept = mean_stocha_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
+  geom_hline(yintercept = mean_stocha_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
+  geom_vline(xintercept = mean_mC_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
+  geom_vline(xintercept = mean_mC_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
+  geom_vline(xintercept = mean_mC_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+ggTrend_mean_mC_all_mean_min_acf_all <- trendPlot(dataFrame = con_fk_df_all,
+                                                  mapping = aes(x = mean_mC_all, y = mean_min_acf_all),
+                                                  xvar = mean_mC_all,
+                                                  yvar = mean_min_acf_all,
+                                                  xlab = bquote(.(featName)*" mean m"*.(context)),
+                                                  ylab = bquote(.(featName)*" Fleiss' kappa (m"*.(context)*")"),
+                                                  xaxtrans = log10_trans(),
+                                                  yaxtrans = log10_trans(),
+                                                  xbreaks = trans_breaks("log10", function(x) 10^x),
+                                                  ybreaks = trans_breaks("log10", function(x) 10^x),
+                                                  xlabels = trans_format("log10", math_format(10^.x)),
+                                                  ylabels = trans_format("log10", math_format(10^.x)))
+ggTrend_mean_mC_all_mean_min_acf_all <- ggTrend_mean_mC_all_mean_min_acf_all +
+  geom_hline(yintercept = mean_min_acf_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
+  geom_hline(yintercept = mean_min_acf_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
+  geom_hline(yintercept = mean_min_acf_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
+  geom_vline(xintercept = mean_mC_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
+  geom_vline(xintercept = mean_mC_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
+  geom_vline(xintercept = mean_mC_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+ggTrend_mean_mC_all_mean_min_acf_all_filt <- trendPlot(dataFrame = con_fk_df_all_filt,
+                                                       mapping = aes(x = mean_mC_all, y = mean_min_acf_all),
+                                                       xvar = mean_mC_all,
+                                                       yvar = mean_min_acf_all,
+                                                       xlab = bquote(.(featName)*" mean m"*.(context)),
+                                                       ylab = bquote(.(featName)*" Fleiss' kappa (m"*.(context)*")"),
+                                                       xaxtrans = log10_trans(),
+                                                       yaxtrans = log10_trans(),
+                                                       xbreaks = trans_breaks("log10", function(x) 10^x),
+                                                       ybreaks = trans_breaks("log10", function(x) 10^x),
+                                                       xlabels = trans_format("log10", math_format(10^.x)),
+                                                       ylabels = trans_format("log10", math_format(10^.x)))
+ggTrend_mean_mC_all_mean_min_acf_all_filt <- ggTrend_mean_mC_all_mean_min_acf_all_filt +
+  geom_hline(yintercept = mean_min_acf_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
+  geom_hline(yintercept = mean_min_acf_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
+  geom_hline(yintercept = mean_min_acf_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
   geom_vline(xintercept = mean_mC_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
   geom_vline(xintercept = mean_mC_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
   geom_vline(xintercept = mean_mC_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
@@ -556,6 +736,10 @@ ggTrend_fk_reads_all_fk_kappa_all_filt <- ggTrend_fk_reads_all_fk_kappa_all_filt
 gg_cow_list1 <- list(
                      ggTrend_mean_mC_all_fk_kappa_all,
                      ggTrend_mean_mC_all_fk_kappa_all_filt,
+                     ggTrend_mean_mC_all_mean_stocha_all,
+                     ggTrend_mean_mC_all_mean_stocha_all_filt,
+                     ggTrend_mean_mC_all_mean_min_acf_all,
+                     ggTrend_mean_mC_all_mean_min_acf_all_filt,
                      ggTrend_fk_reads_all_fk_kappa_all,
                      ggTrend_fk_reads_all_fk_kappa_all_filt
                     )
