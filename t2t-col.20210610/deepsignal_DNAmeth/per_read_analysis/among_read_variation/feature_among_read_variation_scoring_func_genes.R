@@ -529,12 +529,12 @@ trendPlot <- function(dataFrame, mapping, xvar, yvar, xlab, ylab, xaxtrans, yaxt
 #  facet_grid(cols = vars(chr), scales = "free_x")
 
 if(context == "CpG") {
-  fk_kappa_all_high <- 0.50
-  fk_kappa_all_mid  <- 0.25
-  fk_kappa_all_low  <- 0.10
-  mean_stocha_all_high <- 0.24
-  mean_stocha_all_mid  <- 0.16
-  mean_stocha_all_low  <- 0.10
+  fk_kappa_all_high <- 0.55
+  fk_kappa_all_mid  <- 0.30
+  fk_kappa_all_low  <- 0.03
+  mean_stocha_all_high <- 0.27
+  mean_stocha_all_mid  <- 0.17
+  mean_stocha_all_low  <- 0.07
   mean_min_acf_all_high <- -0.05
   mean_min_acf_all_mid  <- -0.10
   mean_min_acf_all_low  <- -0.15
@@ -542,12 +542,12 @@ if(context == "CpG") {
   mean_mC_all_mid   <- 0.25
   mean_mC_all_low   <- 0.10
 } else if(context == "CHG") {
-  fk_kappa_all_high <- 0.50
-  fk_kappa_all_mid  <- 0.25
-  fk_kappa_all_low  <- 0.10
-  mean_stocha_all_high <- 0.24
-  mean_stocha_all_mid  <- 0.16
-  mean_stocha_all_low  <- 0.10
+  fk_kappa_all_high <- 0.55
+  fk_kappa_all_mid  <- 0.30
+  fk_kappa_all_low  <- 0.03
+  mean_stocha_all_high <- 0.27
+  mean_stocha_all_mid  <- 0.17
+  mean_stocha_all_low  <- 0.07
   mean_min_acf_all_high <- -0.05
   mean_min_acf_all_mid  <- -0.10
   mean_min_acf_all_low  <- -0.15
@@ -555,12 +555,12 @@ if(context == "CpG") {
   mean_mC_all_mid   <- 0.15
   mean_mC_all_low   <- 0.05
 } else if(context == "CHH") {
-  fk_kappa_all_high <- 0.50
-  fk_kappa_all_mid  <- 0.25
-  fk_kappa_all_low  <- 0.10
-  mean_stocha_all_high <- 0.24
-  mean_stocha_all_mid  <- 0.16
-  mean_stocha_all_low  <- 0.10
+  fk_kappa_all_high <- 0.55
+  fk_kappa_all_mid  <- 0.30
+  fk_kappa_all_low  <- 0.03
+  mean_stocha_all_high <- 0.27
+  mean_stocha_all_mid  <- 0.17
+  mean_stocha_all_low  <- 0.07
   mean_min_acf_all_high <- -0.05
   mean_min_acf_all_mid  <- -0.10
   mean_min_acf_all_low  <- -0.15
