@@ -369,7 +369,6 @@ for(chrIndex in 1:length(chrName)) {
   # Analyse each strand separately
   # fwd
   makeDFx_list_fwd <- mclapply(1:length(chr_featGR), function(x) {
-    print(x)
     makeDFx_strand(fOverlaps_str = fOverlaps_fwd,
                    chr_tabGR_str = chr_tabGR_fwd,
                    chr_featGR = chr_featGR,
