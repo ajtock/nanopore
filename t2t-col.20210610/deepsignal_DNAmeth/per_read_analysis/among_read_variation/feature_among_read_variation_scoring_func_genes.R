@@ -544,31 +544,31 @@ if(context == "CpG") {
   mean_mC_all_mid   <- 0.25
   mean_mC_all_low   <- 0.10
 } else if(context == "CHG") {
-  fk_kappa_all_high <- 0.55
-  fk_kappa_all_mid  <- 0.35
-  fk_kappa_all_low  <- 0.04
+  fk_kappa_all_high <- 0.05623413
+  fk_kappa_all_mid  <- 0.01778279 
+  fk_kappa_all_low  <- 0.01000000 
   mean_stocha_all_high <- 0.28
   mean_stocha_all_mid  <- 0.17
   mean_stocha_all_low  <- 0.08
   mean_min_acf_all_high <- -0.05
   mean_min_acf_all_mid  <- -0.10
   mean_min_acf_all_low  <- -0.15
-  mean_mC_all_high  <- 0.50
-  mean_mC_all_mid   <- 0.15
-  mean_mC_all_low   <- 0.05
+  mean_mC_all_high  <- 0.05623413
+  mean_mC_all_mid   <- 0.02511886
+  mean_mC_all_low   <- 0.01778279
 } else if(context == "CHH") {
-  fk_kappa_all_high <- 0.55
-  fk_kappa_all_mid  <- 0.35
-  fk_kappa_all_low  <- 0.04
+  fk_kappa_all_high <- 0.05623413
+  fk_kappa_all_mid  <- 0.01778279 
+  fk_kappa_all_low  <- 0.01000000 
   mean_stocha_all_high <- 0.28
   mean_stocha_all_mid  <- 0.17
   mean_stocha_all_low  <- 0.08
   mean_min_acf_all_high <- -0.05
   mean_min_acf_all_mid  <- -0.10
   mean_min_acf_all_low  <- -0.15
-  mean_mC_all_high  <- 0.18
-  mean_mC_all_mid   <- 0.06
-  mean_mC_all_low   <- 0.02
+  mean_mC_all_high  <- 0.02500000
+  mean_mC_all_mid   <- 0.01000000
+  mean_mC_all_low   <- 0.00500000
 }
 
 
