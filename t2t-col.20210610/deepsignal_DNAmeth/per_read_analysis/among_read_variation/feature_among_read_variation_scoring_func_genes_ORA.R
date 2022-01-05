@@ -215,6 +215,22 @@ for(x in 1:length(filt_kappa_mC_groups_enrichGO)) {
          plot = dp_enrichGO,
          height = 10, width = 12,
          limitsize = F)
+
+  if(sum(filt_kappa_mC_groups_enrichGO[[x]]@result$p.adjust <= 0.05) > 0) {
+    emp_enrichGO <- emapplot(filt_kappa_mC_groups_enrichGO[[x]],
+                             showCategory = 50,
+                             title = paste0("Fleiss' kappa and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
+                             font.size = 12)
+    ggsave(paste0(plotDir,
+                  featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                  "_", context,
+                  "_NAmax", NAmax,
+                  "_filt_df_fk_kappa_all_mean_mC_all_group", x , "_",
+                  paste0(chrName, collapse = "_"), "_enrichGO_emapplot.pdf"),
+           plot = emp_enrichGO,
+           height = 10, width = 12,
+           limitsize = F)
+  }
 }
 
 
