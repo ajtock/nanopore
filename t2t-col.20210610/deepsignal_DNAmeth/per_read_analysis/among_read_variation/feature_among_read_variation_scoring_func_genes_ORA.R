@@ -5,7 +5,7 @@
 # 1. GO term over-representation analysis of genes grouped by both mean within-read stochasticity and mean methylation proportion
 
 # Usage on hydrogen node7:
-# csmit -m 20G -c 1 "/applications/R/R-4.0.0/bin/Rscript feature_among_read_variation_scoring_func_genes_ORA.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'gene' 'bodies'"
+# csmit -m 20G -c 1 "/applications/R/R-4.0.0/bin/Rscript feature_among_read_variation_scoring_func_genes_ORA.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' gene bodies BP"
  
 # Divide each read into adjacent segments each consisting of a given number of consecutive cytosines,
 # and calculate the methylation proportion for each segment of each read
@@ -18,6 +18,7 @@
 #chrName <- unlist(strsplit("Chr1,Chr2,Chr3,Chr4,Chr5", split = ","))
 #featName <- "gene"
 #featRegion <- "bodies"
+#ontology = "BP"
 
 args <- commandArgs(trailingOnly = T)
 sampleName <- args[1]
@@ -28,23 +29,7 @@ CPUpc <- as.numeric(args[5])
 chrName <- unlist(strsplit(args[6], split = ","))
 featName <- args[7]
 featRegion <- args[8]
-
-#if(context == "CpG") {
-#  min_Cs <- 2
-#  max_Cs <- Inf
-#  min_reads <- 2
-#  max_reads <- Inf 
-#} else if(context == "CHG") {
-#  min_Cs <- 2
-#  max_Cs <- Inf
-#  min_reads <- 2
-#  max_reads <- Inf 
-#} else if(context == "CHH") {
-#  min_Cs <- 2
-#  max_Cs <- Inf
-#  min_reads <- 2
-#  max_reads <- Inf 
-#}
+ontology <- args[9]
 
 print(paste0("Proportion of CPUs:", CPUpc))
 options(stringsAsFactors = F)
@@ -84,9 +69,11 @@ library(ggplot2)
 #library(tidyquant)
 ##library(grid)
 
-outDir <- paste0(featName, "/")
-plotDir <- paste0(outDir, "plots/GO_BP_ORA_", context, "/")
-system(paste0("[ -d ", plotDir, " ] || mkdir -p ", plotDir))
+outDir <- paste0(featName, "_", featRegion, "/", paste0(chrName, collapse = "_"), "/")
+plotDir_kappa <- paste0(outDir, "plots/GO_", ontology, "_ORA_", context, "_kappa/")
+plotDir_stocha <- paste0(outDir, "plots/GO_", ontology, "_ORA_", context, "_stocha/")
+system(paste0("[ -d ", plotDir_kappa, " ] || mkdir -p ", plotDir_kappa))
+system(paste0("[ -d ", plotDir_stocha, " ] || mkdir -p ", plotDir_stocha))
 
 ## Genomic definitions
 #fai <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase, "/", refbase, ".fa.fai"), header = F)
@@ -193,7 +180,7 @@ filt_kappa_mC_groups_enrichGO <- mclapply(seq_along(filt_kappa_mC_groups_featID)
            OrgDb = org.At.tair.db,
            keyType = "TAIR",
            readable = T,
-           ont = "BP",
+           ont = ontology,
 #           minGSSize = 10,
 #           maxGSSize = 500,
            pvalueCutoff = 0.05,
@@ -202,32 +189,46 @@ filt_kappa_mC_groups_enrichGO <- mclapply(seq_along(filt_kappa_mC_groups_featID)
 }, mc.cores = length(filt_kappa_mC_groups_featID), mc.preschedule = F)
 
 for(x in 1:length(filt_kappa_mC_groups_enrichGO)) {
-  dp_enrichGO <- dotplot(filt_kappa_mC_groups_enrichGO[[x]],
-                         showCategory = 50,
-                         title = paste0("Fleiss' kappa and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
-                         font.size = 12)
-  ggsave(paste0(plotDir,
-                featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
-                "_", context,
-                "_NAmax", NAmax,
-                "_filt_df_fk_kappa_all_mean_mC_all_group", x , "_",
-                paste0(chrName, collapse = "_"), "_enrichGO_dotplot.pdf"),
-         plot = dp_enrichGO,
-         height = 10, width = 12,
-         limitsize = F)
-
   if(sum(filt_kappa_mC_groups_enrichGO[[x]]@result$p.adjust <= 0.05) > 0) {
-    emp_enrichGO <- emapplot(filt_kappa_mC_groups_enrichGO[[x]],
-                             showCategory = 50,
-                             title = paste0("Fleiss' kappa and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
-                             font.size = 12)
-    ggsave(paste0(plotDir,
+    dp_enrichGO <- dotplot(filt_kappa_mC_groups_enrichGO[[x]],
+                           showCategory = 50,
+                           title = paste0("Fleiss' kappa and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
+                           font.size = 12)
+    ggsave(paste0(plotDir_kappa,
                   featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                   "_", context,
                   "_NAmax", NAmax,
                   "_filt_df_fk_kappa_all_mean_mC_all_group", x , "_",
-                  paste0(chrName, collapse = "_"), "_enrichGO_emapplot.pdf"),
+                  paste0(chrName, collapse = "_"), "_enrichGO_", ontology, "_dotplot.pdf"),
+           plot = dp_enrichGO,
+           height = 10, width = 12,
+           limitsize = F)
+
+    emp_enrichGO <- emapplot(filt_kappa_mC_groups_enrichGO[[x]],
+                             showCategory = 50,
+                             title = paste0("Fleiss' kappa and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
+                             font.size = 12)
+    ggsave(paste0(plotDir_kappa,
+                  featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                  "_", context,
+                  "_NAmax", NAmax,
+                  "_filt_df_fk_kappa_all_mean_mC_all_group", x , "_",
+                  paste0(chrName, collapse = "_"), "_enrichGO_", ontology, "_emapplot.pdf"),
            plot = emp_enrichGO,
+           height = 10, width = 12,
+           limitsize = F)
+
+    gp_enrichGO <- goplot(filt_kappa_mC_groups_enrichGO[[x]],
+                          showCategory = 50,
+                          title = paste0("Fleiss' kappa and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
+                          font.size = 12)
+    ggsave(paste0(plotDir_kappa,
+                  featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                  "_", context,
+                  "_NAmax", NAmax,
+                  "_filt_df_fk_kappa_all_mean_mC_all_group", x , "_",
+                  paste0(chrName, collapse = "_"), "_enrichGO_", ontology, "_goplot.pdf"),
+           plot = gp_enrichGO,
            height = 10, width = 12,
            limitsize = F)
   }
@@ -263,7 +264,7 @@ filt_stocha_mC_groups_enrichGO <- mclapply(seq_along(filt_stocha_mC_groups_featI
            OrgDb = org.At.tair.db,
            keyType = "TAIR",
            readable = T,
-           ont = "BP",
+           ont = ontology,
 #           minGSSize = 10,
 #           maxGSSize = 500,
            pvalueCutoff = 0.05,
@@ -272,55 +273,85 @@ filt_stocha_mC_groups_enrichGO <- mclapply(seq_along(filt_stocha_mC_groups_featI
 }, mc.cores = length(filt_stocha_mC_groups_featID), mc.preschedule = F)
 
 for(x in 1:length(filt_stocha_mC_groups_enrichGO)) {
-  dp_enrichGO <- dotplot(filt_stocha_mC_groups_enrichGO[[x]],
-                         showCategory = 50,
-                         title = paste0("Stochasticity and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
-                         font.size = 12)
-  ggsave(paste0(plotDir,
-                featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
-                "_", context,
-                "_NAmax", NAmax,
-                "_filt_df_mean_stocha_all_mean_mC_all_group", x , "_",
-                paste0(chrName, collapse = "_"), "_enrichGO_dotplot.pdf"),
-         plot = dp_enrichGO,
-         height = 10, width = 12,
-         limitsize = F)
+  if(sum(filt_stocha_mC_groups_enrichGO[[x]]@result$p.adjust <= 0.05) > 0) {
+    dp_enrichGO <- dotplot(filt_stocha_mC_groups_enrichGO[[x]],
+                           showCategory = 50,
+                           title = paste0("Stochasticity and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
+                           font.size = 12)
+    ggsave(paste0(plotDir_stocha,
+                  featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                  "_", context,
+                  "_NAmax", NAmax,
+                  "_filt_df_mean_stocha_all_mean_mC_all_group", x , "_",
+                  paste0(chrName, collapse = "_"), "_enrichGO_", ontology, "_dotplot.pdf"),
+           plot = dp_enrichGO,
+           height = 10, width = 12,
+           limitsize = F)
+
+    emp_enrichGO <- emapplot(filt_stocha_mC_groups_enrichGO[[x]],
+                             showCategory = 50,
+                             title = paste0("Stochasticity and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
+                             font.size = 12)
+    ggsave(paste0(plotDir_stocha,
+                  featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                  "_", context,
+                  "_NAmax", NAmax,
+                  "_filt_df_mean_stocha_all_mean_mC_all_group", x , "_",
+                  paste0(chrName, collapse = "_"), "_enrichGO_", ontology, "_emapplot.pdf"),
+           plot = emp_enrichGO,
+           height = 10, width = 12,
+           limitsize = F)
+
+    gp_enrichGO <- goplot(filt_stocha_mC_groups_enrichGO[[x]],
+                             showCategory = 50,
+                             title = paste0("Stochasticity and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
+                             font.size = 12)
+    ggsave(paste0(plotDir_stocha,
+                  featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                  "_", context,
+                  "_NAmax", NAmax,
+                  "_filt_df_mean_stocha_all_mean_mC_all_group", x , "_",
+                  paste0(chrName, collapse = "_"), "_enrichGO_", ontology, "_goplot.pdf"),
+           plot = gp_enrichGO,
+           height = 10, width = 12,
+           limitsize = F)
+  }
 }
 
-# Filter by mean_stocha_all and mean_mC_all
-con_fk_df_all_filt_stocha_low_mC_low_group1 <- con_fk_df_all_filt %>%
-  dplyr::filter(mean_stocha_all <= mean_stocha_all_low) %>%
-  dplyr::filter(mean_mC_all     <= mean_mC_all_low)
-
-con_fk_df_all_filt_stocha_mid_mC_low_group2 <- con_fk_df_all_filt %>%
-  dplyr::filter(mean_stocha_all >  mean_stocha_all_low) %>%
-  dplyr::filter(mean_mC_all     <= mean_mC_all_low)
-
-con_fk_df_all_filt_stocha_mid_mC_mid_group3 <- con_fk_df_all_filt %>%
-  dplyr::filter(mean_stocha_all <= mean_stocha_all_mid) %>%
-  dplyr::filter(mean_mC_all     >  mean_mC_all_low) %>%
-  dplyr::filter(mean_mC_all     <= mean_mC_all_mid)
-
-con_fk_df_all_filt_stocha_high_mC_mid_group4 <- con_fk_df_all_filt %>%
-  dplyr::filter(mean_stocha_all >  mean_stocha_all_mid) %>%
-  dplyr::filter(mean_mC_all     >  mean_mC_all_low) %>%
-  dplyr::filter(mean_mC_all     <= mean_mC_all_mid)
-
-con_fk_df_all_filt_stocha_high_mC_high_group5 <- con_fk_df_all_filt %>%
-  dplyr::filter(mean_stocha_all <=  mean_stocha_all_high) %>%
-  dplyr::filter(mean_mC_all     >  mean_mC_all_mid) %>%
-  dplyr::filter(mean_mC_all     <= mean_mC_all_high)
-
-con_fk_df_all_filt_stocha_vhigh_mC_high_group6 <- con_fk_df_all_filt %>%
-  dplyr::filter(mean_stocha_all >  mean_stocha_all_high) %>%
-  dplyr::filter(mean_mC_all     >  mean_mC_all_mid) %>%
-  dplyr::filter(mean_mC_all     <= mean_mC_all_high)
-
-con_fk_df_all_filt_stocha_mid_mC_vhigh_group7 <- con_fk_df_all_filt %>%
-  dplyr::filter(mean_stocha_all <= mean_stocha_all_mid) %>%
-  dplyr::filter(mean_mC_all     >  mean_mC_all_high)
-
-con_fk_df_all_filt_stocha_high_mC_vhigh_group8 <- con_fk_df_all_filt %>%
-  dplyr::filter(mean_stocha_all > mean_stocha_all_mid) %>%
-  dplyr::filter(mean_mC_all     >  mean_mC_all_high)
-
+## Filter by mean_stocha_all and mean_mC_all
+#con_fk_df_all_filt_stocha_low_mC_low_group1 <- con_fk_df_all_filt %>%
+#  dplyr::filter(mean_stocha_all <= mean_stocha_all_low) %>%
+#  dplyr::filter(mean_mC_all     <= mean_mC_all_low)
+#
+#con_fk_df_all_filt_stocha_mid_mC_low_group2 <- con_fk_df_all_filt %>%
+#  dplyr::filter(mean_stocha_all >  mean_stocha_all_low) %>%
+#  dplyr::filter(mean_mC_all     <= mean_mC_all_low)
+#
+#con_fk_df_all_filt_stocha_mid_mC_mid_group3 <- con_fk_df_all_filt %>%
+#  dplyr::filter(mean_stocha_all <= mean_stocha_all_mid) %>%
+#  dplyr::filter(mean_mC_all     >  mean_mC_all_low) %>%
+#  dplyr::filter(mean_mC_all     <= mean_mC_all_mid)
+#
+#con_fk_df_all_filt_stocha_high_mC_mid_group4 <- con_fk_df_all_filt %>%
+#  dplyr::filter(mean_stocha_all >  mean_stocha_all_mid) %>%
+#  dplyr::filter(mean_mC_all     >  mean_mC_all_low) %>%
+#  dplyr::filter(mean_mC_all     <= mean_mC_all_mid)
+#
+#con_fk_df_all_filt_stocha_high_mC_high_group5 <- con_fk_df_all_filt %>%
+#  dplyr::filter(mean_stocha_all <=  mean_stocha_all_high) %>%
+#  dplyr::filter(mean_mC_all     >  mean_mC_all_mid) %>%
+#  dplyr::filter(mean_mC_all     <= mean_mC_all_high)
+#
+#con_fk_df_all_filt_stocha_vhigh_mC_high_group6 <- con_fk_df_all_filt %>%
+#  dplyr::filter(mean_stocha_all >  mean_stocha_all_high) %>%
+#  dplyr::filter(mean_mC_all     >  mean_mC_all_mid) %>%
+#  dplyr::filter(mean_mC_all     <= mean_mC_all_high)
+#
+#con_fk_df_all_filt_stocha_mid_mC_vhigh_group7 <- con_fk_df_all_filt %>%
+#  dplyr::filter(mean_stocha_all <= mean_stocha_all_mid) %>%
+#  dplyr::filter(mean_mC_all     >  mean_mC_all_high)
+#
+#con_fk_df_all_filt_stocha_high_mC_vhigh_group8 <- con_fk_df_all_filt %>%
+#  dplyr::filter(mean_stocha_all > mean_stocha_all_mid) %>%
+#  dplyr::filter(mean_mC_all     >  mean_mC_all_high)
+#
