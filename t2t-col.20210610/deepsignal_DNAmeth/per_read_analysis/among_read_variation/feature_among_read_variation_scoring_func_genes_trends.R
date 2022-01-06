@@ -154,17 +154,17 @@ if(featRegion == "bodies") {
     mean_mC_all_low   <- 0.01778279
   } else if(context == "CHH") {
     fk_kappa_all_high <- 0.05623413
-    fk_kappa_all_mid  <- 0.01778279 
-    fk_kappa_all_low  <- 0.01000000 
-    mean_stocha_all_high <- 0.28183830
-    mean_stocha_all_mid  <- 0.05011872
-    mean_stocha_all_low  <- 0.03162278
+    fk_kappa_all_mid  <- 0.02511886
+    fk_kappa_all_low  <- 0.01778279 
+    mean_stocha_all_high <- 0.03162278
+    mean_stocha_all_mid  <- 0.01737801
+    mean_stocha_all_low  <- 0.01000000
     mean_min_acf_all_high <- -0.05
     mean_min_acf_all_mid  <- -0.10
     mean_min_acf_all_low  <- -0.15
     mean_mC_all_high  <- 0.02500000
-    mean_mC_all_mid   <- 0.01000000
-    mean_mC_all_low   <- 0.00500000
+    mean_mC_all_mid   <- 0.01737801
+    mean_mC_all_low   <- 0.01000000
   }
 }
 
