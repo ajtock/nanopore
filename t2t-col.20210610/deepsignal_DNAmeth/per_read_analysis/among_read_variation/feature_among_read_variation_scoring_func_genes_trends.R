@@ -34,7 +34,7 @@ options(stringsAsFactors = F)
 library(parallel)
 #library(GenomicRanges)
 #library(irr)
-#library(dplyr)
+library(dplyr)
 #library(tidyr)
 #library(cluster)
 #library(fpc)
@@ -42,13 +42,13 @@ library(parallel)
 ##library(segmentSeq)
 #library(ComplexHeatmap)
 ##library(RColorBrewer)
-#library(scales)
+library(scales)
 ##library(circlize)
  
 library(ggplot2)
 library(cowplot)
 ##library(ggcorrplot)
-#library(viridis)
+library(viridis)
 #library(ggthemes)
 #library(tidyquant)
 ##library(grid)
@@ -125,45 +125,47 @@ trendPlot <- function(dataFrame, mapping, xvar, yvar, xlab, ylab, xaxtrans, yaxt
                          digits = 5))))
 }
 
-if(context == "CpG") {
-  fk_kappa_all_high <- 0.55
-  fk_kappa_all_mid  <- 0.35
-  fk_kappa_all_low  <- 0.04
-  mean_stocha_all_high <- 0.28
-  mean_stocha_all_mid  <- 0.17
-  mean_stocha_all_low  <- 0.08
-  mean_min_acf_all_high <- -0.05
-  mean_min_acf_all_mid  <- -0.10
-  mean_min_acf_all_low  <- -0.15
-  mean_mC_all_high  <- 0.75
-  mean_mC_all_mid   <- 0.25
-  mean_mC_all_low   <- 0.10
-} else if(context == "CHG") {
-  fk_kappa_all_high <- 0.05623413
-  fk_kappa_all_mid  <- 0.01778279 
-  fk_kappa_all_low  <- 0.01000000 
-  mean_stocha_all_high <- 0.28
-  mean_stocha_all_mid  <- 0.17
-  mean_stocha_all_low  <- 0.08
-  mean_min_acf_all_high <- -0.05
-  mean_min_acf_all_mid  <- -0.10
-  mean_min_acf_all_low  <- -0.15
-  mean_mC_all_high  <- 0.05623413
-  mean_mC_all_mid   <- 0.02511886
-  mean_mC_all_low   <- 0.01778279
-} else if(context == "CHH") {
-  fk_kappa_all_high <- 0.05623413
-  fk_kappa_all_mid  <- 0.01778279 
-  fk_kappa_all_low  <- 0.01000000 
-  mean_stocha_all_high <- 0.28
-  mean_stocha_all_mid  <- 0.17
-  mean_stocha_all_low  <- 0.08
-  mean_min_acf_all_high <- -0.05
-  mean_min_acf_all_mid  <- -0.10
-  mean_min_acf_all_low  <- -0.15
-  mean_mC_all_high  <- 0.02500000
-  mean_mC_all_mid   <- 0.01000000
-  mean_mC_all_low   <- 0.00500000
+if(featRegion == "bodies") {
+  if(context == "CpG") {
+    fk_kappa_all_high <- 0.55
+    fk_kappa_all_mid  <- 0.35
+    fk_kappa_all_low  <- 0.04
+    mean_stocha_all_high <- 0.28
+    mean_stocha_all_mid  <- 0.17
+    mean_stocha_all_low  <- 0.08
+    mean_min_acf_all_high <- -0.05
+    mean_min_acf_all_mid  <- -0.10
+    mean_min_acf_all_low  <- -0.15
+    mean_mC_all_high  <- 0.75
+    mean_mC_all_mid   <- 0.25
+    mean_mC_all_low   <- 0.10
+  } else if(context == "CHG") {
+    fk_kappa_all_high <- 0.05623413
+    fk_kappa_all_mid  <- 0.01778279 
+    fk_kappa_all_low  <- 0.01000000 
+    mean_stocha_all_high <- 0.28
+    mean_stocha_all_mid  <- 0.17
+    mean_stocha_all_low  <- 0.08
+    mean_min_acf_all_high <- -0.05
+    mean_min_acf_all_mid  <- -0.10
+    mean_min_acf_all_low  <- -0.15
+    mean_mC_all_high  <- 0.05623413
+    mean_mC_all_mid   <- 0.02511886
+    mean_mC_all_low   <- 0.01778279
+  } else if(context == "CHH") {
+    fk_kappa_all_high <- 0.05623413
+    fk_kappa_all_mid  <- 0.01778279 
+    fk_kappa_all_low  <- 0.01000000 
+    mean_stocha_all_high <- 0.28
+    mean_stocha_all_mid  <- 0.17
+    mean_stocha_all_low  <- 0.08
+    mean_min_acf_all_high <- -0.05
+    mean_min_acf_all_mid  <- -0.10
+    mean_min_acf_all_low  <- -0.15
+    mean_mC_all_high  <- 0.02500000
+    mean_mC_all_mid   <- 0.01000000
+    mean_mC_all_low   <- 0.00500000
+  }
 }
 
 
@@ -209,6 +211,7 @@ ggTrend_mean_mC_all_fk_kappa_all_filt <- ggTrend_mean_mC_all_fk_kappa_all_filt +
   geom_vline(xintercept = mean_mC_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
   facet_grid(cols = vars(chr), scales = "free_x")
 
+
 ggTrend_mean_mC_all_mean_stocha_all <- trendPlot(dataFrame = con_fk_df_all,
                                                  mapping = aes(x = mean_mC_all, y = mean_stocha_all),
                                                  xvar = mean_mC_all,
@@ -251,47 +254,6 @@ ggTrend_mean_mC_all_mean_stocha_all_filt <- ggTrend_mean_mC_all_mean_stocha_all_
   geom_vline(xintercept = mean_mC_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
   facet_grid(cols = vars(chr), scales = "free_x")
 
-#ggTrend_mean_mC_all_mean_min_acf_all <- trendPlot(dataFrame = con_fk_df_all,
-#                                                  mapping = aes(x = mean_mC_all, y = mean_min_acf_all),
-#                                                  xvar = mean_mC_all,
-#                                                  yvar = mean_min_acf_all,
-#                                                  xlab = bquote(.(featName)*" mean m"*.(context)),
-#                                                  ylab = bquote(.(featName)*" mean min. ACF (m"*.(context)*")"),
-#                                                  xaxtrans = log10_trans(),
-#                                                  yaxtrans = log10_trans(),
-#                                                  xbreaks = trans_breaks("log10", function(x) 10^x),
-#                                                  ybreaks = trans_breaks("log10", function(x) 10^x),
-#                                                  xlabels = trans_format("log10", math_format(10^.x)),
-#                                                  ylabels = trans_format("log10", math_format(10^.x)))
-#ggTrend_mean_mC_all_mean_min_acf_all <- ggTrend_mean_mC_all_mean_min_acf_all +
-##  geom_hline(yintercept = mean_min_acf_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
-##  geom_hline(yintercept = mean_min_acf_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
-##  geom_hline(yintercept = mean_min_acf_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
-#  geom_vline(xintercept = mean_mC_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
-#  geom_vline(xintercept = mean_mC_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
-#  geom_vline(xintercept = mean_mC_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
-#  facet_grid(cols = vars(chr), scales = "free_x")
-#
-#ggTrend_mean_mC_all_mean_min_acf_all_filt <- trendPlot(dataFrame = con_fk_df_all_filt,
-#                                                       mapping = aes(x = mean_mC_all, y = mean_min_acf_all),
-#                                                       xvar = mean_mC_all,
-#                                                       yvar = mean_min_acf_all,
-#                                                       xlab = bquote(.(featName)*" mean m"*.(context)),
-#                                                       ylab = bquote(.(featName)*" mean min. ACF (m"*.(context)*")"),
-#                                                       xaxtrans = log10_trans(),
-#                                                       yaxtrans = log10_trans(),
-#                                                       xbreaks = trans_breaks("log10", function(x) 10^x),
-#                                                       ybreaks = trans_breaks("log10", function(x) 10^x),
-#                                                       xlabels = trans_format("log10", math_format(10^.x)),
-#                                                       ylabels = trans_format("log10", math_format(10^.x)))
-#ggTrend_mean_mC_all_mean_min_acf_all_filt <- ggTrend_mean_mC_all_mean_min_acf_all_filt +
-##  geom_hline(yintercept = mean_min_acf_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
-##  geom_hline(yintercept = mean_min_acf_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
-##  geom_hline(yintercept = mean_min_acf_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
-#  geom_vline(xintercept = mean_mC_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
-#  geom_vline(xintercept = mean_mC_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
-#  geom_vline(xintercept = mean_mC_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
-#  facet_grid(cols = vars(chr), scales = "free_x")
 
 ggTrend_fk_reads_all_fk_kappa_all <- trendPlot(dataFrame = con_fk_df_all,
                                                mapping = aes(x = fk_reads_all, y = fk_kappa_all),
@@ -329,6 +291,7 @@ ggTrend_fk_reads_all_fk_kappa_all_filt <- ggTrend_fk_reads_all_fk_kappa_all_filt
   geom_hline(yintercept = fk_kappa_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
   facet_grid(cols = vars(chr), scales = "free_x")
 
+
 ggTrend_fk_reads_all_mean_stocha_all <- trendPlot(dataFrame = con_fk_df_all,
                                                   mapping = aes(x = fk_reads_all, y = mean_stocha_all),
                                                   xvar = fk_reads_all,
@@ -365,6 +328,7 @@ ggTrend_fk_reads_all_mean_stocha_all_filt <- ggTrend_fk_reads_all_mean_stocha_al
   geom_hline(yintercept = mean_stocha_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
   facet_grid(cols = vars(chr), scales = "free_x")
 
+
 ggTrend_fk_Cs_all_fk_kappa_all <- trendPlot(dataFrame = con_fk_df_all,
                                             mapping = aes(x = fk_Cs_all, y = fk_kappa_all),
                                             xvar = fk_Cs_all,
@@ -400,6 +364,7 @@ ggTrend_fk_Cs_all_fk_kappa_all_filt <- ggTrend_fk_Cs_all_fk_kappa_all_filt +
   geom_hline(yintercept = fk_kappa_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
   geom_hline(yintercept = fk_kappa_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
   facet_grid(cols = vars(chr), scales = "free_x")
+
 
 ggTrend_fk_Cs_all_mean_stocha_all <- trendPlot(dataFrame = con_fk_df_all,
                                                mapping = aes(x = fk_Cs_all, y = mean_stocha_all),
@@ -442,8 +407,6 @@ gg_cow_list1 <- list(
                      ggTrend_mean_mC_all_fk_kappa_all_filt,
                      ggTrend_mean_mC_all_mean_stocha_all,
                      ggTrend_mean_mC_all_mean_stocha_all_filt,
-#                     ggTrend_mean_mC_all_mean_min_acf_all,
-#                     ggTrend_mean_mC_all_mean_min_acf_all_filt,
                      ggTrend_fk_reads_all_fk_kappa_all,
                      ggTrend_fk_reads_all_fk_kappa_all_filt,
                      ggTrend_fk_reads_all_mean_stocha_all,
@@ -461,7 +424,7 @@ gg_cow1 <- plot_grid(plotlist = gg_cow_list1,
                      nrow = length(gg_cow_list1), ncol = 1)
 
 ggsave(paste0(plotDir,
-              featName, "_", sampleName, "_MappedOn_", refbase, "_", context,
+              featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase, "_", context,
               "_NAmax", NAmax, "_all_trendPlot_", paste0(chrName, collapse = "_"),
               ".pdf"),
        plot = gg_cow1,
@@ -593,7 +556,7 @@ con_fk_df_all_filt_stocha_high_mC_mid_group4 <- con_fk_df_all_filt %>%
   dplyr::filter(mean_mC_all     <= mean_mC_all_mid)
 
 con_fk_df_all_filt_stocha_high_mC_high_group5 <- con_fk_df_all_filt %>%
-  dplyr::filter(mean_stocha_all <=  mean_stocha_all_high) %>%
+  dplyr::filter(mean_stocha_all <= mean_stocha_all_high) %>%
   dplyr::filter(mean_mC_all     >  mean_mC_all_mid) %>%
   dplyr::filter(mean_mC_all     <= mean_mC_all_high)
 
