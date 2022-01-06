@@ -125,6 +125,34 @@ if(featName == "CEN180") {
   stop(print("featName not one of CEN180, gene or GYPSY"))
 }
 
+# Load coordinates for mitochondrial insertion on Chr2, in BED format
+mito_ins <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase, "/annotation/", refbase , ".mitochondrial_insertion.bed"),
+                       header = F)
+colnames(mito_ins) <- c("chr", "start", "end", "name", "score", "strand")
+mito_ins <- mito_ins[ mito_ins$chr %in% "Chr2",]
+mito_ins <- mito_ins[ with(mito_ins, order(chr, start, end)) , ]
+mito_ins_GR <- GRanges(seqnames = "Chr2",
+                       ranges = IRanges(start = min(mito_ins$start)+1,
+                                        end = max(mito_ins$end)),
+                       strand = "*")
+
+featextGR <- GRanges(seqnames = seqnames(featGR),
+                     ranges = IRanges(start = start(featGR)-2000,
+                                      end = end(featGR)+2000),
+                     strand = strand(featGR),
+                     name = featGR$name,
+                     score = featGR$score)
+
+# Mask out featGR within mitochondrial insertion on Chr2
+fOverlaps_feat_mito_ins <- findOverlaps(query = featextGR,
+                                        subject = mito_ins_GR,
+                                        type = "any",
+                                        select = "all",
+                                        ignore.strand = T)
+if(length(fOverlaps_feat_mito_ins) > 0) {
+  featGR <- featGR[-unique(queryHits(fOverlaps_feat_mito_ins))]
+}
+
 # Get ranges corresponding to featRegion
 if(featRegion == "bodies") {
   featGR <- featGR
@@ -137,36 +165,14 @@ if(featRegion == "bodies") {
   featGR <- TTSplus(featGR, upstream = -1, downstream = 2000)
 } else if(featRegion == "regions") {
   featGR <- GRanges(seqnames = seqnames(featGR),
-                       ranges = IRanges(start = start(featGR)-2000,
-                                        end = end(featGR)+2000),
-                       strand = strand(featGR),
-                       name = featGR$name,
-                       score = featGR$score)
+                    ranges = IRanges(start = start(featGR)-2000,
+                                     end = end(featGR)+2000),
+                    strand = strand(featGR),
+                    name = featGR$name,
+                    score = featGR$score)
 } else {
   stop("featRegion is none of bodies, promoters, terminators or regions")
 }
-
-# Load coordinates for mitochondrial insertion on Chr2, in BED format
-mito_ins <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase, "/annotation/", refbase , ".mitochondrial_insertion.bed"),
-                       header = F)
-colnames(mito_ins) <- c("chr", "start", "end", "name", "score", "strand")
-mito_ins <- mito_ins[ mito_ins$chr %in% "Chr2",]
-mito_ins <- mito_ins[ with(mito_ins, order(chr, start, end)) , ]
-mito_ins_GR <- GRanges(seqnames = "Chr2",
-                       ranges = IRanges(start = min(mito_ins$start)+1,
-                                        end = max(mito_ins$end)),
-                       strand = "*")
-
-# Mask out featGR within mitochondrial insertion on Chr2
-fOverlaps_feat_mito_ins <- findOverlaps(query = featGR,
-                                        subject = mito_ins_GR,
-                                        type = "any",
-                                        select = "all",
-                                        ignore.strand = T)
-if(length(fOverlaps_feat_mito_ins) > 0) {
-  featGR <- featGR[-unique(queryHits(fOverlaps_feat_mito_ins))]
-}
-
 
 # Read in the raw output .tsv file from Deepsignal methylation model
 tab_list <- mclapply(seq_along(chrName), function(x) {
