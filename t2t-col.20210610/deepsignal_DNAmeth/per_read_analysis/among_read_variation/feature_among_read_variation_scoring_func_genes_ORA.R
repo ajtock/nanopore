@@ -172,7 +172,7 @@ filt_kappa_mC_groups_featID <- lapply(seq_along(filt_kappa_mC_groups), function(
 filt_kappa_mC_groups_featID_universe <- unlist(filt_kappa_mC_groups_featID)
 
 keytypes(org.At.tair.db)
-head(select(org.At.tair.db, keys = keys(org.At.tair.db), columns = c("TAIR")))
+ids <- select(org.At.tair.db, keys = keys(org.At.tair.db), columns = c("TAIR"))[,1]
 
 filt_kappa_mC_groups_enrichGO <- lapply(seq_along(filt_kappa_mC_groups_featID), function(x) {
   print(x)
@@ -190,48 +190,51 @@ filt_kappa_mC_groups_enrichGO <- lapply(seq_along(filt_kappa_mC_groups_featID), 
 })
 
 for(x in 1:length(filt_kappa_mC_groups_enrichGO)) {
-  if(sum(filt_kappa_mC_groups_enrichGO[[x]]@result$p.adjust <= 0.05) > 0) {
-    dp_enrichGO <- dotplot(filt_kappa_mC_groups_enrichGO[[x]],
-                           showCategory = 50,
-                           title = paste0("Fleiss' kappa and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
-                           font.size = 12)
-    ggsave(paste0(plotDir_kappa,
-                  featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
-                  "_", context,
-                  "_NAmax", NAmax,
-                  "_filt_df_fk_kappa_all_mean_mC_all_group", x , "_",
-                  paste0(chrName, collapse = "_"), "_enrichGO_", ontology, "_dotplot.pdf"),
-           plot = dp_enrichGO,
-           height = 10, width = 12,
-           limitsize = F)
-
-    emp_enrichGO <- emapplot(filt_kappa_mC_groups_enrichGO[[x]],
+  if( !is.null(filt_kappa_mC_groups_enrichGO[[x]]) ) {
+    if( sum(filt_kappa_mC_groups_enrichGO[[x]]@result$p.adjust <= 0.05) > 0 ) {
+      print(x)
+      dp_enrichGO <- dotplot(filt_kappa_mC_groups_enrichGO[[x]],
                              showCategory = 50,
                              title = paste0("Fleiss' kappa and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
                              font.size = 12)
-    ggsave(paste0(plotDir_kappa,
-                  featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
-                  "_", context,
-                  "_NAmax", NAmax,
-                  "_filt_df_fk_kappa_all_mean_mC_all_group", x , "_",
-                  paste0(chrName, collapse = "_"), "_enrichGO_", ontology, "_emapplot.pdf"),
-           plot = emp_enrichGO,
-           height = 10, width = 12,
-           limitsize = F)
-
-    gp_enrichGO <- goplot(filt_kappa_mC_groups_enrichGO[[x]],
-                          showCategory = 50,
-                          title = paste0("Fleiss' kappa and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
-                          font.size = 12)
-    ggsave(paste0(plotDir_kappa,
-                  featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
-                  "_", context,
-                  "_NAmax", NAmax,
-                  "_filt_df_fk_kappa_all_mean_mC_all_group", x , "_",
-                  paste0(chrName, collapse = "_"), "_enrichGO_", ontology, "_goplot.pdf"),
-           plot = gp_enrichGO,
-           height = 10, width = 12,
-           limitsize = F)
+      ggsave(paste0(plotDir_kappa,
+                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                    "_", context,
+                    "_NAmax", NAmax,
+                    "_filt_df_fk_kappa_all_mean_mC_all_group", x , "_",
+                    paste0(chrName, collapse = "_"), "_enrichGO_", ontology, "_dotplot.pdf"),
+             plot = dp_enrichGO,
+             height = 10, width = 12,
+             limitsize = F)
+  
+      emp_enrichGO <- emapplot(filt_kappa_mC_groups_enrichGO[[x]],
+                               showCategory = 50,
+                               title = paste0("Fleiss' kappa and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
+                               font.size = 12)
+      ggsave(paste0(plotDir_kappa,
+                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                    "_", context,
+                    "_NAmax", NAmax,
+                    "_filt_df_fk_kappa_all_mean_mC_all_group", x , "_",
+                    paste0(chrName, collapse = "_"), "_enrichGO_", ontology, "_emapplot.pdf"),
+             plot = emp_enrichGO,
+             height = 10, width = 12,
+             limitsize = F)
+  
+      gp_enrichGO <- goplot(filt_kappa_mC_groups_enrichGO[[x]],
+                            showCategory = 50,
+                            title = paste0("Fleiss' kappa and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
+                            font.size = 12)
+      ggsave(paste0(plotDir_kappa,
+                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                    "_", context,
+                    "_NAmax", NAmax,
+                    "_filt_df_fk_kappa_all_mean_mC_all_group", x , "_",
+                    paste0(chrName, collapse = "_"), "_enrichGO_", ontology, "_goplot.pdf"),
+             plot = gp_enrichGO,
+             height = 10, width = 12,
+             limitsize = F)
+    }
   }
 }
 
@@ -275,48 +278,51 @@ filt_stocha_mC_groups_enrichGO <- lapply(seq_along(filt_stocha_mC_groups_featID)
 })
 
 for(x in 1:length(filt_stocha_mC_groups_enrichGO)) {
-  if(sum(filt_stocha_mC_groups_enrichGO[[x]]@result$p.adjust <= 0.05) > 0) {
-    dp_enrichGO <- dotplot(filt_stocha_mC_groups_enrichGO[[x]],
-                           showCategory = 50,
-                           title = paste0("Stochasticity and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
-                           font.size = 12)
-    ggsave(paste0(plotDir_stocha,
-                  featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
-                  "_", context,
-                  "_NAmax", NAmax,
-                  "_filt_df_mean_stocha_all_mean_mC_all_group", x , "_",
-                  paste0(chrName, collapse = "_"), "_enrichGO_", ontology, "_dotplot.pdf"),
-           plot = dp_enrichGO,
-           height = 10, width = 12,
-           limitsize = F)
-
-    emp_enrichGO <- emapplot(filt_stocha_mC_groups_enrichGO[[x]],
+  if( !is.null(filt_stocha_mC_groups_enrichGO[[x]]) ) {
+    if( sum(filt_stocha_mC_groups_enrichGO[[x]]@result$p.adjust <= 0.05) > 0 ) {
+      print(x)
+      dp_enrichGO <- dotplot(filt_stocha_mC_groups_enrichGO[[x]],
                              showCategory = 50,
                              title = paste0("Stochasticity and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
                              font.size = 12)
-    ggsave(paste0(plotDir_stocha,
-                  featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
-                  "_", context,
-                  "_NAmax", NAmax,
-                  "_filt_df_mean_stocha_all_mean_mC_all_group", x , "_",
-                  paste0(chrName, collapse = "_"), "_enrichGO_", ontology, "_emapplot.pdf"),
-           plot = emp_enrichGO,
-           height = 10, width = 12,
-           limitsize = F)
+      ggsave(paste0(plotDir_stocha,
+                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                    "_", context,
+                    "_NAmax", NAmax,
+                    "_filt_df_mean_stocha_all_mean_mC_all_group", x , "_",
+                    paste0(chrName, collapse = "_"), "_enrichGO_", ontology, "_dotplot.pdf"),
+             plot = dp_enrichGO,
+             height = 10, width = 12,
+             limitsize = F)
 
-    gp_enrichGO <- goplot(filt_stocha_mC_groups_enrichGO[[x]],
-                             showCategory = 50,
-                             title = paste0("Stochasticity and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
-                             font.size = 12)
-    ggsave(paste0(plotDir_stocha,
-                  featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
-                  "_", context,
-                  "_NAmax", NAmax,
-                  "_filt_df_mean_stocha_all_mean_mC_all_group", x , "_",
-                  paste0(chrName, collapse = "_"), "_enrichGO_", ontology, "_goplot.pdf"),
-           plot = gp_enrichGO,
-           height = 10, width = 12,
-           limitsize = F)
+      emp_enrichGO <- emapplot(filt_stocha_mC_groups_enrichGO[[x]],
+                               showCategory = 50,
+                               title = paste0("Stochasticity and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
+                               font.size = 12)
+      ggsave(paste0(plotDir_stocha,
+                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                    "_", context,
+                    "_NAmax", NAmax,
+                    "_filt_df_mean_stocha_all_mean_mC_all_group", x , "_",
+                    paste0(chrName, collapse = "_"), "_enrichGO_", ontology, "_emapplot.pdf"),
+             plot = emp_enrichGO,
+             height = 10, width = 12,
+             limitsize = F)
+
+      gp_enrichGO <- goplot(filt_stocha_mC_groups_enrichGO[[x]],
+                            showCategory = 50,
+                            title = paste0("Stochasticity and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
+                            font.size = 12)
+      ggsave(paste0(plotDir_stocha,
+                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                    "_", context,
+                    "_NAmax", NAmax,
+                    "_filt_df_mean_stocha_all_mean_mC_all_group", x , "_",
+                    paste0(chrName, collapse = "_"), "_enrichGO_", ontology, "_goplot.pdf"),
+             plot = gp_enrichGO,
+             height = 10, width = 12,
+             limitsize = F)
+    }
   }
 }
 
