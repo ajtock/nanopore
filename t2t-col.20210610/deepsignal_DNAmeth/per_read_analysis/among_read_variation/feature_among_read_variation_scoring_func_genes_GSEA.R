@@ -4,8 +4,8 @@
 # 1. GO term over-representation analysis of genes grouped by both among-read agreement and mean methylation proportion
 # 1. GO term over-representation analysis of genes grouped by both mean within-read stochasticity and mean methylation proportion
 
-# Usage on hydrogen node7:
-# csmit -m 20G -c 1 "/applications/R/R-4.0.0/bin/Rscript feature_among_read_variation_scoring_func_genes_GSEA.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' gene bodies BP"
+# Usage:
+# /applications/R/R-4.0.0/bin/Rscript feature_among_read_variation_scoring_func_genes_GSEA.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' gene bodies BP
  
 # Divide each read into adjacent segments each consisting of a given number of consecutive cytosines,
 # and calculate the methylation proportion for each segment of each read
@@ -70,8 +70,8 @@ library(ggplot2)
 ##library(grid)
 
 outDir <- paste0(featName, "_", featRegion, "/", paste0(chrName, collapse = "_"), "/")
-plotDir_kappa <- paste0(outDir, "plots/GO_", ontology, "_GSEA_", context, "_kappa/")
-plotDir_stocha <- paste0(outDir, "plots/GO_", ontology, "_GSEA_", context, "_stocha/")
+plotDir_kappa <- paste0(outDir, "plots/GSEA_GO_", ontology, "_", context, "_kappa/")
+plotDir_stocha <- paste0(outDir, "plots/GSEA_GO_", ontology, "_", context, "_stocha/")
 system(paste0("[ -d ", plotDir_kappa, " ] || mkdir -p ", plotDir_kappa))
 system(paste0("[ -d ", plotDir_stocha, " ] || mkdir -p ", plotDir_stocha))
 
@@ -174,7 +174,8 @@ filt_kappa_mC_groups_featID_universe <- unlist(filt_kappa_mC_groups_featID)
 keytypes(org.At.tair.db)
 head(select(org.At.tair.db, keys = keys(org.At.tair.db), columns = c("TAIR")))
 
-filt_kappa_mC_groups_gseGO <- mclapply(seq_along(filt_kappa_mC_groups_featID), function(x) {
+filt_kappa_mC_groups_gseGO <- lapply(seq_along(filt_kappa_mC_groups_featID), function(x) {
+  print(x)
   gseGO(geneList = filt_kappa_mC_groups_featID[[x]],
         OrgDb = org.At.tair.db,
         keyType = "TAIR",
@@ -185,7 +186,7 @@ filt_kappa_mC_groups_gseGO <- mclapply(seq_along(filt_kappa_mC_groups_featID), f
         pvalueCutoff = 0.05,
         verbose = T,
         pAdjustMethod = "BH")
-}, mc.cores = length(filt_kappa_mC_groups_featID), mc.preschedule = F)
+})
 
 for(x in 1:length(filt_kappa_mC_groups_gseGO)) {
   if(sum(filt_kappa_mC_groups_gseGO[[x]]@result$p.adjust <= 0.05) > 0) {
@@ -257,26 +258,26 @@ filt_stocha_mC_groups_featID <- lapply(seq_along(filt_stocha_mC_groups), functio
 
 filt_stocha_mC_groups_featID_universe <- unlist(filt_stocha_mC_groups_featID)
 
-filt_stocha_mC_groups_gseGO <- mclapply(seq_along(filt_stocha_mC_groups_featID), function(x) {
-  gseGO(gene = names(filt_stocha_mC_groups_featID[[x]]),
-           universe = names(filt_stocha_mC_groups_featID_universe),
-           OrgDb = org.At.tair.db,
-           keyType = "TAIR",
-           readable = T,
-           ont = ontology,
-#           minGSSize = 10,
-#           maxGSSize = 500,
-           pvalueCutoff = 0.05,
-           qvalueCutoff = 0.10,
-           pAdjustMethod = "BH")
-}, mc.cores = length(filt_stocha_mC_groups_featID), mc.preschedule = F)
+filt_stocha_mC_groups_gseGO <- lapply(seq_along(filt_stocha_mC_groups_featID), function(x) {
+  print(x)
+  gseGO(geneList = filt_stocha_mC_groups_featID[[x]],
+        OrgDb = org.At.tair.db,
+        keyType = "TAIR",
+        ont = ontology,
+        nPerm = 10000,
+#        minGSSize = 10,
+#        maxGSSize = 500,
+        pvalueCutoff = 0.05,
+        verbose = T,
+        pAdjustMethod = "BH")
+})
 
 for(x in 1:length(filt_stocha_mC_groups_gseGO)) {
   if(sum(filt_stocha_mC_groups_gseGO[[x]]@result$p.adjust <= 0.05) > 0) {
     dp_gseGO <- dotplot(filt_stocha_mC_groups_gseGO[[x]],
-                           showCategory = 50,
-                           title = paste0("Stochasticity and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
-                           font.size = 12)
+                        showCategory = 50,
+                        title = paste0("Stochasticity and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
+                        font.size = 12)
     ggsave(paste0(plotDir_stocha,
                   featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                   "_", context,
@@ -288,9 +289,9 @@ for(x in 1:length(filt_stocha_mC_groups_gseGO)) {
            limitsize = F)
 
     emp_gseGO <- emapplot(filt_stocha_mC_groups_gseGO[[x]],
-                             showCategory = 50,
-                             title = paste0("Stochasticity and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
-                             font.size = 12)
+                          showCategory = 50,
+                          title = paste0("Stochasticity and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
+                          font.size = 12)
     ggsave(paste0(plotDir_stocha,
                   featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                   "_", context,
@@ -302,9 +303,9 @@ for(x in 1:length(filt_stocha_mC_groups_gseGO)) {
            limitsize = F)
 
     gp_gseGO <- goplot(filt_stocha_mC_groups_gseGO[[x]],
-                             showCategory = 50,
-                             title = paste0("Stochasticity and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
-                             font.size = 12)
+                       showCategory = 50,
+                       title = paste0("Stochasticity and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
+                       font.size = 12)
     ggsave(paste0(plotDir_stocha,
                   featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                   "_", context,

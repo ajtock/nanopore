@@ -4,8 +4,8 @@
 # 1. GO term over-representation analysis of genes grouped by both among-read agreement and mean methylation proportion
 # 1. GO term over-representation analysis of genes grouped by both mean within-read stochasticity and mean methylation proportion
 
-# Usage on hydrogen node7:
-# csmit -m 20G -c 1 "/applications/R/R-4.0.0/bin/Rscript feature_among_read_variation_scoring_func_genes_ORA.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' gene bodies BP"
+# Usage:
+# /applications/R/R-4.0.0/bin/Rscript feature_among_read_variation_scoring_func_genes_ORA.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' gene bodies BP
  
 # Divide each read into adjacent segments each consisting of a given number of consecutive cytosines,
 # and calculate the methylation proportion for each segment of each read
@@ -70,8 +70,8 @@ library(ggplot2)
 ##library(grid)
 
 outDir <- paste0(featName, "_", featRegion, "/", paste0(chrName, collapse = "_"), "/")
-plotDir_kappa <- paste0(outDir, "plots/GO_", ontology, "_ORA_", context, "_kappa/")
-plotDir_stocha <- paste0(outDir, "plots/GO_", ontology, "_ORA_", context, "_stocha/")
+plotDir_kappa <- paste0(outDir, "plots/ORA_GO_", ontology, "_", context, "_kappa/")
+plotDir_stocha <- paste0(outDir, "plots/ORA_GO_", ontology, "_", context, "_stocha/")
 system(paste0("[ -d ", plotDir_kappa, " ] || mkdir -p ", plotDir_kappa))
 system(paste0("[ -d ", plotDir_stocha, " ] || mkdir -p ", plotDir_stocha))
 
@@ -174,7 +174,8 @@ filt_kappa_mC_groups_featID_universe <- unlist(filt_kappa_mC_groups_featID)
 keytypes(org.At.tair.db)
 head(select(org.At.tair.db, keys = keys(org.At.tair.db), columns = c("TAIR")))
 
-filt_kappa_mC_groups_enrichGO <- mclapply(seq_along(filt_kappa_mC_groups_featID), function(x) {
+filt_kappa_mC_groups_enrichGO <- lapply(seq_along(filt_kappa_mC_groups_featID), function(x) {
+  print(x)
   enrichGO(gene = names(filt_kappa_mC_groups_featID[[x]]),
            universe = names(filt_kappa_mC_groups_featID_universe),
            OrgDb = org.At.tair.db,
@@ -186,7 +187,7 @@ filt_kappa_mC_groups_enrichGO <- mclapply(seq_along(filt_kappa_mC_groups_featID)
            pvalueCutoff = 0.05,
            qvalueCutoff = 0.10,
            pAdjustMethod = "BH")
-}, mc.cores = length(filt_kappa_mC_groups_featID), mc.preschedule = F)
+})
 
 for(x in 1:length(filt_kappa_mC_groups_enrichGO)) {
   if(sum(filt_kappa_mC_groups_enrichGO[[x]]@result$p.adjust <= 0.05) > 0) {
@@ -258,7 +259,8 @@ filt_stocha_mC_groups_featID <- lapply(seq_along(filt_stocha_mC_groups), functio
 
 filt_stocha_mC_groups_featID_universe <- unlist(filt_stocha_mC_groups_featID)
 
-filt_stocha_mC_groups_enrichGO <- mclapply(seq_along(filt_stocha_mC_groups_featID), function(x) {
+filt_stocha_mC_groups_enrichGO <- lapply(seq_along(filt_stocha_mC_groups_featID), function(x) {
+  print(x)
   enrichGO(gene = names(filt_stocha_mC_groups_featID[[x]]),
            universe = names(filt_stocha_mC_groups_featID_universe),
            OrgDb = org.At.tair.db,
@@ -270,7 +272,7 @@ filt_stocha_mC_groups_enrichGO <- mclapply(seq_along(filt_stocha_mC_groups_featI
            pvalueCutoff = 0.05,
            qvalueCutoff = 0.10,
            pAdjustMethod = "BH")
-}, mc.cores = length(filt_stocha_mC_groups_featID), mc.preschedule = F)
+})
 
 for(x in 1:length(filt_stocha_mC_groups_enrichGO)) {
   if(sum(filt_stocha_mC_groups_enrichGO[[x]]@result$p.adjust <= 0.05) > 0) {
