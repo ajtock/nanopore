@@ -4,8 +4,8 @@
 # 1. Score among-read variation/agreement (e.g., Fleiss' kappa) for each feature
 # 2. Examine relationships between feature among-read agreement and other metrics
 
-# Usage on hydrogen node7:
-# csmit -m 200G -c 48 "/applications/R/R-4.0.0/bin/Rscript feature_among_read_variation_scoring_func_genes.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'gene' 'promoters'"
+# Usage:
+# /applications/R/R-4.0.0/bin/Rscript feature_among_read_variation_scoring_func_genes_trends.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'gene' 'bodies'
  
 # Divide each read into adjacent segments each consisting of a given number of consecutive cytosines,
 # and calculate the methylation proportion for each segment of each read
@@ -17,7 +17,7 @@
 #CPUpc <- 1.00
 #chrName <- unlist(strsplit("Chr1,Chr2,Chr3,Chr4,Chr5", split = ","))
 #featName <- "gene"
-#featRegion <- "promoters"
+#featRegion <- "bodies"
 
 args <- commandArgs(trailingOnly = T)
 sampleName <- args[1]
@@ -143,9 +143,9 @@ if(featRegion == "bodies") {
     fk_kappa_all_high <- 0.05623413
     fk_kappa_all_mid  <- 0.01778279 
     fk_kappa_all_low  <- 0.01000000 
-    mean_stocha_all_high <- 0.28
-    mean_stocha_all_mid  <- 0.17
-    mean_stocha_all_low  <- 0.08
+    mean_stocha_all_high <- 0.28183830
+    mean_stocha_all_mid  <- 0.05011872
+    mean_stocha_all_low  <- 0.03162278
     mean_min_acf_all_high <- -0.05
     mean_min_acf_all_mid  <- -0.10
     mean_min_acf_all_low  <- -0.15
@@ -156,9 +156,9 @@ if(featRegion == "bodies") {
     fk_kappa_all_high <- 0.05623413
     fk_kappa_all_mid  <- 0.01778279 
     fk_kappa_all_low  <- 0.01000000 
-    mean_stocha_all_high <- 0.28
-    mean_stocha_all_mid  <- 0.17
-    mean_stocha_all_low  <- 0.08
+    mean_stocha_all_high <- 0.28183830
+    mean_stocha_all_mid  <- 0.05011872
+    mean_stocha_all_low  <- 0.03162278
     mean_min_acf_all_high <- -0.05
     mean_min_acf_all_mid  <- -0.10
     mean_min_acf_all_low  <- -0.15
@@ -434,43 +434,117 @@ ggsave(paste0(plotDir,
 # Extract feature groups (based on trend plots) to enable enrichment analysis
 
 # Filter by fk_kappa_all and mean_mC_all
-con_fk_df_all_filt_kappa_low_mC_low_group1 <- con_fk_df_all_filt %>%
-  dplyr::filter(fk_kappa_all <= fk_kappa_all_low) %>%
-  dplyr::filter(mean_mC_all  <= mean_mC_all_low)
+if(context == "CpG") {
+  con_fk_df_all_filt_kappa_mC_group1 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all <= fk_kappa_all_low) %>%
+    dplyr::filter(mean_mC_all  <= mean_mC_all_low)
+  
+  con_fk_df_all_filt_kappa_mC_group2 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all >  fk_kappa_all_low) %>%
+    dplyr::filter(mean_mC_all  <= mean_mC_all_low)
+  
+  con_fk_df_all_filt_kappa_mC_group3 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all <= fk_kappa_all_mid) %>%
+    dplyr::filter(mean_mC_all  >  mean_mC_all_low) %>%
+    dplyr::filter(mean_mC_all  <= mean_mC_all_mid)
+  
+  con_fk_df_all_filt_kappa_mC_group4 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all >  fk_kappa_all_mid) %>%
+    dplyr::filter(mean_mC_all  >  mean_mC_all_low) %>%
+    dplyr::filter(mean_mC_all  <= mean_mC_all_mid)
+  
+  con_fk_df_all_filt_kappa_mC_group5 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all <= fk_kappa_all_high) %>%
+    dplyr::filter(mean_mC_all  >  mean_mC_all_mid) %>%
+    dplyr::filter(mean_mC_all  <= mean_mC_all_high)
+  
+  con_fk_df_all_filt_kappa_mC_group6 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all >  fk_kappa_all_high) %>%
+    dplyr::filter(mean_mC_all  >  mean_mC_all_mid) %>%
+    dplyr::filter(mean_mC_all  <= mean_mC_all_high)
+  
+  con_fk_df_all_filt_kappa_mC_group7 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all <= fk_kappa_all_low) %>%
+    dplyr::filter(mean_mC_all  >  mean_mC_all_high)
+  
+  con_fk_df_all_filt_kappa_mC_group8 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all > fk_kappa_all_low) %>%
+    dplyr::filter(mean_mC_all  > mean_mC_all_high)
+} else if(context == "CHG") {
+  con_fk_df_all_filt_kappa_mC_group1 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all <= fk_kappa_all_low) %>%
+    dplyr::filter(mean_mC_all  <= mean_mC_all_low)
+  
+  con_fk_df_all_filt_kappa_mC_group2 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all >  fk_kappa_all_low) %>%
+    dplyr::filter(mean_mC_all  <= mean_mC_all_low)
+  
+  con_fk_df_all_filt_kappa_mC_group3 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all <= fk_kappa_all_mid) %>%
+    dplyr::filter(mean_mC_all  >  mean_mC_all_low) %>%
+    dplyr::filter(mean_mC_all  <= mean_mC_all_mid)
+  
+  con_fk_df_all_filt_kappa_mC_group4 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all >  fk_kappa_all_mid) %>%
+    dplyr::filter(mean_mC_all  >  mean_mC_all_low) %>%
+    dplyr::filter(mean_mC_all  <= mean_mC_all_mid)
+  
+  con_fk_df_all_filt_kappa_mC_group5 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all <= fk_kappa_all_high) %>%
+    dplyr::filter(mean_mC_all  >  mean_mC_all_mid) %>%
+    dplyr::filter(mean_mC_all  <= mean_mC_all_high)
+  
+  con_fk_df_all_filt_kappa_mC_group6 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all >  fk_kappa_all_high) %>%
+    dplyr::filter(mean_mC_all  >  mean_mC_all_mid) %>%
+    dplyr::filter(mean_mC_all  <= mean_mC_all_high)
+  
+  con_fk_df_all_filt_kappa_mC_group7 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all <= fk_kappa_all_high) %>%
+    dplyr::filter(mean_mC_all  >  mean_mC_all_high)
+  
+  con_fk_df_all_filt_kappa_mC_group8 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all > fk_kappa_all_high) %>%
+    dplyr::filter(mean_mC_all  > mean_mC_all_high)
+} else if(context == "CHH") {
+  con_fk_df_all_filt_kappa_mC_group1 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all <= fk_kappa_all_low) %>%
+    dplyr::filter(mean_mC_all  <= mean_mC_all_low)
+  
+  con_fk_df_all_filt_kappa_mC_group2 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all >  fk_kappa_all_low) %>%
+    dplyr::filter(mean_mC_all  <= mean_mC_all_low)
+  
+  con_fk_df_all_filt_kappa_mC_group3 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all <= fk_kappa_all_mid) %>%
+    dplyr::filter(mean_mC_all  >  mean_mC_all_low) %>%
+    dplyr::filter(mean_mC_all  <= mean_mC_all_mid)
+  
+  con_fk_df_all_filt_kappa_mC_group4 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all >  fk_kappa_all_mid) %>%
+    dplyr::filter(mean_mC_all  >  mean_mC_all_low) %>%
+    dplyr::filter(mean_mC_all  <= mean_mC_all_mid)
+  
+  con_fk_df_all_filt_kappa_mC_group5 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all <= fk_kappa_all_high) %>%
+    dplyr::filter(mean_mC_all  >  mean_mC_all_mid) %>%
+    dplyr::filter(mean_mC_all  <= mean_mC_all_high)
+  
+  con_fk_df_all_filt_kappa_mC_group6 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all >  fk_kappa_all_high) %>%
+    dplyr::filter(mean_mC_all  >  mean_mC_all_mid) %>%
+    dplyr::filter(mean_mC_all  <= mean_mC_all_high)
+  
+  con_fk_df_all_filt_kappa_mC_group7 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all <= fk_kappa_all_high) %>%
+    dplyr::filter(mean_mC_all  >  mean_mC_all_high)
+  
+  con_fk_df_all_filt_kappa_mC_group8 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all > fk_kappa_all_high) %>%
+    dplyr::filter(mean_mC_all  > mean_mC_all_high)
+}
 
-con_fk_df_all_filt_kappa_mid_mC_low_group2 <- con_fk_df_all_filt %>%
-  dplyr::filter(fk_kappa_all >  fk_kappa_all_low) %>%
-  dplyr::filter(mean_mC_all  <= mean_mC_all_low)
-
-con_fk_df_all_filt_kappa_mid_mC_mid_group3 <- con_fk_df_all_filt %>%
-  dplyr::filter(fk_kappa_all <= fk_kappa_all_mid) %>%
-  dplyr::filter(mean_mC_all  >  mean_mC_all_low) %>%
-  dplyr::filter(mean_mC_all  <= mean_mC_all_mid)
-
-con_fk_df_all_filt_kappa_high_mC_mid_group4 <- con_fk_df_all_filt %>%
-  dplyr::filter(fk_kappa_all >  fk_kappa_all_mid) %>%
-  dplyr::filter(mean_mC_all  >  mean_mC_all_low) %>%
-  dplyr::filter(mean_mC_all  <= mean_mC_all_mid)
-
-con_fk_df_all_filt_kappa_high_mC_high_group5 <- con_fk_df_all_filt %>%
-  dplyr::filter(fk_kappa_all <=  fk_kappa_all_high) %>%
-  dplyr::filter(mean_mC_all  >  mean_mC_all_mid) %>%
-  dplyr::filter(mean_mC_all  <= mean_mC_all_high)
-
-con_fk_df_all_filt_kappa_vhigh_mC_high_group6 <- con_fk_df_all_filt %>%
-  dplyr::filter(fk_kappa_all >  fk_kappa_all_high) %>%
-  dplyr::filter(mean_mC_all  >  mean_mC_all_mid) %>%
-  dplyr::filter(mean_mC_all  <= mean_mC_all_high)
-
-con_fk_df_all_filt_kappa_low_mC_vhigh_group7 <- con_fk_df_all_filt %>%
-  dplyr::filter(fk_kappa_all <= fk_kappa_all_low) %>%
-  dplyr::filter(mean_mC_all  > mean_mC_all_high)
-
-con_fk_df_all_filt_kappa_mid_mC_vhigh_group8 <- con_fk_df_all_filt %>%
-  dplyr::filter(fk_kappa_all > fk_kappa_all_low) %>%
-  dplyr::filter(mean_mC_all  >  mean_mC_all_high)
-
-write.table(con_fk_df_all_filt_kappa_low_mC_low_group1,
+write.table(con_fk_df_all_filt_kappa_mC_group1,
             paste0(outDir,
                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                    "_", context,
@@ -478,7 +552,7 @@ write.table(con_fk_df_all_filt_kappa_low_mC_low_group1,
                    "_filt_df_fk_kappa_all_mean_mC_all_group1_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
-write.table(con_fk_df_all_filt_kappa_mid_mC_low_group2,
+write.table(con_fk_df_all_filt_kappa_mC_group2,
             paste0(outDir,
                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                    "_", context,
@@ -486,7 +560,7 @@ write.table(con_fk_df_all_filt_kappa_mid_mC_low_group2,
                    "_filt_df_fk_kappa_all_mean_mC_all_group2_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
-write.table(con_fk_df_all_filt_kappa_mid_mC_mid_group3,
+write.table(con_fk_df_all_filt_kappa_mC_group3,
             paste0(outDir,
                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                    "_", context,
@@ -494,7 +568,7 @@ write.table(con_fk_df_all_filt_kappa_mid_mC_mid_group3,
                    "_filt_df_fk_kappa_all_mean_mC_all_group3_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
-write.table(con_fk_df_all_filt_kappa_high_mC_mid_group4,
+write.table(con_fk_df_all_filt_kappa_mC_group4,
             paste0(outDir,
                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                    "_", context,
@@ -502,7 +576,7 @@ write.table(con_fk_df_all_filt_kappa_high_mC_mid_group4,
                    "_filt_df_fk_kappa_all_mean_mC_all_group4_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
-write.table(con_fk_df_all_filt_kappa_high_mC_high_group5,
+write.table(con_fk_df_all_filt_kappa_mC_group5,
             paste0(outDir,
                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                    "_", context,
@@ -510,7 +584,7 @@ write.table(con_fk_df_all_filt_kappa_high_mC_high_group5,
                    "_filt_df_fk_kappa_all_mean_mC_all_group5_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
-write.table(con_fk_df_all_filt_kappa_vhigh_mC_high_group6,
+write.table(con_fk_df_all_filt_kappa_mC_group6,
             paste0(outDir,
                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                    "_", context,
@@ -518,7 +592,7 @@ write.table(con_fk_df_all_filt_kappa_vhigh_mC_high_group6,
                    "_filt_df_fk_kappa_all_mean_mC_all_group6_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
-write.table(con_fk_df_all_filt_kappa_low_mC_vhigh_group7,
+write.table(con_fk_df_all_filt_kappa_mC_group7,
             paste0(outDir,
                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                    "_", context,
@@ -526,7 +600,7 @@ write.table(con_fk_df_all_filt_kappa_low_mC_vhigh_group7,
                    "_filt_df_fk_kappa_all_mean_mC_all_group7_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
-write.table(con_fk_df_all_filt_kappa_mid_mC_vhigh_group8,
+write.table(con_fk_df_all_filt_kappa_mC_group8,
             paste0(outDir,
                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                    "_", context,
@@ -537,43 +611,118 @@ write.table(con_fk_df_all_filt_kappa_mid_mC_vhigh_group8,
 
 
 # Filter by mean_stocha_all and mean_mC_all
-con_fk_df_all_filt_stocha_low_mC_low_group1 <- con_fk_df_all_filt %>%
-  dplyr::filter(mean_stocha_all <= mean_stocha_all_low) %>%
-  dplyr::filter(mean_mC_all     <= mean_mC_all_low)
+if(context == "CpG") {
+  con_fk_df_all_filt_stocha_mC_group1 <- con_fk_df_all_filt %>%
+    dplyr::filter(mean_stocha_all <= mean_stocha_all_low) %>%
+    dplyr::filter(mean_mC_all     <= mean_mC_all_low)
+  
+  con_fk_df_all_filt_stocha_mC_group2 <- con_fk_df_all_filt %>%
+    dplyr::filter(mean_stocha_all >  mean_stocha_all_low) %>%
+    dplyr::filter(mean_mC_all     <= mean_mC_all_low)
+  
+  con_fk_df_all_filt_stocha_mC_group3 <- con_fk_df_all_filt %>%
+    dplyr::filter(mean_stocha_all <= mean_stocha_all_mid) %>%
+    dplyr::filter(mean_mC_all     >  mean_mC_all_low) %>%
+    dplyr::filter(mean_mC_all     <= mean_mC_all_mid)
+  
+  con_fk_df_all_filt_stocha_mC_group4 <- con_fk_df_all_filt %>%
+    dplyr::filter(mean_stocha_all >  mean_stocha_all_mid) %>%
+    dplyr::filter(mean_mC_all     >  mean_mC_all_low) %>%
+    dplyr::filter(mean_mC_all     <= mean_mC_all_mid)
+  
+  con_fk_df_all_filt_stocha_mC_group5 <- con_fk_df_all_filt %>%
+    dplyr::filter(mean_stocha_all <= mean_stocha_all_high) %>%
+    dplyr::filter(mean_mC_all     >  mean_mC_all_mid) %>%
+    dplyr::filter(mean_mC_all     <= mean_mC_all_high)
+  
+  con_fk_df_all_filt_stocha_mC_group6 <- con_fk_df_all_filt %>%
+    dplyr::filter(mean_stocha_all >  mean_stocha_all_high) %>%
+    dplyr::filter(mean_mC_all     >  mean_mC_all_mid) %>%
+    dplyr::filter(mean_mC_all     <= mean_mC_all_high)
+  
+  con_fk_df_all_filt_stocha_mC_group7 <- con_fk_df_all_filt %>%
+    dplyr::filter(mean_stocha_all <= mean_stocha_all_mid) %>%
+    dplyr::filter(mean_mC_all     >  mean_mC_all_high)
+  
+  con_fk_df_all_filt_stocha_mC_group8 <- con_fk_df_all_filt %>%
+    dplyr::filter(mean_stocha_all > mean_stocha_all_mid) %>%
+    dplyr::filter(mean_mC_all     > mean_mC_all_high)
+} else if(context == "CHG") {
+  con_fk_df_all_filt_stocha_mC_group1 <- con_fk_df_all_filt %>%
+    dplyr::filter(mean_stocha_all <= mean_stocha_all_low) %>%
+    dplyr::filter(mean_mC_all     <= mean_mC_all_low)
+  
+  con_fk_df_all_filt_stocha_mC_group2 <- con_fk_df_all_filt %>%
+    dplyr::filter(mean_stocha_all >  mean_stocha_all_low) %>%
+    dplyr::filter(mean_mC_all     <= mean_mC_all_low)
+  
+  con_fk_df_all_filt_stocha_mC_group3 <- con_fk_df_all_filt %>%
+    dplyr::filter(mean_stocha_all <= mean_stocha_all_low) %>%
+    dplyr::filter(mean_mC_all     >  mean_mC_all_low) %>%
+    dplyr::filter(mean_mC_all     <= mean_mC_all_mid)
+  
+  con_fk_df_all_filt_stocha_mC_group4 <- con_fk_df_all_filt %>%
+    dplyr::filter(mean_stocha_all >  mean_stocha_all_low) %>%
+    dplyr::filter(mean_mC_all     >  mean_mC_all_low) %>%
+    dplyr::filter(mean_mC_all     <= mean_mC_all_mid)
+  
+  con_fk_df_all_filt_stocha_mC_group5 <- con_fk_df_all_filt %>%
+    dplyr::filter(mean_stocha_all <= mean_stocha_all_mid) %>%
+    dplyr::filter(mean_mC_all     >  mean_mC_all_mid) %>%
+    dplyr::filter(mean_mC_all     <= mean_mC_all_high)
+  
+  con_fk_df_all_filt_stocha_mC_group6 <- con_fk_df_all_filt %>%
+    dplyr::filter(mean_stocha_all >  mean_stocha_all_mid) %>%
+    dplyr::filter(mean_mC_all     >  mean_mC_all_mid) %>%
+    dplyr::filter(mean_mC_all     <= mean_mC_all_high)
+  
+  con_fk_df_all_filt_stocha_mC_group7 <- con_fk_df_all_filt %>%
+    dplyr::filter(mean_stocha_all <= mean_stocha_all_high) %>%
+    dplyr::filter(mean_mC_all     >  mean_mC_all_high)
+  
+  con_fk_df_all_filt_stocha_mC_group8 <- con_fk_df_all_filt %>%
+    dplyr::filter(mean_stocha_all > mean_stocha_all_high) %>%
+    dplyr::filter(mean_mC_all     > mean_mC_all_high)
+} else if(context == "CHH") {
+  con_fk_df_all_filt_stocha_mC_group1 <- con_fk_df_all_filt %>%
+    dplyr::filter(mean_stocha_all <= mean_stocha_all_low) %>%
+    dplyr::filter(mean_mC_all     <= mean_mC_all_low)
 
-con_fk_df_all_filt_stocha_mid_mC_low_group2 <- con_fk_df_all_filt %>%
-  dplyr::filter(mean_stocha_all >  mean_stocha_all_low) %>%
-  dplyr::filter(mean_mC_all     <= mean_mC_all_low)
+  con_fk_df_all_filt_stocha_mC_group2 <- con_fk_df_all_filt %>%
+    dplyr::filter(mean_stocha_all >  mean_stocha_all_low) %>%
+    dplyr::filter(mean_mC_all     <= mean_mC_all_low)
 
-con_fk_df_all_filt_stocha_mid_mC_mid_group3 <- con_fk_df_all_filt %>%
-  dplyr::filter(mean_stocha_all <= mean_stocha_all_mid) %>%
-  dplyr::filter(mean_mC_all     >  mean_mC_all_low) %>%
-  dplyr::filter(mean_mC_all     <= mean_mC_all_mid)
+  con_fk_df_all_filt_stocha_mC_group3 <- con_fk_df_all_filt %>%
+    dplyr::filter(mean_stocha_all <= mean_stocha_all_low) %>%
+    dplyr::filter(mean_mC_all     >  mean_mC_all_low) %>%
+    dplyr::filter(mean_mC_all     <= mean_mC_all_mid)
 
-con_fk_df_all_filt_stocha_high_mC_mid_group4 <- con_fk_df_all_filt %>%
-  dplyr::filter(mean_stocha_all >  mean_stocha_all_mid) %>%
-  dplyr::filter(mean_mC_all     >  mean_mC_all_low) %>%
-  dplyr::filter(mean_mC_all     <= mean_mC_all_mid)
+  con_fk_df_all_filt_stocha_mC_group4 <- con_fk_df_all_filt %>%
+    dplyr::filter(mean_stocha_all >  mean_stocha_all_low) %>%
+    dplyr::filter(mean_mC_all     >  mean_mC_all_low) %>%
+    dplyr::filter(mean_mC_all     <= mean_mC_all_mid)
 
-con_fk_df_all_filt_stocha_high_mC_high_group5 <- con_fk_df_all_filt %>%
-  dplyr::filter(mean_stocha_all <= mean_stocha_all_high) %>%
-  dplyr::filter(mean_mC_all     >  mean_mC_all_mid) %>%
-  dplyr::filter(mean_mC_all     <= mean_mC_all_high)
+  con_fk_df_all_filt_stocha_mC_group5 <- con_fk_df_all_filt %>%
+    dplyr::filter(mean_stocha_all <= mean_stocha_all_mid) %>%
+    dplyr::filter(mean_mC_all     >  mean_mC_all_mid) %>%
+    dplyr::filter(mean_mC_all     <= mean_mC_all_high)
 
-con_fk_df_all_filt_stocha_vhigh_mC_high_group6 <- con_fk_df_all_filt %>%
-  dplyr::filter(mean_stocha_all >  mean_stocha_all_high) %>%
-  dplyr::filter(mean_mC_all     >  mean_mC_all_mid) %>%
-  dplyr::filter(mean_mC_all     <= mean_mC_all_high)
+  con_fk_df_all_filt_stocha_mC_group6 <- con_fk_df_all_filt %>%
+    dplyr::filter(mean_stocha_all >  mean_stocha_all_mid) %>%
+    dplyr::filter(mean_mC_all     >  mean_mC_all_mid) %>%
+    dplyr::filter(mean_mC_all     <= mean_mC_all_high)
 
-con_fk_df_all_filt_stocha_mid_mC_vhigh_group7 <- con_fk_df_all_filt %>%
-  dplyr::filter(mean_stocha_all <= mean_stocha_all_mid) %>%
-  dplyr::filter(mean_mC_all     >  mean_mC_all_high)
+  con_fk_df_all_filt_stocha_mC_group7 <- con_fk_df_all_filt %>%
+    dplyr::filter(mean_stocha_all <= mean_stocha_all_high) %>%
+    dplyr::filter(mean_mC_all     >  mean_mC_all_high)
 
-con_fk_df_all_filt_stocha_high_mC_vhigh_group8 <- con_fk_df_all_filt %>%
-  dplyr::filter(mean_stocha_all > mean_stocha_all_mid) %>%
-  dplyr::filter(mean_mC_all     >  mean_mC_all_high)
+  con_fk_df_all_filt_stocha_mC_group8 <- con_fk_df_all_filt %>%
+    dplyr::filter(mean_stocha_all > mean_stocha_all_high) %>%
+    dplyr::filter(mean_mC_all     > mean_mC_all_high)
+}
 
-write.table(con_fk_df_all_filt_stocha_low_mC_low_group1,
+
+write.table(con_fk_df_all_filt_stocha_mC_group1,
             paste0(outDir,
                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                    "_", context,
@@ -581,7 +730,7 @@ write.table(con_fk_df_all_filt_stocha_low_mC_low_group1,
                    "_filt_df_mean_stocha_all_mean_mC_all_group1_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
-write.table(con_fk_df_all_filt_stocha_mid_mC_low_group2,
+write.table(con_fk_df_all_filt_stocha_mC_group2,
             paste0(outDir,
                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                    "_", context,
@@ -589,7 +738,7 @@ write.table(con_fk_df_all_filt_stocha_mid_mC_low_group2,
                    "_filt_df_mean_stocha_all_mean_mC_all_group2_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
-write.table(con_fk_df_all_filt_stocha_mid_mC_mid_group3,
+write.table(con_fk_df_all_filt_stocha_mC_group3,
             paste0(outDir,
                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                    "_", context,
@@ -597,7 +746,7 @@ write.table(con_fk_df_all_filt_stocha_mid_mC_mid_group3,
                    "_filt_df_mean_stocha_all_mean_mC_all_group3_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
-write.table(con_fk_df_all_filt_stocha_high_mC_mid_group4,
+write.table(con_fk_df_all_filt_stocha_mC_group4,
             paste0(outDir,
                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                    "_", context,
@@ -605,7 +754,7 @@ write.table(con_fk_df_all_filt_stocha_high_mC_mid_group4,
                    "_filt_df_mean_stocha_all_mean_mC_all_group4_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
-write.table(con_fk_df_all_filt_stocha_high_mC_high_group5,
+write.table(con_fk_df_all_filt_stocha_mC_group5,
             paste0(outDir,
                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                    "_", context,
@@ -613,7 +762,7 @@ write.table(con_fk_df_all_filt_stocha_high_mC_high_group5,
                    "_filt_df_mean_stocha_all_mean_mC_all_group5_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
-write.table(con_fk_df_all_filt_stocha_vhigh_mC_high_group6,
+write.table(con_fk_df_all_filt_stocha_mC_group6,
             paste0(outDir,
                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                    "_", context,
@@ -621,7 +770,7 @@ write.table(con_fk_df_all_filt_stocha_vhigh_mC_high_group6,
                    "_filt_df_mean_stocha_all_mean_mC_all_group6_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
-write.table(con_fk_df_all_filt_stocha_mid_mC_vhigh_group7,
+write.table(con_fk_df_all_filt_stocha_mC_group7,
             paste0(outDir,
                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                    "_", context,
@@ -629,7 +778,7 @@ write.table(con_fk_df_all_filt_stocha_mid_mC_vhigh_group7,
                    "_filt_df_mean_stocha_all_mean_mC_all_group7_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
-write.table(con_fk_df_all_filt_stocha_high_mC_vhigh_group8,
+write.table(con_fk_df_all_filt_stocha_mC_group8,
             paste0(outDir,
                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                    "_", context,

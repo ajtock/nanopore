@@ -137,8 +137,8 @@ mito_ins_GR <- GRanges(seqnames = "Chr2",
                        strand = "*")
 
 featextGR <- GRanges(seqnames = seqnames(featGR),
-                     ranges = IRanges(start = start(featGR)-2000,
-                                      end = end(featGR)+2000),
+                     ranges = IRanges(start = start(featGR)-1000,
+                                      end = end(featGR)+1000),
                      strand = strand(featGR),
                      name = featGR$name,
                      score = featGR$score)
@@ -158,15 +158,15 @@ if(featRegion == "bodies") {
   featGR <- featGR
 } else if(featRegion == "promoters") {
   # Obtain 1000 bp upstream of start coordinates
-  featGR <- promoters(featGR, upstream = 2000, downstream = 0)
+  featGR <- promoters(featGR, upstream = 1000, downstream = 0)
 } else if(featRegion == "terminators") {
   # Obtain 1000 bp downstream of end coordinates
   source("/projects/meiosis/ajt200/Rfunctions/TTSplus.R")
-  featGR <- TTSplus(featGR, upstream = -1, downstream = 2000)
+  featGR <- TTSplus(featGR, upstream = -1, downstream = 1000)
 } else if(featRegion == "regions") {
   featGR <- GRanges(seqnames = seqnames(featGR),
-                    ranges = IRanges(start = start(featGR)-2000,
-                                     end = end(featGR)+2000),
+                    ranges = IRanges(start = start(featGR)-1000,
+                                     end = end(featGR)+1000),
                     strand = strand(featGR),
                     name = featGR$name,
                     score = featGR$score)
