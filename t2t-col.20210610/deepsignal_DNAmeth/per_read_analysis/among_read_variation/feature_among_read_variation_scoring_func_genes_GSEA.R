@@ -5,7 +5,7 @@
 # 1. GO term over-representation analysis of genes grouped by both mean within-read stochasticity and mean methylation proportion
 
 # Usage:
-# /applications/R/R-4.0.0/bin/Rscript feature_among_read_variation_scoring_func_genes_GSEA.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' gene bodies BP
+# /applications/R/R-4.0.0/bin/Rscript feature_among_read_variation_scoring_func_genes_GSEA.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'gene' 'bodies' 'BP'
  
 # Divide each read into adjacent segments each consisting of a given number of consecutive cytosines,
 # and calculate the methylation proportion for each segment of each read
