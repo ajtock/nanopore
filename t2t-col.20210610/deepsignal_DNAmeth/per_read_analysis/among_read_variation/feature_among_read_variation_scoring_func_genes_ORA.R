@@ -73,8 +73,8 @@ outDir <- paste0(featName, "_", featRegion, "/", paste0(chrName, collapse = "_")
 plotDir_kappa_mC <- paste0(outDir, "plots/ORA_GO_", ontology, "_", context, "_kappa_mC/")
 plotDir_stocha_mC <- paste0(outDir, "plots/ORA_GO_", ontology, "_", context, "_stocha_mC/")
 plotDir_kappa_stocha <- paste0(outDir, "plots/ORA_GO_", ontology, "_", context, "_kappa_stocha/")
-system(paste0("[ -d ", plotDir_kappa, " ] || mkdir -p ", plotDir_kappa))
-system(paste0("[ -d ", plotDir_stocha, " ] || mkdir -p ", plotDir_stocha))
+system(paste0("[ -d ", plotDir_kappa_mC, " ] || mkdir -p ", plotDir_kappa_mC))
+system(paste0("[ -d ", plotDir_stocha_mC, " ] || mkdir -p ", plotDir_stocha_mC))
 system(paste0("[ -d ", plotDir_kappa_stocha, " ] || mkdir -p ", plotDir_kappa_stocha))
 
 ## Genomic definitions
@@ -199,7 +199,7 @@ for(x in 1:length(filt_kappa_mC_groups_enrichGO)) {
                              showCategory = 50,
                              title = paste0("Fleiss' kappa and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
                              font.size = 12)
-      ggsave(paste0(plotDir_kappa,
+      ggsave(paste0(plotDir_kappa_mC,
                     featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                     "_", context,
                     "_NAmax", NAmax,
@@ -214,7 +214,7 @@ for(x in 1:length(filt_kappa_mC_groups_enrichGO)) {
                                  showCategory = 50,
                                  title = paste0("Fleiss' kappa and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
                                  font.size = 12)
-        ggsave(paste0(plotDir_kappa,
+        ggsave(paste0(plotDir_kappa_mC,
                       featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                       "_", context,
                       "_NAmax", NAmax,
@@ -228,7 +228,7 @@ for(x in 1:length(filt_kappa_mC_groups_enrichGO)) {
                               showCategory = 50,
                               title = paste0("Fleiss' kappa and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
                               font.size = 12)
-        ggsave(paste0(plotDir_kappa,
+        ggsave(paste0(plotDir_kappa_mC,
                       featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                       "_", context,
                       "_NAmax", NAmax,
@@ -289,7 +289,7 @@ for(x in 1:length(filt_stocha_mC_groups_enrichGO)) {
                              showCategory = 50,
                              title = paste0("Stochasticity and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
                              font.size = 12)
-      ggsave(paste0(plotDir_stocha,
+      ggsave(paste0(plotDir_stocha_mC,
                     featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                     "_", context,
                     "_NAmax", NAmax,
@@ -304,7 +304,7 @@ for(x in 1:length(filt_stocha_mC_groups_enrichGO)) {
                                  showCategory = 50,
                                  title = paste0("Stochasticity and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
                                  font.size = 12)
-        ggsave(paste0(plotDir_stocha,
+        ggsave(paste0(plotDir_stocha_mC,
                       featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                       "_", context,
                       "_NAmax", NAmax,
@@ -318,7 +318,7 @@ for(x in 1:length(filt_stocha_mC_groups_enrichGO)) {
                               showCategory = 50,
                               title = paste0("Stochasticity and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
                               font.size = 12)
-        ggsave(paste0(plotDir_stocha,
+        ggsave(paste0(plotDir_stocha_mC,
                       featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                       "_", context,
                       "_NAmax", NAmax,
