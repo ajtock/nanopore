@@ -125,7 +125,7 @@ trendPlot <- function(dataFrame, mapping, xvar, yvar, xlab, ylab, xaxtrans, yaxt
                          digits = 5))))
 }
 
-if(featRegion == "bodies") {
+if(featRegion %in% c("bodies", "regions")) {
   if(context == "CpG") {
     fk_kappa_all_high <- 0.55
     fk_kappa_all_mid  <- 0.35
@@ -166,7 +166,7 @@ if(featRegion == "bodies") {
     mean_mC_all_mid   <- 0.01737801
     mean_mC_all_low   <- 0.01000000
   }
-} else if(featRegion == "promoters") {
+} else if(featRegion %in% c("promoters", "terminators")) {
   if(context == "CpG") {
     fk_kappa_all_high <- 0.55
     fk_kappa_all_mid  <- 0.35
