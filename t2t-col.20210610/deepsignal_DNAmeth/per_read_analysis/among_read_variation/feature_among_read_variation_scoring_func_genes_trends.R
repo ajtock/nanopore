@@ -171,7 +171,7 @@ if(featRegion == "bodies") {
     fk_kappa_all_high <- 0.55
     fk_kappa_all_mid  <- 0.35
     fk_kappa_all_low  <- 0.04
-    mean_stocha_all_high <- 0.28
+    mean_stocha_all_high <- 0.22
     mean_stocha_all_mid  <- 0.17
     mean_stocha_all_low  <- 0.08
     mean_min_acf_all_high <- -0.05
@@ -184,7 +184,7 @@ if(featRegion == "bodies") {
     fk_kappa_all_high <- 0.05623413
     fk_kappa_all_mid  <- 0.01778279 
     fk_kappa_all_low  <- 0.01000000 
-    mean_stocha_all_high <- 0.28183830
+    mean_stocha_all_high <- 0.22387210
     mean_stocha_all_mid  <- 0.05011872
     mean_stocha_all_low  <- 0.03162278
     mean_min_acf_all_high <- -0.05
