@@ -70,10 +70,12 @@ library(ggplot2)
 ##library(grid)
 
 outDir <- paste0(featName, "_", featRegion, "/", paste0(chrName, collapse = "_"), "/")
-plotDir_kappa <- paste0(outDir, "plots/ORA_GO_", ontology, "_", context, "_kappa/")
-plotDir_stocha <- paste0(outDir, "plots/ORA_GO_", ontology, "_", context, "_stocha/")
+plotDir_kappa_mC <- paste0(outDir, "plots/ORA_GO_", ontology, "_", context, "_kappa_mC/")
+plotDir_stocha_mC <- paste0(outDir, "plots/ORA_GO_", ontology, "_", context, "_stocha_mC/")
+plotDir_kappa_stocha <- paste0(outDir, "plots/ORA_GO_", ontology, "_", context, "_kappa_stocha/")
 system(paste0("[ -d ", plotDir_kappa, " ] || mkdir -p ", plotDir_kappa))
 system(paste0("[ -d ", plotDir_stocha, " ] || mkdir -p ", plotDir_stocha))
+system(paste0("[ -d ", plotDir_kappa_stocha, " ] || mkdir -p ", plotDir_kappa_stocha))
 
 ## Genomic definitions
 #fai <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase, "/", refbase, ".fa.fai"), header = F)
@@ -241,7 +243,7 @@ for(x in 1:length(filt_kappa_mC_groups_enrichGO)) {
 }
 
 
-# Load feature groups (defined based on stochasticity vs mean mC trend plots) to enable enrichment analysis
+# Load feature groups (defined based on mean stocha vs mean mC trend plots) to enable enrichment analysis
 
 filt_stocha_mC_groups <- lapply(seq_along(1:8), function(x) {
   tmp <- read.table(paste0(outDir,
@@ -378,9 +380,9 @@ for(x in 1:length(filt_kappa_stocha_groups_enrichGO)) {
       print(x)
       dp_enrichGO <- dotplot(filt_kappa_stocha_groups_enrichGO[[x]],
                              showCategory = 50,
-                             title = paste0("Fleiss' kappa and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
+                             title = paste0("Fleiss' kappa and mean stochasticity (m", context, ") in ", featName, " ", featRegion, " Group ", x),
                              font.size = 12)
-      ggsave(paste0(plotDir_kappa,
+      ggsave(paste0(plotDir_kappa_stocha,
                     featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                     "_", context,
                     "_NAmax", NAmax,
@@ -393,9 +395,9 @@ for(x in 1:length(filt_kappa_stocha_groups_enrichGO)) {
       if(sum(filt_kappa_stocha_groups_enrichGO[[x]]@result$p.adjust <= 0.05) > 1) {
         emp_enrichGO <- emapplot(filt_kappa_stocha_groups_enrichGO[[x]],
                                  showCategory = 50,
-                                 title = paste0("Fleiss' kappa and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
+                                 title = paste0("Fleiss' kappa and mean stochasticity (m", context, ") in ", featName, " ", featRegion, " Group ", x),
                                  font.size = 12)
-        ggsave(paste0(plotDir_kappa,
+        ggsave(paste0(plotDir_kappa_stocha,
                       featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                       "_", context,
                       "_NAmax", NAmax,
@@ -407,9 +409,9 @@ for(x in 1:length(filt_kappa_stocha_groups_enrichGO)) {
   
         gp_enrichGO <- goplot(filt_kappa_stocha_groups_enrichGO[[x]],
                               showCategory = 50,
-                              title = paste0("Fleiss' kappa and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
+                              title = paste0("Fleiss' kappa and mean stochasticity (m", context, ") in ", featName, " ", featRegion, " Group ", x),
                               font.size = 12)
-        ggsave(paste0(plotDir_kappa,
+        ggsave(paste0(plotDir_kappa_stocha,
                       featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                       "_", context,
                       "_NAmax", NAmax,
