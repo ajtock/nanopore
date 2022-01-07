@@ -443,6 +443,50 @@ ggTrend_fk_Cs_all_mean_stocha_all_filt <- ggTrend_fk_Cs_all_mean_stocha_all_filt
   geom_hline(yintercept = mean_stocha_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
   facet_grid(cols = vars(chr), scales = "free_x")
 
+
+ggTrend_mean_stocha_all_fk_kappa_all <- trendPlot(dataFrame = con_fk_df_all,
+                                                  mapping = aes(x = mean_stocha_all, y = fk_kappa_all),
+                                                  xvar = mean_stocha_all,
+                                                  yvar = fk_kappa_all,
+                                                  xlab = bquote(.(featName)*" mean stochasticity (m"*.(context)*")"),
+                                                  ylab = bquote(.(featName)*" Fleiss' kappa (m"*.(context)*")"),
+                                                  xaxtrans = log10_trans(),
+                                                  yaxtrans = log10_trans(),
+                                                  xbreaks = trans_breaks("log10", function(x) 10^x),
+                                                  ybreaks = trans_breaks("log10", function(x) 10^x),
+                                                  xlabels = trans_format("log10", math_format(10^.x)),
+                                                  ylabels = trans_format("log10", math_format(10^.x)))
+ggTrend_mean_stocha_all_fk_kappa_all <- ggTrend_mean_stocha_all_fk_kappa_all +
+  geom_hline(yintercept = fk_kappa_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
+  geom_hline(yintercept = fk_kappa_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
+  geom_hline(yintercept = fk_kappa_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
+  geom_vline(xintercept = mean_stocha_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
+  geom_vline(xintercept = mean_stocha_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
+  geom_vline(xintercept = mean_stocha_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+ggTrend_mean_stocha_all_fk_kappa_all_filt <- trendPlot(dataFrame = con_fk_df_all_filt,
+                                                       mapping = aes(x = mean_stocha_all, y = fk_kappa_all),
+                                                       xvar = mean_stocha_all,
+                                                       yvar = fk_kappa_all,
+                                                       xlab = bquote(.(featName)*" mean stochasticity (m"*.(context)*")"),
+                                                       ylab = bquote(.(featName)*" Fleiss' kappa (m"*.(context)*")"),
+                                                       xaxtrans = log10_trans(),
+                                                       yaxtrans = log10_trans(),
+                                                       xbreaks = trans_breaks("log10", function(x) 10^x),
+                                                       ybreaks = trans_breaks("log10", function(x) 10^x),
+                                                       xlabels = trans_format("log10", math_format(10^.x)),
+                                                       ylabels = trans_format("log10", math_format(10^.x)))
+ggTrend_mean_stocha_all_fk_kappa_all_filt <- ggTrend_mean_stocha_all_fk_kappa_all_filt +
+  geom_hline(yintercept = fk_kappa_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
+  geom_hline(yintercept = fk_kappa_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
+  geom_hline(yintercept = fk_kappa_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
+  geom_vline(xintercept = mean_stocha_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
+  geom_vline(xintercept = mean_stocha_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
+  geom_vline(xintercept = mean_stocha_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+
 gg_cow_list1 <- list(
                      ggTrend_mean_mC_all_fk_kappa_all,
                      ggTrend_mean_mC_all_fk_kappa_all_filt,
@@ -455,7 +499,9 @@ gg_cow_list1 <- list(
                      ggTrend_fk_Cs_all_fk_kappa_all,
                      ggTrend_fk_Cs_all_fk_kappa_all_filt,
                      ggTrend_fk_Cs_all_mean_stocha_all,
-                     ggTrend_fk_Cs_all_mean_stocha_all_filt
+                     ggTrend_fk_Cs_all_mean_stocha_all_filt,
+                     ggTrend_mean_stocha_all_fk_kappa_all,
+                     ggTrend_mean_stocha_all_fk_kappa_all_filt
                     )
 
 gg_cow1 <- plot_grid(plotlist = gg_cow_list1,
@@ -825,5 +871,182 @@ write.table(con_fk_df_all_filt_stocha_mC_group8,
                    "_", context,
                    "_NAmax", NAmax,
                    "_filt_df_mean_stocha_all_mean_mC_all_group8_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+
+
+# Filter by fk_kappa_all and mean_stocha_all
+if(context == "CpG") {
+  con_fk_df_all_filt_kappa_stocha_group1 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all    <= fk_kappa_all_low) %>%
+    dplyr::filter(mean_stocha_all <= mean_stocha_all_low)
+  
+  con_fk_df_all_filt_kappa_stocha_group2 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all    >  fk_kappa_all_low) %>%
+    dplyr::filter(mean_stocha_all <= mean_stocha_all_low)
+  
+  con_fk_df_all_filt_kappa_stocha_group3 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all    <= fk_kappa_all_mid) %>%
+    dplyr::filter(mean_stocha_all >  mean_stocha_all_low) %>%
+    dplyr::filter(mean_stocha_all <= mean_stocha_all_mid)
+  
+  con_fk_df_all_filt_kappa_stocha_group4 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all    >  fk_kappa_all_mid) %>%
+    dplyr::filter(mean_stocha_all >  mean_stocha_all_low) %>%
+    dplyr::filter(mean_stocha_all <= mean_stocha_all_mid)
+  
+  con_fk_df_all_filt_kappa_stocha_group5 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all    <= fk_kappa_all_high) %>%
+    dplyr::filter(mean_stocha_all >  mean_stocha_all_mid) %>%
+    dplyr::filter(mean_stocha_all <= mean_stocha_all_high)
+  
+  con_fk_df_all_filt_kappa_stocha_group6 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all    >  fk_kappa_all_high) %>%
+    dplyr::filter(mean_stocha_all >  mean_stocha_all_mid) %>%
+    dplyr::filter(mean_stocha_all <= mean_stocha_all_high)
+  
+  con_fk_df_all_filt_kappa_stocha_group7 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all    <= fk_kappa_all_high) %>%
+    dplyr::filter(mean_stocha_all >  mean_stocha_all_high)
+  
+  con_fk_df_all_filt_kappa_stocha_group8 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all    > fk_kappa_all_high) %>%
+    dplyr::filter(mean_stocha_all > mean_stocha_all_high)
+} else if(context == "CHG") {
+  con_fk_df_all_filt_kappa_stocha_group1 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all    <= fk_kappa_all_low) %>%
+    dplyr::filter(mean_stocha_all <= mean_stocha_all_low)
+  
+  con_fk_df_all_filt_kappa_stocha_group2 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all    >  fk_kappa_all_low) %>%
+    dplyr::filter(mean_stocha_all <= mean_stocha_all_low)
+  
+  con_fk_df_all_filt_kappa_stocha_group3 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all    <= fk_kappa_all_mid) %>%
+    dplyr::filter(mean_stocha_all >  mean_stocha_all_low) %>%
+    dplyr::filter(mean_stocha_all <= mean_stocha_all_mid)
+  
+  con_fk_df_all_filt_kappa_stocha_group4 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all    >  fk_kappa_all_mid) %>%
+    dplyr::filter(mean_stocha_all >  mean_stocha_all_low) %>%
+    dplyr::filter(mean_stocha_all <= mean_stocha_all_mid)
+  
+  con_fk_df_all_filt_kappa_stocha_group5 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all    <= fk_kappa_all_high) %>%
+    dplyr::filter(mean_stocha_all >  mean_stocha_all_mid) %>%
+    dplyr::filter(mean_stocha_all <= mean_stocha_all_high)
+  
+  con_fk_df_all_filt_kappa_stocha_group6 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all    >  fk_kappa_all_high) %>%
+    dplyr::filter(mean_stocha_all >  mean_stocha_all_mid) %>%
+    dplyr::filter(mean_stocha_all <= mean_stocha_all_high)
+  
+  con_fk_df_all_filt_kappa_stocha_group7 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all    <= fk_kappa_all_high) %>%
+    dplyr::filter(mean_stocha_all >  mean_stocha_all_high)
+  
+  con_fk_df_all_filt_kappa_stocha_group8 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all    > fk_kappa_all_high) %>%
+    dplyr::filter(mean_stocha_all > mean_stocha_all_high)
+} else if(context == "CHH") {
+  con_fk_df_all_filt_kappa_stocha_group1 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all    <= fk_kappa_all_low) %>%
+    dplyr::filter(mean_stocha_all <= mean_stocha_all_low)
+  
+  con_fk_df_all_filt_kappa_stocha_group2 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all    >  fk_kappa_all_low) %>%
+    dplyr::filter(mean_stocha_all <= mean_stocha_all_low)
+  
+  con_fk_df_all_filt_kappa_stocha_group3 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all    <= fk_kappa_all_mid) %>%
+    dplyr::filter(mean_stocha_all >  mean_stocha_all_low) %>%
+    dplyr::filter(mean_stocha_all <= mean_stocha_all_mid)
+  
+  con_fk_df_all_filt_kappa_stocha_group4 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all    >  fk_kappa_all_mid) %>%
+    dplyr::filter(mean_stocha_all >  mean_stocha_all_low) %>%
+    dplyr::filter(mean_stocha_all <= mean_stocha_all_mid)
+  
+  con_fk_df_all_filt_kappa_stocha_group5 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all    <= fk_kappa_all_high) %>%
+    dplyr::filter(mean_stocha_all >  mean_stocha_all_mid) %>%
+    dplyr::filter(mean_stocha_all <= mean_stocha_all_high)
+  
+  con_fk_df_all_filt_kappa_stocha_group6 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all    >  fk_kappa_all_high) %>%
+    dplyr::filter(mean_stocha_all >  mean_stocha_all_mid) %>%
+    dplyr::filter(mean_stocha_all <= mean_stocha_all_high)
+  
+  con_fk_df_all_filt_kappa_stocha_group7 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all    <= fk_kappa_all_high) %>%
+    dplyr::filter(mean_stocha_all >  mean_stocha_all_high)
+  
+  con_fk_df_all_filt_kappa_stocha_group8 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all    > fk_kappa_all_high) %>%
+    dplyr::filter(mean_stocha_all > mean_stocha_all_high)
+}
+
+write.table(con_fk_df_all_filt_kappa_stocha_group1,
+            paste0(outDir,
+                   featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                   "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_fk_kappa_all_mean_stocha_all_group1_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+write.table(con_fk_df_all_filt_kappa_stocha_group2,
+            paste0(outDir,
+                   featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                   "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_fk_kappa_all_mean_stocha_all_group2_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+write.table(con_fk_df_all_filt_kappa_stocha_group3,
+            paste0(outDir,
+                   featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                   "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_fk_kappa_all_mean_stocha_all_group3_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+write.table(con_fk_df_all_filt_kappa_stocha_group4,
+            paste0(outDir,
+                   featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                   "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_fk_kappa_all_mean_stocha_all_group4_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+write.table(con_fk_df_all_filt_kappa_stocha_group5,
+            paste0(outDir,
+                   featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                   "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_fk_kappa_all_mean_stocha_all_group5_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+write.table(con_fk_df_all_filt_kappa_stocha_group6,
+            paste0(outDir,
+                   featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                   "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_fk_kappa_all_mean_stocha_all_group6_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+write.table(con_fk_df_all_filt_kappa_stocha_group7,
+            paste0(outDir,
+                   featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                   "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_fk_kappa_all_mean_stocha_all_group7_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+write.table(con_fk_df_all_filt_kappa_stocha_group8,
+            paste0(outDir,
+                   featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                   "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_fk_kappa_all_mean_stocha_all_group8_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)

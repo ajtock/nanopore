@@ -329,3 +329,96 @@ for(x in 1:length(filt_stocha_mC_groups_enrichGO)) {
     }
   }
 }
+
+
+# Load feature groups (defined based on Fleiss' kappa vs mean stocha trend plots) to enable enrichment analysis
+
+filt_kappa_stocha_groups <- lapply(seq_along(1:8), function(x) {
+  tmp <- read.table(paste0(outDir,
+                           featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                           "_", context,
+                           "_NAmax", NAmax,
+                           "_filt_df_fk_kappa_all_mean_stocha_all_group", x , "_",
+                           paste0(chrName, collapse = "_"), ".tsv"),
+                    header = T)
+  tmp$name <- sub(pattern = "\\.\\d+", replacement = "", x = tmp$name)
+  tmp$name <- sub(pattern = "_\\d+", replacement = "", x = tmp$name)
+  tmp[ with(tmp, order(fk_kappa_all, decreasing = T)), ]
+})
+
+filt_kappa_stocha_groups_featID <- lapply(seq_along(filt_kappa_stocha_groups), function(x) {
+  tmp <- filt_kappa_stocha_groups[[x]]$fk_kappa_all
+  names(tmp) <- filt_kappa_stocha_groups[[x]]$name
+  na.omit(tmp)
+})
+
+filt_kappa_stocha_groups_featID_universe <- unlist(filt_kappa_stocha_groups_featID)
+
+keytypes(org.At.tair.db)
+ids <- select(org.At.tair.db, keys = keys(org.At.tair.db), columns = c("TAIR"))[,1]
+
+filt_kappa_stocha_groups_enrichGO <- lapply(seq_along(filt_kappa_stocha_groups_featID), function(x) {
+  print(x)
+  enrichGO(gene = names(filt_kappa_stocha_groups_featID[[x]]),
+           universe = names(filt_kappa_stocha_groups_featID_universe),
+           OrgDb = org.At.tair.db,
+           keyType = "TAIR",
+           readable = T,
+           ont = ontology,
+#           minGSSize = 10,
+#           maxGSSize = 500,
+           pvalueCutoff = 0.05,
+           qvalueCutoff = 0.10,
+           pAdjustMethod = "BH")
+})
+
+for(x in 1:length(filt_kappa_stocha_groups_enrichGO)) {
+  if( !is.null(filt_kappa_stocha_groups_enrichGO[[x]]) ) {
+    if( sum(filt_kappa_stocha_groups_enrichGO[[x]]@result$p.adjust <= 0.05) > 0 ) {
+      print(x)
+      dp_enrichGO <- dotplot(filt_kappa_stocha_groups_enrichGO[[x]],
+                             showCategory = 50,
+                             title = paste0("Fleiss' kappa and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
+                             font.size = 12)
+      ggsave(paste0(plotDir_kappa,
+                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                    "_", context,
+                    "_NAmax", NAmax,
+                    "_filt_df_fk_kappa_all_mean_stocha_all_group", x , "_",
+                    paste0(chrName, collapse = "_"), "_enrichGO_", ontology, "_dotplot.pdf"),
+             plot = dp_enrichGO,
+             height = 10, width = 12,
+             limitsize = F)
+
+      if(sum(filt_kappa_stocha_groups_enrichGO[[x]]@result$p.adjust <= 0.05) > 1) {
+        emp_enrichGO <- emapplot(filt_kappa_stocha_groups_enrichGO[[x]],
+                                 showCategory = 50,
+                                 title = paste0("Fleiss' kappa and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
+                                 font.size = 12)
+        ggsave(paste0(plotDir_kappa,
+                      featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                      "_", context,
+                      "_NAmax", NAmax,
+                      "_filt_df_fk_kappa_all_mean_stocha_all_group", x , "_",
+                      paste0(chrName, collapse = "_"), "_enrichGO_", ontology, "_emapplot.pdf"),
+               plot = emp_enrichGO,
+               height = 10, width = 12,
+               limitsize = F)
+  
+        gp_enrichGO <- goplot(filt_kappa_stocha_groups_enrichGO[[x]],
+                              showCategory = 50,
+                              title = paste0("Fleiss' kappa and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
+                              font.size = 12)
+        ggsave(paste0(plotDir_kappa,
+                      featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                      "_", context,
+                      "_NAmax", NAmax,
+                      "_filt_df_fk_kappa_all_mean_stocha_all_group", x , "_",
+                      paste0(chrName, collapse = "_"), "_enrichGO_", ontology, "_goplot.pdf"),
+               plot = gp_enrichGO,
+               height = 10, width = 12,
+               limitsize = F)
+      }
+    }
+  }
+}
