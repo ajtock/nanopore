@@ -4,7 +4,7 @@
 # 1. Plot among-read variation/agreement (e.g., Fleiss' kappa) and stochasticity for each TE superfamily (e.g., as boxplots or violin plots)
 
 # Usage:
-# /applications/R/R-4.0.0/bin/Rscript feature_among_read_variation_scoring_func_TEs_boxplots.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'TE' 'bodies'
+# /applications/R/R-4.0.0/bin/Rscript feature_among_read_variation_scoring_func_TEs_boxplots_genomewide.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'TE' 'bodies'
  
 # Divide each read into adjacent segments each consisting of a given number of consecutive cytosines,
 # and calculate the methylation proportion for each segment of each read
@@ -137,8 +137,6 @@ ggTrend_fk_kappa_all <- violinPlot(dataFrame = con_fk_df_all,
 #                                   yaxtrans = log2_trans(),
 #                                   ybreaks = trans_breaks("log2", function(x) 2^x),
 #                                   ylabels = trans_format("log2", math_format(2^.x)))
-ggTrend_fk_kappa_all <- ggTrend_fk_kappa_all +
-  facet_grid(cols = vars(chr), scales = "fixed")
 
 ggTrend_fk_kappa_all_filt <- violinPlot(dataFrame = con_fk_df_all_filt,
                                         mapping = aes(x = Superfamily, y = fk_kappa_all, colour = Superfamily),
@@ -152,8 +150,6 @@ ggTrend_fk_kappa_all_filt <- violinPlot(dataFrame = con_fk_df_all_filt,
 #                                        yaxtrans = log2_trans(),
 #                                        ybreaks = trans_breaks("log2", function(x) 2^x),
 #                                        ylabels = trans_format("log2", math_format(2^.x)))
-ggTrend_fk_kappa_all_filt <- ggTrend_fk_kappa_all_filt +
-  facet_grid(cols = vars(chr), scales = "fixed")
 
 
 ggTrend_mean_stocha_all <- violinPlot(dataFrame = con_fk_df_all,
@@ -168,8 +164,6 @@ ggTrend_mean_stocha_all <- violinPlot(dataFrame = con_fk_df_all,
 #                                      yaxtrans = log2_trans(),
 #                                      ybreaks = trans_breaks("log2", function(x) 2^x),
 #                                      ylabels = trans_format("log2", math_format(2^.x)))
-ggTrend_mean_stocha_all <- ggTrend_mean_stocha_all +
-  facet_grid(cols = vars(chr), scales = "fixed")
 
 ggTrend_mean_stocha_all_filt <- violinPlot(dataFrame = con_fk_df_all_filt,
                                            mapping = aes(x = Superfamily, y = mean_stocha_all, colour = Superfamily),
@@ -183,8 +177,6 @@ ggTrend_mean_stocha_all_filt <- violinPlot(dataFrame = con_fk_df_all_filt,
 #                                          yaxtrans = log2_trans(),
 #                                          ybreaks = trans_breaks("log2", function(x) 2^x),
 #                                          ylabels = trans_format("log2", math_format(2^.x)))
-ggTrend_mean_stocha_all_filt <- ggTrend_mean_stocha_all_filt +
-  facet_grid(cols = vars(chr), scales = "fixed")
 
 
 ggTrend_mean_mC_all <- violinPlot(dataFrame = con_fk_df_all,
@@ -196,8 +188,6 @@ ggTrend_mean_mC_all <- violinPlot(dataFrame = con_fk_df_all,
                                   yaxtrans = "identity",
                                   ybreaks = waiver(),
                                   ylabels = waiver())
-ggTrend_mean_mC_all <- ggTrend_mean_mC_all +
-  facet_grid(cols = vars(chr), scales = "fixed")
 
 ggTrend_mean_mC_all_filt <- violinPlot(dataFrame = con_fk_df_all_filt,
                                        mapping = aes(x = Superfamily, y = mean_mC_all, colour = Superfamily),
@@ -208,15 +198,13 @@ ggTrend_mean_mC_all_filt <- violinPlot(dataFrame = con_fk_df_all_filt,
                                        yaxtrans = "identity",
                                        ybreaks = waiver(),
                                        ylabels = waiver())
-ggTrend_mean_mC_all_filt <- ggTrend_mean_mC_all_filt +
-  facet_grid(cols = vars(chr), scales = "fixed")
 
 gg_cow_list1 <- list(
-                     ggTrend_fk_kappa_all,
+#                     ggTrend_fk_kappa_all,
                      ggTrend_fk_kappa_all_filt,
-                     ggTrend_mean_stocha_all,
+#                     ggTrend_mean_stocha_all,
                      ggTrend_mean_stocha_all_filt,
-                     ggTrend_mean_mC_all,
+#                     ggTrend_mean_mC_all,
                      ggTrend_mean_mC_all_filt
                     )
 
@@ -229,6 +217,6 @@ gg_cow1 <- plot_grid(plotlist = gg_cow_list1,
 ggsave(paste0(plotDir,
               featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase, "_", context,
               "_NAmax", NAmax, "_all_violinPlot_", paste0(chrName, collapse = "_"),
-              ".pdf"),
+              "_genomewide.pdf"),
        plot = gg_cow1,
-       height = 6*length(gg_cow_list1), width = 10*length(chrName), limitsize = F)
+       height = 6*length(gg_cow_list1), width = 10, limitsize = F)
