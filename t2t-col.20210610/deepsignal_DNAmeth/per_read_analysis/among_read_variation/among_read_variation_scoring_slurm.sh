@@ -1,8 +1,5 @@
 #!/bin/bash
 
-#! Working directory
-#!SBATCH -D /home/ajt200/analysis/nanopore/t2t-col.20210610/deepsignal_DNAmeth/per_read_analysis/among_read_variation
-
 #! Account to use (users can be part of one or more accounts).
 #! Currently we have only two: 'bioinf' and 'it-support'.
 #SBATCH -A bioinf
@@ -18,31 +15,31 @@
 #SBATCH --no-requeue
 
 #! Per-array-task-ID log file (NOTE: enclosing directory must exist)
-#SBATCH -o logs/among_read_variation_plotting_%a.log
+#SBATCH -o logs/among_read_variation_scoring_%a.log
 
 #! Per-array-task-ID error file (NOTE: enclosing directory must exist)
-#SBATCH -e logs/among_read_variation_plotting_error_%a.txt
+#SBATCH -e logs/among_read_variation_scoring_error_%a.txt
 
 #! Number of nodes to allocate
-#SBATCH --nodes=2
+#SBATCH --nodes=3
 
 #! Number of CPUs per task. Default: 1
-#SBATCH --cpus-per-task=5
+#SBATCH --cpus-per-task=32
 
 #! Minimum RAM needed for all tasks
 #! NOTE: Doesn't work with > 1M ; e.g., with 10M, 100M, 1G, get these errors:
 #! sbatch: error: Memory specification can not be satisfied
 #! sbatch: error: Batch job submission failed: Requested node configuration is not available
-#SBATCH --mem=1M
+#SBATCH --mem=127G
 
 #! Time in HH:MM:SS. Default: 14 days (currently)
-#SBATCH -t 00:01:00
+#SBATCH -t 99:00:00
 
 #! Array task IDs
-#SBATCH -a 2-3
+#SBATCH -a 2-4
 
 #! Get the relevant line of the TSV parameters file
-PARAMS=$(cat slurm_params/among_read_variation_plotting_slurm_params.tsv | head -n $SLURM_ARRAY_TASK_ID | tail -n 1)
+PARAMS=$(cat slurm_params/among_read_variation_scoring_slurm_params.tsv | head -n $SLURM_ARRAY_TASK_ID | tail -n 1)
 
 #! Get each parameter
 SAMPLE=$(echo $PARAMS | cut -d ' ' -f 1)
@@ -62,7 +59,7 @@ echo "This job is running on:"
 hostname
 
 #! Execute
-./among_read_variation_plotting_slurm.R \
+./among_read_variation_scoring.R \
   $SAMPLE $REF_BASE \
   $GENOME_BIN_SIZE $GENOME_STEP_SIZE \
   $CONTEXT $NA_MAX \
