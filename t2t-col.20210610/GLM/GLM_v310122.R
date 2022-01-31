@@ -28,8 +28,8 @@ system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
 # Load cM/Mb data
 dat <- read.csv("glm.dat.csv", header = T)
 
-# Inspect distribution of cMMb
-# By plotting the empirical density and the empirical cumulative distribution function (ECDF)
+# Inspect distribution of cMMb:
+# 1. by plotting the empirical density and the empirical cumulative distribution function (ECDF)
 pdf(paste0(plotDir, "cMMb_plotdist.pdf"))
 fitdistrplus::plotdist(dat$cMMb, histo = T, demp = T)
 dev.off()
@@ -48,26 +48,26 @@ dev.off()
 
 # Plot random gamma distribution
 set.seed(9382)
-pdf(paste0(plotDir, "random_gamma_n95_plotdist.pdf"))
+pdf(paste0(plotDir, "random_gamma_n", length(dat$cMMb), "_plotdist.pdf"))
 fitdistrplus::plotdist(rgamma(n = length(dat$cMMb), shape = 1, rate = 0.25),
                        histo = T, demp = T)
 dev.off()
 
 # Plot random exponential distribution
 set.seed(9382)
-pdf(paste0(plotDir, "random_exponential_n95_plotdist.pdf"))
+pdf(paste0(plotDir, "random_exponential_n", length(dat$cMMb), "_plotdist.pdf"))
 fitdistrplus::plotdist(rexp(n = length(dat$cMMb), rate = 0.25),
                        histo = T, demp = T)
 dev.off()
 
 # Plot random weibull distribution
 set.seed(9382)
-pdf(paste0(plotDir, "random_weibull_n95_plotdist.pdf"))
+pdf(paste0(plotDir, "random_weibull_n", length(dat$cMMb), "_plotdist.pdf"))
 fitdistrplus::plotdist(rweibull(n = length(dat$cMMb), shape = 1, scale = 4),
                        histo = T, demp = T)
 dev.off()
 
-# By plotting a skewness-kurtosis (Cullen and Frey) graph
+# 2. by plotting a skewness-kurtosis (Cullen and Frey) graph
 # using descdist from the fitdistrplus package, with 1000 bootstraps 
 # See https://stats.stackexchange.com/questions/58220/what-distribution-does-my-data-follow
 # and https://stackoverflow.com/questions/31741742/how-to-identify-the-distribution-of-the-given-data-using-r
@@ -82,6 +82,19 @@ dev.off()
 #mean:  4.510157
 #estimated sd:  4.742442
 #estimated skewness:  1.303429
+#estimated kurtosis:  4.211326
+
+pdf(paste0(plotDir, "cMMb_descdistPlot_discrete.pdf"))
+fitdistrplus::descdist(dat$cMMb, discrete = T,
+                       obs.col = "darkblue", boot = 1000, boot.col = "red")
+dev.off()
+#summary statistics
+#------
+#min:  0   max:  19.47513 
+#median:  2.900039 
+#mean:  4.510157 
+#estimated sd:  4.742442 
+#estimated skewness:  1.303429 
 #estimated kurtosis:  4.211326
 
 pdf(paste0(plotDir, "cMMb_plus1e-06_descdistPlot.pdf"))
@@ -112,18 +125,51 @@ dev.off()
 
 
 # Based on cMMb_descdistPlot.pdf, inspect fit to distributions
-# Quantile-quantile (qq) plot for gamma distribution, with offset of +1
+# Quantile-quantile (qq) plot for gamma distribution, with offset of +1 or +1e-06
 pdf(paste0(plotDir, "cMMb_plus1_qqPlot_gamma.pdf"))
 qualityTools::qqPlot(x = dat$cMMb+1, y = "gamma")
 dev.off()
-pdf(paste0(plotDir, "cMMb_plus1_qqPlot_gamma.pdf"))
+pdf(paste0(plotDir, "cMMb_plus1e-06_qqPlot_gamma.pdf"))
 qualityTools::qqPlot(x = dat$cMMb+1e-06, y = "gamma")
 dev.off()
+#There were 12 warnings (use warnings() to see them)
+#Warning messages:
+#1: In densfun(x, parm[1], parm[2], ...) : NaNs produced
+#2: In densfun(x, parm[1], parm[2], ...) : NaNs produced
+#3: In densfun(x, parm[1], parm[2], ...) : NaNs produced
+#4: In densfun(x, parm[1], parm[2], ...) : NaNs produced
+#5: In densfun(x, parm[1], parm[2], ...) : NaNs produced
+#6: In densfun(x, parm[1], parm[2], ...) : NaNs produced
+#7: In densfun(x, parm[1], parm[2], ...) : NaNs produced
+#8: In densfun(x, parm[1], parm[2], ...) : NaNs produced
+#9: In densfun(x, parm[1], parm[2], ...) : NaNs produced
+#10: In densfun(x, parm[1], parm[2], ...) : NaNs produced
+#11: In densfun(x, parm[1], parm[2], ...) : NaNs produced
+#12: In densfun(x, parm[1], parm[2], ...) : NaNs produced
+
+# Quantile-quantile (qq) plot for Weibull distribution, with offset of +1 or +1e-06
 pdf(paste0(plotDir, "cMMb_plus1_qqPlot_weibull.pdf"))
 qualityTools::qqPlot(x = dat$cMMb+1, y = "weibull")
 dev.off()
+#Warning messages:
+#1: In densfun(x, parm[1], parm[2], ...) : NaNs produced
+#2: In densfun(x, parm[1], parm[2], ...) : NaNs produced
+pdf(paste0(plotDir, "cMMb_plus1e-06_qqPlot_weibull.pdf"))
+qualityTools::qqPlot(x = dat$cMMb+1e-06, y = "weibull")
+dev.off()
+#Warning messages:
+#1: In densfun(x, parm[1], parm[2], ...) : NaNs produced
+#pdf(paste0(plotDir, "cMMb_qqPlot_weibull.pdf"))
+#qualityTools::qqPlot(x = dat$cMMb, y = "weibull")
+#dev.off()
+#Error in (function (x, densfun, start, ...)  : Weibull values must be > 0 
+
+# Quantile-quantile (qq) plot for exponential distribution, with offset of +1, or +1e-06 or no offset
 pdf(paste0(plotDir, "cMMb_qqPlot_plus1_exponential.pdf"))
 qualityTools::qqPlot(x = dat$cMMb+1, y = "exponential")
+dev.off()
+pdf(paste0(plotDir, "cMMb_qqPlot_plus1e-06_exponential.pdf"))
+qualityTools::qqPlot(x = dat$cMMb+1e-06, y = "exponential")
 dev.off()
 pdf(paste0(plotDir, "cMMb_qqPlot_exponential.pdf"))
 qualityTools::qqPlot(x = dat$cMMb, y = "exponential")
@@ -134,25 +180,43 @@ dev.off()
 # Inspect fit of distribution using maximum likelihood estimation (MLE) within fitdistrplus, with offset of +1
 # See https://cran.r-project.org/web/packages/fitdistrplus/vignettes/paper2JSS.pdf
 cMMb_plus1_fitdist_gamma <- fitdistrplus::fitdist(data = dat$cMMb+1,
-                                                          distr = "gamma",
-                                                          method = "mle")
+                                                  distr = "gamma",
+                                                  method = "mle")
 cMMb_plus1_fitdist_lnorm <- fitdistrplus::fitdist(data = dat$cMMb+1,
-                                                          distr = "lnorm",
-                                                          method = "mle")
+                                                  distr = "lnorm",
+                                                  method = "mle")
 cMMb_plus1_fitdist_weibull <- fitdistrplus::fitdist(data = dat$cMMb+1,
-                                                            distr = "weibull",
-                                                            method = "mle")
+                                                    distr = "weibull",
+                                                    method = "mle")
 cMMb_plus1_fitdist_exp <- fitdistrplus::fitdist(data = dat$cMMb+1,
-                                                        distr = "exp",
-                                                        method = "mle")
+                                                distr = "exp",
+                                                method = "mle")
 cMMb_fitdist_exp <- fitdistrplus::fitdist(data = dat$cMMb,
-                                             distr = "exp",
-                                             method = "mle")
+                                          distr = "exp",
+                                          method = "mle")
+
+cMMb_plus1eNeg06_fitdist_gamma <- fitdistrplus::fitdist(data = dat$cMMb+1e-06,
+                                                        distr = "gamma",
+                                                        method = "mle")
+cMMb_plus1eNeg06_fitdist_lnorm <- fitdistrplus::fitdist(data = dat$cMMb+1e-06,
+                                                        distr = "lnorm",
+                                                        method = "mle")
+cMMb_plus1eNeg06_fitdist_weibull <- fitdistrplus::fitdist(data = dat$cMMb+1e-06,
+                                                          distr = "weibull",
+                                                          method = "mle")
+cMMb_plus1eNeg06_fitdist_exp <- fitdistrplus::fitdist(data = dat$cMMb+1e-06,
+                                                      distr = "exp",
+                                                      method = "mle")
 print(summary(cMMb_plus1_fitdist_gamma))
 print(summary(cMMb_plus1_fitdist_lnorm))
 print(summary(cMMb_plus1_fitdist_weibull))
 print(summary(cMMb_plus1_fitdist_exp))
 print(summary(cMMb_fitdist_exp))
+
+print(summary(cMMb_plus1eNeg06_fitdist_gamma))
+print(summary(cMMb_plus1eNeg06_fitdist_lnorm))
+print(summary(cMMb_plus1eNeg06_fitdist_weibull))
+print(summary(cMMb_plus1eNeg06_fitdist_exp))
 
 # Generate goodness-of-fit plots:
 # See https://cran.r-project.org/web/packages/fitdistrplus/vignettes/paper2JSS.pdf
@@ -184,41 +248,42 @@ ppcomp(list(cMMb_plus1_fitdist_lnorm, cMMb_plus1_fitdist_weibull,
             cMMb_plus1_fitdist_exp, cMMb_plus1_fitdist_gamma),
        legendtext = plot.legend, fitpch = 20)
 dev.off()
-pdf(paste0(plotDir, "cMMb_plus1eNeg6_GoFplots.pdf"))
+
+pdf(paste0(plotDir, "cMMb_plus1e-06_GoFplots.pdf"))
 par(mfrow = c(2, 2))
 plot.legend <- c("Log-normal", "Weibull", "Exponential", "Gamma")
-denscomp(list(cMMb_plus1eNeg6_fitdist_lnorm, cMMb_plus1eNeg6_fitdist_weibull,
-              cMMb_plus1eNeg6_fitdist_exp, cMMb_plus1eNeg6_fitdist_gamma),
+denscomp(list(cMMb_plus1eNeg06_fitdist_lnorm, cMMb_plus1eNeg06_fitdist_weibull,
+              cMMb_plus1eNeg06_fitdist_exp, cMMb_plus1eNeg06_fitdist_gamma),
          legendtext = plot.legend, fitlwd = 2)
-qqcomp(list(cMMb_plus1eNeg6_fitdist_lnorm, cMMb_plus1eNeg6_fitdist_weibull,
-            cMMb_plus1eNeg6_fitdist_exp, cMMb_plus1eNeg6_fitdist_gamma),
+qqcomp(list(cMMb_plus1eNeg06_fitdist_lnorm, cMMb_plus1eNeg06_fitdist_weibull,
+            cMMb_plus1eNeg06_fitdist_exp, cMMb_plus1eNeg06_fitdist_gamma),
        legendtext = plot.legend, fitpch = 20)
-cdfcomp(list(cMMb_plus1eNeg6_fitdist_lnorm, cMMb_plus1eNeg6_fitdist_weibull,
-             cMMb_plus1eNeg6_fitdist_exp, cMMb_plus1eNeg6_fitdist_gamma),
+cdfcomp(list(cMMb_plus1eNeg06_fitdist_lnorm, cMMb_plus1eNeg06_fitdist_weibull,
+             cMMb_plus1eNeg06_fitdist_exp, cMMb_plus1eNeg06_fitdist_gamma),
         legendtext = plot.legend, fitlwd = 2)
-ppcomp(list(cMMb_plus1eNeg6_fitdist_lnorm, cMMb_plus1eNeg6_fitdist_weibull,
-            cMMb_plus1eNeg6_fitdist_exp, cMMb_plus1eNeg6_fitdist_gamma),
+ppcomp(list(cMMb_plus1eNeg06_fitdist_lnorm, cMMb_plus1eNeg06_fitdist_weibull,
+            cMMb_plus1eNeg06_fitdist_exp, cMMb_plus1eNeg06_fitdist_gamma),
        legendtext = plot.legend, fitpch = 20)
 dev.off()
 
 
-# Load log2(ChIP/input) coverage within marker intervals
-covMat <- read.table(paste0("/home/ajt200/analysis/CENH3_seedlings_Maheshwari_Comai_2017_GenomeRes/",
-                            "xiaohui_pipeline_RaGOO_v2.0/coverage/log2ChIPinput/CTL3.9profiles/",
-                            "log2ChIPinput_RaGOO_v2.0_marker_intervals_norm_coverage_matrix_unsmoothed.tsv"),
-                            header = T)
-covMat_colnames <- colnames(covMat)
-covMat_colnames <- gsub("log2_WT_", "", covMat_colnames)
-covMat_colnames <- gsub("log2_", "", covMat_colnames)
-covMat_colnames <- gsub("ChIP_set(\\d)", "Set\\1_ChIP", covMat_colnames, perl = T)
-covMat_colnames <- gsub("input_set(\\d)", "Set\\1_input", covMat_colnames, perl = T)
-covMat_colnames <- gsub("_ChIP.*", "", covMat_colnames, perl = T) 
-covMat_colnames <- gsub("_WT_gDNA_Rep1_R1", "", covMat_colnames) 
-colnames(covMat) <- covMat_colnames
-
-# Create data object for model
-dat <- data.frame(covMat,
-                  cMMb = dat$cMMb)
+## Load log2(ChIP/input) coverage within marker intervals
+#covMat <- read.table(paste0("/home/ajt200/analysis/CENH3_seedlings_Maheshwari_Comai_2017_GenomeRes/",
+#                            "xiaohui_pipeline_RaGOO_v2.0/coverage/log2ChIPinput/CTL3.9profiles/",
+#                            "log2ChIPinput_RaGOO_v2.0_marker_intervals_norm_coverage_matrix_unsmoothed.tsv"),
+#                            header = T)
+#covMat_colnames <- colnames(covMat)
+#covMat_colnames <- gsub("log2_WT_", "", covMat_colnames)
+#covMat_colnames <- gsub("log2_", "", covMat_colnames)
+#covMat_colnames <- gsub("ChIP_set(\\d)", "Set\\1_ChIP", covMat_colnames, perl = T)
+#covMat_colnames <- gsub("input_set(\\d)", "Set\\1_input", covMat_colnames, perl = T)
+#covMat_colnames <- gsub("_ChIP.*", "", covMat_colnames, perl = T) 
+#covMat_colnames <- gsub("_WT_gDNA_Rep1_R1", "", covMat_colnames) 
+#colnames(covMat) <- covMat_colnames
+#
+## Create data object for model
+#dat <- data.frame(covMat,
+#                  cMMb = dat$cMMb)
 
 # First fit model using the gamma distribution,
 # which will enable model fitting using the exponential distribution
@@ -234,9 +299,8 @@ dat <- data.frame(covMat,
 #                 data = dat,
 #                 family = Gamma(link="inverse"),
 #                 control = glm.control(maxit = 100000))
-glmGamma <- glm2(formula = cMMb+1 ~ (CENH3_Rep1 + H2AW6_Set1 + H2AZ_Set1 + H3K4me1_Set2 + H3K4me3_Set2 +
-                                     H3K9me2_Rep1 + REC8_HA_Rep2 + ASY1_Rep1 + MSH4_HA_Rep1 +
-                                     DMC1_V5_Rep1 + MTOPVIB_HA_Rep1 + MTOPVIB_HA_Rep2 + SPO11oligos_Rep1)^2,
+glmGamma <- glm2(formula = cMMb+1 ~ (CG + CHG + CHH + genes + H2AZ + H3K4me3 + H3K9me2 +
+                                     REC8 + ASY1 + CENH3 + SPO11 + SNV)^2,
                  data = dat,
                  family = Gamma(link="inverse"),
                  control = glm.control(maxit = 100000))
@@ -268,6 +332,8 @@ glmGamma_select <- glm2(formula = formula(glmGamma_stepAIC),
                         data = dat,
                         family = Gamma(link="inverse"),
                         control = glm.control(maxit = 100000))
+stopifnot(identical(formula(glmGamma_select), formula(glmGamma_stepAIC)))
+glmGamma_formula <- formula(glmGamma_select)
 # Estimate the shape parameter and adjust GLM coefficient estimates and predictions
 # See https://stats.stackexchange.com/questions/58497/using-r-for-glm-with-gamma-distribution
 glmGamma_shape <- gamma.shape(glmGamma_select)
@@ -275,6 +341,7 @@ glmGamma_predict <- predict(glmGamma_select, type = "response",
                             se = T, dispersion = 1/glmGamma_shape$alpha)
 glmGamma_summary <- summary(glmGamma_select, dispersion = 1/glmGamma_shape$alpha)
 glmGamma_coeffs <- glmGamma_summary$coefficients
+
 glmExp_predict <- predict(glmGamma_select, type = "response",
                           se = T, dispersion = 1)
 glmExp_summary <- summary(glmGamma_select, dispersion = 1)
@@ -292,6 +359,7 @@ colnames(glmGamma_coeffs_df) <- c("Estimate", "StdError", "z-value", "P-value")
 write.table(glmGamma_coeffs_df,
             file = "cMMb_glmGamma_coeffs.tsv",
             quote = F, sep = "\t", row.names = T, col.names = T)
+
 save(glmExp_predict, file = "cMMb_glmExp_predict.RData")
 save(glmExp_summary, file = "cMMb_glmExp_summary.RData")
 save(glmExp_coeffs, file = "cMMb_glmExp_coeffs.RData")
@@ -313,22 +381,26 @@ options("scipen"=100)
 # Plot observed cM/Mb and predicted cM/Mb by GLM (glmGamma_select)
 pdf(paste0(plotDir, "cMMb_observed_predicted_gamma_GLM.pdf"),
     height = 5, width = 10)
-plot(x = round((dat$start+dat$end)/2),
+#plot(x = round((dat$start+dat$end)/2),
+plot(x = dat$X,
      y = glmGamma_select$y-1,
      xlab = "", ylab = "",
      xaxt = "n", yaxt = "n",
      type = "l", lwd = 2, col = "red")
-lines(x = round((dat$start+dat$end)/2),
+#lines(x = round((dat$start+dat$end)/2),
+lines(x = dat$X,
       y = glmGamma_predict$fit-1,
       lty = 2, lwd = 2, col = "black")
 axis(side = 1, cex.axis = 1, lwd.tick = 1.5,
-     at = round((dat$start+dat$end)/2),
-     labels = round(round((dat$start+dat$end)/2)/1e6, digits = 3))
+#     at = round((dat$start+dat$end)/2),
+#     labels = round(round((dat$start+dat$end)/2)/1e6, digits = 3))
+     at = dat$X,
+     labels = dat$X)
 axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
-mtext(side = 1, line = 2, cex = 1, text = "Coordinates (Mb)")
+mtext(side = 1, line = 2, cex = 1, text = "Genomic window")
 mtext(side = 2, line = 2, cex = 1, text = "cM/Mb")
 mtext(side = 3, line = 2, cex = 0.75,
-      text = "Gamma GLM: cM/Mb~(CENH3+H2A.W6+H2A.Z+H3K4me1+H3K4me3+H3K9me2+REC8+ASY1+MSH4+DMC1+MTOPVIBr1+MTOPVIBr2+SPO11-1)^2")
+      text = "Gamma GLM: cM/Mb~(mCG+mCHG+mCHH+Genes+H2A.Z+H3K4me3+H3K9me2+REC8+ASY1+CENH3+SPO11+SNV)^2")
 box(lwd = 1.5)
 legend("topleft",
        legend = c("Observed", "Predicted"),
