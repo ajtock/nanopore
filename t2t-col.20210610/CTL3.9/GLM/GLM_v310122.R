@@ -8,7 +8,7 @@
 # and chromatin and recombination ChIP-seq signals (and others) as predictor variables
 
 # Usage:
-# Rscript ./GLM_v310122.R
+# ./GLM_v310122.R
 
 options(stringsAsFactors = FALSE)
 
@@ -304,6 +304,10 @@ glmGamma <- glm2(formula = cMMb+1 ~ (CG + CHG + CHH + genes + H2AZ + H3K4me3 + H
                  data = dat,
                  family = Gamma(link="inverse"),
                  control = glm.control(maxit = 100000))
+#glmGamma <- glm2(formula = cMMb+1 ~ CG + CHG + CHH + genes + H2AZ + H3K4me3 + H3K9me2 + REC8 + ASY1 + CENH3 + SPO11 + SNV,
+#                 data = dat,
+#                 family = Gamma(link="inverse"),
+#                 control = glm.control(maxit = 100000))
 # See https://stat.ethz.ch/pipermail/r-help/2003-June/034852.html
 # and https://stats.stackexchange.com/questions/240455/fitting-exponential-regression-model-by-mle
 # and https://stats.stackexchange.com/questions/250077/how-do-you-specify-exponential-distribution-in-glm-in-r?noredirect=1&lq=1
@@ -400,7 +404,7 @@ axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
 mtext(side = 1, line = 2, cex = 1, text = "Genomic window")
 mtext(side = 2, line = 2, cex = 1, text = "cM/Mb")
 mtext(side = 3, line = 2, cex = 0.75,
-      text = "Gamma GLM: cM/Mb~(mCG+mCHG+mCHH+Genes+H2A.Z+H3K4me3+H3K9me2+REC8+ASY1+CENH3+SPO11+SNV)^2")
+      text = "Gamma GLM: cM/Mb~(mCG+mCHG+mCHH+Genes+H2A.Z+H3K4me3+H3K9me2+REC8+ASY1+CENH3+SPO11+indels)^2")
 box(lwd = 1.5)
 legend("topleft",
        legend = c("Observed", "Predicted"),
