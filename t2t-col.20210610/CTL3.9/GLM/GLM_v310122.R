@@ -22,7 +22,9 @@ library(stats4) # mle (for estimating parameters by maximum likelihood) included
 #library(segmentSeq)
 #library(GenomicRanges)
 
+coefDir <- "coefficients/"
 plotDir <- "plots/"
+system(paste0("[ -d ", coefDir, " ] || mkdir ", coefDir))
 system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
 
 # Load cM/Mb data
@@ -358,11 +360,12 @@ save(glmGamma_shape, file = "cMMb_glmGamma_shape.RData")
 save(glmGamma_predict, file = "cMMb_glmGamma_predict.RData")
 save(glmGamma_summary, file = "cMMb_glmGamma_summary.RData")
 save(glmGamma_coeffs, file = "cMMb_glmGamma_coeffs.RData")
-glmGamma_coeffs_df <- data.frame(glmGamma_coeffs)
-colnames(glmGamma_coeffs_df) <- c("Estimate", "StdError", "z-value", "P-value")
+glmGamma_coeffs_df <- data.frame(Variable = rownames(glmGamma_coeffs),
+                                 glmGamma_coeffs)
+colnames(glmGamma_coeffs_df) <- c("Variable", "Estimate", "StdError", "z-value", "P-value")
 write.table(glmGamma_coeffs_df,
-            file = "cMMb_glmGamma_coeffs.tsv",
-            quote = F, sep = "\t", row.names = T, col.names = T)
+            file = paste0(coefDir, "cMMb_glmGamma_coeffs.tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
 
 save(glmExp_predict, file = "cMMb_glmExp_predict.RData")
 save(glmExp_summary, file = "cMMb_glmExp_summary.RData")
