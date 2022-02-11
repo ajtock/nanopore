@@ -16,6 +16,15 @@
 
 options(stringsAsFactors = F)
 library(GenomicRanges)
+library(scales)
+# From https://github.com/dmarcelinobr/ggdecor/blob/master/R/color.R :
+rich10 <- function() {manual_pal(values = c("#000041","#0000A9","#0049FF","#00A4DE","#03E070","#5DFC21","#F6F905","#FFD701","#FF9500","#FF3300"))}
+scale_colour_rich10 <- function(...) { discrete_scale("colour", "rich10", rich10(), ...) }
+scale_fill_rich10 <- function(...) { discrete_scale("fill", "rich10", rich10(), ...) }
+
+rich12 <- function() {manual_pal(values = c("#000040","#000093","#0020E9","#0076FF","#00B8C2","#04E466","#49FB25","#E7FD09","#FEEA02","#FFC200","#FF8500","#FF3300"))}
+scale_colour_rich12 <- function(...) { discrete_scale("colour", "rich12", rich12(), ...) }
+scale_fill_rich12 <- function(...) { discrete_scale("fill", "rich12", rich12(), ...) }
 
 # Load table of ATHILA sequence coordinates
 tab <- read.table("58Atha_fulllength_CENATHILA_AlexBousios_v100222.tsv",
@@ -38,7 +47,7 @@ strand[which(strand == "D")] <- "+"
 strand[which(strand == "P")] <- "-"
 element <- gsub(".+_([DP])_", "", tab$V1)
 element <- toupper(element)
-element_family <- toupper(tab$V2)
+element_phylo <- toupper(tab$V2)
 
 CENATHILA <- data.frame(species = species,
                         accession = accession,
@@ -48,39 +57,68 @@ CENATHILA <- data.frame(species = species,
                         DP_strand = DP_strand,
                         strand = strand,
                         element = element,
-                        family = element_family)
-
+                        phylo = element_phylo)
 
 CENATHILA <- CENATHILA[
                with( CENATHILA, order(species, accession, chr, start, end) ),
              ]
 
+# Convert into GRanges
+#CENATHILA_GR <- GRanges(seqnames = CENATHILA$chr,
+#                        ranges = IRanges(start = CENATHILA$start, end = CENATHILA$end),
+#                        strand = CENATHILA$strand,
+#                        name = paste0(CENATHILA$accession, "_", CENATHILA$chr, "_",
+#                                      CENATHILA$start, "_", CENATHILA$end, "_", CENATHILA$DP_strand),
+#                        phylo = CENATHILA$phylo)
+#CENATHILA_GR <- unique(CENATHILA_GR)
+#CENATHILA_GR <- sortSeqlevels(CENATHILA_GR)
+#CENATHILA_GR_sort <- sort(CENATHILA_GR, ignore.strand = T)
 
+CENATHILA_BED <- data.frame(chr = CENATHILA$chr,
+                            start = CENATHILA$start-1,
+                            end = CENATHILA$end,
+                            name = paste0(CENATHILA$accession, "_", CENATHILA$chr, "_",
+                                          CENATHILA$start, "_", CENATHILA$end, "_", CENATHILA$DP_strand),
+                            score = CENATHILA$phylo,
+                            strand = CENATHILA$strand)
 
-# Convert CENAthila into GRanges
-# Use genome_left_coord_FL and genome_right_coord_FL as
-# element boundaries so that start and end coordinates shown in meta-profiles
-# correspond to 5' LTR start and 3' LTR end coordinates
-CENAthilaGR <- GRanges(seqnames = CENAthila$chr,
-                       ranges = IRanges(start = CENAthila$genome_left_coord_FL,
-                                        end = CENAthila$genome_right_coord_FL),
-                       strand = CENAthila$direction,
-                       name = CENAthila$TE_ID,
-                       phylo = CENAthila$phylo)
-CENAthilaGR <- unique(CENAthilaGR)
-CENAthilaGR <- CENAthilaGR[seqnames(CENAthilaGR) %in% chrName]
-CENAthilaGR <- sortSeqlevels(CENAthilaGR)
-CENAthilaGR <- sort(CENAthilaGR, ignore.strand = TRUE)
-CENAthila_bed <- data.frame(chr = as.character(seqnames(CENAthilaGR)),
-                            start = as.integer(start(CENAthilaGR)-1),
-                            end = as.integer(end(CENAthilaGR)),
-                            name = as.character(CENAthilaGR$name),
-                            score = as.character(CENAthilaGR$phylo),
-                            strand = as.character(strand(CENAthilaGR)))
-write.table(CENAthila_bed,
-            file = paste0(CENAthilaDir, "CENAthila_in_t2t-col.20210610_",
-                          paste0(chrName, collapse = "_"), ".bed"),
+outDir <- "58Atha/"
+system(paste0("[ -d ", outDir, " ] || mkdir -p ", outDir))
+accessionDir <- paste0(accession, "/")
+for(i in accessionDir) {
+  system(paste0("[ -d ", i, " ] || mkdir -p ", i))
+}
+
+write.table(CENATHILA_BED,
+            file = paste0(outDir, "CENATHILA_in_58Atha_v100222.bed"),
             quote = F, sep = "\t", row.names = F, col.names = F)
+  # Write BED with colour-coded family information, for use with pyGenomeTracks (BED specified in *.ini file)
+  nonCENfams <- sort(unique(nonCENAthila_bed$score))
+  print(nonCENfams)
+  CENATHILA_BED_colophylo <- data.frame(CENATHILA_BED,
+                                            thickStart = as.integer(0),
+                                            thickEnd = as.integer(0),
+                                            itemRgb = ".")
+  CENATHILA_BED_colophylo[CENATHILA_BED_colophylo$score == "ATHILA0",]$itemRgb <- paste(as.vector(col2rgb(rich12()(12)[12])), collapse = ",")
+  CENATHILA_BED_colophylo[CENATHILA_BED_colophylo$score == "ATHILA1",]$itemRgb <- paste(as.vector(col2rgb(rich12()(12)[11])), collapse = ",")
+  CENATHILA_BED_colophylo[CENATHILA_BED_colophylo$score == "ATHILA2",]$itemRgb <- paste(as.vector(col2rgb(rich12()(12)[10])), collapse = ",")
+  CENATHILA_BED_colophylo[CENATHILA_BED_colophylo$score == "ATHILA3",]$itemRgb <- paste(as.vector(col2rgb(rich12()(12)[9])), collapse = ",")
+  CENATHILA_BED_colophylo[CENATHILA_BED_colophylo$score == "ATHILA4",]$itemRgb <- paste(as.vector(col2rgb(rich12()(12)[8])), collapse = ",")
+  CENATHILA_BED_colophylo[CENATHILA_BED_colophylo$score == "ATHILA4A",]$itemRgb <- paste(as.vector(col2rgb(rich12()(12)[7])), collapse = ",")
+  CENATHILA_BED_colophylo[CENATHILA_BED_colophylo$score == "ATHILA4C",]$itemRgb <- paste(as.vector(col2rgb(rich12()(12)[6])), collapse = ",")
+  CENATHILA_BED_colophylo[CENATHILA_BED_colophylo$score == "ATHILA5",]$itemRgb <- paste(as.vector(col2rgb(rich12()(12)[5])), collapse = ",")
+  CENATHILA_BED_colophylo[CENATHILA_BED_colophylo$score == "ATHILA6A",]$itemRgb <- paste(as.vector(col2rgb(rich12()(12)[4])), collapse = ",")
+  CENATHILA_BED_colophylo[CENATHILA_BED_colophylo$score == "ATHILA6B",]$itemRgb <- paste(as.vector(col2rgb(rich12()(12)[3])), collapse = ",")
+  CENATHILA_BED_colophylo[CENATHILA_BED_colophylo$score == "ATHILA7A",]$itemRgb <- paste(as.vector(col2rgb(rich12()(12)[2])), collapse = ",")
+  CENATHILA_BED_colophylo[CENATHILA_BED_colophylo$score == "ATHILA8A",]$itemRgb <- paste(as.vector(col2rgb(rich12()(12)[1])), collapse = ",")
+  
+  nonCENAthila_colofamily_bed$score <- as.integer(0)
+  write.table(nonCENAthila_colofamily_bed,
+              file = paste0(nonCENAthilaDir, "nonCENAthila_in_t2t-col.20210610_",
+                            paste0(chrName, collapse = "_"), "_colofamily.bed"),
+              quote = F, sep = "\t", row.names = F, col.names = F)
+}
+
 
 if(length(chrName) > 1) {
   # Write BED without family information, for use with pyGenomeTracks (BED specified in *.ini file)
