@@ -157,6 +157,12 @@ write.table(ATHILA_BED_colophylo,
             file = paste0(allDir_ATHILA, "ATHILA_in_58Atha_v110222_colophylo.bed"),
             quote = F, sep = "\t", row.names = F, col.names = F)
   
+for(i in 1:length(acc)) {
+  acc_chrLens <- read.table(paste0("/home/ajt200/analysis/nanopore/pancentromere/assemblies/",
+                                   acc[i], ".fa.fai"),
+                            header = F)[,2]
+
+ 
 ####
 
 
