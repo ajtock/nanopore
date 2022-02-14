@@ -26,7 +26,7 @@ scale_colour_rich12 <- function(...) { discrete_scale("colour", "rich12", rich12
 scale_fill_rich12 <- function(...) { discrete_scale("fill", "rich12", rich12(), ...) }
 
 # Load table of centromeric coordinates
-cen <- read.csv(paste0("/home/ajt200/analysis/nanopore/pancentromere/centromeric_coordinates/",
+CEN <- read.csv(paste0("/home/ajt200/analysis/nanopore/pancentromere/centromeric_coordinates/",
                        "centromeric.coordinates.300K.prune.robin.03.02.22.csv"),
                 header = T)
 
@@ -37,7 +37,7 @@ print(dim(tab))
 tab <- tab[tab$chromosome %in% chrName,]
 print(dim(tab))
 tab$family_FL[which(tab$family_FL == "ATHILA2_check")] <- "ATHILA2"
-tab$accession <- gsub("Atha_", "", tab$species)
+tab$acc <- gsub("Atha_", "", tab$species)
 tab$species <- gsub("_.+", "", tab$species)
 tab$family_FL <- toupper(tab$family_FL)
 ATHILA <- tab[tab$quality == "intact",]
@@ -45,7 +45,7 @@ soloLTR <- tab[tab$quality == "solo",]
 stopifnot(nrow(ATHILA) + nrow(soloLTR) == nrow(tab))
 
 ATHILA <- data.frame(species = ATHILA$species,
-                     accession = ATHILA$accession,
+                     acc = ATHILA$acc,
                      chr = ATHILA$chromosome,
                      start = ATHILA$genome_left_coord_FL,
                      end = ATHILA$genome_right_coord_FL,
@@ -54,26 +54,27 @@ ATHILA <- data.frame(species = ATHILA$species,
                      TE_ID = ATHILA$TE_ID)
 
 ATHILA <- ATHILA[
-                 with( ATHILA, order(species, accession, chr, start, end) ),
+                 with( ATHILA, order(species, acc, chr, start, end) ),
                 ]
 
-# Convert into GRanges
 ATHILA_GR <- GRanges(seqnames = ATHILA$chr,
                      ranges = IRanges(start = ATHILA$start, end = ATHILA$end),
                      strand = ATHILA$strand,
-                     name = ATHILA$TE_ID,
-                     phylo = ATHILA$phylo)
+                     acc = ATHILA$acc,
+                     phylo = ATHILA$phylo,
+                     TE_ID = ATHILA$TE_ID)
 ATHILA_GR <- unique(ATHILA_GR)
 
 ATHILA_BED <- data.frame(chr = as.character(seqnames(ATHILA_GR)),
                          start = start(ATHILA_GR)-1,
                          end = end(ATHILA_GR),
-                         name = ATHILA_GR$name,
+                         name = ATHILA_GR$acc,
                          score = ATHILA_GR$phylo,
                          strand = as.character(strand(ATHILA_GR)))
 
+
 soloLTR <- data.frame(species = soloLTR$species,
-                      accession = soloLTR$accession,
+                      acc = soloLTR$acc,
                       chr = soloLTR$chromosome,
                       start = soloLTR$genome_left_coord_FL,
                       end = soloLTR$genome_right_coord_FL,
@@ -82,21 +83,21 @@ soloLTR <- data.frame(species = soloLTR$species,
                       TE_ID = soloLTR$TE_ID)
 
 soloLTR <- soloLTR[
-                   with( soloLTR, order(species, accession, chr, start, end) ),
+                   with( soloLTR, order(species, acc, chr, start, end) ),
                   ]
 
-# Convert into GRanges
 soloLTR_GR <- GRanges(seqnames = soloLTR$chr,
                       ranges = IRanges(start = soloLTR$start, end = soloLTR$end),
                       strand = soloLTR$strand,
-                      name = soloLTR$TE_ID,
-                      phylo = soloLTR$phylo)
+                      acc = soloLTR$acc,
+                      phylo = soloLTR$phylo,
+                      TE_ID = soloLTR$TE_ID)
 soloLTR_GR <- unique(soloLTR_GR)
 
 soloLTR_BED <- data.frame(chr = as.character(seqnames(soloLTR_GR)),
                           start = start(soloLTR_GR)-1,
                           end = end(soloLTR_GR),
-                          name = soloLTR_GR$name,
+                          name = soloLTR_GR$acc,
                           score = soloLTR_GR$phylo,
                           strand = as.character(strand(soloLTR_GR)))
 
@@ -108,7 +109,7 @@ allDir_ATHILA <- paste0(ATHILADir, "58Atha/")
 allDir_soloLTR <- paste0(soloLTRDir, "58Atha/")
 system(paste0("[ -d ", allDir_ATHILA, " ] || mkdir -p ", allDir_ATHILA))
 system(paste0("[ -d ", allDir_soloLTR, " ] || mkdir -p ", allDir_soloLTR))
-acc <- unique(tab$accession)
+acc <- unique(tab$acc)
 accDir_ATHILA <- sapply(seq_along(acc), function(x) {
   paste0(ATHILADir, acc[x], "/")
 })
@@ -132,8 +133,8 @@ write.table(soloLTR_BED,
 # Write BED with colour-coded family information, for use with pyGenomeTracks (BED specified in *.ini file)
 ATHILA_phylo <- sort(unique(ATHILA_BED$score))
 print(ATHILA_phylo)
-#[1] "ATHILA0"  "ATHILA1"  "ATHILA2"  "ATHILA3"  "ATHILA4"  "ATHILA4a"
-#[7] "ATHILA4c" "ATHILA5"  "ATHILA6a" "ATHILA6b" "ATHILA7a" "ATHILA8a"
+# [1] "ATHILA0"  "ATHILA1"  "ATHILA2"  "ATHILA3"  "ATHILA4"  "ATHILA4A"
+# [7] "ATHILA4C" "ATHILA5"  "ATHILA6A" "ATHILA6B" "ATHILA7A" "ATHILA8A"
 
 ATHILA_BED_colophylo <- data.frame(ATHILA_BED,
                                    thickStart = as.integer(0),
@@ -151,16 +152,56 @@ ATHILA_BED_colophylo[ATHILA_BED_colophylo$score == "ATHILA6A",]$itemRgb <- paste
 ATHILA_BED_colophylo[ATHILA_BED_colophylo$score == "ATHILA6B",]$itemRgb <- paste(as.vector(col2rgb(rich12()(12)[3])), collapse = ",")
 ATHILA_BED_colophylo[ATHILA_BED_colophylo$score == "ATHILA7A",]$itemRgb <- paste(as.vector(col2rgb(rich12()(12)[2])), collapse = ",")
 ATHILA_BED_colophylo[ATHILA_BED_colophylo$score == "ATHILA8A",]$itemRgb <- paste(as.vector(col2rgb(rich12()(12)[1])), collapse = ",")
-
 ATHILA_BED_colophylo$score <- as.integer(0)
 write.table(ATHILA_BED_colophylo,
             file = paste0(allDir_ATHILA, "ATHILA_in_58Atha_v110222_colophylo.bed"),
             quote = F, sep = "\t", row.names = F, col.names = F)
   
 for(i in 1:length(acc)) {
+  print(acc[i])
+  acc_chrs <- read.table(paste0("/home/ajt200/analysis/nanopore/pancentromere/assemblies/",
+                                acc[i], ".fa.fai"),
+                         header = F)[,1]
   acc_chrLens <- read.table(paste0("/home/ajt200/analysis/nanopore/pancentromere/assemblies/",
                                    acc[i], ".fa.fai"),
                             header = F)[,2]
+  acc_chrLens <- acc_chrLens[which(acc_chrs %in% chrName)]
+
+  acc_CEN <- CEN[grep(acc[i], CEN$region.acc),]
+  acc_CEN_GR <- GRanges(seqnames = acc_CEN$chromosome,
+                        ranges = IRanges(start = acc_CEN$start,
+                                         end = acc_CEN$end),
+                        strand = "*",
+                        acc = acc_CEN$region.acc)
+  print(acc_CEN_GR)
+
+  acc_ATHILA_GR <- ATHILA_GR[ATHILA_GR$acc == acc[i]]
+  print(acc_ATHILA_GR)
+ 
+  acc_CEN_acc_ATHILA_overlaps <- findOverlaps(query = acc_CEN_GR,
+                                              subject = acc_ATHILA_GR,
+                                              type = "any",
+                                              select = "all",
+                                              ignore.strand = TRUE)
+  acc_CENATHILA_GR <- acc_ATHILA_GR[unique(subjectHits(acc_CEN_acc_ATHILA_overlaps))]
+  acc_nonCENATHILA_GR <- acc_ATHILA_GR[-subjectHits(acc_CEN_acc_ATHILA_overlaps)]
+  stopifnot(length(acc_CENATHILA_GR) + length(acc_nonCENATHILA_GR) == length(acc_ATHILA_GR))
+
+  acc_soloLTR_GR <- soloLTR_GR[soloLTR_GR$acc == acc[i]]
+  print(acc_soloLTR_GR)
+ 
+  acc_CEN_acc_soloLTR_overlaps <- findOverlaps(query = acc_CEN_GR,
+                                               subject = acc_soloLTR_GR,
+                                               type = "any",
+                                               select = "all",
+                                               ignore.strand = TRUE)
+  acc_CENsoloLTR_GR <- acc_soloLTR_GR[unique(subjectHits(acc_CEN_acc_soloLTR_overlaps))]
+  acc_nonCENsoloLTR_GR <- acc_soloLTR_GR[-subjectHits(acc_CEN_acc_soloLTR_overlaps)]
+  stopifnot(length(acc_CENsoloLTR_GR) + length(acc_nonCENsoloLTR_GR) == length(acc_soloLTR_GR))
+
+
+
+
 
  
 ####
