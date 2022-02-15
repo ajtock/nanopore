@@ -124,10 +124,10 @@ sapply(seq_along(accDir_soloLTR), function(x) {
 })
 
 write.table(ATHILA_BED,
-            file = paste0(allDir_ATHILA, "ATHILA_in_58Atha_v110222.bed"),
+            file = paste0(allDir_ATHILA, "ATHILA_in_58Atha.bed"),
             quote = F, sep = "\t", row.names = F, col.names = F)
 write.table(soloLTR_BED,
-            file = paste0(allDir_soloLTR, "soloLTR_in_58Atha_v110222.bed"),
+            file = paste0(allDir_soloLTR, "soloLTR_in_58Atha.bed"),
             quote = F, sep = "\t", row.names = F, col.names = F)
 
 # Write BED with colour-coded family information, for use with pyGenomeTracks (BED specified in *.ini file)
@@ -154,9 +154,10 @@ ATHILA_BED_colophylo[ATHILA_BED_colophylo$score == "ATHILA7A",]$itemRgb <- paste
 ATHILA_BED_colophylo[ATHILA_BED_colophylo$score == "ATHILA8A",]$itemRgb <- paste(as.vector(col2rgb(rich12()(12)[1])), collapse = ",")
 ATHILA_BED_colophylo$score <- as.integer(0)
 write.table(ATHILA_BED_colophylo,
-            file = paste0(allDir_ATHILA, "ATHILA_in_58Atha_v110222_colophylo.bed"),
+            file = paste0(allDir_ATHILA, "ATHILA_in_58Atha_colophylo.bed"),
             quote = F, sep = "\t", row.names = F, col.names = F)
-  
+
+
 for(i in 1:length(acc)) {
   print(acc[i])
   acc_chrs <- read.table(paste0("/home/ajt200/analysis/nanopore/pancentromere/assemblies/",
@@ -238,15 +239,15 @@ for(i in 1:length(acc)) {
   stopifnot(identical(width(acc_CENranLoc_GR), width(acc_CENATHILA_GR)))
   stopifnot(identical(as.character(seqnames(acc_CENranLoc_GR)), as.character(seqnames(acc_CENATHILA_GR))))
   stopifnot(identical(strand(acc_CENranLoc_GR), strand(acc_CENATHILA_GR)))
+
   acc_CENranLoc_BED <- data.frame(chr = as.character(seqnames(acc_CENranLoc_GR)),
                                   start = start(acc_CENranLoc_GR)-1,
                                   end = end(acc_CENranLoc_GR),
                                   name = 1:length(acc_CENranLoc_GR),
-                                  score = "NA",
+                                  score = acc_CENATHILA_GR$phylo,
                                   strand = strand(acc_CENranLoc_GR))
   write.table(acc_CENranLoc_BED,
-              file = paste0(CENgapAllAthilaDir, "CENgapAllAthila_in_t2t-col.20210610_",
-                            paste0(chrName, collapse = "_"), "_CENrandomLoci.bed"),
+              file = paste0(accDir_ATHILA[i], "CENATHILA_in_", acc[i], "_CENrandomLoci.bed"),
               quote = F, sep = "\t", row.names = F, col.names = F)
 
 
