@@ -279,10 +279,10 @@ for(i in 1:length(acc)) {
                   quote = F, sep = "\t", row.names = F, col.names = F)
 
       chr_acc_CEN_GR <- acc_CEN_GR[seqnames(acc_CEN_GR) == acc_chrs[j]]
-      # Contract chr_acc_CEN_GR so that acc_CENranLoc_GR and 2-kb flanking regions
-      # do not extend beyond centromeric coordinates
-      end(chr_acc_CEN_GR) <- end(chr_acc_CEN_GR)-max(width(chr_acc_CENATHILA_GR))-2000
-      start(chr_acc_CEN_GR) <- start(chr_acc_CEN_GR)+2000
+      ## Contract chr_acc_CEN_GR so that acc_CENranLoc_GR and 2-kb flanking regions
+      ## do not extend beyond centromeric coordinates
+      #end(chr_acc_CEN_GR) <- end(chr_acc_CEN_GR)-max(width(chr_acc_CENATHILA_GR))-2000
+      #start(chr_acc_CEN_GR) <- start(chr_acc_CEN_GR)+2000
       # Define seed so that random selections are reproducible
       set.seed(76492749)
       chr_acc_CENranLoc_Start <- ranLocStartSelect(coordinates = unlist(lapply(seq_along(chr_acc_CEN_GR), function(x) {
@@ -320,16 +320,11 @@ for(i in 1:length(acc)) {
                                 acc_chrs[j], ".bed"),
                   quote = F, sep = "\t", row.names = F, col.names = F)
 
-      chr_acc_nonCEN_GR <- acc_nonCEN_GR[seqnames(acc_nonCEN_GR) == acc_chrs[j]]
-      # Contract chr_acc_nonCEN_GR so that acc_nonCENranLoc_GR and 2-kb flanking regions
-      # do not extend beyond centromeric coordinates
-      end(chr_acc_nonCEN_GR) <- end(chr_acc_nonCEN_GR)-max(width(chr_acc_nonCENATHILA_GR))-2000
-      start(chr_acc_nonCEN_GR) <- start(chr_acc_nonCEN_GR)+2000
       # Define seed so that random selections are reproducible
       set.seed(76492749)
-      chr_acc_nonCENranLoc_Start <- ranLocStartSelect(coordinates = unlist(lapply(seq_along(chr_acc_nonCEN_GR), function(x) {
-                                                                             start(chr_acc_nonCEN_GR[x]) : end(chr_acc_nonCEN_GR[x])
-                                                                           })),
+      chr_acc_nonCENranLoc_Start <- ranLocStartSelect(coordinates = unique(unlist(lapply(seq_along(chr_acc_CEN_GR), function(x) {
+                                                                             c(1:acc_chrLens[j])[!(start(chr_acc_CEN_GR[x]) : end(chr_acc_CEN_GR[x]))]
+                                                                           }))),
                                                       n = length(chr_acc_nonCENATHILA_GR))
       chr_acc_nonCENranLoc_GR <- GRanges(seqnames = acc_chrs[j],
                                          ranges = IRanges(start = chr_acc_nonCENranLoc_Start,
