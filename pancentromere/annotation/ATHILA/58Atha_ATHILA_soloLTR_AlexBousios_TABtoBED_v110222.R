@@ -166,6 +166,7 @@ for(i in 1:length(acc)) {
                                    acc[i], ".fa.fai"),
                             header = F)[,2]
   acc_chrLens <- acc_chrLens[which(acc_chrs %in% chrName)]
+  acc_chrs <- acc_chrs[which(acc_chrs %in% chrName)]
 
   acc_CEN <- CEN[grep(acc[i], CEN$region.acc),]
   acc_CEN_GR <- GRanges(seqnames = acc_CEN$chromosome,
@@ -199,7 +200,54 @@ for(i in 1:length(acc)) {
   acc_nonCENsoloLTR_GR <- acc_soloLTR_GR[-subjectHits(acc_CEN_acc_soloLTR_overlaps)]
   stopifnot(length(acc_CENsoloLTR_GR) + length(acc_nonCENsoloLTR_GR) == length(acc_soloLTR_GR))
 
-
+  # Define function to select randomly positioned loci of the same
+  # width distribution as CENgapAllAthila_bed
+  ranLocStartSelect <- function(coordinates, n) {
+    sample(x = coordinates,
+           size = n,
+           replace = FALSE)
+  }
+  
+  # Disable scientific notation (e.g., 59000000 rather than 5.9e+07)
+  options(scipen = 100)
+  
+  # Apply ranLocStartSelect() on a per-chromosome basis so that
+  # acc_CENranLoc_GR contains the same number of loci per chromosome as acc_CENATHILA_GR
+  acc_CENranLoc_GR <- GRanges()
+  for(j in 1:length(acc_chrs)) {
+    chr_acc_CENATHILA_GR <- acc_CENATHILA_GR[seqnames(acc_CENATHILA_GR) == acc_chrs[j]]
+    if(length(chr_acc_CENATHILA_GR) > 0) {
+      chr_acc_CEN_GR <- acc_CEN_GR[seqnames(acc_CEN_GR) == acc_chrs[j]]
+      # Contract chr_acc_CEN_GR so that acc_CENranLoc_GR and 2-kb flanking regions
+      # do not extend beyond centromeric coordinates
+      end(chr_acc_CEN_GR) <- end(chr_acc_CEN_GR)-max(width(chr_acc_CENATHILA_GR))-2000
+      start(chr_acc_CEN_GR) <- start(chr_acc_CEN_GR)+2000
+      # Define seed so that random selections are reproducible
+      set.seed(76492749)
+      chr_acc_CENranLoc_Start <- ranLocStartSelect(coordinates = unlist(lapply(seq_along(chr_acc_CEN_GR), function(x) {
+                                                                          start(chr_acc_CEN_GR[x]) : end(chr_acc_CEN_GR[x])
+                                                                        })),
+                                                   n = length(chr_acc_CENATHILA_GR))
+      chr_acc_CENranLoc_GR <- GRanges(seqnames = acc_chrs[j],
+                                      ranges = IRanges(start = chr_acc_CENranLoc_Start,
+                                                       width = width(chr_acc_CENATHILA_GR)),
+                                      strand = strand(chr_acc_CENATHILA_GR))
+      acc_CENranLoc_GR <- append(acc_CENranLoc_GR, chr_acc_CENranLoc_GR)
+    }
+  }
+  stopifnot(identical(width(acc_CENranLoc_GR), width(acc_CENATHILA_GR)))
+  stopifnot(identical(as.character(seqnames(acc_CENranLoc_GR)), as.character(seqnames(acc_CENATHILA_GR))))
+  stopifnot(identical(strand(acc_CENranLoc_GR), strand(acc_CENATHILA_GR)))
+  acc_CENranLoc_BED <- data.frame(chr = as.character(seqnames(acc_CENranLoc_GR)),
+                                  start = start(acc_CENranLoc_GR)-1,
+                                  end = end(acc_CENranLoc_GR),
+                                  name = 1:length(acc_CENranLoc_GR),
+                                  score = "NA",
+                                  strand = strand(acc_CENranLoc_GR))
+  write.table(acc_CENranLoc_BED,
+              file = paste0(CENgapAllAthilaDir, "CENgapAllAthila_in_t2t-col.20210610_",
+                            paste0(chrName, collapse = "_"), "_CENrandomLoci.bed"),
+              quote = F, sep = "\t", row.names = F, col.names = F)
 
 
 
