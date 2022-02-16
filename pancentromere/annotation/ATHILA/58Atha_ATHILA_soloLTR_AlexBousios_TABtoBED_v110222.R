@@ -323,7 +323,13 @@ for(i in 1:length(acc)) {
       # Define seed so that random selections are reproducible
       set.seed(76492749)
       chr_acc_nonCENranLoc_Start <- ranLocStartSelect(coordinates = unique(unlist(lapply(seq_along(chr_acc_CEN_GR), function(x) {
-                                                                             c(1:acc_chrLens[j])[!(start(chr_acc_CEN_GR[x]) : end(chr_acc_CEN_GR[x]))]
+                                                                             c(1:acc_chrLens[j])[
+                                                                               which(
+                                                                                 !( 1:acc_chrLens[j] %in%
+                                                                                   start(chr_acc_CEN_GR[x]) : end(chr_acc_CEN_GR[x])
+                                                                                  )
+                                                                               )
+                                                                             ]
                                                                            }))),
                                                       n = length(chr_acc_nonCENATHILA_GR))
       chr_acc_nonCENranLoc_GR <- GRanges(seqnames = acc_chrs[j],
@@ -359,6 +365,22 @@ for(i in 1:length(acc)) {
               file = paste0(accDir_ATHILA[i], "CENATHILA_in_", acc[i], "_",
                             paste0(chrName, collapse = "_"), "_CENrandomLoci.bed"),
               quote = F, sep = "\t", row.names = F, col.names = F)
+
+  stopifnot(identical(width(acc_nonCENranLoc_GR), width(acc_nonCENATHILA_GR)))
+  stopifnot(identical(as.character(seqnames(acc_nonCENranLoc_GR)), as.character(seqnames(acc_nonCENATHILA_GR))))
+  stopifnot(identical(strand(acc_nonCENranLoc_GR), strand(acc_nonCENATHILA_GR)))
+
+  acc_nonCENranLoc_BED <- data.frame(chr = as.character(seqnames(acc_nonCENranLoc_GR)),
+                                     start = start(acc_nonCENranLoc_GR)-1,
+                                     end = end(acc_nonCENranLoc_GR),
+                                     name = 1:length(acc_nonCENranLoc_GR),
+                                     score = acc_nonCENATHILA_GR$phylo,
+                                     strand = strand(acc_nonCENranLoc_GR))
+  write.table(acc_nonCENranLoc_BED,
+              file = paste0(accDir_ATHILA[i], "nonCENATHILA_in_", acc[i], "_",
+                            paste0(chrName, collapse = "_"), "_nonCENrandomLoci.bed"),
+              quote = F, sep = "\t", row.names = F, col.names = F)
+
 
 
   for(j in 1:length(acc_chrs)) {
