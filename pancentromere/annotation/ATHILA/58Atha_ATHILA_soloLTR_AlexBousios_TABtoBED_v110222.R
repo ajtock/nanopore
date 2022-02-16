@@ -445,4 +445,5 @@ for(i in 1:length(acc)) {
               quote = F, sep = "\t", row.names = F, col.names = F)
 
 }
+print(warnings())
 
