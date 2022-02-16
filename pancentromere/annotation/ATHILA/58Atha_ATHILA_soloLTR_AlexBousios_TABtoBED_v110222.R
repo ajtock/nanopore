@@ -206,11 +206,14 @@ for(i in 1:length(acc)) {
                                 acc[i], ".fa.fai"),
                          header = F)[,1]
   acc_chrs <- gsub("_RagTag_RagTag", "", acc_chrs)
+  acc_chrs <- gsub("chr", "Chr", acc_chrs)
   acc_chrLens <- read.table(paste0("/home/ajt200/analysis/nanopore/pancentromere/assemblies/",
                                    acc[i], ".fa.fai"),
                             header = F)[,2]
   acc_chrLens <- acc_chrLens[which(acc_chrs %in% chrName)]
   acc_chrs <- acc_chrs[which(acc_chrs %in% chrName)]
+  print(acc_chrs)
+  print(acc_chrLens)
 
   acc_CEN <- CEN[grep(acc[i], CEN$region.acc),]
   acc_CEN_GR <- GRanges(seqnames = acc_CEN$chromosome,
