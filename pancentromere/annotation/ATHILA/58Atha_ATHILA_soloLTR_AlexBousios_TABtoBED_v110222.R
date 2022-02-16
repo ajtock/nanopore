@@ -65,15 +65,6 @@ for(i in 1:nrow(tab)) {
 }
 stopifnot(grepl_acc_trunc_acc == nrow(tab))
 
-
-
-
-
-  acc_chrs <- read.table(paste0("/home/ajt200/analysis/nanopore/pancentromere/assemblies/",
-                                acc[i], ".fa.fai"),
-                         header = F)[,1]
-
-
 ATHILA <- tab[tab$quality == "intact",]
 soloLTR <- tab[tab$quality == "solo",]
 stopifnot(nrow(ATHILA) + nrow(soloLTR) == nrow(tab))
