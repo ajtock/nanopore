@@ -38,6 +38,7 @@ tab <- tab[tab$chromosome %in% chrName,]
 print(dim(tab))
 tab$family_FL[which(tab$family_FL == "ATHILA2_check")] <- "ATHILA2"
 tab$acc <- gsub("Atha_", "", tab$species)
+tab$acc_trunc <- tab$acc
 tab$species <- gsub("_.+", "", tab$species)
 tab$family_FL <- toupper(tab$family_FL)
 
@@ -55,6 +56,18 @@ for(acc_trunc in unique(tab$acc)) {
   stopifnot(length(acc_full_match) == 1)
   tab[tab$acc == acc_trunc,]$acc <- acc_full_match
 } 
+
+# Sanity check to make sure newly added full accession names match
+# Alex's truncated accession names in each row of tab
+grepl_acc_trunc_acc <- 0
+for(i in 1:nrow(tab)) {
+  grepl_acc_trunc_acc <- grepl_acc_trunc_acc + grepl(tab$acc_trunc[i], tab$acc[i])
+}
+stopifnot(grepl_acc_trunc_acc == nrow(tab))
+
+
+
+
 
   acc_chrs <- read.table(paste0("/home/ajt200/analysis/nanopore/pancentromere/assemblies/",
                                 acc[i], ".fa.fai"),
