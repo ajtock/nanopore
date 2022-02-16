@@ -40,6 +40,27 @@ tab$family_FL[which(tab$family_FL == "ATHILA2_check")] <- "ATHILA2"
 tab$acc <- gsub("Atha_", "", tab$species)
 tab$species <- gsub("_.+", "", tab$species)
 tab$family_FL <- toupper(tab$family_FL)
+
+acc_full <- system("ls /home/ajt200/analysis/nanopore/pancentromere/assemblies/*.fa", intern = T)
+acc_full <- gsub("/home/ajt200/analysis/nanopore/pancentromere/assemblies/", "", acc_full)
+acc_full <- gsub(".fa", "", acc_full)
+acc_full_trunc <- gsub("\\..+", "", acc_full)
+acc_full_trunc <- gsub("_TAIR10", "", acc_full_trunc)
+acc_full <- acc_full[which(acc_full_trunc %in% unique(tab$acc))]
+acc_full_trunc <- acc_full_trunc[which(acc_full_trunc %in% unique(tab$acc))]
+
+for(acc_trunc in unique(tab$acc)) {
+  print(acc_trunc)
+  acc_full_match <- acc_full[which(acc_full_trunc == acc_trunc)]
+  stopifnot(length(acc_full_match) == 1)
+  tab[tab$acc == acc_trunc,]$acc <- acc_full_match
+} 
+
+  acc_chrs <- read.table(paste0("/home/ajt200/analysis/nanopore/pancentromere/assemblies/",
+                                acc[i], ".fa.fai"),
+                         header = F)[,1]
+
+
 ATHILA <- tab[tab$quality == "intact",]
 soloLTR <- tab[tab$quality == "solo",]
 stopifnot(nrow(ATHILA) + nrow(soloLTR) == nrow(tab))
