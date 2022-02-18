@@ -41,6 +41,10 @@ CEN180_list <- mclapply(1:length(acc), function(x) {
     tab <- tab_list[[1]]
   }
   tab <- tab[tab$class == "cen180",]
+  colnames(tab)[9] <- "chr"
+  tab$chr <- gsub("_RagTag_RagTag", "", tab$chr)
+  tab$chr <- gsub("chr", "Chr", tab$chr)
+  tab$fasta.file.name <- gsub("\\.fa.+", "", tab$fasta.file.name)
   tab
 }, mc.cores = length(acc), mc.preschedule = F)
  
@@ -65,6 +69,18 @@ CENranLoc_list <- mclapply(1:length(acc), function(x) {
 }, mc.cores = length(acc), mc.preschedule = F)
 
  
+
+
+# Function to get distance between each CEN180 and the
+# CENATHILA that is nearest
+CEN180 <- CEN180_list[[1]]
+CENATHILA <- CENATHILA_list[[1]]
+CENranLoc <- CENranLoc_list[[1]]
+CEN180distToCENATHILA <- function(CEN180, CENATHILA, CENranLoc) {
+  
+
+
+rm(CEN180, CENATHILA, CENranLoc)
 
 
 
