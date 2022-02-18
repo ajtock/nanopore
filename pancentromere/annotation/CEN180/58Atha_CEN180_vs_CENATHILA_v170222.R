@@ -28,7 +28,6 @@ for(i in acc_uniq) {
 }
 acc <- acc_uniq[which(acc_uniq_len == length(chrName))]
 
-
 CEN180_list <- mclapply(1:length(acc), function(x) {
   tab_list <- lapply(1:length(chrName), function(y) {
     read.csv(paste0("/home/ajt200/analysis/nanopore/pancentromere/annotation/CEN180/repeats/",
@@ -50,7 +49,7 @@ CEN180_list <- mclapply(1:length(acc), function(x) {
             ]
   tab
 }, mc.cores = length(acc), mc.preschedule = F)
- 
+
 CENATHILA_list <- mclapply(1:length(acc), function(x) {
   tab <- read.table(paste0("/home/ajt200/analysis/nanopore/pancentromere/annotation/ATHILA/ATHILA/",
                            acc[x], "/CENATHILA_in_", acc[x], "_",
@@ -63,6 +62,9 @@ CENATHILA_list <- mclapply(1:length(acc), function(x) {
             ]
   tab
 }, mc.cores = length(acc), mc.preschedule = F)
+
+CENATHILA_DF_phylo <- dplyr::bind_rows(CENATHILA_list) 
+phylo <- sort(unique(CENATHILA_DF_phylo$phylo))
 
 CENranLoc_list <- mclapply(1:length(acc), function(x) {
   tab <- read.table(paste0("/home/ajt200/analysis/nanopore/pancentromere/annotation/ATHILA/ATHILA/",
@@ -77,14 +79,9 @@ CENranLoc_list <- mclapply(1:length(acc), function(x) {
   tab
 }, mc.cores = length(acc), mc.preschedule = F)
 
- 
-# Function to get distance between each CEN180 and the
-# CENATHILA that is nearest
-CEN180 <- CEN180_list[[1]]
-CENATHILA <- CENATHILA_list[[1]]
-CENranLoc <- CENranLoc_list[[1]]
+# Function to get distance between each CEN180 and the nearest CENATHILA
 CEN180distToCENATHILA <- function(CEN180, CENATHILA, CENranLoc) {
-  CEN180_distTo_CENATHILA <- NULL
+  CEN180_distTo_CENATHILA <- data.frame()
   for(i in 1:length(chrName)) {
     print(chrName[i])
 
@@ -107,7 +104,7 @@ CEN180distToCENATHILA <- function(CEN180, CENATHILA, CENranLoc) {
     }, mc.cores = detectCores(), mc.preschedule = T) 
 
     # Get distance between each CEN180 and the
-    # CENATHILA that is nearest
+    # nearest CENATHILA
     minDistToCENATHILA <- unlist(mclapply(1:length(CEN180_chr$start), function(x) {
       min(c(CEN180start_vs_CENATHILAstart[[x]],
             CEN180end_vs_CENATHILAend[[x]],
@@ -116,18 +113,126 @@ CEN180distToCENATHILA <- function(CEN180, CENATHILA, CENranLoc) {
     }, mc.cores = detectCores(), mc.preschedule = T))
     stopifnot(nrow(CEN180_chr) == length(minDistToCENATHILA))
 
+    #phylo_chr <- unique(CENATHILA_chr$phylo)
+    minDistToCENATHILA_phylo_list <- lapply(1:length(phylo), function(x) {
+      CENATHILA_chr_phylo <- CENATHILA_chr[CENATHILA_chr$phylo == phylo[x],]
 
+      if(nrow(CENATHILA_chr_phylo) > 0) {
+        # Calculate distances from the start and end coordinates of each CEN180 and CENATHILA
+        CEN180start_vs_CENATHILAstart <- mclapply(1:length(CEN180_chr$start), function(x) {
+          abs(CEN180_chr$start[x] - CENATHILA_chr_phylo$start)
+        }, mc.cores = detectCores(), mc.preschedule = T) 
+        CEN180end_vs_CENATHILAend <- mclapply(1:length(CEN180_chr$end), function(x) {
+          abs(CEN180_chr$end[x] - CENATHILA_chr_phylo$end)
+        }, mc.cores = detectCores(), mc.preschedule = T) 
+        CEN180start_vs_CENATHILAend <- mclapply(1:length(CEN180_chr$start), function(x) {
+          abs(CEN180_chr$start[x] - CENATHILA_chr_phylo$end)
+        }, mc.cores = detectCores(), mc.preschedule = T) 
+        CEN180end_vs_CENATHILAstart <- mclapply(1:length(CEN180_chr$end), function(x) {
+          abs(CEN180_chr$end[x] - CENATHILA_chr_phylo$start)
+        }, mc.cores = detectCores(), mc.preschedule = T) 
 
-  CEN180chr <- data.frame(CEN180chr,
-                          minDistToCENgapAll = minDistToCENgapAll,
-                          minDistToCENgapAllAthila = minDistToCENgapAllAthila,
-                          minDistToCENgapAllNotAthila = minDistToCENgapAllNotAthila)
-  CEN180_dists <- rbind(CEN180_dists, CEN180chr)
+        # Get distance between each CEN180 and the
+        # nearest CENATHILA
+        minDistToCENATHILA <- unlist(mclapply(1:length(CEN180_chr$start), function(x) {
+          min(c(CEN180start_vs_CENATHILAstart[[x]],
+                CEN180end_vs_CENATHILAend[[x]],
+                CEN180start_vs_CENATHILAend[[x]],
+                CEN180end_vs_CENATHILAstart[[x]]), na.rm = T)
+        }, mc.cores = detectCores(), mc.preschedule = T))
+        stopifnot(nrow(CEN180_chr) == length(minDistToCENATHILA))
+        minDistToCENATHILA
+      } else {
+        minDistToCENATHILA <- rep(NA, length(CEN180_chr$start))
+      } 
+      minDistToCENATHILA
+    })
+
+    minDistToCENATHILA_phylo_DF <- as.data.frame(dplyr::bind_cols(minDistToCENATHILA_phylo_list))
+    minDistToCENATHILA_DF <- cbind(minDistToCENATHILA, minDistToCENATHILA_phylo_DF)
+    colnames(minDistToCENATHILA_DF) <- c("ATHILA", phylo)
+    colnames(minDistToCENATHILA_DF) <- gsub("ATHILA", "minDistToCENATHILA", colnames(minDistToCENATHILA_DF))
+
+    # Calculate distances from the start and end coordinates of each CEN180 and CENranLoc
+    CEN180start_vs_CENranLocstart <- mclapply(1:length(CEN180_chr$start), function(x) {
+      abs(CEN180_chr$start[x] - CENranLoc_chr$start)
+    }, mc.cores = detectCores(), mc.preschedule = T) 
+    CEN180end_vs_CENranLocend <- mclapply(1:length(CEN180_chr$end), function(x) {
+      abs(CEN180_chr$end[x] - CENranLoc_chr$end)
+    }, mc.cores = detectCores(), mc.preschedule = T) 
+    CEN180start_vs_CENranLocend <- mclapply(1:length(CEN180_chr$start), function(x) {
+      abs(CEN180_chr$start[x] - CENranLoc_chr$end)
+    }, mc.cores = detectCores(), mc.preschedule = T) 
+    CEN180end_vs_CENranLocstart <- mclapply(1:length(CEN180_chr$end), function(x) {
+      abs(CEN180_chr$end[x] - CENranLoc_chr$start)
+    }, mc.cores = detectCores(), mc.preschedule = T) 
+
+    # Get distance between each CEN180 and the
+    # nearest CENranLoc
+    minDistToCENranLoc <- unlist(mclapply(1:length(CEN180_chr$start), function(x) {
+      min(c(CEN180start_vs_CENranLocstart[[x]],
+            CEN180end_vs_CENranLocend[[x]],
+            CEN180start_vs_CENranLocend[[x]],
+            CEN180end_vs_CENranLocstart[[x]]), na.rm = T)
+    }, mc.cores = detectCores(), mc.preschedule = T))
+    stopifnot(nrow(CEN180_chr) == length(minDistToCENranLoc))
+
+    #phylo_chr <- unique(CENranLoc_chr$phylo)
+    minDistToCENranLoc_phylo_list <- lapply(1:length(phylo), function(x) {
+      CENranLoc_chr_phylo <- CENranLoc_chr[CENranLoc_chr$phylo == phylo[x],]
+
+      if(nrow(CENranLoc_chr_phylo) > 0) {
+        # Calculate distances from the start and end coordinates of each CEN180 and CENranLoc
+        CEN180start_vs_CENranLocstart <- mclapply(1:length(CEN180_chr$start), function(x) {
+          abs(CEN180_chr$start[x] - CENranLoc_chr_phylo$start)
+        }, mc.cores = detectCores(), mc.preschedule = T) 
+        CEN180end_vs_CENranLocend <- mclapply(1:length(CEN180_chr$end), function(x) {
+          abs(CEN180_chr$end[x] - CENranLoc_chr_phylo$end)
+        }, mc.cores = detectCores(), mc.preschedule = T) 
+        CEN180start_vs_CENranLocend <- mclapply(1:length(CEN180_chr$start), function(x) {
+          abs(CEN180_chr$start[x] - CENranLoc_chr_phylo$end)
+        }, mc.cores = detectCores(), mc.preschedule = T) 
+        CEN180end_vs_CENranLocstart <- mclapply(1:length(CEN180_chr$end), function(x) {
+          abs(CEN180_chr$end[x] - CENranLoc_chr_phylo$start)
+        }, mc.cores = detectCores(), mc.preschedule = T) 
+
+        # Get distance between each CEN180 and the
+        # nearest CENranLoc
+        minDistToCENranLoc <- unlist(mclapply(1:length(CEN180_chr$start), function(x) {
+          min(c(CEN180start_vs_CENranLocstart[[x]],
+                CEN180end_vs_CENranLocend[[x]],
+                CEN180start_vs_CENranLocend[[x]],
+                CEN180end_vs_CENranLocstart[[x]]), na.rm = T)
+        }, mc.cores = detectCores(), mc.preschedule = T))
+        stopifnot(nrow(CEN180_chr) == length(minDistToCENranLoc))
+        minDistToCENranLoc
+      } else {
+        minDistToCENranLoc <- rep(NA, length(CEN180_chr$start))
+      } 
+      minDistToCENranLoc
+    })
+
+    minDistToCENranLoc_phylo_DF <- as.data.frame(dplyr::bind_cols(minDistToCENranLoc_phylo_list))
+    minDistToCENranLoc_DF <- cbind(minDistToCENranLoc, minDistToCENranLoc_phylo_DF)
+    colnames(minDistToCENranLoc_DF) <- c("ranLoc_ATHILA", paste0("ranLoc_", phylo))
+    colnames(minDistToCENranLoc_DF) <- gsub("ranLoc", "minDistToCENranLoc", colnames(minDistToCENranLoc_DF))
+
+    CEN180_distTo_CENATHILA_chr <- data.frame(CEN180_chr,
+                                              minDistToCENATHILA_DF,
+                                              minDistToCENranLoc_DF)
+    CEN180_distTo_CENATHILA <- rbind(CEN180_distTo_CENATHILA, CEN180_distTo_CENATHILA_chr) 
+  }
+  CEN180_distTo_CENATHILA
 }
-CEN180 <- CEN180_dists
-rm(CEN180_dists); gc()
 
 
+# For each acc, get distance between each CEN180 and the nearest CENATHILA
+CEN180_list_dist <- lapply(1:length(acc), function(x) {
+  print(acc[x])
+  CEN180distToCENATHILA(CEN180 = CEN180_list[[x]],
+                        CENATHILA = CENATHILA_list[[x]],
+                        CENranLoc = CENranLoc_list[[x]])
+})
 
 
 
