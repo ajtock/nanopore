@@ -279,7 +279,7 @@ trendPlot <- function(acc_id, dataFrame, mapping, xvar, yvar, xlab, ylab, xaxtra
         axis.text.x = element_text(size = 16, colour = "black"),
         axis.text.y = element_text(size = 16, colour = "black"),
         axis.title = element_text(size = 18, colour = "black"),
-        axis.line = element_line(size = 1.5, colour = "black"),
+        axis.line = element_line(size = 1.0, colour = "black"),
         panel.background = element_blank(),
         panel.border = element_blank(),
 #        panel.border = element_rect(size = 1.0, colour = "black"),
@@ -371,11 +371,11 @@ ggTrend_minDistToCENATHILA_weighted.consensus.score <- trendPlot(acc_id = acc[34
                                                                  yvar = weighted.consensus.score,
                                                                  xlab = bquote("Distance to nearest CENATHILA"),
                                                                  ylab = bquote("Weighted consensus score"),
-                                                                 xaxtrans = log2_trans(),
+                                                                 xaxtrans = log10_trans(),
                                                                  yaxtrans = log2_trans(),
-                                                                 xbreaks = trans_breaks("log2", function(x) 2^x),
+                                                                 xbreaks = trans_breaks("log10", function(x) 10^x),
                                                                  ybreaks = trans_breaks("log2", function(x) 2^x),
-                                                                 xlabels = trans_format("log2", math_format(2^.x)),
+                                                                 xlabels = trans_format("log10", math_format(10^.x)),
                                                                  ylabels = trans_format("log2", math_format(2^.x)))
 ggTrend_minDistToCENATHILA_weighted.consensus.score <- ggTrend_minDistToCENATHILA_weighted.consensus.score +
   facet_grid(cols = vars(chr), scales = "free_x")
@@ -387,11 +387,11 @@ ggTrend_minDistToCENATHILA_edit.distance <- trendPlot(acc_id = acc[34],
                                                       yvar = edit.distance,
                                                       xlab = bquote("Distance to nearest CENATHILA"),
                                                       ylab = bquote("Edit distance"),
-                                                      xaxtrans = log2_trans(),
+                                                      xaxtrans = log10_trans(),
                                                       yaxtrans = log2_trans(),
-                                                      xbreaks = trans_breaks("log2", function(x) 2^x),
+                                                      xbreaks = trans_breaks("log10", function(x) 10^x),
                                                       ybreaks = trans_breaks("log2", function(x) 2^x),
-                                                      xlabels = trans_format("log2", math_format(2^.x)),
+                                                      xlabels = trans_format("log10", math_format(10^.x)),
                                                       ylabels = trans_format("log2", math_format(2^.x)))
 ggTrend_minDistToCENATHILA_edit.distance <- ggTrend_minDistToCENATHILA_edit.distance +
   facet_grid(cols = vars(chr), scales = "free_x")
