@@ -18,6 +18,10 @@ options(stringsAsFactors = F)
 library(GenomicRanges)
 library(parallel)
 library(dplyr)
+library(scales)
+library(ggplot2)
+library(cowplot)
+library(viridis)
 
 acc_full <- system("ls /home/ajt200/analysis/nanopore/pancentromere/annotation/CEN180/repeats/*.fa*", intern = T)
 acc_full <- gsub("/home/ajt200/analysis/nanopore/pancentromere/annotation/CEN180/repeats/cen180.consensus.repetitiveness", "", acc_full)
@@ -233,6 +237,97 @@ CEN180_list_dist <- lapply(1:length(acc), function(x) {
                         CENATHILA = CENATHILA_list[[x]],
                         CENranLoc = CENranLoc_list[[x]])
 })
+
+#tmp <- CEN180distToCENATHILA(CEN180 = CEN180_list[[1]],
+#                             CENATHILA = CENATHILA_list[[1]],
+#                             CENranLoc = CENranLoc_list[[1]])
+
+
+
+
+# Plot relationships and define groups
+trendPlot <- function(dataFrame, mapping, xvar, yvar, xlab, ylab, xaxtrans, yaxtrans, xbreaks, ybreaks, xlabels, ylabels) {
+  xvar <- enquo(xvar)
+  yvar <- enquo(yvar)
+  ggplot(data = dataFrame,
+         mapping = mapping) +
+  geom_hex(bins = 60) +
+  scale_x_continuous(trans = xaxtrans,
+                     breaks = xbreaks,
+                     labels = xlabels) +
+  scale_y_continuous(trans = yaxtrans,
+                     breaks = ybreaks,
+                     labels = ylabels) +
+  scale_fill_viridis() +
+  geom_smooth(colour = "red", fill = "grey70", alpha = 0.9,
+              method = "gam", formula = y ~ s(x, bs = "cs")) +
+  labs(x = xlab,
+       y = ylab) +
+  theme_bw() +
+  theme(
+        axis.ticks = element_line(size = 0.5, colour = "black"),
+        axis.ticks.length = unit(0.25, "cm"),
+        axis.text.x = element_text(size = 16, colour = "black"),
+        axis.text.y = element_text(size = 16, colour = "black"),
+        axis.title = element_text(size = 18, colour = "black"),
+        axis.line = element_line(size = 1.5, colour = "black"),
+        panel.background = element_blank(),
+        panel.border = element_blank(),
+#        panel.border = element_rect(size = 1.0, colour = "black"),
+#        panel.grid = element_blank(),
+        strip.text.x = element_text(size = 20, colour = "white"),
+        strip.background = element_rect(fill = "black", colour = "black"),
+        plot.margin = unit(c(0.3,1.2,0.3,0.3), "cm"),
+        plot.title = element_text(hjust = 0.5, size = 18)) +
+  ggtitle(bquote(italic(r[s]) ~ "=" ~
+                 .(round(cor.test(select(dataFrame, !!enquo(xvar))[,1], select(dataFrame, !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
+                         digits = 2)) *
+                 ";" ~ italic(P) ~ "=" ~
+                 .(round(min(0.5, cor.test(select(dataFrame, !!enquo(xvar))[,1], select(dataFrame, !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame)[1]/100) )),
+                         digits = 5))))
+}
+
+
+
+
+ggTrend_minDistToCENATHILA_HORlengthsSum <- trendPlot(dataFrame = tmp,
+                                                      mapping = aes(x = minDistToCENATHILA, y = HORlengthsSum),
+                                                      xvar = minDistToCENATHILA,
+                                                      yvar = HORlengthsSum,
+                                                      xlab = bquote("Distance to nearest CENATHILA"),
+                                                      ylab = bquote("Repetitiveness"),
+                                                      xaxtrans = log10_trans(),
+                                                      yaxtrans = log10_trans(),
+                                                      xbreaks = trans_breaks("log10", function(x) 10^x),
+                                                      ybreaks = trans_breaks("log10", function(x) 10^x),
+                                                      xlabels = trans_format("log10", math_format(10^.x)),
+                                                      ylabels = trans_format("log10", math_format(10^.x)))
+ggTrend_minDistToCENATHILA_HORlengthsSum <- ggTrend_minDistToCENATHILA_HORlengthsSum +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+gg_cow_list1 <- list(
+                     ggTrend_minDistToCENATHILA_HORlengthsSum
+                    )
+
+gg_cow1 <- plot_grid(plotlist = gg_cow_list1,
+                     labels = "AUTO", label_size = 30,
+                     align = "hv",
+                     axis = "l",
+                     nrow = length(gg_cow_list1), ncol = 1)
+
+plotDir <- paste0("plots/")
+system(paste0("[ -d ", plotDir, " ] || mkdir -p ", plotDir))
+
+ggsave(paste0(plotDir,
+              "test",
+              "_trendPlot_", paste0(chrName, collapse = "_"),
+              ".pdf"),
+       plot = gg_cow1,
+       height = 5*length(gg_cow_list1), width = 5*length(chrName), limitsize = F)
+
+
+
+
 
 
 
