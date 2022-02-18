@@ -40,14 +40,24 @@ CEN180_list <- mclapply(1:length(acc), function(x) {
   } else {
     tab <- tab_list[[1]]
   }
+  tab <- tab[tab$class == "cen180",]
   tab
 }, mc.cores = length(acc), mc.preschedule = F)
  
-
 CENATHILA_list <- mclapply(1:length(acc), function(x) {
   tmp <- read.table(paste0("/home/ajt200/analysis/nanopore/pancentromere/annotation/ATHILA/ATHILA/",
                            acc[x], "/CENATHILA_in_", acc[x], "_",
                            paste0(chrName, collapse = "_"), ".bed"),
+                    header = F)
+  tmp$V2 <- tmp$V2+1
+  colnames(tmp) <- c("chr", "start", "end", "name", "phylo", "strand")
+  tmp
+}, mc.cores = length(acc), mc.preschedule = F)
+
+CENranLoc_list <- mclapply(1:length(acc), function(x) {
+  tmp <- read.table(paste0("/home/ajt200/analysis/nanopore/pancentromere/annotation/ATHILA/ATHILA/",
+                           acc[x], "/CENATHILA_in_", acc[x], "_",
+                           paste0(chrName, collapse = "_"), "_CENrandomLoci.bed"),
                     header = F)
   tmp$V2 <- tmp$V2+1
   colnames(tmp) <- c("chr", "start", "end", "name", "phylo", "strand")
