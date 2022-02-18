@@ -93,128 +93,138 @@ CEN180distToCENATHILA <- function(CEN180, CENATHILA, CENranLoc) {
     CENATHILA_chr <- CENATHILA[CENATHILA$chr == chrName[i],]
     CENranLoc_chr <- CENranLoc[CENranLoc$chr == chrName[i],]
 
-    # Calculate distances from the start and end coordinates of each CEN180 and CENATHILA
-    CEN180start_vs_CENATHILAstart <- mclapply(1:length(CEN180_chr$start), function(x) {
-      abs(CEN180_chr$start[x] - CENATHILA_chr$start)
-    }, mc.cores = detectCores(), mc.preschedule = T) 
-    CEN180end_vs_CENATHILAend <- mclapply(1:length(CEN180_chr$end), function(x) {
-      abs(CEN180_chr$end[x] - CENATHILA_chr$end)
-    }, mc.cores = detectCores(), mc.preschedule = T) 
-    CEN180start_vs_CENATHILAend <- mclapply(1:length(CEN180_chr$start), function(x) {
-      abs(CEN180_chr$start[x] - CENATHILA_chr$end)
-    }, mc.cores = detectCores(), mc.preschedule = T) 
-    CEN180end_vs_CENATHILAstart <- mclapply(1:length(CEN180_chr$end), function(x) {
-      abs(CEN180_chr$end[x] - CENATHILA_chr$start)
-    }, mc.cores = detectCores(), mc.preschedule = T) 
+    if(nrow(CENATHILA_chr) > 0) {
+      # Calculate distances from the start and end coordinates of each CEN180 and CENATHILA
+      CEN180start_vs_CENATHILAstart <- mclapply(1:length(CEN180_chr$start), function(x) {
+        abs(CEN180_chr$start[x] - CENATHILA_chr$start)
+      }, mc.cores = detectCores(), mc.preschedule = T) 
+      CEN180end_vs_CENATHILAend <- mclapply(1:length(CEN180_chr$end), function(x) {
+        abs(CEN180_chr$end[x] - CENATHILA_chr$end)
+      }, mc.cores = detectCores(), mc.preschedule = T) 
+      CEN180start_vs_CENATHILAend <- mclapply(1:length(CEN180_chr$start), function(x) {
+        abs(CEN180_chr$start[x] - CENATHILA_chr$end)
+      }, mc.cores = detectCores(), mc.preschedule = T) 
+      CEN180end_vs_CENATHILAstart <- mclapply(1:length(CEN180_chr$end), function(x) {
+        abs(CEN180_chr$end[x] - CENATHILA_chr$start)
+      }, mc.cores = detectCores(), mc.preschedule = T) 
 
-    # Get distance between each CEN180 and the
-    # nearest CENATHILA
-    minDistToCENATHILA <- unlist(mclapply(1:length(CEN180_chr$start), function(x) {
-      min(c(CEN180start_vs_CENATHILAstart[[x]],
-            CEN180end_vs_CENATHILAend[[x]],
-            CEN180start_vs_CENATHILAend[[x]],
-            CEN180end_vs_CENATHILAstart[[x]]), na.rm = T)
-    }, mc.cores = detectCores(), mc.preschedule = T))
-    stopifnot(nrow(CEN180_chr) == length(minDistToCENATHILA))
+      # Get distance between each CEN180 and the
+      # nearest CENATHILA
+      minDistToCENATHILA <- unlist(mclapply(1:length(CEN180_chr$start), function(x) {
+        min(c(CEN180start_vs_CENATHILAstart[[x]],
+              CEN180end_vs_CENATHILAend[[x]],
+              CEN180start_vs_CENATHILAend[[x]],
+              CEN180end_vs_CENATHILAstart[[x]]), na.rm = T)
+      }, mc.cores = detectCores(), mc.preschedule = T))
+      stopifnot(nrow(CEN180_chr) == length(minDistToCENATHILA))
 
-    #phylo_chr <- unique(CENATHILA_chr$phylo)
-    minDistToCENATHILA_phylo_list <- lapply(1:length(phylo), function(x) {
-      CENATHILA_chr_phylo <- CENATHILA_chr[CENATHILA_chr$phylo == phylo[x],]
+      #phylo_chr <- unique(CENATHILA_chr$phylo)
+      minDistToCENATHILA_phylo_list <- lapply(1:length(phylo), function(x) {
+        CENATHILA_chr_phylo <- CENATHILA_chr[CENATHILA_chr$phylo == phylo[x],]
 
-      if(nrow(CENATHILA_chr_phylo) > 0) {
-        # Calculate distances from the start and end coordinates of each CEN180 and CENATHILA
-        CEN180start_vs_CENATHILAstart <- mclapply(1:length(CEN180_chr$start), function(x) {
-          abs(CEN180_chr$start[x] - CENATHILA_chr_phylo$start)
-        }, mc.cores = detectCores(), mc.preschedule = T) 
-        CEN180end_vs_CENATHILAend <- mclapply(1:length(CEN180_chr$end), function(x) {
-          abs(CEN180_chr$end[x] - CENATHILA_chr_phylo$end)
-        }, mc.cores = detectCores(), mc.preschedule = T) 
-        CEN180start_vs_CENATHILAend <- mclapply(1:length(CEN180_chr$start), function(x) {
-          abs(CEN180_chr$start[x] - CENATHILA_chr_phylo$end)
-        }, mc.cores = detectCores(), mc.preschedule = T) 
-        CEN180end_vs_CENATHILAstart <- mclapply(1:length(CEN180_chr$end), function(x) {
-          abs(CEN180_chr$end[x] - CENATHILA_chr_phylo$start)
-        }, mc.cores = detectCores(), mc.preschedule = T) 
+        if(nrow(CENATHILA_chr_phylo) > 0) {
+          # Calculate distances from the start and end coordinates of each CEN180 and CENATHILA
+          CEN180start_vs_CENATHILAstart <- mclapply(1:length(CEN180_chr$start), function(x) {
+            abs(CEN180_chr$start[x] - CENATHILA_chr_phylo$start)
+          }, mc.cores = detectCores(), mc.preschedule = T) 
+          CEN180end_vs_CENATHILAend <- mclapply(1:length(CEN180_chr$end), function(x) {
+            abs(CEN180_chr$end[x] - CENATHILA_chr_phylo$end)
+          }, mc.cores = detectCores(), mc.preschedule = T) 
+          CEN180start_vs_CENATHILAend <- mclapply(1:length(CEN180_chr$start), function(x) {
+            abs(CEN180_chr$start[x] - CENATHILA_chr_phylo$end)
+          }, mc.cores = detectCores(), mc.preschedule = T) 
+          CEN180end_vs_CENATHILAstart <- mclapply(1:length(CEN180_chr$end), function(x) {
+            abs(CEN180_chr$end[x] - CENATHILA_chr_phylo$start)
+          }, mc.cores = detectCores(), mc.preschedule = T) 
 
-        # Get distance between each CEN180 and the
-        # nearest CENATHILA
-        minDistToCENATHILA <- unlist(mclapply(1:length(CEN180_chr$start), function(x) {
-          min(c(CEN180start_vs_CENATHILAstart[[x]],
-                CEN180end_vs_CENATHILAend[[x]],
-                CEN180start_vs_CENATHILAend[[x]],
-                CEN180end_vs_CENATHILAstart[[x]]), na.rm = T)
-        }, mc.cores = detectCores(), mc.preschedule = T))
-        stopifnot(nrow(CEN180_chr) == length(minDistToCENATHILA))
-        minDistToCENATHILA
-      } else {
-        minDistToCENATHILA <- rep(NA, length(CEN180_chr$start))
-      } 
-      minDistToCENATHILA
-    })
+          # Get distance between each CEN180 and the
+          # nearest CENATHILA
+          minDistToCENATHILA <- unlist(mclapply(1:length(CEN180_chr$start), function(x) {
+            min(c(CEN180start_vs_CENATHILAstart[[x]],
+                  CEN180end_vs_CENATHILAend[[x]],
+                  CEN180start_vs_CENATHILAend[[x]],
+                  CEN180end_vs_CENATHILAstart[[x]]), na.rm = T)
+          }, mc.cores = detectCores(), mc.preschedule = T))
+          stopifnot(nrow(CEN180_chr) == length(minDistToCENATHILA))
+          minDistToCENATHILA
+        } else {
+          minDistToCENATHILA <- rep(Inf, length(CEN180_chr$start))
+          minDistToCENATHILA
+        } 
+      })
+    } else {
+      minDistToCENATHILA <- rep(Inf, length(CEN180_chr$start))
+      minDistToCENATHILA_phylo_list <- lapply(1:length(phylo), function(x) { rep(Inf, length(CEN180_chr$start)) } )
+    } 
 
     minDistToCENATHILA_phylo_DF <- as.data.frame(dplyr::bind_cols(minDistToCENATHILA_phylo_list))
     minDistToCENATHILA_DF <- cbind(minDistToCENATHILA, minDistToCENATHILA_phylo_DF)
     colnames(minDistToCENATHILA_DF) <- c("ATHILA", phylo)
     colnames(minDistToCENATHILA_DF) <- gsub("ATHILA", "minDistToCENATHILA", colnames(minDistToCENATHILA_DF))
 
-    # Calculate distances from the start and end coordinates of each CEN180 and CENranLoc
-    CEN180start_vs_CENranLocstart <- mclapply(1:length(CEN180_chr$start), function(x) {
-      abs(CEN180_chr$start[x] - CENranLoc_chr$start)
-    }, mc.cores = detectCores(), mc.preschedule = T) 
-    CEN180end_vs_CENranLocend <- mclapply(1:length(CEN180_chr$end), function(x) {
-      abs(CEN180_chr$end[x] - CENranLoc_chr$end)
-    }, mc.cores = detectCores(), mc.preschedule = T) 
-    CEN180start_vs_CENranLocend <- mclapply(1:length(CEN180_chr$start), function(x) {
-      abs(CEN180_chr$start[x] - CENranLoc_chr$end)
-    }, mc.cores = detectCores(), mc.preschedule = T) 
-    CEN180end_vs_CENranLocstart <- mclapply(1:length(CEN180_chr$end), function(x) {
-      abs(CEN180_chr$end[x] - CENranLoc_chr$start)
-    }, mc.cores = detectCores(), mc.preschedule = T) 
+    if(nrow(CENranLoc_chr) > 0) {
+      # Calculate distances from the start and end coordinates of each CEN180 and CENranLoc
+      CEN180start_vs_CENranLocstart <- mclapply(1:length(CEN180_chr$start), function(x) {
+        abs(CEN180_chr$start[x] - CENranLoc_chr$start)
+      }, mc.cores = detectCores(), mc.preschedule = T) 
+      CEN180end_vs_CENranLocend <- mclapply(1:length(CEN180_chr$end), function(x) {
+        abs(CEN180_chr$end[x] - CENranLoc_chr$end)
+      }, mc.cores = detectCores(), mc.preschedule = T) 
+      CEN180start_vs_CENranLocend <- mclapply(1:length(CEN180_chr$start), function(x) {
+        abs(CEN180_chr$start[x] - CENranLoc_chr$end)
+      }, mc.cores = detectCores(), mc.preschedule = T) 
+      CEN180end_vs_CENranLocstart <- mclapply(1:length(CEN180_chr$end), function(x) {
+        abs(CEN180_chr$end[x] - CENranLoc_chr$start)
+      }, mc.cores = detectCores(), mc.preschedule = T) 
 
-    # Get distance between each CEN180 and the
-    # nearest CENranLoc
-    minDistToCENranLoc <- unlist(mclapply(1:length(CEN180_chr$start), function(x) {
-      min(c(CEN180start_vs_CENranLocstart[[x]],
-            CEN180end_vs_CENranLocend[[x]],
-            CEN180start_vs_CENranLocend[[x]],
-            CEN180end_vs_CENranLocstart[[x]]), na.rm = T)
-    }, mc.cores = detectCores(), mc.preschedule = T))
-    stopifnot(nrow(CEN180_chr) == length(minDistToCENranLoc))
+      # Get distance between each CEN180 and the
+      # nearest CENranLoc
+      minDistToCENranLoc <- unlist(mclapply(1:length(CEN180_chr$start), function(x) {
+        min(c(CEN180start_vs_CENranLocstart[[x]],
+              CEN180end_vs_CENranLocend[[x]],
+              CEN180start_vs_CENranLocend[[x]],
+              CEN180end_vs_CENranLocstart[[x]]), na.rm = T)
+      }, mc.cores = detectCores(), mc.preschedule = T))
+      stopifnot(nrow(CEN180_chr) == length(minDistToCENranLoc))
 
-    #phylo_chr <- unique(CENranLoc_chr$phylo)
-    minDistToCENranLoc_phylo_list <- lapply(1:length(phylo), function(x) {
-      CENranLoc_chr_phylo <- CENranLoc_chr[CENranLoc_chr$phylo == phylo[x],]
+      #phylo_chr <- unique(CENranLoc_chr$phylo)
+      minDistToCENranLoc_phylo_list <- lapply(1:length(phylo), function(x) {
+        CENranLoc_chr_phylo <- CENranLoc_chr[CENranLoc_chr$phylo == phylo[x],]
 
-      if(nrow(CENranLoc_chr_phylo) > 0) {
-        # Calculate distances from the start and end coordinates of each CEN180 and CENranLoc
-        CEN180start_vs_CENranLocstart <- mclapply(1:length(CEN180_chr$start), function(x) {
-          abs(CEN180_chr$start[x] - CENranLoc_chr_phylo$start)
-        }, mc.cores = detectCores(), mc.preschedule = T) 
-        CEN180end_vs_CENranLocend <- mclapply(1:length(CEN180_chr$end), function(x) {
-          abs(CEN180_chr$end[x] - CENranLoc_chr_phylo$end)
-        }, mc.cores = detectCores(), mc.preschedule = T) 
-        CEN180start_vs_CENranLocend <- mclapply(1:length(CEN180_chr$start), function(x) {
-          abs(CEN180_chr$start[x] - CENranLoc_chr_phylo$end)
-        }, mc.cores = detectCores(), mc.preschedule = T) 
-        CEN180end_vs_CENranLocstart <- mclapply(1:length(CEN180_chr$end), function(x) {
-          abs(CEN180_chr$end[x] - CENranLoc_chr_phylo$start)
-        }, mc.cores = detectCores(), mc.preschedule = T) 
+        if(nrow(CENranLoc_chr_phylo) > 0) {
+          # Calculate distances from the start and end coordinates of each CEN180 and CENranLoc
+          CEN180start_vs_CENranLocstart <- mclapply(1:length(CEN180_chr$start), function(x) {
+            abs(CEN180_chr$start[x] - CENranLoc_chr_phylo$start)
+          }, mc.cores = detectCores(), mc.preschedule = T) 
+          CEN180end_vs_CENranLocend <- mclapply(1:length(CEN180_chr$end), function(x) {
+            abs(CEN180_chr$end[x] - CENranLoc_chr_phylo$end)
+          }, mc.cores = detectCores(), mc.preschedule = T) 
+          CEN180start_vs_CENranLocend <- mclapply(1:length(CEN180_chr$start), function(x) {
+            abs(CEN180_chr$start[x] - CENranLoc_chr_phylo$end)
+          }, mc.cores = detectCores(), mc.preschedule = T) 
+          CEN180end_vs_CENranLocstart <- mclapply(1:length(CEN180_chr$end), function(x) {
+            abs(CEN180_chr$end[x] - CENranLoc_chr_phylo$start)
+          }, mc.cores = detectCores(), mc.preschedule = T) 
 
-        # Get distance between each CEN180 and the
-        # nearest CENranLoc
-        minDistToCENranLoc <- unlist(mclapply(1:length(CEN180_chr$start), function(x) {
-          min(c(CEN180start_vs_CENranLocstart[[x]],
-                CEN180end_vs_CENranLocend[[x]],
-                CEN180start_vs_CENranLocend[[x]],
-                CEN180end_vs_CENranLocstart[[x]]), na.rm = T)
-        }, mc.cores = detectCores(), mc.preschedule = T))
-        stopifnot(nrow(CEN180_chr) == length(minDistToCENranLoc))
-        minDistToCENranLoc
-      } else {
-        minDistToCENranLoc <- rep(NA, length(CEN180_chr$start))
-      } 
-      minDistToCENranLoc
-    })
+          # Get distance between each CEN180 and the
+          # nearest CENranLoc
+          minDistToCENranLoc <- unlist(mclapply(1:length(CEN180_chr$start), function(x) {
+            min(c(CEN180start_vs_CENranLocstart[[x]],
+                  CEN180end_vs_CENranLocend[[x]],
+                  CEN180start_vs_CENranLocend[[x]],
+                  CEN180end_vs_CENranLocstart[[x]]), na.rm = T)
+          }, mc.cores = detectCores(), mc.preschedule = T))
+          stopifnot(nrow(CEN180_chr) == length(minDistToCENranLoc))
+          minDistToCENranLoc
+        } else {
+          minDistToCENranLoc <- rep(Inf, length(CEN180_chr$start))
+          minDistToCENranLoc
+        } 
+      })
+    } else {
+      minDistToCENranLoc <- rep(Inf, length(CEN180_chr$start))
+      minDistToCENranLoc_phylo_list <- lapply(1:length(phylo), function(x) { rep(Inf, length(CEN180_chr$start)) } )
+    } 
 
     minDistToCENranLoc_phylo_DF <- as.data.frame(dplyr::bind_cols(minDistToCENranLoc_phylo_list))
     minDistToCENranLoc_DF <- cbind(minDistToCENranLoc, minDistToCENranLoc_phylo_DF)
@@ -238,11 +248,9 @@ CEN180_list_dist <- lapply(1:length(acc), function(x) {
                         CENranLoc = CENranLoc_list[[x]])
 })
 
-tmp <- CEN180distToCENATHILA(CEN180 = CEN180_list[[34]],
-                             CENATHILA = CENATHILA_list[[34]],
-                             CENranLoc = CENranLoc_list[[34]])
-
-
+#tmp <- CEN180distToCENATHILA(CEN180 = CEN180_list[[34]],
+#                             CENATHILA = CENATHILA_list[[34]],
+#                             CENranLoc = CENranLoc_list[[34]])
 
 
 # Plot relationships and define groups
@@ -282,38 +290,38 @@ trendPlot <- function(acc_id, dataFrame, mapping, xvar, yvar, xlab, ylab, xaxtra
   ggtitle(bquote(
                  .(acc_id) ~
                  "Chr1" ~ italic(r[s]) ~ "=" ~
-                 .(round(cor.test(select(dataFrame[dataFrame[,9] == "Chr1"], !!enquo(xvar))[,1], select(dataFrame, !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
+                 .(round(cor.test(select(dataFrame[dataFrame[,9] == "Chr1",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr1",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
                          digits = 2)) *
                  ";" ~ italic(P) ~ "=" ~
-                 .(round(min(0.5, cor.test(select(dataFrame, !!enquo(xvar))[,1], select(dataFrame, !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame)[1]/100) )),
+                 .(round(min(0.5, cor.test(select(dataFrame[dataFrame[,9] == "Chr1",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr1",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame)[1]/100) )),
                          digits = 5)) ~
                  "	" ~
                  "Chr2" ~ italic(r[s]) ~ "=" ~
-                 .(round(cor.test(select(dataFrame[dataFrame[,9] == "Chr2"], !!enquo(xvar))[,1], select(dataFrame, !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
+                 .(round(cor.test(select(dataFrame[dataFrame[,9] == "Chr2",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr2",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
                          digits = 2)) *
                  ";" ~ italic(P) ~ "=" ~
-                 .(round(min(0.5, cor.test(select(dataFrame, !!enquo(xvar))[,1], select(dataFrame, !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame)[1]/100) )),
+                 .(round(min(0.5, cor.test(select(dataFrame[dataFrame[,9] == "Chr2",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr2",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame)[1]/100) )),
                          digits = 5)) ~
                  "	" ~
                  "Chr3" ~ italic(r[s]) ~ "=" ~
-                 .(round(cor.test(select(dataFrame[dataFrame[,9] == "Chr3"], !!enquo(xvar))[,1], select(dataFrame, !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
+                 .(round(cor.test(select(dataFrame[dataFrame[,9] == "Chr3",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr3",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
                          digits = 2)) *
                  ";" ~ italic(P) ~ "=" ~
-                 .(round(min(0.5, cor.test(select(dataFrame, !!enquo(xvar))[,1], select(dataFrame, !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame)[1]/100) )),
+                 .(round(min(0.5, cor.test(select(dataFrame[dataFrame[,9] == "Chr3",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr3",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame)[1]/100) )),
                          digits = 5)) ~
                  "	" ~
                  "Chr4" ~ italic(r[s]) ~ "=" ~
-                 .(round(cor.test(select(dataFrame[dataFrame[,9] == "Chr4"], !!enquo(xvar))[,1], select(dataFrame, !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
+                 .(round(cor.test(select(dataFrame[dataFrame[,9] == "Chr4",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr4",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
                          digits = 2)) *
                  ";" ~ italic(P) ~ "=" ~
-                 .(round(min(0.5, cor.test(select(dataFrame, !!enquo(xvar))[,1], select(dataFrame, !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame)[1]/100) )),
+                 .(round(min(0.5, cor.test(select(dataFrame[dataFrame[,9] == "Chr4",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr4",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame)[1]/100) )),
                          digits = 5)) ~
                  "	" ~
                  "Chr5" ~ italic(r[s]) ~ "=" ~
-                 .(round(cor.test(select(dataFrame[dataFrame[,9] == "Chr5"], !!enquo(xvar))[,1], select(dataFrame, !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
+                 .(round(cor.test(select(dataFrame[dataFrame[,9] == "Chr5",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr5",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
                          digits = 2)) *
                  ";" ~ italic(P) ~ "=" ~
-                 .(round(min(0.5, cor.test(select(dataFrame, !!enquo(xvar))[,1], select(dataFrame, !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame)[1]/100) )),
+                 .(round(min(0.5, cor.test(select(dataFrame[dataFrame[,9] == "Chr5",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr5",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame)[1]/100) )),
                          digits = 5)) ~
                  "	"
                 )
