@@ -238,15 +238,15 @@ CEN180_list_dist <- lapply(1:length(acc), function(x) {
                         CENranLoc = CENranLoc_list[[x]])
 })
 
-#tmp <- CEN180distToCENATHILA(CEN180 = CEN180_list[[1]],
-#                             CENATHILA = CENATHILA_list[[1]],
-#                             CENranLoc = CENranLoc_list[[1]])
+tmp <- CEN180distToCENATHILA(CEN180 = CEN180_list[[34]],
+                             CENATHILA = CENATHILA_list[[34]],
+                             CENranLoc = CENranLoc_list[[34]])
 
 
 
 
 # Plot relationships and define groups
-trendPlot <- function(dataFrame, mapping, xvar, yvar, xlab, ylab, xaxtrans, yaxtrans, xbreaks, ybreaks, xlabels, ylabels) {
+trendPlot <- function(acc_id, dataFrame, mapping, xvar, yvar, xlab, ylab, xaxtrans, yaxtrans, xbreaks, ybreaks, xlabels, ylabels) {
   xvar <- enquo(xvar)
   yvar <- enquo(yvar)
   ggplot(data = dataFrame,
@@ -279,18 +279,52 @@ trendPlot <- function(dataFrame, mapping, xvar, yvar, xlab, ylab, xaxtrans, yaxt
         strip.background = element_rect(fill = "black", colour = "black"),
         plot.margin = unit(c(0.3,1.2,0.3,0.3), "cm"),
         plot.title = element_text(hjust = 0.5, size = 18)) +
-  ggtitle(bquote(italic(r[s]) ~ "=" ~
-                 .(round(cor.test(select(dataFrame, !!enquo(xvar))[,1], select(dataFrame, !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
+  ggtitle(bquote(
+                 .(acc_id) ~
+                 "Chr1" ~ italic(r[s]) ~ "=" ~
+                 .(round(cor.test(select(dataFrame[dataFrame[,9] == "Chr1"], !!enquo(xvar))[,1], select(dataFrame, !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
                          digits = 2)) *
                  ";" ~ italic(P) ~ "=" ~
                  .(round(min(0.5, cor.test(select(dataFrame, !!enquo(xvar))[,1], select(dataFrame, !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame)[1]/100) )),
-                         digits = 5))))
+                         digits = 5)) ~
+                 "	" ~
+                 "Chr2" ~ italic(r[s]) ~ "=" ~
+                 .(round(cor.test(select(dataFrame[dataFrame[,9] == "Chr2"], !!enquo(xvar))[,1], select(dataFrame, !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
+                         digits = 2)) *
+                 ";" ~ italic(P) ~ "=" ~
+                 .(round(min(0.5, cor.test(select(dataFrame, !!enquo(xvar))[,1], select(dataFrame, !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame)[1]/100) )),
+                         digits = 5)) ~
+                 "	" ~
+                 "Chr3" ~ italic(r[s]) ~ "=" ~
+                 .(round(cor.test(select(dataFrame[dataFrame[,9] == "Chr3"], !!enquo(xvar))[,1], select(dataFrame, !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
+                         digits = 2)) *
+                 ";" ~ italic(P) ~ "=" ~
+                 .(round(min(0.5, cor.test(select(dataFrame, !!enquo(xvar))[,1], select(dataFrame, !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame)[1]/100) )),
+                         digits = 5)) ~
+                 "	" ~
+                 "Chr4" ~ italic(r[s]) ~ "=" ~
+                 .(round(cor.test(select(dataFrame[dataFrame[,9] == "Chr4"], !!enquo(xvar))[,1], select(dataFrame, !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
+                         digits = 2)) *
+                 ";" ~ italic(P) ~ "=" ~
+                 .(round(min(0.5, cor.test(select(dataFrame, !!enquo(xvar))[,1], select(dataFrame, !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame)[1]/100) )),
+                         digits = 5)) ~
+                 "	" ~
+                 "Chr5" ~ italic(r[s]) ~ "=" ~
+                 .(round(cor.test(select(dataFrame[dataFrame[,9] == "Chr5"], !!enquo(xvar))[,1], select(dataFrame, !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
+                         digits = 2)) *
+                 ";" ~ italic(P) ~ "=" ~
+                 .(round(min(0.5, cor.test(select(dataFrame, !!enquo(xvar))[,1], select(dataFrame, !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame)[1]/100) )),
+                         digits = 5)) ~
+                 "	"
+                )
+         )
 }
 
 
 
 
-ggTrend_minDistToCENATHILA_HORlengthsSum <- trendPlot(dataFrame = tmp,
+ggTrend_minDistToCENATHILA_HORlengthsSum <- trendPlot(acc_id = acc[34],
+                                                      dataFrame = tmp,
                                                       mapping = aes(x = minDistToCENATHILA, y = HORlengthsSum),
                                                       xvar = minDistToCENATHILA,
                                                       yvar = HORlengthsSum,
