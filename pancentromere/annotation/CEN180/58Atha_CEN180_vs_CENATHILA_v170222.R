@@ -505,7 +505,7 @@ ggTrend_minDistToCENATHILA_EditDistance_listOlists <- mclapply(1:length(acc), fu
 #  facet_grid(cols = vars(chr), scales = "free_x")
 
 
-mclapply(1:length(acc), function(i) {
+lapply(1:length(acc), function(i) {
   gg_cow_list <- ggTrend_minDistToCENATHILA_HORlengthsSum_listOlists[[i]]
   gg_cow <- plot_grid(plotlist = gg_cow_list,
                       labels = "AUTO", label_size = 30,
@@ -518,9 +518,9 @@ mclapply(1:length(acc), function(i) {
                 "_", acc[i], ".pdf"),
          plot = gg_cow,
          height = 5*length(gg_cow_list), width = 5*length(chrName), limitsize = F)
-}, mc.cores = detectCores(), mc.preschedule = F)
+})
 
-mclapply(1:length(acc), function(i) {
+lapply(1:length(acc), function(i) {
   gg_cow_list <- ggTrend_minDistToCENATHILA_HORcount_listOlists[[i]]
   gg_cow <- plot_grid(plotlist = gg_cow_list,
                       labels = "AUTO", label_size = 30,
@@ -533,9 +533,9 @@ mclapply(1:length(acc), function(i) {
                 "_", acc[i], ".pdf"),
          plot = gg_cow,
          height = 5*length(gg_cow_list), width = 5*length(chrName), limitsize = F)
-}, mc.cores = detectCores(), mc.preschedule = F)
+})
 
-mclapply(1:length(acc), function(i) {
+lapply(1:length(acc), function(i) {
   gg_cow_list <- ggTrend_minDistToCENATHILA_WeightedConsensusScore_listOlists[[i]]
   gg_cow <- plot_grid(plotlist = gg_cow_list,
                       labels = "AUTO", label_size = 30,
@@ -548,9 +548,9 @@ mclapply(1:length(acc), function(i) {
                 "_", acc[i], ".pdf"),
          plot = gg_cow,
          height = 5*length(gg_cow_list), width = 5*length(chrName), limitsize = F)
-}, mc.cores = detectCores(), mc.preschedule = F)
+})
 
-mclapply(1:length(acc), function(i) {
+lapply(1:length(acc), function(i) {
   gg_cow_list <- ggTrend_minDistToCENATHILA_EditDistance_listOlists[[i]]
   gg_cow <- plot_grid(plotlist = gg_cow_list,
                       labels = "AUTO", label_size = 30,
@@ -563,5 +563,4 @@ mclapply(1:length(acc), function(i) {
                 "_", acc[i], ".pdf"),
          plot = gg_cow,
          height = 5*length(gg_cow_list), width = 5*length(chrName), limitsize = F)
-}, mc.cores = detectCores(), mc.preschedule = F)
-
+})
