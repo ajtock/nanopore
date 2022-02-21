@@ -387,6 +387,23 @@ ggTrend_minDistToCENATHILA_HORlengthsSum_listOlists <- lapply(1:length(acc), fun
 })
 #}, mc.cores = detectCores(), mc.preschedule = F)
 
+lapply(1:length(acc), function(i) {
+  gg_cow_list <- ggTrend_minDistToCENATHILA_HORlengthsSum_listOlists[[i]]
+  gg_cow <- plot_grid(plotlist = gg_cow_list,
+                      labels = "AUTO", label_size = 30,
+                      align = "hv",
+                      axis = "l",
+                      nrow = length(gg_cow_list), ncol = 1)
+  ggsave(paste0(plotDirHORlengthsSum,
+                "CEN180_MinDistToCENATHILA_vs_HORlengthsSum_trendPlot_",
+                paste0(chrName, collapse = "_"),
+                "_", acc[i], ".pdf"),
+         plot = gg_cow,
+         height = 5.5*length(gg_cow_list), width = 5*(length(chrName)+1), limitsize = F)
+})
+#}, mc.cores = detectCores(), mc.preschedule = F)
+
+
 ggTrend_minDistToCENATHILA_HORcount_listOlists <- lapply(1:length(acc), function(i) {
   lapply(1:length(phylo_ext), function(j) {
     tP <- trendPlot(acc_id = acc[i],
@@ -408,6 +425,22 @@ ggTrend_minDistToCENATHILA_HORcount_listOlists <- lapply(1:length(acc), function
     tP
   })
 })
+
+lapply(1:length(acc), function(i) {
+  gg_cow_list <- ggTrend_minDistToCENATHILA_HORcount_listOlists[[i]]
+  gg_cow <- plot_grid(plotlist = gg_cow_list,
+                      labels = "AUTO", label_size = 30,
+                      align = "hv",
+                      axis = "l",
+                      nrow = length(gg_cow_list), ncol = 1)
+  ggsave(paste0(plotDirHORcount,
+                "CEN180_MinDistToCENATHILA_vs_HORcount_trendPlot_",
+                paste0(chrName, collapse = "_"),
+                "_", acc[i], ".pdf"),
+         plot = gg_cow,
+         height = 5.5*length(gg_cow_list), width = 5*(length(chrName)+1), limitsize = F)
+})
+
 
 ggTrend_minDistToCENATHILA_WeightedConsensusScore_listOlists <- lapply(1:length(acc), function(i) {
   lapply(1:length(phylo_ext), function(j) {
@@ -431,6 +464,22 @@ ggTrend_minDistToCENATHILA_WeightedConsensusScore_listOlists <- lapply(1:length(
   })
 })
 
+lapply(1:length(acc), function(i) {
+  gg_cow_list <- ggTrend_minDistToCENATHILA_WeightedConsensusScore_listOlists[[i]]
+  gg_cow <- plot_grid(plotlist = gg_cow_list,
+                      labels = "AUTO", label_size = 30,
+                      align = "hv",
+                      axis = "l",
+                      nrow = length(gg_cow_list), ncol = 1)
+  ggsave(paste0(plotDirWeightedConsensusScore,
+                "CEN180_MinDistToCENATHILA_vs_WeightedConsensusScore_trendPlot_",
+                paste0(chrName, collapse = "_"),
+                "_", acc[i], ".pdf"),
+         plot = gg_cow,
+         height = 5.5*length(gg_cow_list), width = 5*(length(chrName)+1), limitsize = F)
+})
+
+
 ggTrend_minDistToCENATHILA_EditDistance_listOlists <- lapply(1:length(acc), function(i) {
   lapply(1:length(phylo_ext), function(j) {
     tP <- trendPlot(acc_id = acc[i],
@@ -453,53 +502,6 @@ ggTrend_minDistToCENATHILA_EditDistance_listOlists <- lapply(1:length(acc), func
   })
 })
 
-
-lapply(1:length(acc), function(i) {
-  gg_cow_list <- ggTrend_minDistToCENATHILA_HORlengthsSum_listOlists[[i]]
-  gg_cow <- plot_grid(plotlist = gg_cow_list,
-                      labels = "AUTO", label_size = 30,
-                      align = "hv",
-                      axis = "l",
-                      nrow = length(gg_cow_list), ncol = 1)
-  ggsave(paste0(plotDirHORlengthsSum,
-                "CEN180_MinDistToCENATHILA_vs_HORlengthsSum_trendPlot_",
-                paste0(chrName, collapse = "_"),
-                "_", acc[i], ".pdf"),
-         plot = gg_cow,
-         height = 5.5*length(gg_cow_list), width = 5*(length(chrName)+1), limitsize = F)
-})
-#}, mc.cores = detectCores(), mc.preschedule = F)
-
-lapply(1:length(acc), function(i) {
-  gg_cow_list <- ggTrend_minDistToCENATHILA_HORcount_listOlists[[i]]
-  gg_cow <- plot_grid(plotlist = gg_cow_list,
-                      labels = "AUTO", label_size = 30,
-                      align = "hv",
-                      axis = "l",
-                      nrow = length(gg_cow_list), ncol = 1)
-  ggsave(paste0(plotDirHORcount,
-                "CEN180_MinDistToCENATHILA_vs_HORcount_trendPlot_",
-                paste0(chrName, collapse = "_"),
-                "_", acc[i], ".pdf"),
-         plot = gg_cow,
-         height = 5.5*length(gg_cow_list), width = 5*(length(chrName)+1), limitsize = F)
-})
-
-lapply(1:length(acc), function(i) {
-  gg_cow_list <- ggTrend_minDistToCENATHILA_WeightedConsensusScore_listOlists[[i]]
-  gg_cow <- plot_grid(plotlist = gg_cow_list,
-                      labels = "AUTO", label_size = 30,
-                      align = "hv",
-                      axis = "l",
-                      nrow = length(gg_cow_list), ncol = 1)
-  ggsave(paste0(plotDirWeightedConsensusScore,
-                "CEN180_MinDistToCENATHILA_vs_WeightedConsensusScore_trendPlot_",
-                paste0(chrName, collapse = "_"),
-                "_", acc[i], ".pdf"),
-         plot = gg_cow,
-         height = 5.5*length(gg_cow_list), width = 5*(length(chrName)+1), limitsize = F)
-})
-
 lapply(1:length(acc), function(i) {
   gg_cow_list <- ggTrend_minDistToCENATHILA_EditDistance_listOlists[[i]]
   gg_cow <- plot_grid(plotlist = gg_cow_list,
@@ -514,3 +516,4 @@ lapply(1:length(acc), function(i) {
          plot = gg_cow,
          height = 5.5*length(gg_cow_list), width = 5*(length(chrName)+1), limitsize = F)
 })
+
