@@ -299,42 +299,42 @@ trendPlot <- function(acc_id, dataFrame, mapping, xvar, yvar, xlab, ylab, xaxtra
         plot.title = element_text(hjust = 0.5, size = 18)) +
   ggtitle(bquote(
                  .(acc_id) ~
-                 "		" ~
+                 "			" ~
                  "Chr1" ~ italic(r[s]) ~ "=" ~
                  .(round(cor.test(select(dataFrame[dataFrame[,9] == "Chr1",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr1",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
                          digits = 2)) *
                  ";" ~ italic(P) ~ "=" ~
                  .(round(min(0.5, cor.test(select(dataFrame[dataFrame[,9] == "Chr1",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr1",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame[dataFrame[,9] == "Chr1",])[1]/100) )),
                          digits = 5)) ~
-                 "		" ~
+                 "			" ~
                  "Chr2" ~ italic(r[s]) ~ "=" ~
                  .(round(cor.test(select(dataFrame[dataFrame[,9] == "Chr2",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr2",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
                          digits = 2)) *
                  ";" ~ italic(P) ~ "=" ~
                  .(round(min(0.5, cor.test(select(dataFrame[dataFrame[,9] == "Chr2",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr2",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame[dataFrame[,9] == "Chr2",])[1]/100) )),
                          digits = 5)) ~
-                 "		" ~
+                 "			" ~
                  "Chr3" ~ italic(r[s]) ~ "=" ~
                  .(round(cor.test(select(dataFrame[dataFrame[,9] == "Chr3",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr3",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
                          digits = 2)) *
                  ";" ~ italic(P) ~ "=" ~
                  .(round(min(0.5, cor.test(select(dataFrame[dataFrame[,9] == "Chr3",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr3",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame[dataFrame[,9] == "Chr3",])[1]/100) )),
                          digits = 5)) ~
-                 "		" ~
+                 "			" ~
                  "Chr4" ~ italic(r[s]) ~ "=" ~
                  .(round(cor.test(select(dataFrame[dataFrame[,9] == "Chr4",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr4",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
                          digits = 2)) *
                  ";" ~ italic(P) ~ "=" ~
                  .(round(min(0.5, cor.test(select(dataFrame[dataFrame[,9] == "Chr4",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr4",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame[dataFrame[,9] == "Chr4",])[1]/100) )),
                          digits = 5)) ~
-                 "		" ~
+                 "			" ~
                  "Chr5" ~ italic(r[s]) ~ "=" ~
                  .(round(cor.test(select(dataFrame[dataFrame[,9] == "Chr5",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr5",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
                          digits = 2)) *
                  ";" ~ italic(P) ~ "=" ~
                  .(round(min(0.5, cor.test(select(dataFrame[dataFrame[,9] == "Chr5",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr5",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame[dataFrame[,9] == "Chr5",])[1]/100) )),
                          digits = 5)) ~
-                 "		" ~
+                 "			" ~
                  "All" ~ italic(r[s]) ~ "=" ~
                  .(round(cor.test(select(dataFrame, !!enquo(xvar))[,1], select(dataFrame, !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
                          digits = 2)) *
@@ -359,11 +359,11 @@ ggTrend_minDistToCENATHILA_HORlengthsSum_listOlists <- lapply(1:length(acc), fun
   lapply(1:length(phylo_ext), function(j) {
     tP <- trendPlot(acc_id = acc[i],
                     dataFrame = CEN180_list_dist_tmp[[i]],
-                    mapping = aes(x = CEN180_list_dist_tmp[[i]][,which(names(CEN180_list_dist_tmp[[i]]) == phylo_ext[j])] + 1,
-                                  y = HORlengthsSum + 1),
-                    xvar = as.name(names(CEN180_list_dist_tmp[[i]])[which(names(CEN180_list_dist_tmp[[i]]) == phylo_ext[j])]),
+                    mapping = aes_(x = as.name(phylo_ext[j]),
+                                   y = as.name("HORlengthsSum")),
+                    xvar = as.name(phylo_ext[j]),
                     yvar = HORlengthsSum,
-                    xlab = bquote("Distance to nearest" ~ italic(.(phylo_ext[j]))),
+                    xlab = bquote("Distance to nearest" ~ italic(.(phylo_ext[j])) ~ "(bp)"),
                     ylab = bquote(italic("CEN180") ~ "repetitiveness"),
                     xaxtrans = log10_trans(),
                     yaxtrans = log10_trans(),
@@ -372,7 +372,8 @@ ggTrend_minDistToCENATHILA_HORlengthsSum_listOlists <- lapply(1:length(acc), fun
                     xlabels = trans_format("log10", math_format(10^.x)),
                     ylabels = trans_format("log10", math_format(10^.x)))
     tP <- tP +
-      facet_grid(cols = vars(chr), scales = "free_x")
+      facet_grid(cols = vars(chr), margins = "chr", scales = "free_x")
+    tP
   })
 })
 
@@ -380,11 +381,14 @@ ggTrend_minDistToCENATHILA_HORcount_listOlists <- lapply(1:length(acc), function
   lapply(1:length(phylo_ext), function(j) {
     tP <- trendPlot(acc_id = acc[i],
                     dataFrame = CEN180_list_dist_tmp[[i]],
-                    mapping = aes(x = CEN180_list_dist_tmp[[i]][,which(names(CEN180_list_dist_tmp[[i]]) == phylo_ext[j])] + 1,
-                                  y = HORcount + 1),
-                    xvar = as.name(names(CEN180_list_dist_tmp[[i]])[which(names(CEN180_list_dist_tmp[[i]]) == phylo_ext[j])]),
+                    mapping = aes_(x = as.name(phylo_ext[j]),
+                                   y = as.name("HORcount")),
+                    xvar = as.name(phylo_ext[j]),
+#                    mapping = aes(x = CEN180_list_dist_tmp[[i]][,which(names(CEN180_list_dist_tmp[[i]]) == phylo_ext[j])] + 1,
+#                                  y = HORcount + 1),
+#                    xvar = as.name(names(CEN180_list_dist_tmp[[i]])[which(names(CEN180_list_dist_tmp[[i]]) == phylo_ext[j])]),
                     yvar = HORcount,
-                    xlab = bquote("Distance to nearest" ~ italic(.(phylo_ext[j]))),
+                    xlab = bquote("Distance to nearest" ~ italic(.(phylo_ext[j])) ~ "(bp)"),
                     ylab = bquote(italic("CEN180") ~ "HOR count"),
                     xaxtrans = log10_trans(),
                     yaxtrans = log10_trans(),
@@ -393,7 +397,7 @@ ggTrend_minDistToCENATHILA_HORcount_listOlists <- lapply(1:length(acc), function
                     xlabels = trans_format("log10", math_format(10^.x)),
                     ylabels = trans_format("log10", math_format(10^.x)))
     tP <- tP +
-      facet_grid(cols = vars(chr), scales = "free_x")
+      facet_grid(cols = vars(chr), margins = "chr", scales = "free_x")
     tP
   })
 })
@@ -402,11 +406,14 @@ ggTrend_minDistToCENATHILA_WeightedConsensusScore_listOlists <- lapply(1:length(
   lapply(1:length(phylo_ext), function(j) {
     tP <- trendPlot(acc_id = acc[i],
                     dataFrame = CEN180_list_dist_tmp[[i]],
-                    mapping = aes(x = CEN180_list_dist_tmp[[i]][,which(names(CEN180_list_dist_tmp[[i]]) == phylo_ext[j])] + 1,
-                                  y = weighted.consensus.score + 1),
-                    xvar = as.name(names(CEN180_list_dist_tmp[[i]])[which(names(CEN180_list_dist_tmp[[i]]) == phylo_ext[j])]),
+                    mapping = aes_(x = as.name(phylo_ext[j]),
+                                   y = as.name("weighted.consensus.score")),
+                    xvar = as.name(phylo_ext[j]),
+#                    mapping = aes(x = CEN180_list_dist_tmp[[i]][,which(names(CEN180_list_dist_tmp[[i]]) == phylo_ext[j])] + 1,
+#                                  y = weighted.consensus.score + 1),
+#                    xvar = as.name(names(CEN180_list_dist_tmp[[i]])[which(names(CEN180_list_dist_tmp[[i]]) == phylo_ext[j])]),
                     yvar = weighted.consensus.score,
-                    xlab = bquote("Distance to nearest" ~ italic(.(phylo_ext[j]))),
+                    xlab = bquote("Distance to nearest" ~ italic(.(phylo_ext[j])) ~ "(bp)"),
                     ylab = bquote(italic("CEN180") ~ "consensus score"),
                     xaxtrans = log10_trans(),
                     yaxtrans = log2_trans(),
@@ -415,7 +422,7 @@ ggTrend_minDistToCENATHILA_WeightedConsensusScore_listOlists <- lapply(1:length(
                     xlabels = trans_format("log10", math_format(10^.x)),
                     ylabels = trans_format("log2", math_format(2^.x)))
     tP <- tP +
-      facet_grid(cols = vars(chr), scales = "free_x")
+      facet_grid(cols = vars(chr), margins = "chr", scales = "free_x")
     tP
   })
 })
@@ -424,11 +431,14 @@ ggTrend_minDistToCENATHILA_EditDistance_listOlists <- lapply(1:length(acc), func
   lapply(1:length(phylo_ext), function(j) {
     tP <- trendPlot(acc_id = acc[i],
                     dataFrame = CEN180_list_dist_tmp[[i]],
-                    mapping = aes(x = CEN180_list_dist_tmp[[i]][,which(names(CEN180_list_dist_tmp[[i]]) == phylo_ext[j])] + 1,
-                                  y = edit.distance + 1),
-                    xvar = as.name(names(CEN180_list_dist_tmp[[i]])[which(names(CEN180_list_dist_tmp[[i]]) == phylo_ext[j])]),
+                    mapping = aes_(x = as.name(phylo_ext[j]),
+                                   y = as.name("edit.distance")),
+                    xvar = as.name(phylo_ext[j]),
+#                    mapping = aes(x = CEN180_list_dist_tmp[[i]][,which(names(CEN180_list_dist_tmp[[i]]) == phylo_ext[j])] + 1,
+#                                  y = edit.distance + 1),
+#                    xvar = as.name(names(CEN180_list_dist_tmp[[i]])[which(names(CEN180_list_dist_tmp[[i]]) == phylo_ext[j])]),
                     yvar = edit.distance,
-                    xlab = bquote("Distance to nearest" ~ italic(.(phylo_ext[j]))),
+                    xlab = bquote("Distance to nearest" ~ italic(.(phylo_ext[j])) ~ "(bp)"),
                     ylab = bquote(italic("CEN180") ~ "edit distance"),
                     xaxtrans = log10_trans(),
                     yaxtrans = log2_trans(),
@@ -437,7 +447,7 @@ ggTrend_minDistToCENATHILA_EditDistance_listOlists <- lapply(1:length(acc), func
                     xlabels = trans_format("log10", math_format(10^.x)),
                     ylabels = trans_format("log2", math_format(2^.x)))
     tP <- tP +
-      facet_grid(cols = vars(chr), scales = "free_x")
+      facet_grid(cols = vars(chr), margins = "chr", scales = "free_x")
     tP
   })
 })
@@ -456,10 +466,10 @@ lapply(1:length(acc), function(i) {
                 paste0(chrName, collapse = "_"),
                 "_", acc[i], ".pdf"),
          plot = gg_cow,
-         height = 5*length(gg_cow_list), width = 5*(length(chrName)), limitsize = F)
+         height = 5*length(gg_cow_list), width = 5*(length(chrName)+1), limitsize = F)
 })
 
-lapply(1:length(acc), function(i) {
+mclapply(1:length(acc), function(i) {
   gg_cow_list <- ggTrend_minDistToCENATHILA_HORcount_listOlists[[i]]
   gg_cow <- plot_grid(plotlist = gg_cow_list,
                       labels = "AUTO", label_size = 30,
@@ -472,7 +482,7 @@ lapply(1:length(acc), function(i) {
                 "_", acc[i], ".pdf"),
          plot = gg_cow,
          height = 5*length(gg_cow_list), width = 5*(length(chrName)+1), limitsize = F)
-})
+}, mc.cores = detectCores(), mc.preschedule = F)
 
 lapply(1:length(acc), function(i) {
   gg_cow_list <- ggTrend_minDistToCENATHILA_WeightedConsensusScore_listOlists[[i]]
