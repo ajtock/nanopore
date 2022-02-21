@@ -24,10 +24,10 @@ library(cowplot)
 library(viridis)
 
 plotDir <- paste0("plots/")
-plotDirHORlengthsSum <- paste0(plotDir, "HORlengthsSum")
-plotDirHORcount <- paste0(plotDir, "HORcount")
-plotDirWeightedConsensusScore <- paste0(plotDir, "WeightedConsensusScore")
-plotDirEditDistance <- paste0(plotDir, "EditDistance")
+plotDirHORlengthsSum <- paste0(plotDir, "HORlengthsSum/")
+plotDirHORcount <- paste0(plotDir, "HORcount/")
+plotDirWeightedConsensusScore <- paste0(plotDir, "WeightedConsensusScore/")
+plotDirEditDistance <- paste0(plotDir, "EditDistance/")
 system(paste0("[ -d ", plotDir, " ] || mkdir -p ", plotDir))
 system(paste0("[ -d ", plotDirHORlengthsSum, " ] || mkdir -p ", plotDirHORlengthsSum))
 system(paste0("[ -d ", plotDirHORcount, " ] || mkdir -p ", plotDirHORcount))
@@ -436,73 +436,6 @@ ggTrend_minDistToCENATHILA_EditDistance_listOlists <- mclapply(1:length(acc), fu
     tP
   })
 }, mc.cores = detectCores(), mc.preschedule = F)
-
-
-
-
-#ggTrend_minDistToCENATHILA_HORlengthsSum <- trendPlot(acc_id = acc[34],
-#                                                      dataFrame = tmp,
-#                                                      mapping = aes(x = minDistToCENATHILA+1, y = HORlengthsSum+1),
-#                                                      xvar = minDistToCENATHILA,
-#                                                      yvar = HORlengthsSum,
-#                                                      xlab = bquote("Distance to nearest CENATHILA"),
-#                                                      ylab = bquote("Repetitiveness"),
-#                                                      xaxtrans = log10_trans(),
-#                                                      yaxtrans = log10_trans(),
-#                                                      xbreaks = trans_breaks("log10", function(x) 10^x),
-#                                                      ybreaks = trans_breaks("log10", function(x) 10^x),
-#                                                      xlabels = trans_format("log10", math_format(10^.x)),
-#                                                      ylabels = trans_format("log10", math_format(10^.x)))
-#ggTrend_minDistToCENATHILA_HORlengthsSum <- ggTrend_minDistToCENATHILA_HORlengthsSum +
-#  facet_grid(cols = vars(chr), scales = "free_x")
-#
-#ggTrend_minDistToCENATHILA_HORcount <- trendPlot(acc_id = acc[34],
-#                                                 dataFrame = tmp,
-#                                                 mapping = aes(x = minDistToCENATHILA+1, y = HORcount+1),
-#                                                 xvar = minDistToCENATHILA,
-#                                                 yvar = HORcount,
-#                                                 xlab = bquote("Distance to nearest CENATHILA"),
-#                                                 ylab = bquote("HOR count"),
-#                                                 xaxtrans = log10_trans(),
-#                                                 yaxtrans = log10_trans(),
-#                                                 xbreaks = trans_breaks("log10", function(x) 10^x),
-#                                                 ybreaks = trans_breaks("log10", function(x) 10^x),
-#                                                 xlabels = trans_format("log10", math_format(10^.x)),
-#                                                 ylabels = trans_format("log10", math_format(10^.x)))
-#ggTrend_minDistToCENATHILA_HORcount <- ggTrend_minDistToCENATHILA_HORcount +
-#  facet_grid(cols = vars(chr), scales = "free_x")
-#
-#ggTrend_minDistToCENATHILA_weighted.consensus.score <- trendPlot(acc_id = acc[34],
-#                                                                 dataFrame = tmp,
-#                                                                 mapping = aes(x = minDistToCENATHILA+1, y = weighted.consensus.score+1),
-#                                                                 xvar = minDistToCENATHILA,
-#                                                                 yvar = weighted.consensus.score,
-#                                                                 xlab = bquote("Distance to nearest CENATHILA"),
-#                                                                 ylab = bquote("Weighted consensus score"),
-#                                                                 xaxtrans = log10_trans(),
-#                                                                 yaxtrans = log2_trans(),
-#                                                                 xbreaks = trans_breaks("log10", function(x) 10^x),
-#                                                                 ybreaks = trans_breaks("log2", function(x) 2^x),
-#                                                                 xlabels = trans_format("log10", math_format(10^.x)),
-#                                                                 ylabels = trans_format("log2", math_format(2^.x)))
-#ggTrend_minDistToCENATHILA_weighted.consensus.score <- ggTrend_minDistToCENATHILA_weighted.consensus.score +
-#  facet_grid(cols = vars(chr), scales = "free_x")
-#
-#ggTrend_minDistToCENATHILA_edit.distance <- trendPlot(acc_id = acc[34],
-#                                                      dataFrame = tmp,
-#                                                      mapping = aes(x = minDistToCENATHILA+1, y = edit.distance+1),
-#                                                      xvar = minDistToCENATHILA,
-#                                                      yvar = edit.distance,
-#                                                      xlab = bquote("Distance to nearest CENATHILA"),
-#                                                      ylab = bquote("Edit distance"),
-#                                                      xaxtrans = log10_trans(),
-#                                                      yaxtrans = log2_trans(),
-#                                                      xbreaks = trans_breaks("log10", function(x) 10^x),
-#                                                      ybreaks = trans_breaks("log2", function(x) 2^x),
-#                                                      xlabels = trans_format("log10", math_format(10^.x)),
-#                                                      ylabels = trans_format("log2", math_format(2^.x)))
-#ggTrend_minDistToCENATHILA_edit.distance <- ggTrend_minDistToCENATHILA_edit.distance +
-#  facet_grid(cols = vars(chr), scales = "free_x")
 
 
 lapply(1:length(acc), function(i) {
