@@ -355,6 +355,10 @@ CEN180_list_dist_tmp <- lapply(1:length(acc), function(x) {
 
 phylo_ext <- paste0("CEN", c("ATHILA", phylo))
 
+#                    mapping = aes(x = CEN180_list_dist_tmp[[i]][,which(names(CEN180_list_dist_tmp[[i]]) == phylo_ext[j])] + 1,
+#                                  y = HORlengthsSum + 1),
+#                    xvar = as.name(names(CEN180_list_dist_tmp[[i]])[which(names(CEN180_list_dist_tmp[[i]]) == phylo_ext[j])]),
+
 ggTrend_minDistToCENATHILA_HORlengthsSum_listOlists <- lapply(1:length(acc), function(i) {
   lapply(1:length(phylo_ext), function(j) {
     tP <- trendPlot(acc_id = acc[i],
@@ -376,6 +380,7 @@ ggTrend_minDistToCENATHILA_HORlengthsSum_listOlists <- lapply(1:length(acc), fun
     tP
   })
 })
+#}, mc.cores = detectCores(), mc.preschedule = F)
 
 ggTrend_minDistToCENATHILA_HORcount_listOlists <- lapply(1:length(acc), function(i) {
   lapply(1:length(phylo_ext), function(j) {
@@ -384,9 +389,6 @@ ggTrend_minDistToCENATHILA_HORcount_listOlists <- lapply(1:length(acc), function
                     mapping = aes_(x = as.name(phylo_ext[j]),
                                    y = as.name("HORcount")),
                     xvar = as.name(phylo_ext[j]),
-#                    mapping = aes(x = CEN180_list_dist_tmp[[i]][,which(names(CEN180_list_dist_tmp[[i]]) == phylo_ext[j])] + 1,
-#                                  y = HORcount + 1),
-#                    xvar = as.name(names(CEN180_list_dist_tmp[[i]])[which(names(CEN180_list_dist_tmp[[i]]) == phylo_ext[j])]),
                     yvar = HORcount,
                     xlab = bquote("Distance to nearest" ~ italic(.(phylo_ext[j])) ~ "(bp)"),
                     ylab = bquote(italic("CEN180") ~ "HOR count"),
@@ -409,9 +411,6 @@ ggTrend_minDistToCENATHILA_WeightedConsensusScore_listOlists <- lapply(1:length(
                     mapping = aes_(x = as.name(phylo_ext[j]),
                                    y = as.name("weighted.consensus.score")),
                     xvar = as.name(phylo_ext[j]),
-#                    mapping = aes(x = CEN180_list_dist_tmp[[i]][,which(names(CEN180_list_dist_tmp[[i]]) == phylo_ext[j])] + 1,
-#                                  y = weighted.consensus.score + 1),
-#                    xvar = as.name(names(CEN180_list_dist_tmp[[i]])[which(names(CEN180_list_dist_tmp[[i]]) == phylo_ext[j])]),
                     yvar = weighted.consensus.score,
                     xlab = bquote("Distance to nearest" ~ italic(.(phylo_ext[j])) ~ "(bp)"),
                     ylab = bquote(italic("CEN180") ~ "consensus score"),
@@ -434,9 +433,6 @@ ggTrend_minDistToCENATHILA_EditDistance_listOlists <- lapply(1:length(acc), func
                     mapping = aes_(x = as.name(phylo_ext[j]),
                                    y = as.name("edit.distance")),
                     xvar = as.name(phylo_ext[j]),
-#                    mapping = aes(x = CEN180_list_dist_tmp[[i]][,which(names(CEN180_list_dist_tmp[[i]]) == phylo_ext[j])] + 1,
-#                                  y = edit.distance + 1),
-#                    xvar = as.name(names(CEN180_list_dist_tmp[[i]])[which(names(CEN180_list_dist_tmp[[i]]) == phylo_ext[j])]),
                     yvar = edit.distance,
                     xlab = bquote("Distance to nearest" ~ italic(.(phylo_ext[j])) ~ "(bp)"),
                     ylab = bquote(italic("CEN180") ~ "edit distance"),
@@ -451,7 +447,6 @@ ggTrend_minDistToCENATHILA_EditDistance_listOlists <- lapply(1:length(acc), func
     tP
   })
 })
-#}, mc.cores = detectCores(), mc.preschedule = F)
 
 
 lapply(1:length(acc), function(i) {
