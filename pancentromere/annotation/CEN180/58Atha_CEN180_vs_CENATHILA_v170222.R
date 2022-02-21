@@ -23,6 +23,9 @@ library(ggplot2)
 library(cowplot)
 library(viridis)
 
+plotDir <- paste0("plots/")
+system(paste0("[ -d ", plotDir, " ] || mkdir -p ", plotDir))
+
 acc_full <- system("ls /home/ajt200/analysis/nanopore/pancentromere/annotation/CEN180/repeats/*.fa*", intern = T)
 acc_full <- gsub("/home/ajt200/analysis/nanopore/pancentromere/annotation/CEN180/repeats/cen180.consensus.repetitiveness", "", acc_full)
 acc_uniq <- unique( gsub("\\.fa\\..+", "", acc_full) )
@@ -290,6 +293,7 @@ trendPlot <- function(acc_id, dataFrame, mapping, xvar, yvar, xlab, ylab, xaxtra
         plot.title = element_text(hjust = 0.5, size = 18)) +
   ggtitle(bquote(
                  .(acc_id) ~
+                 "	" ~
                  "Chr1" ~ italic(r[s]) ~ "=" ~
                  .(round(cor.test(select(dataFrame[dataFrame[,9] == "Chr1",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr1",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
                          digits = 2)) *
@@ -409,9 +413,6 @@ gg_cow1 <- plot_grid(plotlist = gg_cow_list1,
                      align = "hv",
                      axis = "l",
                      nrow = length(gg_cow_list1), ncol = 1)
-
-plotDir <- paste0("plots/")
-system(paste0("[ -d ", plotDir, " ] || mkdir -p ", plotDir))
 
 ggsave(paste0(plotDir,
               "test",
