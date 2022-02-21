@@ -351,13 +351,10 @@ trendPlot <- function(acc_id, dataFrame, mapping, xvar, yvar, xlab, ylab, xaxtra
 
 CEN180_list_dist_tmp <- lapply(1:length(acc), function(x) {
   colnames(CEN180_list_dist[[x]]) <- gsub("minDistTo", "", colnames(CEN180_list_dist[[x]]))
-  CEN180_list_dist[,] <- CEN180_list_dist[,] + 1
+  # Add offset (+ 1) for plotting on log scales
+  CEN180_list_dist[[x]][,12:ncol(CEN180_list_dist[[x]])] <- CEN180_list_dist[[x]][,12:ncol(CEN180_list_dist[[x]])] + 1
   CEN180_list_dist[[x]]
 })
-
-# Add offset (+ 1) for plotting on log scales
-
-
 
 #rm(CEN180_list_dist); gc()
 
