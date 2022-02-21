@@ -517,3 +517,26 @@ lapply(1:length(acc), function(i) {
          height = 5.5*length(gg_cow_list), width = 5*(length(chrName)+1), limitsize = F)
 })
 
+
+# Plot all CEN180 stats comparisons with distance to nearest CENATHILA,
+# but not including subfamily-specific relationships
+lapply(1:length(acc), function(i) {
+  gg_cow_list <- list(
+                      ggTrend_minDistToCENATHILA_HORlengthsSum_listOlists[[i]][[1]],
+                      ggTrend_minDistToCENATHILA_HORcount_listOlists[[i]][[1]],
+                      ggTrend_minDistToCENATHILA_WeightedConsensusScore_listOlists[[i]][[1]],
+                      ggTrend_minDistToCENATHILA_EditDistance_listOlists[[i]][[1]]
+                     )
+  gg_cow <- plot_grid(plotlist = gg_cow_list,
+                      labels = "AUTO", label_size = 30,
+                      align = "hv",
+                      axis = "l",
+                      nrow = length(gg_cow_list), ncol = 1)
+  ggsave(paste0(plotDirEditDistance,
+                "CEN180_MinDistToCENATHILA_vs_HORandDivergenceMetrics_trendPlot_",
+                paste0(chrName, collapse = "_"),
+                "_", acc[i], ".pdf"),
+         plot = gg_cow,
+         height = 5.5*length(gg_cow_list), width = 5*(length(chrName)+1), limitsize = F)
+})
+
