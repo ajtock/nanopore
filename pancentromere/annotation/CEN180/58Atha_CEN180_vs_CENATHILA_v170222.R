@@ -466,7 +466,7 @@ lapply(1:length(acc), function(i) {
                 paste0(chrName, collapse = "_"),
                 "_", acc[i], ".pdf"),
          plot = gg_cow,
-         height = 5*length(gg_cow_list), width = 5*(length(chrName)+1), limitsize = F)
+         height = 5.5*length(gg_cow_list), width = 5*(length(chrName)+1), limitsize = F)
 })
 #}, mc.cores = detectCores(), mc.preschedule = F)
 
@@ -482,7 +482,7 @@ lapply(1:length(acc), function(i) {
                 paste0(chrName, collapse = "_"),
                 "_", acc[i], ".pdf"),
          plot = gg_cow,
-         height = 5*length(gg_cow_list), width = 5*(length(chrName)+1), limitsize = F)
+         height = 5.5*length(gg_cow_list), width = 5*(length(chrName)+1), limitsize = F)
 })
 
 lapply(1:length(acc), function(i) {
@@ -497,7 +497,7 @@ lapply(1:length(acc), function(i) {
                 paste0(chrName, collapse = "_"),
                 "_", acc[i], ".pdf"),
          plot = gg_cow,
-         height = 5*length(gg_cow_list), width = 5*(length(chrName)+1), limitsize = F)
+         height = 5.5*length(gg_cow_list), width = 5*(length(chrName)+1), limitsize = F)
 })
 
 lapply(1:length(acc), function(i) {
@@ -512,5 +512,5 @@ lapply(1:length(acc), function(i) {
                 paste0(chrName, collapse = "_"),
                 "_", acc[i], ".pdf"),
          plot = gg_cow,
-         height = 5*length(gg_cow_list), width = 5*(length(chrName)+1), limitsize = F)
+         height = 5.5*length(gg_cow_list), width = 5*(length(chrName)+1), limitsize = F)
 })
