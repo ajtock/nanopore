@@ -259,9 +259,7 @@ CEN180_list_dist <- lapply(1:length(acc), function(x) {
                         CENranLoc = CENranLoc_list[[x]])
 })
 
-#tmp <- CEN180distToCENATHILA(CEN180 = CEN180_list[[34]],
-#                             CENATHILA = CENATHILA_list[[34]],
-#                             CENranLoc = CENranLoc_list[[34]])
+rm(CEN180_list, CENATHILA_list, CENranLoc_list); gc()
 
 
 # Plot relationships and define groups
@@ -301,42 +299,48 @@ trendPlot <- function(acc_id, dataFrame, mapping, xvar, yvar, xlab, ylab, xaxtra
         plot.title = element_text(hjust = 0.5, size = 18)) +
   ggtitle(bquote(
                  .(acc_id) ~
-                 "			" ~
+                 "		" ~
                  "Chr1" ~ italic(r[s]) ~ "=" ~
                  .(round(cor.test(select(dataFrame[dataFrame[,9] == "Chr1",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr1",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
                          digits = 2)) *
                  ";" ~ italic(P) ~ "=" ~
-                 .(round(min(0.5, cor.test(select(dataFrame[dataFrame[,9] == "Chr1",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr1",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame)[1]/100) )),
+                 .(round(min(0.5, cor.test(select(dataFrame[dataFrame[,9] == "Chr1",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr1",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame[dataFrame[,9] == "Chr1",])[1]/100) )),
                          digits = 5)) ~
-                 "			" ~
+                 "		" ~
                  "Chr2" ~ italic(r[s]) ~ "=" ~
                  .(round(cor.test(select(dataFrame[dataFrame[,9] == "Chr2",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr2",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
                          digits = 2)) *
                  ";" ~ italic(P) ~ "=" ~
-                 .(round(min(0.5, cor.test(select(dataFrame[dataFrame[,9] == "Chr2",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr2",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame)[1]/100) )),
+                 .(round(min(0.5, cor.test(select(dataFrame[dataFrame[,9] == "Chr2",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr2",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame[dataFrame[,9] == "Chr2",])[1]/100) )),
                          digits = 5)) ~
-                 "			" ~
+                 "		" ~
                  "Chr3" ~ italic(r[s]) ~ "=" ~
                  .(round(cor.test(select(dataFrame[dataFrame[,9] == "Chr3",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr3",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
                          digits = 2)) *
                  ";" ~ italic(P) ~ "=" ~
-                 .(round(min(0.5, cor.test(select(dataFrame[dataFrame[,9] == "Chr3",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr3",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame)[1]/100) )),
+                 .(round(min(0.5, cor.test(select(dataFrame[dataFrame[,9] == "Chr3",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr3",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame[dataFrame[,9] == "Chr3",])[1]/100) )),
                          digits = 5)) ~
-                 "			" ~
+                 "		" ~
                  "Chr4" ~ italic(r[s]) ~ "=" ~
                  .(round(cor.test(select(dataFrame[dataFrame[,9] == "Chr4",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr4",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
                          digits = 2)) *
                  ";" ~ italic(P) ~ "=" ~
-                 .(round(min(0.5, cor.test(select(dataFrame[dataFrame[,9] == "Chr4",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr4",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame)[1]/100) )),
+                 .(round(min(0.5, cor.test(select(dataFrame[dataFrame[,9] == "Chr4",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr4",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame[dataFrame[,9] == "Chr4",])[1]/100) )),
                          digits = 5)) ~
-                 "			" ~
+                 "		" ~
                  "Chr5" ~ italic(r[s]) ~ "=" ~
                  .(round(cor.test(select(dataFrame[dataFrame[,9] == "Chr5",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr5",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
                          digits = 2)) *
                  ";" ~ italic(P) ~ "=" ~
-                 .(round(min(0.5, cor.test(select(dataFrame[dataFrame[,9] == "Chr5",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr5",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame)[1]/100) )),
+                 .(round(min(0.5, cor.test(select(dataFrame[dataFrame[,9] == "Chr5",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr5",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame[dataFrame[,9] == "Chr5",])[1]/100) )),
                          digits = 5)) ~
-                 "	"
+                 "		" ~
+                 "All" ~ italic(r[s]) ~ "=" ~
+                 .(round(cor.test(select(dataFrame, !!enquo(xvar))[,1], select(dataFrame, !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
+                         digits = 2)) *
+                 ";" ~ italic(P) ~ "=" ~
+                 .(round(min(0.5, cor.test(select(dataFrame, !!enquo(xvar))[,1], select(dataFrame, !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame)[1]/100) )),
+                         digits = 5))
                 )
          )
 }
@@ -347,9 +351,11 @@ CEN180_list_dist_tmp <- lapply(1:length(acc), function(x) {
   CEN180_list_dist[[x]]
 })
 
+#rm(CEN180_list_dist); gc()
+
 phylo_ext <- paste0("CEN", c("ATHILA", phylo))
 
-ggTrend_minDistToCENATHILA_HORlengthsSum_listOlists <- mclapply(1:length(acc), function(i) {
+ggTrend_minDistToCENATHILA_HORlengthsSum_listOlists <- lapply(1:length(acc), function(i) {
   lapply(1:length(phylo_ext), function(j) {
     tP <- trendPlot(acc_id = acc[i],
                     dataFrame = CEN180_list_dist_tmp[[i]],
@@ -367,11 +373,10 @@ ggTrend_minDistToCENATHILA_HORlengthsSum_listOlists <- mclapply(1:length(acc), f
                     ylabels = trans_format("log10", math_format(10^.x)))
     tP <- tP +
       facet_grid(cols = vars(chr), scales = "free_x")
-    tP
   })
-}, mc.cores = detectCores(), mc.preschedule = F)
+})
 
-ggTrend_minDistToCENATHILA_HORcount_listOlists <- mclapply(1:length(acc), function(i) {
+ggTrend_minDistToCENATHILA_HORcount_listOlists <- lapply(1:length(acc), function(i) {
   lapply(1:length(phylo_ext), function(j) {
     tP <- trendPlot(acc_id = acc[i],
                     dataFrame = CEN180_list_dist_tmp[[i]],
@@ -391,9 +396,9 @@ ggTrend_minDistToCENATHILA_HORcount_listOlists <- mclapply(1:length(acc), functi
       facet_grid(cols = vars(chr), scales = "free_x")
     tP
   })
-}, mc.cores = detectCores(), mc.preschedule = F)
+})
 
-ggTrend_minDistToCENATHILA_WeightedConsensusScore_listOlists <- mclapply(1:length(acc), function(i) {
+ggTrend_minDistToCENATHILA_WeightedConsensusScore_listOlists <- lapply(1:length(acc), function(i) {
   lapply(1:length(phylo_ext), function(j) {
     tP <- trendPlot(acc_id = acc[i],
                     dataFrame = CEN180_list_dist_tmp[[i]],
@@ -413,9 +418,9 @@ ggTrend_minDistToCENATHILA_WeightedConsensusScore_listOlists <- mclapply(1:lengt
       facet_grid(cols = vars(chr), scales = "free_x")
     tP
   })
-}, mc.cores = detectCores(), mc.preschedule = F)
+})
 
-ggTrend_minDistToCENATHILA_EditDistance_listOlists <- mclapply(1:length(acc), function(i) {
+ggTrend_minDistToCENATHILA_EditDistance_listOlists <- lapply(1:length(acc), function(i) {
   lapply(1:length(phylo_ext), function(j) {
     tP <- trendPlot(acc_id = acc[i],
                     dataFrame = CEN180_list_dist_tmp[[i]],
@@ -435,7 +440,8 @@ ggTrend_minDistToCENATHILA_EditDistance_listOlists <- mclapply(1:length(acc), fu
       facet_grid(cols = vars(chr), scales = "free_x")
     tP
   })
-}, mc.cores = detectCores(), mc.preschedule = F)
+})
+#}, mc.cores = detectCores(), mc.preschedule = F)
 
 
 lapply(1:length(acc), function(i) {
@@ -450,7 +456,7 @@ lapply(1:length(acc), function(i) {
                 paste0(chrName, collapse = "_"),
                 "_", acc[i], ".pdf"),
          plot = gg_cow,
-         height = 5*length(gg_cow_list), width = 5*length(chrName), limitsize = F)
+         height = 5*length(gg_cow_list), width = 5*(length(chrName)), limitsize = F)
 })
 
 lapply(1:length(acc), function(i) {
@@ -465,7 +471,7 @@ lapply(1:length(acc), function(i) {
                 paste0(chrName, collapse = "_"),
                 "_", acc[i], ".pdf"),
          plot = gg_cow,
-         height = 5*length(gg_cow_list), width = 5*length(chrName), limitsize = F)
+         height = 5*length(gg_cow_list), width = 5*(length(chrName)+1), limitsize = F)
 })
 
 lapply(1:length(acc), function(i) {
@@ -480,7 +486,7 @@ lapply(1:length(acc), function(i) {
                 paste0(chrName, collapse = "_"),
                 "_", acc[i], ".pdf"),
          plot = gg_cow,
-         height = 5*length(gg_cow_list), width = 5*length(chrName), limitsize = F)
+         height = 5*length(gg_cow_list), width = 5*(length(chrName)+1), limitsize = F)
 })
 
 lapply(1:length(acc), function(i) {
@@ -495,5 +501,5 @@ lapply(1:length(acc), function(i) {
                 paste0(chrName, collapse = "_"),
                 "_", acc[i], ".pdf"),
          plot = gg_cow,
-         height = 5*length(gg_cow_list), width = 5*length(chrName), limitsize = F)
+         height = 5*length(gg_cow_list), width = 5*(length(chrName)+1), limitsize = F)
 })
