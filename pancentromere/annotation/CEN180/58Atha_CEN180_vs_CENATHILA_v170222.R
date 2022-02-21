@@ -28,11 +28,13 @@ plotDirHORlengthsSum <- paste0(plotDir, "HORlengthsSum/")
 plotDirHORcount <- paste0(plotDir, "HORcount/")
 plotDirWeightedConsensusScore <- paste0(plotDir, "WeightedConsensusScore/")
 plotDirEditDistance <- paste0(plotDir, "EditDistance/")
+plotDirAllMetrics <- paste0(plotDir, "AllMetrics/")
 system(paste0("[ -d ", plotDir, " ] || mkdir -p ", plotDir))
 system(paste0("[ -d ", plotDirHORlengthsSum, " ] || mkdir -p ", plotDirHORlengthsSum))
 system(paste0("[ -d ", plotDirHORcount, " ] || mkdir -p ", plotDirHORcount))
 system(paste0("[ -d ", plotDirWeightedConsensusScore, " ] || mkdir -p ", plotDirWeightedConsensusScore))
 system(paste0("[ -d ", plotDirEditDistance, " ] || mkdir -p ", plotDirEditDistance))
+system(paste0("[ -d ", plotDirAllMetrics, " ] || mkdir -p ", plotDirAllMetrics))
 
 acc_full <- system("ls /home/ajt200/analysis/nanopore/pancentromere/annotation/CEN180/repeats/*.fa*", intern = T)
 acc_full <- gsub("/home/ajt200/analysis/nanopore/pancentromere/annotation/CEN180/repeats/cen180.consensus.repetitiveness", "", acc_full)
@@ -532,7 +534,7 @@ lapply(1:length(acc), function(i) {
                       align = "hv",
                       axis = "l",
                       nrow = length(gg_cow_list), ncol = 1)
-  ggsave(paste0(plotDirEditDistance,
+  ggsave(paste0(plotDirAllMetrics,
                 "CEN180_MinDistToCENATHILA_vs_HORandDivergenceMetrics_trendPlot_",
                 paste0(chrName, collapse = "_"),
                 "_", acc[i], ".pdf"),
