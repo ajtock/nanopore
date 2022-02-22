@@ -544,7 +544,7 @@ lapply(1:length(acc), function(i) {
                       axis = "l",
                       nrow = length(gg_cow_list), ncol = 1)
   ggsave(paste0(plotDirAllMetrics,
-                "CEN180_MinDistToCENATHILA_vs_HORandDivergenceMetrics_trendPlot_",
+                "CEN180_MinDistToCENATHILA_vs_AllMetrics_trendPlot_",
                 paste0(chrName, collapse = "_"),
                 "_", acc[i], ".pdf"),
          plot = gg_cow,
@@ -705,7 +705,7 @@ gg_cow <- plot_grid(plotlist = gg_cow_list,
                     axis = "l",
                     nrow = length(gg_cow_list), ncol = 1)
 ggsave(paste0(plotDirAllAccessions,
-              "CEN180_MinDistToCENATHILA_vs_HORandDivergenceMetrics_trendPlot_",
+              "CEN180_MinDistToCENATHILA_vs_AllMetrics_trendPlot_",
               paste0(chrName, collapse = "_"),
               "_", length(unique(CEN180_list_dist_tmp_allacc$fasta.file.name)), "accessions.pdf"),
        plot = gg_cow,
