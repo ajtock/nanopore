@@ -37,6 +37,8 @@ library(dplyr)
 library(scales)
 library(ggplot2)
 library(cowplot)
+library(ggbeeswarm)
+library(ggthemes)
 library(viridis)
 
 plotDir <- paste0("ATHILA/plots/")
@@ -231,17 +233,15 @@ CEN180metricsAtCENATHILA <- function(CEN180, CENATHILA, featureName) {
         mean(CEN180_GR_chr[CENATHILA_down_CEN180[[x]]]$EditDistance, na.rm = T)
       })
 
-      CENATHILA_chr <- data.frame(CENATHILA_GR_chr,
-                                  feature = rep(featureName, length(CENATHILA_GR_chr)),
-                                  accession = rep(CEN180_GR_chr$acc[1], length(CENATHILA_GR_chr)),
-                                  HORlengthSum_up = CENATHILA_up_CEN180_HORlengthsSum,
-                                  HORlengthSum_down = CENATHILA_down_CEN180_HORlengthsSum,
-                                  HORcount_up = CENATHILA_up_CEN180_HORcount,
-                                  HORcount_down = CENATHILA_down_CEN180_HORcount,
-                                  WeightedConsensusScore_up = CENATHILA_up_CEN180_WeightedConsensusScore,
-                                  WeightedConsensusScore_down = CENATHILA_down_CEN180_WeightedConsensusScore,
-                                  EditDistance_up = CENATHILA_up_CEN180_EditDistance,
-                                  EditDistance_down = CENATHILA_down_CEN180_EditDistance)
+      CENATHILA_reg_GR_chr <= c(CENATHILA_up_GR_chr, CENATHILA_down_GR_chr)
+      CENATHILA_chr <- data.frame(CENATHILA_reg_GR_chr,
+                                  feature = rep(featureName, length(CENATHILA_reg_GR_chr)),
+                                  accession = rep(CEN180_GR_chr$acc[1], length(CENATHILA_reg_GR_chr)),
+                                  region = rep(c("Upstream", "Downstream"), each = length(CENATHILA_GR_chr)),
+                                  HORlengthsSum = c(CENATHILA_up_CEN180_HORlengthsSum, CENATHILA_down_CEN180_HORlengthsSum),
+                                  HORcount = c(CENATHILA_up_CEN180_HORcount, CENATHILA_down_CEN180_HORcount),
+                                  WeightedConsensusScore = c(CENATHILA_up_CEN180_WeightedConsensusScore, CENATHILA_down_CEN180_WeightedConsensusScore),
+                                  EditDistance = c(CENATHILA_up_CEN180_EditDistance, CENATHILA_down_CEN180_EditDistance))
       colnames(CENATHILA_chr)[1] <- "chr"
 
       CENATHILA_CEN180_metrics <- rbind(CENATHILA_CEN180_metrics, CENATHILA_chr)
@@ -267,24 +267,64 @@ CENranLoc_CEN180_metrics_list <- mclapply(1:length(acc), function(x) {
 
 rm(CEN180_list, CENATHILA_list, CENranLoc_list); gc()
 
+CENfeats_CEN180_metrics_list <- lapply(1:length(acc), function(x) {
+  rbind(CENATHILA_CEN180_metrics_list[[x]],
+        CENranLoc_CEN180_metrics_list[[x]])
+})
 
-# Plot relationships and define groups
-trendPlot <- function(acc_id, dataFrame, mapping, xvar, yvar, xlab, ylab, xaxtrans, yaxtrans, xbreaks, ybreaks, xlabels, ylabels) {
-  xvar <- enquo(xvar)
-  yvar <- enquo(yvar)
+
+# Function to make boxplot of CEN180 metrics overlapping
+# regions flanking CENATHILA and CENranLoc
+violinPlot <- function(acc_id, dataFrame, mapping, xvar, yvar, xlab, ylab, yaxtrans, ybreaks, ylabels) {
+  ggplot(data = dataFrame,
+         mapping = mapping,
+         colour = score) +
+#  scale_colour_manual(values = superfamColours) +
+#  geom_boxplot(mapping = aes(colour = genotype),
+#               varwidth = TRUE) +
+  geom_violin(scale = "area",
+              trim = T,
+              draw_quantiles = c(0.25, 0.50, 0.75)) +
+  geom_beeswarm(cex = 6,
+                size = 4) +
+  scale_y_continuous(trans = yaxtrans,
+                     breaks = ybreaks,
+                     labels = ylabels) +
+  labs(x = xlab,
+       y = ylab) +
+  theme_bw() +
+  theme(
+        axis.ticks = element_line(size = 0.5, colour = "black"),
+        axis.ticks.length = unit(0.25, "cm"),
+        axis.text.x = element_text(size = 16, colour = "black", angle = 45, vjust = 1.0, hjust = 1.0),
+        axis.text.y = element_text(size = 16, colour = "black"),
+        axis.title = element_text(size = 18, colour = "black"),
+        axis.line = element_line(size = 1.5, colour = "black"),
+        panel.background = element_blank(),
+        panel.border = element_blank(),
+#        panel.border = element_rect(size = 1.0, colour = "black"),
+#        panel.grid = element_blank(),
+        strip.text.x = element_text(size = 20, colour = "white"),
+        strip.background = element_rect(fill = "black", colour = "black"),
+        plot.margin = unit(c(0.3,1.2,0.3,0.3), "cm"),
+        plot.title = element_text(hjust = 0.5, size = 18)) +
+  ggtitle(bquote(
+                 .(acc_id)
+                )
+         )
+}
+
+
+
+boxPlot <- function(acc_id, dataFrame, mapping, xlab, ylab, xaxtrans, yaxtrans, xbreaks, ybreaks, xlabels, ylabels) {
   ggplot(data = dataFrame,
          mapping = mapping) +
-  geom_hex(bins = 60) +
   scale_x_continuous(trans = xaxtrans,
                      breaks = xbreaks,
                      labels = xlabels) +
   scale_y_continuous(trans = yaxtrans,
                      breaks = ybreaks,
                      labels = ylabels) +
-  annotation_logticks(sides = "lb") +
-  scale_fill_viridis() +
-  geom_smooth(colour = "red", fill = "grey70", alpha = 0.9,
-              method = "gam", formula = y ~ s(x, bs = "cs")) +
   labs(x = xlab,
        y = ylab) +
   theme_bw() +
@@ -304,49 +344,7 @@ trendPlot <- function(acc_id, dataFrame, mapping, xvar, yvar, xlab, ylab, xaxtra
         plot.margin = unit(c(0.3,1.2,0.3,0.3), "cm"),
         plot.title = element_text(hjust = 0.5, size = 18)) +
   ggtitle(bquote(
-                 .(acc_id) ~
-                 "			" ~
-                 "Chr1" ~ italic(r[s]) ~ "=" ~
-                 .(round(cor.test(select(dataFrame[dataFrame[,9] == "Chr1",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr1",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
-                         digits = 2)) *
-                 ";" ~ italic(P) ~ "=" ~
-                 .(round(min(0.5, cor.test(select(dataFrame[dataFrame[,9] == "Chr1",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr1",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame[dataFrame[,9] == "Chr1",])[1]/100) )),
-                         digits = 5)) ~
-                 "			" ~
-                 "Chr2" ~ italic(r[s]) ~ "=" ~
-                 .(round(cor.test(select(dataFrame[dataFrame[,9] == "Chr2",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr2",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
-                         digits = 2)) *
-                 ";" ~ italic(P) ~ "=" ~
-                 .(round(min(0.5, cor.test(select(dataFrame[dataFrame[,9] == "Chr2",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr2",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame[dataFrame[,9] == "Chr2",])[1]/100) )),
-                         digits = 5)) ~
-                 "			" ~
-                 "Chr3" ~ italic(r[s]) ~ "=" ~
-                 .(round(cor.test(select(dataFrame[dataFrame[,9] == "Chr3",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr3",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
-                         digits = 2)) *
-                 ";" ~ italic(P) ~ "=" ~
-                 .(round(min(0.5, cor.test(select(dataFrame[dataFrame[,9] == "Chr3",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr3",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame[dataFrame[,9] == "Chr3",])[1]/100) )),
-                         digits = 5)) ~
-                 "			" ~
-                 "Chr4" ~ italic(r[s]) ~ "=" ~
-                 .(round(cor.test(select(dataFrame[dataFrame[,9] == "Chr4",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr4",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
-                         digits = 2)) *
-                 ";" ~ italic(P) ~ "=" ~
-                 .(round(min(0.5, cor.test(select(dataFrame[dataFrame[,9] == "Chr4",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr4",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame[dataFrame[,9] == "Chr4",])[1]/100) )),
-                         digits = 5)) ~
-                 "			" ~
-                 "Chr5" ~ italic(r[s]) ~ "=" ~
-                 .(round(cor.test(select(dataFrame[dataFrame[,9] == "Chr5",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr5",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
-                         digits = 2)) *
-                 ";" ~ italic(P) ~ "=" ~
-                 .(round(min(0.5, cor.test(select(dataFrame[dataFrame[,9] == "Chr5",], !!enquo(xvar))[,1], select(dataFrame[dataFrame[,9] == "Chr5",], !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame[dataFrame[,9] == "Chr5",])[1]/100) )),
-                         digits = 5)) ~
-                 "			" ~
-                 "All" ~ italic(r[s]) ~ "=" ~
-                 .(round(cor.test(select(dataFrame, !!enquo(xvar))[,1], select(dataFrame, !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
-                         digits = 2)) *
-                 ";" ~ italic(P) ~ "=" ~
-                 .(round(min(0.5, cor.test(select(dataFrame, !!enquo(xvar))[,1], select(dataFrame, !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame)[1]/100) )),
-                         digits = 5))
+                 .(acc_id)
                 )
          )
 }
