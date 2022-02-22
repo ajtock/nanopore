@@ -144,6 +144,7 @@ CENATHILA <- CENATHILA_list[[1]]
 CENranLoc <- CENranLoc_list[[1]]
 
 CEN180metricsAtCENATHILA <- function(CEN180, CENATHILA, CENranLoc) {
+
   CEN180_GR <- GRanges(seqnames = as.character(CEN180$chr),
                        ranges = IRanges(start = as.integer(CEN180$start),
                                         end = as.integer(CEN180$end)),
@@ -183,8 +184,8 @@ CEN180metricsAtCENATHILA <- function(CEN180, CENATHILA, CENranLoc) {
   stopifnot(identical(strand(CENranLoc_GR), strand(CENranLoc_up_GR)))
   stopifnot(identical(strand(CENranLoc_GR), strand(CENranLoc_down_GR)))
 
-  CEN180_metricsAt_CENATHILA <- data.frame()
-  CEN180_metricsAt_CENranLoc <- data.frame()
+  CENATHILA_CEN180_metrics <- data.frame()
+  CENranLoc_CEN180_metrics <- data.frame()
   for(i in 1:length(chrName)) {
     print(chrName[i])
 
