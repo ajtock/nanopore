@@ -29,7 +29,9 @@ flankNamePlot <- paste0(c(strsplit(flankName, split = "")[[1]][1:(length(strspli
                           collapse = "")
 
 options(stringsAsFactors = F)
+source("/projects/meiosis/ajt200/Rfunctions/TTSplus.R")
 library(GenomicRanges)
+library(segmentSeq)
 library(parallel)
 library(dplyr)
 library(scales)
@@ -135,8 +137,6 @@ if(featRegion == "bodies") {
 }
 
 
-
-
 # Function to calculate mean CEN180 metrics for regions
 # upstream and downstream of CENATHILA and CENranLoc bodies
 CEN180 <- CEN180_list[[1]]
@@ -144,16 +144,136 @@ CENATHILA <- CENATHILA_list[[1]]
 CENranLoc <- CENranLoc_list[[1]]
 
 CEN180metricsAtCENATHILA <- function(CEN180, CENATHILA, CENranLoc) {
+  CEN180_GR <- GRanges(seqnames = as.character(CEN180$chr),
+                       ranges = IRanges(start = as.integer(CEN180$start),
+                                        end = as.integer(CEN180$end)),
+                       strand = as.character(CEN180$strand),
+                       acc = as.character(CEN180$fasta.file.name),
+                       HORlengthsSum = as.numeric(CEN180$HORlengthsSum),
+                       HORcount = as.numeric(CEN180$HORcount),
+                       WeightedConsensusScore = as.numeric(CEN180$weighted.consensus.score),
+                       EditDistance = as.numeric(CEN180$edit.distance))
+  CENATHILA_GR <- GRanges(seqnames = as.character(CENATHILA$chr),
+                          ranges = IRanges(start = as.integer(CENATHILA$start+1),
+                                           end = as.integer(CENATHILA$end)),
+                          strand = as.character(CENATHILA$strand),
+                          phylo = as.character(CENATHILA$phylo))
+  CENranLoc_GR <- GRanges(seqnames = as.character(CENranLoc$chr),
+                          ranges = IRanges(start = as.integer(CENranLoc$start+1),
+                                           end = as.integer(CENranLoc$end)),
+                          strand = as.character(CENranLoc$strand),
+                          phylo = as.character(CENranLoc$phylo))
+ 
+  # Get flankSize bp upstream of start coordinates
+  CENATHILA_up_GR <- promoters(CENATHILA_GR, upstream = flankSize, downstream = 0)
+  CENATHILA_down_GR <- TTSplus(CENATHILA_GR, upstream = -1, downstream = flankSize)
+  stopifnot(identical(CENATHILA_GR$phylo, CENATHILA_up_GR$phylo))
+  stopifnot(identical(CENATHILA_GR$phylo, CENATHILA_down_GR$phylo))
+  stopifnot(identical(seqnames(CENATHILA_GR), seqnames(CENATHILA_up_GR)))
+  stopifnot(identical(seqnames(CENATHILA_GR), seqnames(CENATHILA_down_GR)))
+  stopifnot(identical(strand(CENATHILA_GR), strand(CENATHILA_up_GR)))
+  stopifnot(identical(strand(CENATHILA_GR), strand(CENATHILA_down_GR)))
+
+  CENranLoc_up_GR <- promoters(CENranLoc_GR, upstream = flankSize, downstream = 0)
+  CENranLoc_down_GR <- TTSplus(CENranLoc_GR, upstream = -1, downstream = flankSize)
+  stopifnot(identical(CENranLoc_GR$phylo, CENranLoc_up_GR$phylo))
+  stopifnot(identical(CENranLoc_GR$phylo, CENranLoc_down_GR$phylo))
+  stopifnot(identical(seqnames(CENranLoc_GR), seqnames(CENranLoc_up_GR)))
+  stopifnot(identical(seqnames(CENranLoc_GR), seqnames(CENranLoc_down_GR)))
+  stopifnot(identical(strand(CENranLoc_GR), strand(CENranLoc_up_GR)))
+  stopifnot(identical(strand(CENranLoc_GR), strand(CENranLoc_down_GR)))
+
   CEN180_metricsAt_CENATHILA <- data.frame()
+  CEN180_metricsAt_CENranLoc <- data.frame()
   for(i in 1:length(chrName)) {
     print(chrName[i])
 
-    CEN180_chr <- CEN180[CEN180$chr == chrName[i],]
-    CENATHILA_chr <- CENATHILA[CENATHILA$chr == chrName[i],]
-    CENranLoc_chr <- CENranLoc[CENranLoc$chr == chrName[i],]
+    CEN180_GR_chr <- CEN180_GR[seqnames(CEN180_GR) == chrName[i]]
+    CENATHILA_GR_chr <- CENATHILA_GR[seqnames(CENATHILA_GR) == chrName[i]]
+    CENATHILA_up_GR_chr <- CENATHILA_up_GR[seqnames(CENATHILA_up_GR) == chrName[i]]
+    CENATHILA_down_GR_chr <- CENATHILA_down_GR[seqnames(CENATHILA_down_GR) == chrName[i]]
+    stopifnot(identical(CENATHILA_GR_chr$phylo, CENATHILA_up_GR_chr$phylo))
+    stopifnot(identical(CENATHILA_GR_chr$phylo, CENATHILA_down_GR_chr$phylo))
+    stopifnot(identical(strand(CENATHILA_GR_chr), strand(CENATHILA_up_GR_chr)))
+    stopifnot(identical(strand(CENATHILA_GR_chr), strand(CENATHILA_down_GR_chr)))
+    CENranLoc_GR_chr <- CENranLoc_GR[seqnames(CENranLoc_GR) == chrName[i]]
+    CENranLoc_up_GR_chr <- CENranLoc_up_GR[seqnames(CENranLoc_up_GR) == chrName[i]]
+    CENranLoc_down_GR_chr <- CENranLoc_down_GR[seqnames(CENranLoc_down_GR) == chrName[i]]
+    stopifnot(identical(CENranLoc_GR_chr$phylo, CENranLoc_up_GR_chr$phylo))
+    stopifnot(identical(CENranLoc_GR_chr$phylo, CENranLoc_down_GR_chr$phylo))
+    stopifnot(identical(strand(CENranLoc_GR_chr), strand(CENranLoc_up_GR_chr)))
+    stopifnot(identical(strand(CENranLoc_GR_chr), strand(CENranLoc_down_GR_chr)))
 
-    if(nrow(CENATHILA_chr) > 0) {
-      CENATHILA_chr_up 
+    if(length(CENATHILA_GR_chr) > 0) {
+#     ## Note: findOverlaps() approach does not work where a query does not overlap
+#     ##       any positions in subjects
+#     CENATHILA_up_CEN180_foverlaps <- findOverlaps(query = CENATHILA_up_GR_chr,
+#                                                   subject = CEN180_GR_chr,
+#                                                   type = "any",
+#                                                   select = "all",
+#                                                   ignore.strand = TRUE)
+#     # Convert CENATHILA_up_CEN180_foverlaps into list object equivalent to that
+#     # generated by segmentSeq::getOverlaps(), in which each
+#     # list element corresponds to a vector of sequentially numbered indices of
+#     # CEN180_GR_chr that overlap a feature in CENATHILA_up_GR_chr
+#     CENATHILA_up_CEN180 <- mclapply(seq_along(unique(queryHits(CENATHILA_up_CEN180_foverlaps))),
+#                            function(x) {
+#                              subjectHits(CENATHILA_up_CEN180_foverlaps[queryHits(CENATHILA_up_CEN180_foverlaps) == x])
+#                            }, mc.cores = detectCores(), mc.preschedule = F)
+      CENATHILA_up_CEN180 <- getOverlaps(coordinates = CENATHILA_up_GR_chr,
+                                         segments = CEN180_GR_chr,
+                                         overlapType = "overlapping",
+                                         whichOverlaps = TRUE,
+                                         ignoreStrand = TRUE)
+      CENATHILA_up_CEN180_HORlengthsSum <- sapply(1:length(CENATHILA_up_CEN180), function(x) {
+        mean(CEN180_GR_chr[CENATHILA_up_CEN180[[x]]]$HORlengthsSum, na.rm = T)
+      })
+      CENATHILA_up_CEN180_HORcount <- sapply(1:length(CENATHILA_up_CEN180), function(x) {
+        mean(CEN180_GR_chr[CENATHILA_up_CEN180[[x]]]$HORcount, na.rm = T)
+      })
+      CENATHILA_up_CEN180_WeightedConsensusScore <- sapply(1:length(CENATHILA_up_CEN180), function(x) {
+        mean(CEN180_GR_chr[CENATHILA_up_CEN180[[x]]]$WeightedConsensusScore, na.rm = T)
+      })
+      CENATHILA_up_CEN180_EditDistance <- sapply(1:length(CENATHILA_up_CEN180), function(x) {
+        mean(CEN180_GR_chr[CENATHILA_up_CEN180[[x]]]$EditDistance, na.rm = T)
+      })
+
+      CENATHILA_down_CEN180 <- getOverlaps(coordinates = CENATHILA_down_GR_chr,
+                                           segments = CEN180_GR_chr,
+                                           overlapType = "overlapping",
+                                           whichOverlaps = TRUE,
+                                           ignoreStrand = TRUE)
+      CENATHILA_down_CEN180_HORlengthsSum <- sapply(1:length(CENATHILA_down_CEN180), function(x) {
+        mean(CEN180_GR_chr[CENATHILA_down_CEN180[[x]]]$HORlengthsSum, na.rm = T)
+      })
+      CENATHILA_down_CEN180_HORcount <- sapply(1:length(CENATHILA_down_CEN180), function(x) {
+        mean(CEN180_GR_chr[CENATHILA_down_CEN180[[x]]]$HORcount, na.rm = T)
+      })
+      CENATHILA_down_CEN180_WeightedConsensusScore <- sapply(1:length(CENATHILA_down_CEN180), function(x) {
+        mean(CEN180_GR_chr[CENATHILA_down_CEN180[[x]]]$WeightedConsensusScore, na.rm = T)
+      })
+      CENATHILA_down_CEN180_EditDistance <- sapply(1:length(CENATHILA_down_CEN180), function(x) {
+        mean(CEN180_GR_chr[CENATHILA_down_CEN180[[x]]]$EditDistance, na.rm = T)
+      })
+
+      CENATHILA_chr <- data.frame(CENATHILA_GR_chr,
+                                  HORlengthSum_up = CENATHILA_up_CEN180_HORlengthsSum,
+                                  HORlengthSum_down = CENATHILA_down_CEN180_HORlengthsSum,
+                                  HORcount_up = CENATHILA_up_CEN180_HORcount,
+                                  HORcount_down = CENATHILA_down_CEN180_HORcount,
+                                  WeightedConsensusScore_up = CENATHILA_up_CEN180_WeightedConsensusScore,
+                                  WeightedConsensusScore_down = CENATHILA_down_CEN180_WeightedConsensusScore,
+                                  EditDistance_up = CENATHILA_up_CEN180_EditDistance,
+                                  EditDistance_down = CENATHILA_down_CEN180_EditDistance)
+
+          }, mc.cores = detectCores(), mc.preschedule = T) 
+    } else {
+      minDistToCENATHILA <- rep(Inf, length(CEN180_chr$start))
+      minDistToCENATHILA_phylo_list <- lapply(1:length(phylo), function(x) { rep(Inf, length(CEN180_chr$start)) } )
+    } 
+
+    minDistToCENATHILA_phylo_DF <- as.data.frame(dplyr::bind_cols(minDistToCENATHILA_phylo_list))
+    minDistToCENATHILA_DF <- cbind(minDistToCENATHILA, minDistToCENATHILA_phylo_DF)
 
 
 # Function to get distance between each CEN180 and the nearest CENATHILA
