@@ -29,12 +29,14 @@ plotDirHORcount <- paste0(plotDir, "HORcount/")
 plotDirWeightedConsensusScore <- paste0(plotDir, "WeightedConsensusScore/")
 plotDirEditDistance <- paste0(plotDir, "EditDistance/")
 plotDirAllMetrics <- paste0(plotDir, "AllMetrics/")
+plotDirAllAccessions <- paste0(plotDir, "AllAccessions/")
 system(paste0("[ -d ", plotDir, " ] || mkdir -p ", plotDir))
 system(paste0("[ -d ", plotDirHORlengthsSum, " ] || mkdir -p ", plotDirHORlengthsSum))
 system(paste0("[ -d ", plotDirHORcount, " ] || mkdir -p ", plotDirHORcount))
 system(paste0("[ -d ", plotDirWeightedConsensusScore, " ] || mkdir -p ", plotDirWeightedConsensusScore))
 system(paste0("[ -d ", plotDirEditDistance, " ] || mkdir -p ", plotDirEditDistance))
 system(paste0("[ -d ", plotDirAllMetrics, " ] || mkdir -p ", plotDirAllMetrics))
+system(paste0("[ -d ", plotDirAllAccessions, " ] || mkdir -p ", plotDirAllAccessions))
 
 acc_full <- system("ls /home/ajt200/analysis/nanopore/pancentromere/annotation/CEN180/repeats/*.fa*", intern = T)
 acc_full <- gsub("/home/ajt200/analysis/nanopore/pancentromere/annotation/CEN180/repeats/cen180.consensus.repetitiveness", "", acc_full)
@@ -348,15 +350,22 @@ trendPlot <- function(acc_id, dataFrame, mapping, xvar, yvar, xlab, ylab, xaxtra
 }
 
 
-########
-########
-
+# Changes to each data.frame for plotting
 CEN180_list_dist_tmp <- lapply(1:length(acc), function(x) {
   colnames(CEN180_list_dist[[x]]) <- gsub("minDistTo", "", colnames(CEN180_list_dist[[x]]))
   # Add offset (+ 1) for plotting on log scales
   CEN180_list_dist[[x]][,12:ncol(CEN180_list_dist[[x]])] <- CEN180_list_dist[[x]][,12:ncol(CEN180_list_dist[[x]])] + 1
+  CEN180_list_dist[[x]]$est.chromosome.no <- NA
   CEN180_list_dist[[x]]
 })
+
+CEN180_list_dist_tmp <- lapply(1:length(acc), function(x) {
+  CEN180_list_dist_tmp[[x]]$est.chromosome.no <- NA
+  CEN180_list_dist_tmp[[x]]
+})
+
+# Bind rows of per-accession data.frames
+CEN180_list_dist_tmp_allacc <- dplyr::bind_rows(CEN180_list_dist_tmp)
 
 #rm(CEN180_list_dist); gc()
 
@@ -541,4 +550,164 @@ lapply(1:length(acc), function(i) {
          plot = gg_cow,
          height = 5.5*length(gg_cow_list), width = 5*(length(chrName)+1), limitsize = F)
 })
+
+
+
+# Plot correlations across all accessions,
+# including subfamily-specific relationships
+ggTrend_minDistToCENATHILA_HORlengthsSum_list <- lapply(1:length(phylo_ext), function(j) {
+  tP <- trendPlot(acc_id = paste0(length(unique(CEN180_list_dist_tmp_allacc$fasta.file.name)), " accessions"),
+                  dataFrame = CEN180_list_dist_tmp_allacc,
+                  mapping = aes_(x = as.name(phylo_ext[j]),
+                                 y = as.name("HORlengthsSum")),
+                  xvar = as.name(phylo_ext[j]),
+                  yvar = HORlengthsSum,
+                  xlab = bquote("Distance to nearest" ~ italic(.(phylo_ext[j])) ~ "(bp)"),
+                  ylab = bquote(italic("CEN180") ~ "repetitiveness"),
+                  xaxtrans = log10_trans(),
+                  yaxtrans = log10_trans(),
+                  xbreaks = trans_breaks("log10", function(x) 10^x),
+                  ybreaks = trans_breaks("log10", function(x) 10^x),
+                  xlabels = trans_format("log10", math_format(10^.x)),
+                  ylabels = trans_format("log10", math_format(10^.x)))
+  tP <- tP +
+    facet_grid(cols = vars(chr), margins = "chr", scales = "free_x")
+  tP
+})
+
+gg_cow_list <- ggTrend_minDistToCENATHILA_HORlengthsSum_list
+gg_cow <- plot_grid(plotlist = gg_cow_list,
+                    labels = "AUTO", label_size = 30,
+                    align = "hv",
+                    axis = "l",
+                    nrow = length(gg_cow_list), ncol = 1)
+ggsave(paste0(plotDirAllAccessions,
+              "CEN180_MinDistToCENATHILA_vs_HORlengthsSum_trendPlot_",
+              paste0(chrName, collapse = "_"),
+              "_", length(unique(CEN180_list_dist_tmp_allacc$fasta.file.name)), "accessions.pdf"),
+       plot = gg_cow,
+       height = 5.5*length(gg_cow_list), width = 5*(length(chrName)+1), limitsize = F)
+
+
+ggTrend_minDistToCENATHILA_HORcount_list <- lapply(1:length(phylo_ext), function(j) {
+  tP <- trendPlot(acc_id = paste0(length(unique(CEN180_list_dist_tmp_allacc$fasta.file.name)), " accessions"),
+                  dataFrame = CEN180_list_dist_tmp_allacc,
+                  mapping = aes_(x = as.name(phylo_ext[j]),
+                                 y = as.name("HORcount")),
+                  xvar = as.name(phylo_ext[j]),
+                  yvar = HORcount,
+                  xlab = bquote("Distance to nearest" ~ italic(.(phylo_ext[j])) ~ "(bp)"),
+                  ylab = bquote(italic("CEN180") ~ "HOR count"),
+                  xaxtrans = log10_trans(),
+                  yaxtrans = log10_trans(),
+                  xbreaks = trans_breaks("log10", function(x) 10^x),
+                  ybreaks = trans_breaks("log10", function(x) 10^x),
+                  xlabels = trans_format("log10", math_format(10^.x)),
+                  ylabels = trans_format("log10", math_format(10^.x)))
+  tP <- tP +
+    facet_grid(cols = vars(chr), margins = "chr", scales = "free_x")
+  tP
+})
+
+gg_cow_list <- ggTrend_minDistToCENATHILA_HORcount_list
+gg_cow <- plot_grid(plotlist = gg_cow_list,
+                    labels = "AUTO", label_size = 30,
+                    align = "hv",
+                    axis = "l",
+                    nrow = length(gg_cow_list), ncol = 1)
+ggsave(paste0(plotDirAllAccessions,
+              "CEN180_MinDistToCENATHILA_vs_HORcount_trendPlot_",
+              paste0(chrName, collapse = "_"),
+              "_", length(unique(CEN180_list_dist_tmp_allacc$fasta.file.name)), "accessions.pdf"),
+       plot = gg_cow,
+       height = 5.5*length(gg_cow_list), width = 5*(length(chrName)+1), limitsize = F)
+
+
+ggTrend_minDistToCENATHILA_WeightedConsensusScore_list <- lapply(1:length(phylo_ext), function(j) {
+  tP <- trendPlot(acc_id = paste0(length(unique(CEN180_list_dist_tmp_allacc$fasta.file.name)), " accessions"),
+                  dataFrame = CEN180_list_dist_tmp_allacc,
+                  mapping = aes_(x = as.name(phylo_ext[j]),
+                                 y = as.name("WeightedConsensusScore")),
+                  xvar = as.name(phylo_ext[j]),
+                  yvar = WeightedConsensusScore,
+                  xlab = bquote("Distance to nearest" ~ italic(.(phylo_ext[j])) ~ "(bp)"),
+                  ylab = bquote(italic("CEN180") ~ "consensus score"),
+                  xaxtrans = log10_trans(),
+                  yaxtrans = log2_trans(),
+                  xbreaks = trans_breaks("log10", function(x) 10^x),
+                  ybreaks = trans_breaks("log2", function(x) 2^x),
+                  xlabels = trans_format("log10", math_format(10^.x)),
+                  ylabels = trans_format("log2", math_format(2^.x)))
+  tP <- tP +
+    facet_grid(cols = vars(chr), margins = "chr", scales = "free_x")
+  tP
+})
+
+gg_cow_list <- ggTrend_minDistToCENATHILA_WeightedConsensusScore_list
+gg_cow <- plot_grid(plotlist = gg_cow_list,
+                    labels = "AUTO", label_size = 30,
+                    align = "hv",
+                    axis = "l",
+                    nrow = length(gg_cow_list), ncol = 1)
+ggsave(paste0(plotDirAllAccessions,
+              "CEN180_MinDistToCENATHILA_vs_WeightedConsensusScore_trendPlot_",
+              paste0(chrName, collapse = "_"),
+              "_", length(unique(CEN180_list_dist_tmp_allacc$fasta.file.name)), "accessions.pdf"),
+       plot = gg_cow,
+       height = 5.5*length(gg_cow_list), width = 5*(length(chrName)+1), limitsize = F)
+
+
+ggTrend_minDistToCENATHILA_EditDistance_list <- lapply(1:length(phylo_ext), function(j) {
+  tP <- trendPlot(acc_id = paste0(length(unique(CEN180_list_dist_tmp_allacc$fasta.file.name)), " accessions"),
+                  dataFrame = CEN180_list_dist_tmp_allacc,
+                  mapping = aes_(x = as.name(phylo_ext[j]),
+                                 y = as.name("EditDistance")),
+                  xvar = as.name(phylo_ext[j]),
+                  yvar = EditDistance,
+                  xlab = bquote("Distance to nearest" ~ italic(.(phylo_ext[j])) ~ "(bp)"),
+                  ylab = bquote(italic("CEN180") ~ "edit distance"),
+                  xaxtrans = log10_trans(),
+                  yaxtrans = log2_trans(),
+                  xbreaks = trans_breaks("log10", function(x) 10^x),
+                  ybreaks = trans_breaks("log2", function(x) 2^x),
+                  xlabels = trans_format("log10", math_format(10^.x)),
+                  ylabels = trans_format("log2", math_format(2^.x)))
+  tP <- tP +
+    facet_grid(cols = vars(chr), margins = "chr", scales = "free_x")
+  tP
+})
+
+gg_cow_list <- ggTrend_minDistToCENATHILA_EditDistance_list
+gg_cow <- plot_grid(plotlist = gg_cow_list,
+                    labels = "AUTO", label_size = 30,
+                    align = "hv",
+                    axis = "l",
+                    nrow = length(gg_cow_list), ncol = 1)
+ggsave(paste0(plotDirAllAccessions,
+              "CEN180_MinDistToCENATHILA_vs_EditDistance_trendPlot_",
+              paste0(chrName, collapse = "_"),
+              "_", length(unique(CEN180_list_dist_tmp_allacc$fasta.file.name)), "accessions.pdf"),
+       plot = gg_cow,
+       height = 5.5*length(gg_cow_list), width = 5*(length(chrName)+1), limitsize = F)
+
+
+# Accross all accessions, plot all CEN180 stats comparisons with distance to nearest CENATHILA,
+# but not including subfamily-specific relationships
+gg_cow_list <- list(
+                    ggTrend_minDistToCENATHILA_HORlengthsSum_list[[1]],
+                    ggTrend_minDistToCENATHILA_HORcount_list[[1]],
+                    ggTrend_minDistToCENATHILA_WeightedConsensusScore_list[[1]],
+                    ggTrend_minDistToCENATHILA_EditDistance_list[[1]]
+                   )
+gg_cow <- plot_grid(plotlist = gg_cow_list,
+                    labels = "AUTO", label_size = 30,
+                    align = "hv",
+                    axis = "l",
+                    nrow = length(gg_cow_list), ncol = 1)
+ggsave(paste0(plotDirAllAccessions,
+              "CEN180_MinDistToCENATHILA_vs_HORandDivergenceMetrics_trendPlot_",
+              paste0(chrName, collapse = "_"),
+              "_", length(unique(CEN180_list_dist_tmp_allacc$fasta.file.name)), "accessions.pdf"),
+       plot = gg_cow,
+       height = 5.5*length(gg_cow_list), width = 5*(length(chrName)+1), limitsize = F)
 
