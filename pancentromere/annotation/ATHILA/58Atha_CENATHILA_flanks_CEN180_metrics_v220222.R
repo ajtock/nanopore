@@ -247,6 +247,7 @@ CEN180metricsAtCENATHILA <- function(CEN180, CENATHILA, featureName) {
       CENATHILA_chr$chr <- as.character(CENATHILA_chr$chr)
       CENATHILA_chr$strand <- as.character(CENATHILA_chr$strand)
       colnames(CENATHILA_chr)[which(colnames(CENATHILA_chr) == "phylo")] <- "Family"
+      colnames(CENATHILA_chr)[which(colnames(CENATHILA_chr) == "feature")] <- "Feature"
       colnames(CENATHILA_chr)[which(colnames(CENATHILA_chr) == "region")] <- "Region"
 
       CENATHILA_CEN180_metrics <- rbind(CENATHILA_CEN180_metrics, CENATHILA_chr)
@@ -321,6 +322,44 @@ pointPlot <- function(acc_id, dataFrame, mapping, box_mapping, pvals, xlab, ylab
          )
 }
 
+# Function to make boxplot of CEN180 metrics overlapping
+# regions flanking CENATHILA and CENranLoc
+violinPlot <- function(acc_id, dataFrame, mapping, pvals, xlab, ylab, yaxtrans, ybreaks, ylabels) {
+  ggplot(data = dataFrame,
+         mapping = mapping) +
+  geom_violin(scale = "count",
+              trim = T,
+              draw_quantiles = c(0.25, 0.50, 0.75)) +
+  scale_y_continuous(trans = yaxtrans,
+                     breaks = ybreaks,
+                     labels = ylabels) +
+  labs(x = xlab,
+       y = ylab) +
+  guides(colour = guide_legend(order = 1),
+         shape = guide_legend(order = 2)) +
+  theme_bw() +
+  theme(
+        axis.ticks = element_line(size = 0.5, colour = "black"),
+        axis.ticks.length = unit(0.25, "cm"),
+        axis.text.x = element_text(size = 16, colour = "black", angle = 45, vjust = 1.0, hjust = 1.0, face = "italic"),
+        axis.text.y = element_text(size = 16, colour = "black"),
+        axis.title = element_text(size = 18, colour = "black"),
+        axis.line = element_line(size = 1.0, colour = "black"),
+        legend.text = element_text(face = "italic"),
+        panel.background = element_blank(),
+        panel.border = element_blank(),
+        strip.text.x = element_text(size = 20, colour = "white"),
+        strip.background = element_rect(fill = "black", colour = "black"),
+        plot.margin = unit(c(0.3,1.2,0.3,0.3), "cm"),
+        plot.title = element_text(hjust = 0.5, size = 18)) +
+  ggtitle(bquote(
+                 .(acc_id) ~
+                 "                      " ~
+                 .(pvals)
+                )
+         )
+}
+
 
 # Disable scientific notation (e.g., 0.0001 rather than 1e-04)
 options(scipen = 100)
@@ -336,10 +375,10 @@ ggPoint_HORlengthsSum_list <- lapply(1:length(acc), function(i) {
     if(z != "All") {
       tt <- tryCatch(
                      wilcox.test(x = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$chr == z &
-                                                                              CENfeats_CEN180_metrics_list[[i]]$feature == "CENATHILA",],
+                                                                              CENfeats_CEN180_metrics_list[[i]]$Feature == "CENATHILA",],
                                             "HORlengthsSum")[,1],
                                  y = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$chr == z &
-                                                                              CENfeats_CEN180_metrics_list[[i]]$feature == "CENranLoc",],
+                                                                              CENfeats_CEN180_metrics_list[[i]]$Feature == "CENranLoc",],
                                             "HORlengthsSum")[,1],
                                  alternative = "two.sided")$p.value,
                      error = function(e) e
@@ -351,9 +390,9 @@ ggPoint_HORlengthsSum_list <- lapply(1:length(acc), function(i) {
       }
     } else {
       tt <- tryCatch(
-                     wilcox.test(x = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$feature == "CENATHILA",],
+                     wilcox.test(x = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$Feature == "CENATHILA",],
                                             "HORlengthsSum")[,1],
-                                 y = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$feature == "CENranLoc",],
+                                 y = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$Feature == "CENranLoc",],
                                             "HORlengthsSum")[,1],
                                  alternative = "two.sided")$p.value,
                      error = function(e) e
@@ -378,11 +417,11 @@ ggPoint_HORlengthsSum_list <- lapply(1:length(acc), function(i) {
 
   tP <- pointPlot(acc_id = acc[i],
                   dataFrame = CENfeats_CEN180_metrics_list[[i]],
-                  mapping = aes(x = feature,
+                  mapping = aes(x = Feature,
                                 y = HORlengthsSum + 1,
                                 shape = Region,
                                 colour = Family),
-                  box_mapping = aes(x = feature,
+                  box_mapping = aes(x = Feature,
                                     y = HORlengthsSum + 1),
                   pvals = paste0(Utest_PvalsChar, collapse = "                "),
                   xlab = bquote(.(flankNamePlot) ~ "regions flanking centromeric" ~ italic("ATHILA") ~ "and random loci"),
@@ -406,10 +445,10 @@ ggPoint_HORcount_list <- lapply(1:length(acc), function(i) {
     if(z != "All") {
       tt <- tryCatch(
                      wilcox.test(x = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$chr == z &
-                                                                              CENfeats_CEN180_metrics_list[[i]]$feature == "CENATHILA",],
+                                                                              CENfeats_CEN180_metrics_list[[i]]$Feature == "CENATHILA",],
                                             "HORcount")[,1],
                                  y = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$chr == z &
-                                                                              CENfeats_CEN180_metrics_list[[i]]$feature == "CENranLoc",],
+                                                                              CENfeats_CEN180_metrics_list[[i]]$Feature == "CENranLoc",],
                                             "HORcount")[,1],
                                  alternative = "two.sided")$p.value,
                      error = function(e) e
@@ -421,9 +460,9 @@ ggPoint_HORcount_list <- lapply(1:length(acc), function(i) {
       }
     } else {
       tt <- tryCatch(
-                     wilcox.test(x = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$feature == "CENATHILA",],
+                     wilcox.test(x = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$Feature == "CENATHILA",],
                                             "HORcount")[,1],
-                                 y = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$feature == "CENranLoc",],
+                                 y = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$Feature == "CENranLoc",],
                                             "HORcount")[,1],
                                  alternative = "two.sided")$p.value,
                      error = function(e) e
@@ -448,11 +487,11 @@ ggPoint_HORcount_list <- lapply(1:length(acc), function(i) {
 
   tP <- pointPlot(acc_id = acc[i],
                   dataFrame = CENfeats_CEN180_metrics_list[[i]],
-                  mapping = aes(x = feature,
+                  mapping = aes(x = Feature,
                                 y = HORcount + 1,
                                 shape = Region,
                                 colour = Family),
-                  box_mapping = aes(x = feature,
+                  box_mapping = aes(x = Feature,
                                     y = HORcount + 1),
                   pvals = paste0(Utest_PvalsChar, collapse = "                "),
                   xlab = bquote(.(flankNamePlot) ~ "regions flanking centromeric" ~ italic("ATHILA") ~ "and random loci"),
@@ -476,10 +515,10 @@ ggPoint_WeightedConsensusScore_list <- lapply(1:length(acc), function(i) {
     if(z != "All") {
       tt <- tryCatch(
                      wilcox.test(x = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$chr == z &
-                                                                              CENfeats_CEN180_metrics_list[[i]]$feature == "CENATHILA",],
+                                                                              CENfeats_CEN180_metrics_list[[i]]$Feature == "CENATHILA",],
                                             "WeightedConsensusScore")[,1],
                                  y = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$chr == z &
-                                                                              CENfeats_CEN180_metrics_list[[i]]$feature == "CENranLoc",],
+                                                                              CENfeats_CEN180_metrics_list[[i]]$Feature == "CENranLoc",],
                                             "WeightedConsensusScore")[,1],
                                  alternative = "two.sided")$p.value,
                      error = function(e) e
@@ -491,9 +530,9 @@ ggPoint_WeightedConsensusScore_list <- lapply(1:length(acc), function(i) {
       }
     } else {
       tt <- tryCatch(
-                     wilcox.test(x = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$feature == "CENATHILA",],
+                     wilcox.test(x = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$Feature == "CENATHILA",],
                                             "WeightedConsensusScore")[,1],
-                                 y = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$feature == "CENranLoc",],
+                                 y = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$Feature == "CENranLoc",],
                                             "WeightedConsensusScore")[,1],
                                  alternative = "two.sided")$p.value,
                      error = function(e) e
@@ -518,11 +557,11 @@ ggPoint_WeightedConsensusScore_list <- lapply(1:length(acc), function(i) {
 
   tP <- pointPlot(acc_id = acc[i],
                   dataFrame = CENfeats_CEN180_metrics_list[[i]],
-                  mapping = aes(x = feature,
+                  mapping = aes(x = Feature,
                                 y = WeightedConsensusScore + 1,
                                 shape = Region,
                                 colour = Family),
-                  box_mapping = aes(x = feature,
+                  box_mapping = aes(x = Feature,
                                     y = WeightedConsensusScore + 1),
                   pvals = paste0(Utest_PvalsChar, collapse = "                "),
                   xlab = bquote(.(flankNamePlot) ~ "regions flanking centromeric" ~ italic("ATHILA") ~ "and random loci"),
@@ -546,10 +585,10 @@ ggPoint_EditDistance_list <- lapply(1:length(acc), function(i) {
     if(z != "All") {
       tt <- tryCatch(
                      wilcox.test(x = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$chr == z &
-                                                                              CENfeats_CEN180_metrics_list[[i]]$feature == "CENATHILA",],
+                                                                              CENfeats_CEN180_metrics_list[[i]]$Feature == "CENATHILA",],
                                             "EditDistance")[,1],
                                  y = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$chr == z &
-                                                                              CENfeats_CEN180_metrics_list[[i]]$feature == "CENranLoc",],
+                                                                              CENfeats_CEN180_metrics_list[[i]]$Feature == "CENranLoc",],
                                             "EditDistance")[,1],
                                  alternative = "two.sided")$p.value,
                      error = function(e) e
@@ -561,9 +600,9 @@ ggPoint_EditDistance_list <- lapply(1:length(acc), function(i) {
       }
     } else {
       tt <- tryCatch(
-                     wilcox.test(x = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$feature == "CENATHILA",],
+                     wilcox.test(x = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$Feature == "CENATHILA",],
                                             "EditDistance")[,1],
-                                 y = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$feature == "CENranLoc",],
+                                 y = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$Feature == "CENranLoc",],
                                             "EditDistance")[,1],
                                  alternative = "two.sided")$p.value,
                      error = function(e) e
@@ -588,11 +627,11 @@ ggPoint_EditDistance_list <- lapply(1:length(acc), function(i) {
 
   tP <- pointPlot(acc_id = acc[i],
                   dataFrame = CENfeats_CEN180_metrics_list[[i]],
-                  mapping = aes(x = feature,
+                  mapping = aes(x = Feature,
                                 y = EditDistance + 1,
                                 shape = Region,
                                 colour = Family),
-                  box_mapping = aes(x = feature,
+                  box_mapping = aes(x = Feature,
                                     y = EditDistance + 1),
                   pvals = paste0(Utest_PvalsChar, collapse = "                "),
                   xlab = bquote(.(flankNamePlot) ~ "regions flanking centromeric" ~ italic("ATHILA") ~ "and random loci"),
@@ -630,7 +669,7 @@ mclapply(1:length(acc), function(i) {
 
 
 
-# Plot across all accessions
+# Plot across all accessions, with facet rows as Family 
 
 CENfeats_CEN180_metrics_allacc$Region <- factor(CENfeats_CEN180_metrics_allacc$Region,
                                                 levels = sort(levels(factor(CENfeats_CEN180_metrics_allacc$Region)), decreasing = T))
@@ -642,10 +681,10 @@ Utest_Pvals_HORlengthsSum <- as.numeric(sapply(acc_chrName, function(z) {
   if(z != "All") {
     tt <- tryCatch(
                    wilcox.test(x = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$chr == z &
-                                                                         CENfeats_CEN180_metrics_allacc$feature == "CENATHILA",],
+                                                                         CENfeats_CEN180_metrics_allacc$Feature == "CENATHILA",],
                                           "HORlengthsSum")[,1],
                                y = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$chr == z &
-                                                                         CENfeats_CEN180_metrics_allacc$feature == "CENranLoc",],
+                                                                         CENfeats_CEN180_metrics_allacc$Feature == "CENranLoc",],
                                           "HORlengthsSum")[,1],
                                alternative = "two.sided")$p.value,
                    error = function(e) e
@@ -657,9 +696,9 @@ Utest_Pvals_HORlengthsSum <- as.numeric(sapply(acc_chrName, function(z) {
     }
   } else {
     tt <- tryCatch(
-                   wilcox.test(x = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$feature == "CENATHILA",],
+                   wilcox.test(x = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$Feature == "CENATHILA",],
                                           "HORlengthsSum")[,1],
-                               y = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$feature == "CENranLoc",],
+                               y = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$Feature == "CENranLoc",],
                                           "HORlengthsSum")[,1],
                                alternative = "two.sided")$p.value,
                    error = function(e) e
@@ -682,22 +721,19 @@ Utest_PvalsChar_HORlengthsSum <- sapply(1:length(Utest_Pvals_HORlengthsSum), fun
   }
 })
 
-ggPoint_HORlengthsSum_allacc <- pointPlot(acc_id = paste0(length(unique(CENfeats_CEN180_metrics_allacc$accession)), " accessions"),
-                                          dataFrame = CENfeats_CEN180_metrics_allacc,
-                                          mapping = aes(x = feature,
-                                                        y = HORlengthsSum + 1,
-                                                        shape = Region,
-                                                        colour = Family),
-                                          box_mapping = aes(x = feature,
-                                                            y = HORlengthsSum + 1),
-                                          pvals = paste0(Utest_PvalsChar_HORlengthsSum, collapse = "                "),
-                                          xlab = bquote(.(flankNamePlot) ~ "regions flanking centromeric" ~ italic("ATHILA") ~ "and random loci"),
-                                          ylab = bquote(italic("CEN180") ~ "repetitiveness"),
-                                          yaxtrans = log2_trans(),
-                                          ybreaks = trans_breaks("log2", function(x) 2^x),
-                                          ylabels = trans_format("log2", math_format(2^.x)))
-  ggPoint_HORlengthsSum_allacc <- ggPoint_HORlengthsSum_allacc +
-    facet_grid(cols = vars(chr), margins = "chr", scales = "fixed")
+ggPoint_HORlengthsSum_allacc <- violinPlot(acc_id = paste0(length(unique(CENfeats_CEN180_metrics_allacc$accession)), " accessions"),
+                                           dataFrame = CENfeats_CEN180_metrics_allacc,
+                                           mapping = aes(x = Feature,
+                                                         y = HORlengthsSum + 1,
+                                                         fill = Family),
+                                           pvals = paste0(Utest_PvalsChar_HORlengthsSum, collapse = "                "),
+                                           xlab = bquote(.(flankNamePlot) ~ "regions flanking centromeric" ~ italic("ATHILA") ~ "and random loci"),
+                                           ylab = bquote(italic("CEN180") ~ "repetitiveness"),
+                                           yaxtrans = log2_trans(),
+                                           ybreaks = trans_breaks("log2", function(x) 2^x),
+                                           ylabels = trans_format("log2", math_format(2^.x)))
+ggPoint_HORlengthsSum_allacc <- ggPoint_HORlengthsSum_allacc +
+  facet_grid(cols = vars(chr), rows = vars(Family), margins = "chr", scales = "fixed")
 
 
 # HORcount
@@ -706,10 +742,10 @@ Utest_Pvals_HORcount <- as.numeric(sapply(acc_chrName, function(z) {
   if(z != "All") {
     tt <- tryCatch(
                    wilcox.test(x = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$chr == z &
-                                                                         CENfeats_CEN180_metrics_allacc$feature == "CENATHILA",],
+                                                                         CENfeats_CEN180_metrics_allacc$Feature == "CENATHILA",],
                                           "HORcount")[,1],
                                y = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$chr == z &
-                                                                         CENfeats_CEN180_metrics_allacc$feature == "CENranLoc",],
+                                                                         CENfeats_CEN180_metrics_allacc$Feature == "CENranLoc",],
                                           "HORcount")[,1],
                                alternative = "two.sided")$p.value,
                    error = function(e) e
@@ -721,9 +757,9 @@ Utest_Pvals_HORcount <- as.numeric(sapply(acc_chrName, function(z) {
     }
   } else {
     tt <- tryCatch(
-                   wilcox.test(x = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$feature == "CENATHILA",],
+                   wilcox.test(x = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$Feature == "CENATHILA",],
                                           "HORcount")[,1],
-                               y = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$feature == "CENranLoc",],
+                               y = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$Feature == "CENranLoc",],
                                           "HORcount")[,1],
                                alternative = "two.sided")$p.value,
                    error = function(e) e
@@ -746,22 +782,19 @@ Utest_PvalsChar_HORcount <- sapply(1:length(Utest_Pvals_HORcount), function(z) {
   }
 })
 
-ggPoint_HORcount_allacc <- pointPlot(acc_id = paste0(length(unique(CENfeats_CEN180_metrics_allacc$accession)), " accessions"),
-                                          dataFrame = CENfeats_CEN180_metrics_allacc,
-                                          mapping = aes(x = feature,
-                                                        y = HORcount + 1,
-                                                        shape = Region,
-                                                        colour = Family),
-                                          box_mapping = aes(x = feature,
-                                                            y = HORcount + 1),
-                                          pvals = paste0(Utest_PvalsChar_HORcount, collapse = "                "),
-                                          xlab = bquote(.(flankNamePlot) ~ "regions flanking centromeric" ~ italic("ATHILA") ~ "and random loci"),
-                                          ylab = bquote(italic("CEN180") ~ "HOR count"),
-                                          yaxtrans = log2_trans(),
-                                          ybreaks = trans_breaks("log2", function(x) 2^x),
-                                          ylabels = trans_format("log2", math_format(2^.x)))
-  ggPoint_HORcount_allacc <- ggPoint_HORcount_allacc +
-    facet_grid(cols = vars(chr), margins = "chr", scales = "fixed")
+ggPoint_HORcount_allacc <- violinPlot(acc_id = paste0(length(unique(CENfeats_CEN180_metrics_allacc$accession)), " accessions"),
+                                      dataFrame = CENfeats_CEN180_metrics_allacc,
+                                      mapping = aes(x = Feature,
+                                                    y = HORcount + 1,
+                                                    fill = Family),
+                                      pvals = paste0(Utest_PvalsChar_HORcount, collapse = "                "),
+                                      xlab = bquote(.(flankNamePlot) ~ "regions flanking centromeric" ~ italic("ATHILA") ~ "and random loci"),
+                                      ylab = bquote(italic("CEN180") ~ "HOR count"),
+                                      yaxtrans = log2_trans(),
+                                      ybreaks = trans_breaks("log2", function(x) 2^x),
+                                      ylabels = trans_format("log2", math_format(2^.x)))
+ggPoint_HORcount_allacc <- ggPoint_HORcount_allacc +
+  facet_grid(cols = vars(chr), rows = vars(Family), margins = "chr", scales = "fixed")
 
 
 # WeightedConsensusScore
@@ -770,10 +803,10 @@ Utest_Pvals_WeightedConsensusScore <- as.numeric(sapply(acc_chrName, function(z)
   if(z != "All") {
     tt <- tryCatch(
                    wilcox.test(x = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$chr == z &
-                                                                         CENfeats_CEN180_metrics_allacc$feature == "CENATHILA",],
+                                                                         CENfeats_CEN180_metrics_allacc$Feature == "CENATHILA",],
                                           "WeightedConsensusScore")[,1],
                                y = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$chr == z &
-                                                                         CENfeats_CEN180_metrics_allacc$feature == "CENranLoc",],
+                                                                         CENfeats_CEN180_metrics_allacc$Feature == "CENranLoc",],
                                           "WeightedConsensusScore")[,1],
                                alternative = "two.sided")$p.value,
                    error = function(e) e
@@ -785,9 +818,9 @@ Utest_Pvals_WeightedConsensusScore <- as.numeric(sapply(acc_chrName, function(z)
     }
   } else {
     tt <- tryCatch(
-                   wilcox.test(x = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$feature == "CENATHILA",],
+                   wilcox.test(x = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$Feature == "CENATHILA",],
                                           "WeightedConsensusScore")[,1],
-                               y = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$feature == "CENranLoc",],
+                               y = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$Feature == "CENranLoc",],
                                           "WeightedConsensusScore")[,1],
                                alternative = "two.sided")$p.value,
                    error = function(e) e
@@ -810,22 +843,354 @@ Utest_PvalsChar_WeightedConsensusScore <- sapply(1:length(Utest_Pvals_WeightedCo
   }
 })
 
-ggPoint_WeightedConsensusScore_allacc <- pointPlot(acc_id = paste0(length(unique(CENfeats_CEN180_metrics_allacc$accession)), " accessions"),
+ggPoint_WeightedConsensusScore_allacc <- violinPlot(acc_id = paste0(length(unique(CENfeats_CEN180_metrics_allacc$accession)), " accessions"),
+                                                    dataFrame = CENfeats_CEN180_metrics_allacc,
+                                                    mapping = aes(x = Feature,
+                                                                  y = WeightedConsensusScore + 1,
+                                                                  fill = Family),
+                                                    pvals = paste0(Utest_PvalsChar_WeightedConsensusScore, collapse = "                "),
+                                                    xlab = bquote(.(flankNamePlot) ~ "regions flanking centromeric" ~ italic("ATHILA") ~ "and random loci"),
+                                                    ylab = bquote(italic("CEN180") ~ "consensus score"),
+                                                    yaxtrans = log2_trans(),
+                                                    ybreaks = trans_breaks("log2", function(x) 2^x),
+                                                    ylabels = trans_format("log2", math_format(2^.x)))
+ggPoint_WeightedConsensusScore_allacc <- ggPoint_WeightedConsensusScore_allacc +
+  facet_grid(cols = vars(chr), rows = vars(Family), margins = "chr", scales = "fixed")
+
+
+# EditDistance
+Utest_Pvals_EditDistance <- as.numeric(sapply(acc_chrName, function(z) {
+  print(z)
+  if(z != "All") {
+    tt <- tryCatch(
+                   wilcox.test(x = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$chr == z &
+                                                                         CENfeats_CEN180_metrics_allacc$Feature == "CENATHILA",],
+                                          "EditDistance")[,1],
+                               y = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$chr == z &
+                                                                         CENfeats_CEN180_metrics_allacc$Feature == "CENranLoc",],
+                                          "EditDistance")[,1],
+                               alternative = "two.sided")$p.value,
+                   error = function(e) e
+                  )
+    if(is(tt, "error")) {
+      NA
+    } else {
+      tt
+    }
+  } else {
+    tt <- tryCatch(
+                   wilcox.test(x = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$Feature == "CENATHILA",],
+                                          "EditDistance")[,1],
+                               y = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$Feature == "CENranLoc",],
+                                          "EditDistance")[,1],
+                               alternative = "two.sided")$p.value,
+                   error = function(e) e
+                  )
+    if(is(tt, "error")) {
+      NA
+    } else {
+      tt
+    }
+  }
+}))
+#Utest_Pvals_EditDistance <- sapply(1:length(Utest_list_EditDistance), function(z) { Utest_list_EditDistance[[z]]$p.value } )
+Utest_PvalsChar_EditDistance <- sapply(1:length(Utest_Pvals_EditDistance), function(z) {
+  if(is.na(Utest_Pvals_EditDistance[z])) {
+    paste0(acc_chrName[z], " MWW P = NA")
+  } else if(Utest_Pvals_EditDistance[z] < 0.0001) {
+    paste0(acc_chrName[z], " MWW P < 0.0001")
+  } else {
+    paste0(acc_chrName[z], " MWW P = ", as.character(round(Utest_Pvals_EditDistance[z], digits = 4)))
+  }
+})
+
+ggPoint_EditDistance_allacc <- violinPlot(acc_id = paste0(length(unique(CENfeats_CEN180_metrics_allacc$accession)), " accessions"),
                                           dataFrame = CENfeats_CEN180_metrics_allacc,
-                                          mapping = aes(x = feature,
-                                                        y = WeightedConsensusScore + 1,
-                                                        shape = Region,
-                                                        colour = Family),
-                                          box_mapping = aes(x = feature,
-                                                            y = WeightedConsensusScore + 1),
-                                          pvals = paste0(Utest_PvalsChar_WeightedConsensusScore, collapse = "                "),
+                                          mapping = aes(x = Feature,
+                                                        y = EditDistance + 1,
+                                                        fill = Family),
+                                          pvals = paste0(Utest_PvalsChar_EditDistance, collapse = "                "),
                                           xlab = bquote(.(flankNamePlot) ~ "regions flanking centromeric" ~ italic("ATHILA") ~ "and random loci"),
-                                          ylab = bquote(italic("CEN180") ~ "consensus score"),
+                                          ylab = bquote(italic("CEN180") ~ "edit distance"),
                                           yaxtrans = log2_trans(),
                                           ybreaks = trans_breaks("log2", function(x) 2^x),
                                           ylabels = trans_format("log2", math_format(2^.x)))
-  ggPoint_WeightedConsensusScore_allacc <- ggPoint_WeightedConsensusScore_allacc +
+ggPoint_EditDistance_allacc <- ggPoint_EditDistance_allacc +
+  facet_grid(cols = vars(chr), rows = vars(Family), margins = "chr", scales = "fixed")
+
+# Plot as one with facet rows as Family
+gg_cow_list <- list(
+                    ggPoint_HORlengthsSum_allacc,
+                    ggPoint_HORcount_allacc,
+                    ggPoint_WeightedConsensusScore_allacc,
+                    ggPoint_EditDistance_allacc
+                   )
+gg_cow <- plot_grid(plotlist = gg_cow_list,
+                    labels = "AUTO", label_size = 30,
+                    align = "hv",
+                    axis = "l",
+                    nrow = length(gg_cow_list), ncol = 1)
+ggsave(paste0(plotDirAllAccessions,
+              "CENATHILA_CEN180_", flankName, "_flanks_AllMetrics_violinPlot_",
+              paste0(chrName, collapse = "_"),
+              "_", length(unique(CENfeats_CEN180_metrics_allacc$accession)), "accessions.pdf"),
+       plot = gg_cow,
+       height = (2*length(phylo))*length(gg_cow_list), width = 5*(length(acc_chrName)), limitsize = F)
+
+
+
+# Plot across all accessions, with gg_cow rows as Family 
+
+# HORlengthsSum
+Utest_Pvals_HORlengthsSum_phylo <- lapply(1:length(phylo), function(x) {
+  as.numeric(sapply(acc_chrName, function(z) {
+    print(z)
+    if(z != "All") {
+      tt <- tryCatch(
+                     wilcox.test(x = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$chr == z &
+                                                                           CENfeats_CEN180_metrics_allacc$Family == phylo[x] &
+                                                                           CENfeats_CEN180_metrics_allacc$Feature == "CENATHILA",],
+                                            "HORlengthsSum")[,1],
+                                 y = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$chr == z &
+                                                                           CENfeats_CEN180_metrics_allacc$Family == phylo[x] &
+                                                                           CENfeats_CEN180_metrics_allacc$Feature == "CENranLoc",],
+                                            "HORlengthsSum")[,1],
+                                 alternative = "two.sided")$p.value,
+                     error = function(e) e
+                    )
+      if(is(tt, "error")) {
+        NA
+      } else {
+        tt
+      }
+    } else {
+      tt <- tryCatch(
+                     wilcox.test(x = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$Family == phylo[x] &
+                                                                           CENfeats_CEN180_metrics_allacc$Feature == "CENATHILA",],
+                                            "HORlengthsSum")[,1],
+                                 y = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$Family == phylo[x] &
+                                                                           CENfeats_CEN180_metrics_allacc$Feature == "CENranLoc",],
+                                            "HORlengthsSum")[,1],
+                                 alternative = "two.sided")$p.value,
+                     error = function(e) e
+                    )
+      if(is(tt, "error")) {
+        NA
+      } else {
+        tt
+      }
+    }
+  }))
+})
+Utest_PvalsChar_HORlengthsSum_phylo <- lapply(1:length(phylo), function(x) {
+  sapply(1:length(Utest_Pvals_HORlengthsSum_phylo[[x]]), function(z) {
+    if(is.na(Utest_Pvals_HORlengthsSum_phylo[[x]][z])) {
+      paste0(acc_chrName[z], " MWW P = NA")
+    } else if(Utest_Pvals_HORlengthsSum_phylo[[x]][z] < 0.0001) {
+      paste0(acc_chrName[z], " MWW P < 0.0001")
+    } else {
+      paste0(acc_chrName[z], " MWW P = ", as.character(round(Utest_Pvals_HORlengthsSum_phylo[[x]][z], digits = 4)))
+    }
+  })
+})
+
+ggPoint_HORlengthsSum_allacc_phylo <- lapply(1:length(phylo), function(x) {
+  tP <- violinPlot(acc_id = paste0(length(unique(CENfeats_CEN180_metrics_allacc$accession)), " accessions"),
+                   dataFrame = CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$Family == phylo[x],],
+                   mapping = aes(x = Feature,
+                                 y = HORlengthsSum + 1,
+                                 fill = Feature),
+                   pvals = paste0(Utest_PvalsChar_HORlengthsSum_phylo[[x]], collapse = "                "),
+                   xlab = bquote(.(flankNamePlot) ~ "regions flanking centromeric" ~ italic(.(phylo[x])) ~ "and random loci"),
+                   ylab = bquote(italic("CEN180") ~ "repetitiveness"),
+                   yaxtrans = log2_trans(),
+                   ybreaks = trans_breaks("log2", function(x) 2^x),
+                   ylabels = trans_format("log2", math_format(2^.x)))
+  tP <- tP +
     facet_grid(cols = vars(chr), margins = "chr", scales = "fixed")
+})
+
+# Plot with gg_cow rows as Family
+gg_cow_list <- ggPoint_HORlengthsSum_allacc_phylo
+gg_cow <- plot_grid(plotlist = gg_cow_list,
+                    labels = "AUTO", label_size = 30,
+                    align = "hv",
+                    axis = "l",
+                    nrow = length(gg_cow_list), ncol = 1)
+ggsave(paste0(plotDirAllAccessions,
+              "CENATHILA_CEN180_", flankName, "_flanks_HORlengthsSum_violinPlot_",
+              paste0(chrName, collapse = "_"),
+              "_", length(unique(CENfeats_CEN180_metrics_allacc$accession)), "accessions.pdf"),
+       plot = gg_cow,
+       height = 5.5*length(gg_cow_list), width = 5*(length(acc_chrName)), limitsize = F)
+
+
+# HORcount
+Utest_Pvals_HORcount_phylo <- lapply(1:length(phylo), function(x) {
+  as.numeric(sapply(acc_chrName, function(z) {
+    print(z)
+    if(z != "All") {
+      tt <- tryCatch(
+                     wilcox.test(x = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$chr == z &
+                                                                           CENfeats_CEN180_metrics_allacc$Family == phylo[x] &
+                                                                           CENfeats_CEN180_metrics_allacc$Feature == "CENATHILA",],
+                                            "HORcount")[,1],
+                                 y = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$chr == z &
+                                                                           CENfeats_CEN180_metrics_allacc$Family == phylo[x] &
+                                                                           CENfeats_CEN180_metrics_allacc$Feature == "CENranLoc",],
+                                            "HORcount")[,1],
+                                 alternative = "two.sided")$p.value,
+                     error = function(e) e
+                    )
+      if(is(tt, "error")) {
+        NA
+      } else {
+        tt
+      }
+    } else {
+      tt <- tryCatch(
+                     wilcox.test(x = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$Family == phylo[x] &
+                                                                           CENfeats_CEN180_metrics_allacc$Feature == "CENATHILA",],
+                                            "HORcount")[,1],
+                                 y = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$Family == phylo[x] &
+                                                                           CENfeats_CEN180_metrics_allacc$Feature == "CENranLoc",],
+                                            "HORcount")[,1],
+                                 alternative = "two.sided")$p.value,
+                     error = function(e) e
+                    )
+      if(is(tt, "error")) {
+        NA
+      } else {
+        tt
+      }
+    }
+  }))
+})
+Utest_PvalsChar_HORcount_phylo <- lapply(1:length(phylo), function(x) {
+  sapply(1:length(Utest_Pvals_HORcount_phylo[[x]]), function(z) {
+    if(is.na(Utest_Pvals_HORcount_phylo[[x]][z])) {
+      paste0(acc_chrName[z], " MWW P = NA")
+    } else if(Utest_Pvals_HORcount_phylo[[x]][z] < 0.0001) {
+      paste0(acc_chrName[z], " MWW P < 0.0001")
+    } else {
+      paste0(acc_chrName[z], " MWW P = ", as.character(round(Utest_Pvals_HORcount_phylo[[x]][z], digits = 4)))
+    }
+  })
+})
+
+ggPoint_HORcount_allacc_phylo <- lapply(1:length(phylo), function(x) {
+  tP <- violinPlot(acc_id = paste0(length(unique(CENfeats_CEN180_metrics_allacc$accession)), " accessions"),
+                   dataFrame = CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$Family == phylo[x],],
+                   mapping = aes(x = Feature,
+                                 y = HORcount + 1,
+                                 fill = Feature),
+                   pvals = paste0(Utest_PvalsChar_HORcount_phylo[[x]], collapse = "                "),
+                   xlab = bquote(.(flankNamePlot) ~ "regions flanking centromeric" ~ italic(.(phylo[x])) ~ "and random loci"),
+                   ylab = bquote(italic("CEN180") ~ "HOR count"),
+                   yaxtrans = log2_trans(),
+                   ybreaks = trans_breaks("log2", function(x) 2^x),
+                   ylabels = trans_format("log2", math_format(2^.x)))
+  tP <- tP +
+    facet_grid(cols = vars(chr), margins = "chr", scales = "fixed")
+})
+
+# Plot with gg_cow rows as Family
+gg_cow_list <- ggPoint_HORcount_allacc_phylo
+gg_cow <- plot_grid(plotlist = gg_cow_list,
+                    labels = "AUTO", label_size = 30,
+                    align = "hv",
+                    axis = "l",
+                    nrow = length(gg_cow_list), ncol = 1)
+ggsave(paste0(plotDirAllAccessions,
+              "CENATHILA_CEN180_", flankName, "_flanks_HORcount_violinPlot_",
+              paste0(chrName, collapse = "_"),
+              "_", length(unique(CENfeats_CEN180_metrics_allacc$accession)), "accessions.pdf"),
+       plot = gg_cow,
+       height = 5.5*length(gg_cow_list), width = 5*(length(acc_chrName)), limitsize = F)
+
+
+# WeightedConsensusScore
+Utest_Pvals_WeightedConsensusScore_phylo <- lapply(1:length(phylo), function(x) {
+  as.numeric(sapply(acc_chrName, function(z) {
+    print(z)
+    if(z != "All") {
+      tt <- tryCatch(
+                     wilcox.test(x = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$chr == z &
+                                                                           CENfeats_CEN180_metrics_allacc$Family == phylo[x] &
+                                                                           CENfeats_CEN180_metrics_allacc$Feature == "CENATHILA",],
+                                            "WeightedConsensusScore")[,1],
+                                 y = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$chr == z &
+                                                                           CENfeats_CEN180_metrics_allacc$Family == phylo[x] &
+                                                                           CENfeats_CEN180_metrics_allacc$Feature == "CENranLoc",],
+                                            "WeightedConsensusScore")[,1],
+                                 alternative = "two.sided")$p.value,
+                     error = function(e) e
+                    )
+      if(is(tt, "error")) {
+        NA
+      } else {
+        tt
+      }
+    } else {
+      tt <- tryCatch(
+                     wilcox.test(x = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$Family == phylo[x] &
+                                                                           CENfeats_CEN180_metrics_allacc$Feature == "CENATHILA",],
+                                            "WeightedConsensusScore")[,1],
+                                 y = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$Family == phylo[x] &
+                                                                           CENfeats_CEN180_metrics_allacc$Feature == "CENranLoc",],
+                                            "WeightedConsensusScore")[,1],
+                                 alternative = "two.sided")$p.value,
+                     error = function(e) e
+                    )
+      if(is(tt, "error")) {
+        NA
+      } else {
+        tt
+      }
+    }
+  }))
+})
+Utest_PvalsChar_WeightedConsensusScore_phylo <- lapply(1:length(phylo), function(x) {
+  sapply(1:length(Utest_Pvals_WeightedConsensusScore_phylo[[x]]), function(z) {
+    if(is.na(Utest_Pvals_WeightedConsensusScore_phylo[[x]][z])) {
+      paste0(acc_chrName[z], " MWW P = NA")
+    } else if(Utest_Pvals_WeightedConsensusScore_phylo[[x]][z] < 0.0001) {
+      paste0(acc_chrName[z], " MWW P < 0.0001")
+    } else {
+      paste0(acc_chrName[z], " MWW P = ", as.character(round(Utest_Pvals_WeightedConsensusScore_phylo[[x]][z], digits = 4)))
+    }
+  })
+})
+
+ggPoint_WeightedConsensusScore_allacc_phylo <- lapply(1:length(phylo), function(x) {
+  tP <- violinPlot(acc_id = paste0(length(unique(CENfeats_CEN180_metrics_allacc$accession)), " accessions"),
+                   dataFrame = CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$Family == phylo[x],],
+                   mapping = aes(x = Feature,
+                                 y = WeightedConsensusScore + 1,
+                                 fill = Feature),
+                   pvals = paste0(Utest_PvalsChar_WeightedConsensusScore_phylo[[x]], collapse = "                "),
+                   xlab = bquote(.(flankNamePlot) ~ "regions flanking centromeric" ~ italic(.(phylo[x])) ~ "and random loci"),
+                   ylab = bquote(italic("CEN180") ~ "consensus score"),
+                   yaxtrans = log2_trans(),
+                   ybreaks = trans_breaks("log2", function(x) 2^x),
+                   ylabels = trans_format("log2", math_format(2^.x)))
+  tP <- tP +
+    facet_grid(cols = vars(chr), margins = "chr", scales = "fixed")
+})
+
+# Plot with gg_cow rows as Family
+gg_cow_list <- ggPoint_WeightedConsensusScore_allacc_phylo
+gg_cow <- plot_grid(plotlist = gg_cow_list,
+                    labels = "AUTO", label_size = 30,
+                    align = "hv",
+                    axis = "l",
+                    nrow = length(gg_cow_list), ncol = 1)
+ggsave(paste0(plotDirAllAccessions,
+              "CENATHILA_CEN180_", flankName, "_flanks_WeightedConsensusScore_violinPlot_",
+              paste0(chrName, collapse = "_"),
+              "_", length(unique(CENfeats_CEN180_metrics_allacc$accession)), "accessions.pdf"),
+       plot = gg_cow,
+       height = 5.5*length(gg_cow_list), width = 5*(length(acc_chrName)), limitsize = F)
 
 
 # EditDistance
@@ -836,11 +1201,11 @@ Utest_Pvals_EditDistance_phylo <- lapply(1:length(phylo), function(x) {
       tt <- tryCatch(
                      wilcox.test(x = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$chr == z &
                                                                            CENfeats_CEN180_metrics_allacc$Family == phylo[x] &
-                                                                           CENfeats_CEN180_metrics_allacc$feature == "CENATHILA",],
+                                                                           CENfeats_CEN180_metrics_allacc$Feature == "CENATHILA",],
                                             "EditDistance")[,1],
                                  y = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$chr == z &
                                                                            CENfeats_CEN180_metrics_allacc$Family == phylo[x] &
-                                                                           CENfeats_CEN180_metrics_allacc$feature == "CENranLoc",],
+                                                                           CENfeats_CEN180_metrics_allacc$Feature == "CENranLoc",],
                                             "EditDistance")[,1],
                                  alternative = "two.sided")$p.value,
                      error = function(e) e
@@ -853,10 +1218,10 @@ Utest_Pvals_EditDistance_phylo <- lapply(1:length(phylo), function(x) {
     } else {
       tt <- tryCatch(
                      wilcox.test(x = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$Family == phylo[x] &
-                                                                           CENfeats_CEN180_metrics_allacc$feature == "CENATHILA",],
+                                                                           CENfeats_CEN180_metrics_allacc$Feature == "CENATHILA",],
                                             "EditDistance")[,1],
                                  y = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$Family == phylo[x] &
-                                                                           CENfeats_CEN180_metrics_allacc$feature == "CENranLoc",],
+                                                                           CENfeats_CEN180_metrics_allacc$Feature == "CENranLoc",],
                                             "EditDistance")[,1],
                                  alternative = "two.sided")$p.value,
                      error = function(e) e
@@ -881,82 +1246,31 @@ Utest_PvalsChar_EditDistance_phylo <- lapply(1:length(phylo), function(x) {
   })
 })
 
-ggPoint_EditDistance_allacc <- lapply(1:length(phylo), function(x) {
+ggPoint_EditDistance_allacc_phylo <- lapply(1:length(phylo), function(x) {
   tP <- violinPlot(acc_id = paste0(length(unique(CENfeats_CEN180_metrics_allacc$accession)), " accessions"),
                    dataFrame = CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$Family == phylo[x],],
-                   mapping = aes(x = feature,
+                   mapping = aes(x = Feature,
                                  y = EditDistance + 1,
-                                 shape = Region,
-                                 colour = Family),
-                   box_mapping = aes(x = feature,
-                                     y = EditDistance + 1),
-                   pvals = paste0(Utest_PvalsChar_EditDistance, collapse = "                "),
-                   xlab = bquote(.(flankNamePlot) ~ "regions flanking centromeric" ~ italic("ATHILA") ~ "and random loci"),
+                                 fill = Feature),
+                   pvals = paste0(Utest_PvalsChar_EditDistance_phylo[[x]], collapse = "                "),
+                   xlab = bquote(.(flankNamePlot) ~ "regions flanking centromeric" ~ italic(.(phylo[x])) ~ "and random loci"),
                    ylab = bquote(italic("CEN180") ~ "edit distance"),
                    yaxtrans = log2_trans(),
                    ybreaks = trans_breaks("log2", function(x) 2^x),
                    ylabels = trans_format("log2", math_format(2^.x)))
   tP <- tP +
-    facet_grid(cols = vars(chr),  margins = "chr", scales = "fixed")
+    facet_grid(cols = vars(chr), margins = "chr", scales = "fixed")
 })
 
-# Function to make boxplot of CEN180 metrics overlapping
-# regions flanking CENATHILA and CENranLoc
-violinPlot <- function(acc_id, dataFrame, mapping, box_mapping, pvals, xlab, ylab, yaxtrans, ybreaks, ylabels) {
-  ggplot(data = dataFrame,
-         mapping = mapping) +
-  geom_boxplot(inherit.aes = F,
-               mapping = box_mapping,
-               colour = "grey60") +
-#  geom_violin(scale = "count",
-#              trim = T,
-#              draw_quantiles = c(0.25, 0.50, 0.75)) +
-  geom_beeswarm(cex = 3,
-                size = 3) +
-  scale_y_continuous(trans = yaxtrans,
-                     breaks = ybreaks,
-                     labels = ylabels) +
-  labs(x = xlab,
-       y = ylab) +
-  guides(colour = guide_legend(order = 1),
-         shape = guide_legend(order = 2)) +
-  theme_bw() +
-  theme(
-        axis.ticks = element_line(size = 0.5, colour = "black"),
-        axis.ticks.length = unit(0.25, "cm"),
-        axis.text.x = element_text(size = 16, colour = "black", angle = 45, vjust = 1.0, hjust = 1.0, face = "italic"),
-        axis.text.y = element_text(size = 16, colour = "black"),
-        axis.title = element_text(size = 18, colour = "black"),
-        axis.line = element_line(size = 1.0, colour = "black"),
-        legend.text = element_text(face = "italic"),
-        panel.background = element_blank(),
-        panel.border = element_blank(),
-        strip.text.x = element_text(size = 20, colour = "white"),
-        strip.background = element_rect(fill = "black", colour = "black"),
-        plot.margin = unit(c(0.3,1.2,0.3,0.3), "cm"),
-        plot.title = element_text(hjust = 0.5, size = 18)) +
-  ggtitle(bquote(
-                 .(acc_id) ~
-                 "                      " ~
-                 .(pvals)
-                )
-         )
-}
-
-# Plot
-gg_cow_list <- list(
-                    ggPoint_HORlengthsSum_allacc,
-                    ggPoint_HORcount_allacc,
-                    ggPoint_WeightedConsensusScore_allacc,
-                    ggPoint_EditDistance_allacc
-                   )
+# Plot with gg_cow rows as Family
+gg_cow_list <- ggPoint_EditDistance_allacc_phylo
 gg_cow <- plot_grid(plotlist = gg_cow_list,
                     labels = "AUTO", label_size = 30,
                     align = "hv",
                     axis = "l",
                     nrow = length(gg_cow_list), ncol = 1)
 ggsave(paste0(plotDirAllAccessions,
-              "CENATHILA_CEN180_", flankName, "_flanks_AllMetrics_pointPlot_",
+              "CENATHILA_CEN180_", flankName, "_flanks_EditDistance_violinPlot_",
               paste0(chrName, collapse = "_"),
               "_", length(unique(CENfeats_CEN180_metrics_allacc$accession)), "accessions.pdf"),
        plot = gg_cow,
