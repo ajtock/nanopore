@@ -24,7 +24,7 @@ if(floor(log10(flankSize)) + 1 < 4) {
   flankName <- paste0(flankSize/1e6, "Mb")
 }
 flankNamePlot <- paste0(c(strsplit(flankName, split = "")[[1]][1:(length(strsplit(flankName, split = "")[[1]])-2)],
-                          " ",
+                          "-",
                           strsplit(flankName, split = "")[[1]][(length(strsplit(flankName, split = "")[[1]])-1):(length(strsplit(flankName, split = "")[[1]]))]),
                           collapse = "")
 
@@ -233,7 +233,8 @@ CEN180metricsAtCENATHILA <- function(CEN180, CENATHILA, featureName) {
         mean(CEN180_GR_chr[CENATHILA_down_CEN180[[x]]]$EditDistance, na.rm = T)
       })
 
-      CENATHILA_reg_GR_chr <= c(CENATHILA_up_GR_chr, CENATHILA_down_GR_chr)
+      #CENATHILA_reg_GR_chr <- c(CENATHILA_up_GR_chr, CENATHILA_down_GR_chr)
+      CENATHILA_reg_GR_chr <- c(CENATHILA_GR_chr, CENATHILA_GR_chr)
       CENATHILA_chr <- data.frame(CENATHILA_reg_GR_chr,
                                   feature = rep(featureName, length(CENATHILA_reg_GR_chr)),
                                   accession = rep(CEN180_GR_chr$acc[1], length(CENATHILA_reg_GR_chr)),
@@ -265,7 +266,7 @@ CENranLoc_CEN180_metrics_list <- mclapply(1:length(acc), function(x) {
                            featureName = "CENranLoc")
 }, mc.cores = detectCores(), mc.preschedule = F)
 
-rm(CEN180_list, CENATHILA_list, CENranLoc_list); gc()
+#rm(CEN180_list, CENATHILA_list, CENranLoc_list); gc()
 
 CENfeats_CEN180_metrics_list <- lapply(1:length(acc), function(x) {
   rbind(CENATHILA_CEN180_metrics_list[[x]],
@@ -275,17 +276,15 @@ CENfeats_CEN180_metrics_list <- lapply(1:length(acc), function(x) {
 
 # Function to make boxplot of CEN180 metrics overlapping
 # regions flanking CENATHILA and CENranLoc
-violinPlot <- function(acc_id, dataFrame, mapping, xvar, yvar, xlab, ylab, yaxtrans, ybreaks, ylabels) {
+pointPlot <- function(acc_id, dataFrame, mapping, xlab, ylab, yaxtrans, ybreaks, ylabels) {
   ggplot(data = dataFrame,
-         mapping = mapping,
-         colour = score) +
+         mapping = mapping) +
 #  scale_colour_manual(values = superfamColours) +
-#  geom_boxplot(mapping = aes(colour = genotype),
-#               varwidth = TRUE) +
-  geom_violin(scale = "area",
-              trim = T,
-              draw_quantiles = c(0.25, 0.50, 0.75)) +
-  geom_beeswarm(cex = 6,
+#  geom_boxplot(varwidth = F) +
+#  geom_violin(scale = "area",
+#              trim = T,
+#              draw_quantiles = c(0.25, 0.50, 0.75)) +
+  geom_beeswarm(ce = 6,
                 size = 4) +
   scale_y_continuous(trans = yaxtrans,
                      breaks = ybreaks,
@@ -299,7 +298,7 @@ violinPlot <- function(acc_id, dataFrame, mapping, xvar, yvar, xlab, ylab, yaxtr
         axis.text.x = element_text(size = 16, colour = "black", angle = 45, vjust = 1.0, hjust = 1.0),
         axis.text.y = element_text(size = 16, colour = "black"),
         axis.title = element_text(size = 18, colour = "black"),
-        axis.line = element_line(size = 1.5, colour = "black"),
+        axis.line = element_line(size = 1.0, colour = "black"),
         panel.background = element_blank(),
         panel.border = element_blank(),
 #        panel.border = element_rect(size = 1.0, colour = "black"),
@@ -313,6 +312,46 @@ violinPlot <- function(acc_id, dataFrame, mapping, xvar, yvar, xlab, ylab, yaxtr
                 )
          )
 }
+
+
+ggPoint_HORlengthsSum_list <- lapply(1:length(acc), function(i) {
+  CENfeats_CEN180_metrics_list[[i]]$region <- factor(CENfeats_CEN180_metrics_list[[i]]$region,
+                                                     levels = sort(levels(factor(CENfeats_CEN180_metrics_list[[i]]$region)), decreasing = T))
+  tP <- pointPlot(acc_id = acc[i],
+                  dataFrame = CENfeats_CEN180_metrics_list[[i]],
+                  mapping = aes(x = feature,
+                                y = HORlengthsSum + 1,
+                                shape = region,
+                                colour = phylo)
+                  xlab = bquote(.(flankNamePlot) ~ "regions flanking centromeric" ~ italic("ATHILA") ~ "and random loci"),
+                  ylab = bquote(italic("CEN180") ~ "repetitiveness"),
+#                  yaxtrans = "identity",
+#                  ybreaks = waiver(),
+#                  ylabels = waiver())
+                  yaxtrans = log2_trans(),
+                  ybreaks = trans_breaks("log2", function(x) 2^x),
+                  ylabels = trans_format("log2", math_format(2^.x)))
+  tP <- tP +
+    facet_grid(cols = vars(chr), margins = "chr", scales = "fixed")
+  tP
+})
+#}, mc.cores = detectCores(), mc.preschedule = F)
+
+#lapply(1:length(acc), function(i) {
+  gg_cow_list <- list(ggPoint_HORlengthsSum_list[[i]])
+  gg_cow <- plot_grid(plotlist = gg_cow_list,
+                      labels = "AUTO", label_size = 30,
+                      align = "hv",
+                      axis = "l",
+                      nrow = length(gg_cow_list), ncol = 1)
+  ggsave(paste0(plotDirHORlengthsSum,
+                "CENATHILA_CEN180_HORlengthsSum_pointPlot_",
+                paste0(chrName, collapse = "_"),
+                "_", acc[i], ".pdf"),
+         plot = gg_cow,
+         height = 5.5*length(gg_cow_list), width = 5*(length(chrName)+1), limitsize = F)
+#})
+#}, mc.cores = detectCores(), mc.preschedule = F)
 
 
 
