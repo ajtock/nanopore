@@ -246,6 +246,8 @@ CEN180metricsAtCENATHILA <- function(CEN180, CENATHILA, featureName) {
       colnames(CENATHILA_chr)[1] <- "chr"
       CENATHILA_chr$chr <- as.character(CENATHILA_chr$chr)
       CENATHILA_chr$strand <- as.character(CENATHILA_chr$strand)
+      colnames(CENATHILA_chr)[which(colnames(CENATHILA_chr) == "phylo")] <- "Family"
+      colnames(CENATHILA_chr)[which(colnames(CENATHILA_chr) == "region")] <- "Region"
 
       CENATHILA_CEN180_metrics <- rbind(CENATHILA_CEN180_metrics, CENATHILA_chr)
     } 
@@ -291,6 +293,8 @@ pointPlot <- function(acc_id, dataFrame, mapping, box_mapping, pvals, xlab, ylab
                      labels = ylabels) +
   labs(x = xlab,
        y = ylab) +
+  guides(colour = guide_legend(order = 1),
+         shape = guide_legend(order = 2)) +
   theme_bw() +
   theme(
         axis.ticks = element_line(size = 0.5, colour = "black"),
@@ -320,8 +324,8 @@ options(scipen = 100)
 
 ggPoint_HORlengthsSum_list <- lapply(1:length(acc), function(i) {
   print(i)
-  CENfeats_CEN180_metrics_list[[i]]$region <- factor(CENfeats_CEN180_metrics_list[[i]]$region,
-                                                     levels = sort(levels(factor(CENfeats_CEN180_metrics_list[[i]]$region)), decreasing = T))
+  CENfeats_CEN180_metrics_list[[i]]$Region <- factor(CENfeats_CEN180_metrics_list[[i]]$Region,
+                                                     levels = sort(levels(factor(CENfeats_CEN180_metrics_list[[i]]$Region)), decreasing = T))
 
   acc_chrName <- c(sort(unique(CENfeats_CEN180_metrics_list[[i]]$chr)), "All")
   Utest_Pvals <- as.numeric(sapply(acc_chrName, function(z) {
@@ -360,7 +364,9 @@ ggPoint_HORlengthsSum_list <- lapply(1:length(acc), function(i) {
   }))
   #Utest_Pvals <- sapply(1:length(Utest_list), function(z) { Utest_list[[z]]$p.value } )
   Utest_PvalsChar <- sapply(1:length(Utest_Pvals), function(z) {
-    if(Utest_Pvals[z] < 0.0001) {
+    if(is.na(Utest_Pvals[z])) {
+      paste0(acc_chrName[z], " MWW P = NA")
+    } else if(Utest_Pvals[z] < 0.0001) {
       paste0(acc_chrName[z], " MWW P < 0.0001")
     } else {
       paste0(acc_chrName[z], " MWW P = ", as.character(round(Utest_Pvals[z], digits = 4)))
@@ -371,11 +377,11 @@ ggPoint_HORlengthsSum_list <- lapply(1:length(acc), function(i) {
                   dataFrame = CENfeats_CEN180_metrics_list[[i]],
                   mapping = aes(x = feature,
                                 y = HORlengthsSum + 1,
-                                shape = region,
-                                colour = phylo),
+                                shape = Region,
+                                colour = Family),
                   box_mapping = aes(x = feature,
                                     y = HORlengthsSum + 1),
-                  pvals = paste0(Utest_PvalsChar, collapse = "        "),
+                  pvals = paste0(Utest_PvalsChar, collapse = "                "),
                   xlab = bquote(.(flankNamePlot) ~ "regions flanking centromeric" ~ italic("ATHILA") ~ "and random loci"),
                   ylab = bquote(italic("CEN180") ~ "repetitiveness"),
                   yaxtrans = log2_trans(),
@@ -386,21 +392,236 @@ ggPoint_HORlengthsSum_list <- lapply(1:length(acc), function(i) {
   tP
 })
 
-#lapply(1:length(acc), function(i) {
-  gg_cow_list <- list(ggPoint_HORlengthsSum_list[[i]])
+ggPoint_HORcount_list <- lapply(1:length(acc), function(i) {
+  print(i)
+  CENfeats_CEN180_metrics_list[[i]]$Region <- factor(CENfeats_CEN180_metrics_list[[i]]$Region,
+                                                     levels = sort(levels(factor(CENfeats_CEN180_metrics_list[[i]]$Region)), decreasing = T))
+
+  acc_chrName <- c(sort(unique(CENfeats_CEN180_metrics_list[[i]]$chr)), "All")
+  Utest_Pvals <- as.numeric(sapply(acc_chrName, function(z) {
+    print(z)
+    if(z != "All") {
+      tt <- tryCatch(
+                     wilcox.test(x = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$chr == z &
+                                                                              CENfeats_CEN180_metrics_list[[i]]$feature == "CENATHILA",],
+                                            "HORcount")[,1],
+                                 y = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$chr == z &
+                                                                              CENfeats_CEN180_metrics_list[[i]]$feature == "CENranLoc",],
+                                            "HORcount")[,1],
+                                 alternative = "two.sided")$p.value,
+                     error = function(e) e
+                    )
+      if(is(tt, "error")) {
+        NA
+      } else {
+        tt
+      }
+    } else {
+      tt <- tryCatch(
+                     wilcox.test(x = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$feature == "CENATHILA",],
+                                            "HORcount")[,1],
+                                 y = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$feature == "CENranLoc",],
+                                            "HORcount")[,1],
+                                 alternative = "two.sided")$p.value,
+                     error = function(e) e
+                    )
+      if(is(tt, "error")) {
+        NA
+      } else {
+        tt
+      }
+    }
+  }))
+  #Utest_Pvals <- sapply(1:length(Utest_list), function(z) { Utest_list[[z]]$p.value } )
+  Utest_PvalsChar <- sapply(1:length(Utest_Pvals), function(z) {
+    if(is.na(Utest_Pvals[z])) {
+      paste0(acc_chrName[z], " MWW P = NA")
+    } else if(Utest_Pvals[z] < 0.0001) {
+      paste0(acc_chrName[z], " MWW P < 0.0001")
+    } else {
+      paste0(acc_chrName[z], " MWW P = ", as.character(round(Utest_Pvals[z], digits = 4)))
+    }
+  })
+
+  tP <- pointPlot(acc_id = acc[i],
+                  dataFrame = CENfeats_CEN180_metrics_list[[i]],
+                  mapping = aes(x = feature,
+                                y = HORcount + 1,
+                                shape = Region,
+                                colour = Family),
+                  box_mapping = aes(x = feature,
+                                    y = HORcount + 1),
+                  pvals = paste0(Utest_PvalsChar, collapse = "                "),
+                  xlab = bquote(.(flankNamePlot) ~ "regions flanking centromeric" ~ italic("ATHILA") ~ "and random loci"),
+                  ylab = bquote(italic("CEN180") ~ "HOR count"),
+                  yaxtrans = log2_trans(),
+                  ybreaks = trans_breaks("log2", function(x) 2^x),
+                  ylabels = trans_format("log2", math_format(2^.x)))
+  tP <- tP +
+    facet_grid(cols = vars(chr), margins = "chr", scales = "fixed")
+  tP
+})
+
+ggPoint_WeightedConsensusScore_list <- lapply(1:length(acc), function(i) {
+  print(i)
+  CENfeats_CEN180_metrics_list[[i]]$Region <- factor(CENfeats_CEN180_metrics_list[[i]]$Region,
+                                                     levels = sort(levels(factor(CENfeats_CEN180_metrics_list[[i]]$Region)), decreasing = T))
+
+  acc_chrName <- c(sort(unique(CENfeats_CEN180_metrics_list[[i]]$chr)), "All")
+  Utest_Pvals <- as.numeric(sapply(acc_chrName, function(z) {
+    print(z)
+    if(z != "All") {
+      tt <- tryCatch(
+                     wilcox.test(x = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$chr == z &
+                                                                              CENfeats_CEN180_metrics_list[[i]]$feature == "CENATHILA",],
+                                            "WeightedConsensusScore")[,1],
+                                 y = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$chr == z &
+                                                                              CENfeats_CEN180_metrics_list[[i]]$feature == "CENranLoc",],
+                                            "WeightedConsensusScore")[,1],
+                                 alternative = "two.sided")$p.value,
+                     error = function(e) e
+                    )
+      if(is(tt, "error")) {
+        NA
+      } else {
+        tt
+      }
+    } else {
+      tt <- tryCatch(
+                     wilcox.test(x = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$feature == "CENATHILA",],
+                                            "WeightedConsensusScore")[,1],
+                                 y = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$feature == "CENranLoc",],
+                                            "WeightedConsensusScore")[,1],
+                                 alternative = "two.sided")$p.value,
+                     error = function(e) e
+                    )
+      if(is(tt, "error")) {
+        NA
+      } else {
+        tt
+      }
+    }
+  }))
+  #Utest_Pvals <- sapply(1:length(Utest_list), function(z) { Utest_list[[z]]$p.value } )
+  Utest_PvalsChar <- sapply(1:length(Utest_Pvals), function(z) {
+    if(is.na(Utest_Pvals[z])) {
+      paste0(acc_chrName[z], " MWW P = NA")
+    } else if(Utest_Pvals[z] < 0.0001) {
+      paste0(acc_chrName[z], " MWW P < 0.0001")
+    } else {
+      paste0(acc_chrName[z], " MWW P = ", as.character(round(Utest_Pvals[z], digits = 4)))
+    }
+  })
+
+  tP <- pointPlot(acc_id = acc[i],
+                  dataFrame = CENfeats_CEN180_metrics_list[[i]],
+                  mapping = aes(x = feature,
+                                y = WeightedConsensusScore + 1,
+                                shape = Region,
+                                colour = Family),
+                  box_mapping = aes(x = feature,
+                                    y = WeightedConsensusScore + 1),
+                  pvals = paste0(Utest_PvalsChar, collapse = "                "),
+                  xlab = bquote(.(flankNamePlot) ~ "regions flanking centromeric" ~ italic("ATHILA") ~ "and random loci"),
+                  ylab = bquote(italic("CEN180") ~ "consensus score"),
+                  yaxtrans = log2_trans(),
+                  ybreaks = trans_breaks("log2", function(x) 2^x),
+                  ylabels = trans_format("log2", math_format(2^.x)))
+  tP <- tP +
+    facet_grid(cols = vars(chr), margins = "chr", scales = "fixed")
+  tP
+})
+
+ggPoint_EditDistance_list <- lapply(1:length(acc), function(i) {
+  print(i)
+  CENfeats_CEN180_metrics_list[[i]]$Region <- factor(CENfeats_CEN180_metrics_list[[i]]$Region,
+                                                     levels = sort(levels(factor(CENfeats_CEN180_metrics_list[[i]]$Region)), decreasing = T))
+
+  acc_chrName <- c(sort(unique(CENfeats_CEN180_metrics_list[[i]]$chr)), "All")
+  Utest_Pvals <- as.numeric(sapply(acc_chrName, function(z) {
+    print(z)
+    if(z != "All") {
+      tt <- tryCatch(
+                     wilcox.test(x = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$chr == z &
+                                                                              CENfeats_CEN180_metrics_list[[i]]$feature == "CENATHILA",],
+                                            "EditDistance")[,1],
+                                 y = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$chr == z &
+                                                                              CENfeats_CEN180_metrics_list[[i]]$feature == "CENranLoc",],
+                                            "EditDistance")[,1],
+                                 alternative = "two.sided")$p.value,
+                     error = function(e) e
+                    )
+      if(is(tt, "error")) {
+        NA
+      } else {
+        tt
+      }
+    } else {
+      tt <- tryCatch(
+                     wilcox.test(x = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$feature == "CENATHILA",],
+                                            "EditDistance")[,1],
+                                 y = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$feature == "CENranLoc",],
+                                            "EditDistance")[,1],
+                                 alternative = "two.sided")$p.value,
+                     error = function(e) e
+                    )
+      if(is(tt, "error")) {
+        NA
+      } else {
+        tt
+      }
+    }
+  }))
+  #Utest_Pvals <- sapply(1:length(Utest_list), function(z) { Utest_list[[z]]$p.value } )
+  Utest_PvalsChar <- sapply(1:length(Utest_Pvals), function(z) {
+    if(is.na(Utest_Pvals[z])) {
+      paste0(acc_chrName[z], " MWW P = NA")
+    } else if(Utest_Pvals[z] < 0.0001) {
+      paste0(acc_chrName[z], " MWW P < 0.0001")
+    } else {
+      paste0(acc_chrName[z], " MWW P = ", as.character(round(Utest_Pvals[z], digits = 4)))
+    }
+  })
+
+  tP <- pointPlot(acc_id = acc[i],
+                  dataFrame = CENfeats_CEN180_metrics_list[[i]],
+                  mapping = aes(x = feature,
+                                y = EditDistance + 1,
+                                shape = Region,
+                                colour = Family),
+                  box_mapping = aes(x = feature,
+                                    y = EditDistance + 1),
+                  pvals = paste0(Utest_PvalsChar, collapse = "                "),
+                  xlab = bquote(.(flankNamePlot) ~ "regions flanking centromeric" ~ italic("ATHILA") ~ "and random loci"),
+                  ylab = bquote(italic("CEN180") ~ "edit distance"),
+                  yaxtrans = log2_trans(),
+                  ybreaks = trans_breaks("log2", function(x) 2^x),
+                  ylabels = trans_format("log2", math_format(2^.x)))
+  tP <- tP +
+    facet_grid(cols = vars(chr), margins = "chr", scales = "fixed")
+  tP
+})
+
+mclapply(1:length(acc), function(i) {
+  acc_chrName <- c(sort(unique(CENfeats_CEN180_metrics_list[[i]]$chr)), "All")
+  gg_cow_list <- list(
+                      ggPoint_HORlengthsSum_list[[i]],
+                      ggPoint_HORcount_list[[i]],
+                      ggPoint_WeightedConsensusScore_list[[i]],
+                      ggPoint_EditDistance_list[[i]]
+                     )
   gg_cow <- plot_grid(plotlist = gg_cow_list,
                       labels = "AUTO", label_size = 30,
                       align = "hv",
                       axis = "l",
                       nrow = length(gg_cow_list), ncol = 1)
-  ggsave(paste0(plotDirHORlengthsSum,
-                "CENATHILA_CEN180_HORlengthsSum_pointPlot_",
+  ggsave(paste0(plotDirAllMetrics,
+                "CENATHILA_CEN180_", flankName, "_flanks_HORlengthsSum_pointPlot_",
                 paste0(chrName, collapse = "_"),
                 "_", acc[i], ".pdf"),
          plot = gg_cow,
-         height = 5.5*length(gg_cow_list), width = 5*(length(chrName)+1), limitsize = F)
-#})
-#}, mc.cores = detectCores(), mc.preschedule = F)
+         height = 5.5*length(gg_cow_list), width = 5*(length(acc_chrName)), limitsize = F)
+}, mc.cores = detectCores(), mc.preschedule = F)
 
 
 
