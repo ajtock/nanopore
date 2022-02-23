@@ -324,28 +324,41 @@ ggPoint_HORlengthsSum_list <- lapply(1:length(acc), function(i) {
                                                      levels = sort(levels(factor(CENfeats_CEN180_metrics_list[[i]]$region)), decreasing = T))
 
   acc_chrName <- c(sort(unique(CENfeats_CEN180_metrics_list[[i]]$chr)), "All")
-  Utest_Pvals <- sapply(acc_chrName, function(z) {
+  Utest_Pvals <- as.numeric(sapply(acc_chrName, function(z) {
     print(z)
     if(z != "All") {
-      tryCatch(
-      wilcox.test(x = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$chr == z &
-                                                               CENfeats_CEN180_metrics_list[[i]]$feature == "CENATHILA",],
-                             "HORlengthsSum")[,1],
-                  y = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$chr == z &
-                                                               CENfeats_CEN180_metrics_list[[i]]$feature == "CENranLoc",],
-                             "HORlengthsSum")[,1],
-                  alternative = "two.sided")$p.value,
-      error = function(e) e, warning = function(w) w)
-
+      tt <- tryCatch(
+                     wilcox.test(x = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$chr == z &
+                                                                              CENfeats_CEN180_metrics_list[[i]]$feature == "CENATHILA",],
+                                            "HORlengthsSum")[,1],
+                                 y = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$chr == z &
+                                                                              CENfeats_CEN180_metrics_list[[i]]$feature == "CENranLoc",],
+                                            "HORlengthsSum")[,1],
+                                 alternative = "two.sided")$p.value,
+                     error = function(e) e
+                    )
+      if(is(tt, "error")) {
+        NA
+      } else {
+        tt
+      }
     } else {
-      wilcox.test(x = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$feature == "CENATHILA",],
-                             "HORlengthsSum")[,1],
-                  y = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$feature == "CENranLoc",],
-                             "HORlengthsSum")[,1],
-                  alternative = "two.sided")$.pvalue
+      tt <- tryCatch(
+                     wilcox.test(x = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$feature == "CENATHILA",],
+                                            "HORlengthsSum")[,1],
+                                 y = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$feature == "CENranLoc",],
+                                            "HORlengthsSum")[,1],
+                                 alternative = "two.sided")$p.value,
+                     error = function(e) e
+                    )
+      if(is(tt, "error")) {
+        NA
+      } else {
+        tt
+      }
     }
-  })
-  Utest_Pvals <- sapply(1:length(Utest_list), function(z) { Utest_list[[z]]$p.value } )
+  }))
+  #Utest_Pvals <- sapply(1:length(Utest_list), function(z) { Utest_list[[z]]$p.value } )
   Utest_PvalsChar <- sapply(1:length(Utest_Pvals), function(z) {
     if(Utest_Pvals[z] < 0.0001) {
       paste0(acc_chrName[z], " MWW P < 0.0001")
