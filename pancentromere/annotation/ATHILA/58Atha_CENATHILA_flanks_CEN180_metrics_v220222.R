@@ -829,79 +829,90 @@ ggPoint_WeightedConsensusScore_allacc <- pointPlot(acc_id = paste0(length(unique
 
 
 # EditDistance
-Utest_Pvals_EditDistance <- as.numeric(sapply(acc_chrName, function(z) {
-  print(z)
-  if(z != "All") {
-    tt <- tryCatch(
-                   wilcox.test(x = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$chr == z &
-                                                                         CENfeats_CEN180_metrics_allacc$feature == "CENATHILA",],
-                                          "EditDistance")[,1],
-                               y = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$chr == z &
-                                                                         CENfeats_CEN180_metrics_allacc$feature == "CENranLoc",],
-                                          "EditDistance")[,1],
-                               alternative = "two.sided")$p.value,
-                   error = function(e) e
-                  )
-    if(is(tt, "error")) {
-      NA
+Utest_Pvals_EditDistance_phylo <- lapply(1:length(phylo), function(x) {
+  as.numeric(sapply(acc_chrName, function(z) {
+    print(z)
+    if(z != "All") {
+      tt <- tryCatch(
+                     wilcox.test(x = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$chr == z &
+                                                                           CENfeats_CEN180_metrics_allacc$Family == phylo[x] &
+                                                                           CENfeats_CEN180_metrics_allacc$feature == "CENATHILA",],
+                                            "EditDistance")[,1],
+                                 y = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$chr == z &
+                                                                           CENfeats_CEN180_metrics_allacc$Family == phylo[x] &
+                                                                           CENfeats_CEN180_metrics_allacc$feature == "CENranLoc",],
+                                            "EditDistance")[,1],
+                                 alternative = "two.sided")$p.value,
+                     error = function(e) e
+                    )
+      if(is(tt, "error")) {
+        NA
+      } else {
+        tt
+      }
     } else {
-      tt
+      tt <- tryCatch(
+                     wilcox.test(x = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$Family == phylo[x] &
+                                                                           CENfeats_CEN180_metrics_allacc$feature == "CENATHILA",],
+                                            "EditDistance")[,1],
+                                 y = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$Family == phylo[x] &
+                                                                           CENfeats_CEN180_metrics_allacc$feature == "CENranLoc",],
+                                            "EditDistance")[,1],
+                                 alternative = "two.sided")$p.value,
+                     error = function(e) e
+                    )
+      if(is(tt, "error")) {
+        NA
+      } else {
+        tt
+      }
     }
-  } else {
-    tt <- tryCatch(
-                   wilcox.test(x = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$feature == "CENATHILA",],
-                                          "EditDistance")[,1],
-                               y = select(CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$feature == "CENranLoc",],
-                                          "EditDistance")[,1],
-                               alternative = "two.sided")$p.value,
-                   error = function(e) e
-                  )
-    if(is(tt, "error")) {
-      NA
+  }))
+})
+Utest_PvalsChar_EditDistance_phylo <- lapply(1:length(phylo), function(x) {
+  sapply(1:length(Utest_Pvals_EditDistance_phylo[[x]]), function(z) {
+    if(is.na(Utest_Pvals_EditDistance_phylo[[x]][z])) {
+      paste0(acc_chrName[z], " MWW P = NA")
+    } else if(Utest_Pvals_EditDistance_phylo[[x]][z] < 0.0001) {
+      paste0(acc_chrName[z], " MWW P < 0.0001")
     } else {
-      tt
+      paste0(acc_chrName[z], " MWW P = ", as.character(round(Utest_Pvals_EditDistance_phylo[[x]][z], digits = 4)))
     }
-  }
-}))
-#Utest_Pvals_EditDistance <- sapply(1:length(Utest_list_EditDistance), function(z) { Utest_list_EditDistance[[z]]$p.value } )
-Utest_PvalsChar_EditDistance <- sapply(1:length(Utest_Pvals_EditDistance), function(z) {
-  if(is.na(Utest_Pvals_EditDistance[z])) {
-    paste0(acc_chrName[z], " MWW P = NA")
-  } else if(Utest_Pvals_EditDistance[z] < 0.0001) {
-    paste0(acc_chrName[z], " MWW P < 0.0001")
-  } else {
-    paste0(acc_chrName[z], " MWW P = ", as.character(round(Utest_Pvals_EditDistance[z], digits = 4)))
-  }
+  })
 })
 
-ggPoint_EditDistance_allacc <- pointPlot(acc_id = paste0(length(unique(CENfeats_CEN180_metrics_allacc$accession)), " accessions"),
-                                          dataFrame = CENfeats_CEN180_metrics_allacc,
-                                          mapping = aes(x = feature,
-                                                        y = EditDistance + 1,
-                                                        shape = Region,
-                                                        colour = Family),
-                                          box_mapping = aes(x = feature,
-                                                            y = EditDistance + 1),
-                                          pvals = paste0(Utest_PvalsChar_EditDistance, collapse = "                "),
-                                          xlab = bquote(.(flankNamePlot) ~ "regions flanking centromeric" ~ italic("ATHILA") ~ "and random loci"),
-                                          ylab = bquote(italic("CEN180") ~ "repetitiveness"),
-                                          yaxtrans = log2_trans(),
-                                          ybreaks = trans_breaks("log2", function(x) 2^x),
-                                          ylabels = trans_format("log2", math_format(2^.x)))
-  ggPoint_EditDistance_allacc <- ggPoint_EditDistance_allacc +
-    facet_grid(cols = vars(chr), margins = "chr", scales = "fixed")
+ggPoint_EditDistance_allacc <- lapply(1:length(phylo), function(x) {
+  tP <- violinPlot(acc_id = paste0(length(unique(CENfeats_CEN180_metrics_allacc$accession)), " accessions"),
+                   dataFrame = CENfeats_CEN180_metrics_allacc[CENfeats_CEN180_metrics_allacc$Family == phylo[x],],
+                   mapping = aes(x = feature,
+                                 y = EditDistance + 1,
+                                 shape = Region,
+                                 colour = Family),
+                   box_mapping = aes(x = feature,
+                                     y = EditDistance + 1),
+                   pvals = paste0(Utest_PvalsChar_EditDistance, collapse = "                "),
+                   xlab = bquote(.(flankNamePlot) ~ "regions flanking centromeric" ~ italic("ATHILA") ~ "and random loci"),
+                   ylab = bquote(italic("CEN180") ~ "edit distance"),
+                   yaxtrans = log2_trans(),
+                   ybreaks = trans_breaks("log2", function(x) 2^x),
+                   ylabels = trans_format("log2", math_format(2^.x)))
+  tP <- tP +
+    facet_grid(cols = vars(chr),  margins = "chr", scales = "fixed")
+})
 
 # Function to make boxplot of CEN180 metrics overlapping
 # regions flanking CENATHILA and CENranLoc
-pointPlot <- function(acc_id, dataFrame, mapping, box_mapping, pvals, xlab, ylab, yaxtrans, ybreaks, ylabels) {
+violinPlot <- function(acc_id, dataFrame, mapping, box_mapping, pvals, xlab, ylab, yaxtrans, ybreaks, ylabels) {
   ggplot(data = dataFrame,
          mapping = mapping) +
-#  geom_boxplot(inherit.aes = F,
-#               mapping = box_mapping,
-#               colour = "grey60") +
-  geom_violin(scale = "area",
-              trim = T,
-              draw_quantiles = c(0.25, 0.50, 0.75)) +
+  geom_boxplot(inherit.aes = F,
+               mapping = box_mapping,
+               colour = "grey60") +
+#  geom_violin(scale = "count",
+#              trim = T,
+#              draw_quantiles = c(0.25, 0.50, 0.75)) +
+  geom_beeswarm(cex = 3,
+                size = 3) +
   scale_y_continuous(trans = yaxtrans,
                      breaks = ybreaks,
                      labels = ylabels) +
