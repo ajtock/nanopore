@@ -244,6 +244,8 @@ CEN180metricsAtCENATHILA <- function(CEN180, CENATHILA, featureName) {
                                   WeightedConsensusScore = c(CENATHILA_up_CEN180_WeightedConsensusScore, CENATHILA_down_CEN180_WeightedConsensusScore),
                                   EditDistance = c(CENATHILA_up_CEN180_EditDistance, CENATHILA_down_CEN180_EditDistance))
       colnames(CENATHILA_chr)[1] <- "chr"
+      CENATHILA_chr$chr <- as.character(CENATHILA_chr$chr)
+      CENATHILA_chr$strand <- as.character(CENATHILA_chr$strand)
 
       CENATHILA_CEN180_metrics <- rbind(CENATHILA_CEN180_metrics, CENATHILA_chr)
     } 
@@ -276,16 +278,14 @@ CENfeats_CEN180_metrics_list <- lapply(1:length(acc), function(x) {
 
 # Function to make boxplot of CEN180 metrics overlapping
 # regions flanking CENATHILA and CENranLoc
-pointPlot <- function(acc_id, dataFrame, mapping, xlab, ylab, yaxtrans, ybreaks, ylabels) {
+pointPlot <- function(acc_id, dataFrame, mapping, box_mapping, pvals, xlab, ylab, yaxtrans, ybreaks, ylabels) {
   ggplot(data = dataFrame,
          mapping = mapping) +
-#  scale_colour_manual(values = superfamColours) +
-#  geom_boxplot(varwidth = F) +
-#  geom_violin(scale = "area",
-#              trim = T,
-#              draw_quantiles = c(0.25, 0.50, 0.75)) +
-  geom_beeswarm(ce = 6,
-                size = 4) +
+  geom_boxplot(inherit.aes = F,
+               mapping = box_mapping,
+               colour = "grey60") +
+  geom_beeswarm(cex = 3,
+                size = 3) +
   scale_y_continuous(trans = yaxtrans,
                      breaks = ybreaks,
                      labels = ylabels) +
@@ -295,39 +295,76 @@ pointPlot <- function(acc_id, dataFrame, mapping, xlab, ylab, yaxtrans, ybreaks,
   theme(
         axis.ticks = element_line(size = 0.5, colour = "black"),
         axis.ticks.length = unit(0.25, "cm"),
-        axis.text.x = element_text(size = 16, colour = "black", angle = 45, vjust = 1.0, hjust = 1.0),
+        axis.text.x = element_text(size = 16, colour = "black", angle = 45, vjust = 1.0, hjust = 1.0, face = "italic"),
         axis.text.y = element_text(size = 16, colour = "black"),
         axis.title = element_text(size = 18, colour = "black"),
         axis.line = element_line(size = 1.0, colour = "black"),
+        legend.text = element_text(face = "italic"),
         panel.background = element_blank(),
         panel.border = element_blank(),
-#        panel.border = element_rect(size = 1.0, colour = "black"),
-#        panel.grid = element_blank(),
         strip.text.x = element_text(size = 20, colour = "white"),
         strip.background = element_rect(fill = "black", colour = "black"),
         plot.margin = unit(c(0.3,1.2,0.3,0.3), "cm"),
         plot.title = element_text(hjust = 0.5, size = 18)) +
   ggtitle(bquote(
-                 .(acc_id)
+                 .(acc_id) ~
+                 "                      " ~
+                 .(pvals)
                 )
          )
 }
 
 
+# Disable scientific notation (e.g., 0.0001 rather than 1e-04)
+options(scipen = 100)
+
 ggPoint_HORlengthsSum_list <- lapply(1:length(acc), function(i) {
+  print(i)
   CENfeats_CEN180_metrics_list[[i]]$region <- factor(CENfeats_CEN180_metrics_list[[i]]$region,
                                                      levels = sort(levels(factor(CENfeats_CEN180_metrics_list[[i]]$region)), decreasing = T))
+
+  acc_chrName <- c(sort(unique(CENfeats_CEN180_metrics_list[[i]]$chr)), "All")
+  Utest_Pvals <- sapply(acc_chrName, function(z) {
+    print(z)
+    if(z != "All") {
+      tryCatch(
+      wilcox.test(x = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$chr == z &
+                                                               CENfeats_CEN180_metrics_list[[i]]$feature == "CENATHILA",],
+                             "HORlengthsSum")[,1],
+                  y = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$chr == z &
+                                                               CENfeats_CEN180_metrics_list[[i]]$feature == "CENranLoc",],
+                             "HORlengthsSum")[,1],
+                  alternative = "two.sided")$p.value,
+      error = function(e) e, warning = function(w) w)
+
+    } else {
+      wilcox.test(x = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$feature == "CENATHILA",],
+                             "HORlengthsSum")[,1],
+                  y = select(CENfeats_CEN180_metrics_list[[i]][CENfeats_CEN180_metrics_list[[i]]$feature == "CENranLoc",],
+                             "HORlengthsSum")[,1],
+                  alternative = "two.sided")$.pvalue
+    }
+  })
+  Utest_Pvals <- sapply(1:length(Utest_list), function(z) { Utest_list[[z]]$p.value } )
+  Utest_PvalsChar <- sapply(1:length(Utest_Pvals), function(z) {
+    if(Utest_Pvals[z] < 0.0001) {
+      paste0(acc_chrName[z], " MWW P < 0.0001")
+    } else {
+      paste0(acc_chrName[z], " MWW P = ", as.character(round(Utest_Pvals[z], digits = 4)))
+    }
+  })
+
   tP <- pointPlot(acc_id = acc[i],
                   dataFrame = CENfeats_CEN180_metrics_list[[i]],
                   mapping = aes(x = feature,
                                 y = HORlengthsSum + 1,
                                 shape = region,
-                                colour = phylo)
+                                colour = phylo),
+                  box_mapping = aes(x = feature,
+                                    y = HORlengthsSum + 1),
+                  pvals = paste0(Utest_PvalsChar, collapse = "        "),
                   xlab = bquote(.(flankNamePlot) ~ "regions flanking centromeric" ~ italic("ATHILA") ~ "and random loci"),
                   ylab = bquote(italic("CEN180") ~ "repetitiveness"),
-#                  yaxtrans = "identity",
-#                  ybreaks = waiver(),
-#                  ylabels = waiver())
                   yaxtrans = log2_trans(),
                   ybreaks = trans_breaks("log2", function(x) 2^x),
                   ylabels = trans_format("log2", math_format(2^.x)))
@@ -335,7 +372,6 @@ ggPoint_HORlengthsSum_list <- lapply(1:length(acc), function(i) {
     facet_grid(cols = vars(chr), margins = "chr", scales = "fixed")
   tP
 })
-#}, mc.cores = detectCores(), mc.preschedule = F)
 
 #lapply(1:length(acc), function(i) {
   gg_cow_list <- list(ggPoint_HORlengthsSum_list[[i]])
