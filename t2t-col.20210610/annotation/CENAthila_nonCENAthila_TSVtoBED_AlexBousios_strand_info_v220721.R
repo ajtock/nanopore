@@ -145,6 +145,7 @@ if(length(chrName) > 1) {
               quote = F, sep = "\t", row.names = F, col.names = F)
 }
 
+
 # Convert nonCENAthila into GRanges
 # Use genome_left_coord_FL and genome_right_coord_FL as
 # element boundaries so that start and end coordinates shown in meta-profiles
@@ -206,6 +207,98 @@ if(length(chrName) > 1) {
                             paste0(chrName, collapse = "_"), "_colofamily.bed"),
               quote = F, sep = "\t", row.names = F, col.names = F)
 }
+
+
+# Define function to select randomly positioned loci of the same
+# width distribution as CENgapAllAthila_bed
+ranLocStartSelect <- function(coordinates, n) {
+  sample(x = coordinates,
+         size = n,
+         replace = FALSE)
+}
+
+# Disable scientific notation (e.g., 59000000 rather than 5.9e+07)
+options(scipen = 100)
+
+# Apply ranLocStartSelect() on a per-chromosome basis so that
+# CENranLocGR contains the same number of loci per chromosome as CENAthilaGR
+CENranLocGR <- GRanges()
+nonCENranLocGR <- GRanges()
+for(j in 1:length(chrs)) {
+  print(chrs[j])
+
+  chr_CENGR <- CENGR[seqnames(CENGR) == chrs[j]]
+
+  chr_CENAthilaGR <- CENAthilaGR[seqnames(CENAthilaGR) == chrs[j]]
+  if(length(chr_CENAthilaGR) > 0) {
+    ## Contract chr_CENGR so that CENranLocGR and 2-kb flanking regions
+    ## do not extend beyond centromeric coordinates
+    #end(chr_CENGR) <- end(chr_CENGR)-max(width(chr_CENAthilaGR))-2000
+    #start(chr_CENGR) <- start(chr_CENGR)+2000
+
+    # Define seed so that random selections are reproducible
+    set.seed(76492749)
+    chr_CENranLoc_Start <- ranLocStartSelect(coordinates = unlist(lapply(seq_along(chr_CENGR), function(x) {
+                                                                    start(chr_CENGR[x]) : end(chr_CENGR[x])
+                                                                  })),
+                                             n = length(chr_CENAthilaGR))
+    chr_CENranLocGR <- GRanges(seqnames = chrs[j],
+                               ranges = IRanges(start = chr_CENranLoc_Start,
+                                                width = width(chr_CENAthilaGR)),
+                               strand = strand(chr_CENAthilaGR))
+    CENranLocGR <- append(CENranLocGR, chr_CENranLocGR)
+  }
+
+  chr_nonCENAthilaGR <- nonCENAthilaGR[seqnames(nonCENAthilaGR) == chrs[j]]
+  if(length(chr_nonCENAthilaGR) > 0) {
+    # Define seed so that random selections are reproducible
+    set.seed(76492749)
+    chr_nonCENranLoc_Start <- ranLocStartSelect(coordinates = unique(unlist(lapply(seq_along(chr_CENGR), function(x) {
+                                                                           c(1:chrLens[j])[
+                                                                             which(
+                                                                               !( 1:chrLens[j] %in%
+                                                                                  start(chr_CENGR[x]) : end(chr_CENGR[x])
+                                                                                )
+                                                                             )
+                                                                           ]
+                                                                         }))),
+                                                    n = length(chr_nonCENAthilaGR))
+    chr_nonCENranLocGR <- GRanges(seqnames = chrs[j],
+                                       ranges = IRanges(start = chr_nonCENranLoc_Start,
+                                                        width = width(chr_nonCENAthilaGR)),
+                                       strand = strand(chr_nonCENAthilaGR))
+    nonCENranLocGR <- append(nonCENranLocGR, chr_nonCENranLocGR)
+  }
+}
+stopifnot(identical(width(CENranLocGR), width(CENAthilaGR)))
+stopifnot(identical(as.character(seqnames(CENranLocGR)), as.character(seqnames(CENAthilaGR))))
+stopifnot(identical(strand(CENranLocGR), strand(CENAthilaGR)))
+CENranLoc_bed <- data.frame(chr = as.character(seqnames(CENranLocGR)),
+                            start = start(CENranLocGR)-1,
+                            end = end(CENranLocGR),
+                            name = 1:length(CENranLocGR),
+                            score = CENAthilaGR$phylo,
+                            strand = strand(CENranLocGR))
+write.table(CENranLoc_bed,
+            file = paste0(CENAthilaDir, "CENAthila_in_t2t-col.20210610_",
+                          paste0(chrName, collapse = "_"), "_CENrandomLoci.bed"),
+            quote = F, sep = "\t", row.names = F, col.names = F)
+
+stopifnot(identical(width(nonCENranLocGR), width(nonCENAthilaGR)))
+stopifnot(identical(as.character(seqnames(nonCENranLocGR)), as.character(seqnames(nonCENAthilaGR))))
+stopifnot(identical(strand(nonCENranLocGR), strand(nonCENAthilaGR)))
+nonCENranLoc_bed <- data.frame(chr = as.character(seqnames(nonCENranLocGR)),
+                               start = start(nonCENranLocGR)-1,
+                               end = end(nonCENranLocGR),
+                               name = 1:length(nonCENranLocGR),
+                               score = nonCENAthilaGR$phylo,
+                               strand = strand(nonCENranLocGR))
+write.table(nonCENranLoc_bed,
+            file = paste0(nonCENAthilaDir, "nonCENAthila_in_t2t-col.20210610_",
+                          paste0(chrName, collapse = "_"), "_nonCENrandomLoci.bed"),
+            quote = F, sep = "\t", row.names = F, col.names = F)
+
+
 
 # Convert CENsoloLTR into GRanges
 # Use genome_left_coord_FL and genome_right_coord_FL as
