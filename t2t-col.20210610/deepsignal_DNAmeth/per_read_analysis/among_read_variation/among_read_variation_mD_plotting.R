@@ -92,6 +92,20 @@ if(!grepl("Chr", fai[,1][1])) {
 }
 chrLens <- fai[,2][which(fai[,1] %in% chrName)]
 
+# Load coordinates for mitochondrial insertion on Chr2, in BED format
+mito_ins <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase, "/annotation/", refbase , ".mitochondrial_insertion.bed"),
+                       header = F)
+colnames(mito_ins) <- c("chr", "start", "end", "name", "score", "strand")
+mito_ins <- mito_ins[ mito_ins$chr %in% "Chr2",]
+mito_ins <- mito_ins[ with(mito_ins, order(chr, start, end)) , ]
+mito_ins_chr <- unique(mito_ins$chr)
+mito_ins_start <- min(mito_ins$start)+1
+mito_ins_end <- max(mito_ins$end)
+#mito_ins_GR <- GRanges(seqnames = "Chr2",
+#                       ranges = IRanges(start = min(mito_ins$start)+1,
+#                                        end = max(mito_ins$end)),
+#                       strand = "*")
+
 # Read in among-read (Fliess' kappa) and within-read (stochasticity) methylation variation files
 tab_list <- mclapply(seq_along(chrName), function(x) {
   read.table(paste0(outDir,
@@ -133,6 +147,30 @@ tab_mD <- tab_mD[
 stopifnot(identical(tab_mD$fk_kappa_all, tab$fk_kappa_all))
 stopifnot(identical(tab_mD$MA1_2_mean.D, MA1_2_mD$MA1_2_mean.D))
 
+# Remove genomic bins tab_mD overlapping the mitochondrial insertion on Chr2,
+# as we cannot be sure that these BS-seq reads come from the nuclear genome
+# Note that long reads wholly contained within the boundaries of the Chr2 mito insertion
+# have already been removed for the among-read and within-read mC variation analysis,
+# by among_read_variation_scoring.R
+tab_mD_mito <- tab_mD %>%
+  dplyr::filter(chr == mito_ins_chr) %>%
+  dplyr::filter( (start >= mito_ins_start &
+                  start <= mito_ins_end) |
+                 (end >= mito_ins_start &
+                  end <= mito_ins_end) )
+
+stopifnot(unique(tab_mD_mito$chr) == mito_ins_chr)
+stopifnot(tab_mD_mito$end[1] >= mito_ins_start)
+stopifnot(tab_mD_mito$start[nrow(tab_mD_mito)] <= mito_ins_end)
+print(head(tab_mD_mito[,1:6]))
+print(tail(tab_mD_mito[,1:6]))
+print(paste0("Mitochondrial insetion on ", mito_ins_chr, ":", mito_ins_start, "-", mito_ins_end))
+
+tab_mD <- tab_mD %>%
+  dplyr::anti_join(tab_mD_mito)
+
+
+# Load features chromosome-scale profiles
 genes <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase,
                            "/annotation/genes/", refbase, "_gene_frequency_per_",
                            genomeBinName, "_unsmoothed.tsv"),
@@ -269,6 +307,13 @@ chrPlot3 <- function(dataFrame, xvar, yvar, yvarmin, yvarmax, xlab, ylab, colour
         plot.margin = unit(c(0.3,1.2,0.3,0.3), "cm"))
 }
 
+
+mito_ins_bounds <- data.frame(chr = chrs,
+                              xmin = c(NA, mito_ins_start, rep(NA, 3)),
+                              xmax = c(NA, mito_ins_end, rep(NA, 3)),
+                              ymin = c(NA, -Inf, rep(NA, 3)),
+                              ymax = c(NA, Inf, rep(NA, 3)))
+
 tab2 <- tab %>%
   mutate(fk_total_reads_all = tab$fk_num_reads_all/tab$fk_prop_reads_all,
          fk_total_Cs_all = tab$fk_num_Cs_all/tab$fk_prop_Cs_all)
@@ -285,7 +330,12 @@ gg_fk_num_reads_all <- chrPlot2(dataFrame = tab2,
                                 colour1 = "blue",
                                 colour2 = "grey50") 
 gg_fk_num_reads_all <- gg_fk_num_reads_all +
-  facet_grid(cols = vars(chr), scales = "free_x")
+  facet_grid(cols = vars(chr), scales = "free_x") +
+  geom_rect(data = mito_ins_bounds,
+            mapping = aes(x = NULL, y = NULL,
+                          xmin = xmin, xmax = xmax,
+                          ymin = ymin, ymax = ymax),
+            alpha = 0.4, fill = "grey50")
 
 gg_fk_prop_reads_all <- chrPlot(dataFrame = tab,
                                 xvar = midpoint,
@@ -294,7 +344,13 @@ gg_fk_prop_reads_all <- chrPlot(dataFrame = tab,
                                 ylab = bquote("Proportion of reads kept (m"*.(context)*")"),
                                 colour = "blue") 
 gg_fk_prop_reads_all <- gg_fk_prop_reads_all +
-  facet_grid(cols = vars(chr), scales = "free_x")
+  facet_grid(cols = vars(chr), scales = "free_x") +
+  geom_rect(data = mito_ins_bounds,
+            mapping = aes(x = NULL, y = NULL,
+                          xmin = xmin, xmax = xmax,
+                          ymin = ymin, ymax = ymax),
+            alpha = 0.4, fill = "grey50")
+
 
 gg_fk_num_Cs_all <- chrPlot2(dataFrame = tab2,
                              xvar = midpoint,
@@ -308,7 +364,12 @@ gg_fk_num_Cs_all <- chrPlot2(dataFrame = tab2,
                              colour1 = "red",
                              colour2 = "grey50") 
 gg_fk_num_Cs_all <- gg_fk_num_Cs_all +
-  facet_grid(cols = vars(chr), scales = "free_x")
+  facet_grid(cols = vars(chr), scales = "free_x") +
+  geom_rect(data = mito_ins_bounds,
+            mapping = aes(x = NULL, y = NULL,
+                          xmin = xmin, xmax = xmax,
+                          ymin = ymin, ymax = ymax),
+            alpha = 0.4, fill = "grey50")
 
 gg_fk_prop_Cs_all <- chrPlot(dataFrame = tab,
                              xvar = midpoint,
@@ -317,7 +378,12 @@ gg_fk_prop_Cs_all <- chrPlot(dataFrame = tab,
                              ylab = bquote("Proportion of sites kept (m"*.(context)*")"),
                              colour = "red") 
 gg_fk_prop_Cs_all <- gg_fk_prop_Cs_all +
-  facet_grid(cols = vars(chr), scales = "free_x")
+  facet_grid(cols = vars(chr), scales = "free_x") +
+  geom_rect(data = mito_ins_bounds,
+            mapping = aes(x = NULL, y = NULL,
+                          xmin = xmin, xmax = xmax,
+                          ymin = ymin, ymax = ymax),
+            alpha = 0.4, fill = "grey50")
 
 gg_MA1_2_D <- chrPlot3(dataFrame = tab_mD,
                        xvar = midpoint,
@@ -328,16 +394,26 @@ gg_MA1_2_D <- chrPlot3(dataFrame = tab_mD,
                        ylab = bquote("MA1_2" ~ italic("D") ~ "(m"*.(context)*")"),
                        colour = "darkgreen") 
 gg_MA1_2_D <- gg_MA1_2_D +
-  facet_grid(cols = vars(chr), scales = "free_x")
+  facet_grid(cols = vars(chr), scales = "free_x") +
+  geom_rect(data = mito_ins_bounds,
+            mapping = aes(x = NULL, y = NULL,
+                          xmin = xmin, xmax = xmax,
+                          ymin = ymin, ymax = ymax),
+            alpha = 0.4, fill = "grey50")
 
 gg_MA1_2_mean.D <- chrPlot(dataFrame = tab_mD,
                            xvar = midpoint,
                            yvar = MA1_2_mean.D,
                            xlab = paste0("Coordinates (Mb; ", genomeBinNamePlot, " windows, ", genomeStepNamePlot, " step)"),
-                           ylab = bquote("MA1_2" ~ italic("D") ~ "(m"*.(context)*")"),
-                           colour = "darkgreen") 
+                           ylab = bquote("MA1_2" ~ italic("D") ~ italic(bar(x)) ~ "(m"*.(context)*")"),
+                           colour = "darkgreen")
 gg_MA1_2_mean.D <- gg_MA1_2_mean.D +
-  facet_grid(cols = vars(chr), scales = "free_x")
+  facet_grid(cols = vars(chr), scales = "free_x") +
+  geom_rect(data = mito_ins_bounds,
+            mapping = aes(x = NULL, y = NULL,
+                          xmin = xmin, xmax = xmax,
+                          ymin = ymin, ymax = ymax),
+            alpha = 0.4, fill = "grey50")
 
 gg_fk_kappa_all <- chrPlot(dataFrame = tab,
                            xvar = midpoint,
@@ -346,7 +422,13 @@ gg_fk_kappa_all <- chrPlot(dataFrame = tab,
                            ylab = bquote("Fleiss' kappa (m"*.(context)*")"),
                            colour = "red") 
 gg_fk_kappa_all <- gg_fk_kappa_all +
-  facet_grid(cols = vars(chr), scales = "free_x")
+  facet_grid(cols = vars(chr), scales = "free_x") +
+  geom_rect(data = mito_ins_bounds,
+            mapping = aes(x = NULL, y = NULL,
+                          xmin = xmin, xmax = xmax,
+                          ymin = ymin, ymax = ymax),
+            alpha = 0.4, fill = "grey50")
+
 
 gg_mean_stocha_all <- chrPlot(dataFrame = tab,
                               xvar = midpoint,
@@ -355,7 +437,12 @@ gg_mean_stocha_all <- chrPlot(dataFrame = tab,
                               ylab = bquote("Mean stochasticity (m"*.(context)*")"),
                               colour = "dodgerblue") 
 gg_mean_stocha_all <- gg_mean_stocha_all +
-  facet_grid(cols = vars(chr), scales = "free_x")
+  facet_grid(cols = vars(chr), scales = "free_x") +
+  geom_rect(data = mito_ins_bounds,
+            mapping = aes(x = NULL, y = NULL,
+                          xmin = xmin, xmax = xmax,
+                          ymin = ymin, ymax = ymax),
+            alpha = 0.4, fill = "grey50")
 
 gg_mean_mean_acf_all <- chrPlot(dataFrame = tab,
                                 xvar = midpoint,
@@ -364,7 +451,12 @@ gg_mean_mean_acf_all <- chrPlot(dataFrame = tab,
                                 ylab = bquote("Mean mean ACF (m"*.(context)*")"),
                                 colour = "darkgreen") 
 gg_mean_mean_acf_all <- gg_mean_mean_acf_all +
-  facet_grid(cols = vars(chr), scales = "free_x")
+  facet_grid(cols = vars(chr), scales = "free_x") +
+  geom_rect(data = mito_ins_bounds,
+            mapping = aes(x = NULL, y = NULL,
+                          xmin = xmin, xmax = xmax,
+                          ymin = ymin, ymax = ymax),
+            alpha = 0.4, fill = "grey50")
 
 gg_mean_min_acf_all <- chrPlot(dataFrame = tab,
                                xvar = midpoint,
@@ -373,7 +465,12 @@ gg_mean_min_acf_all <- chrPlot(dataFrame = tab,
                                ylab = bquote("Mean min. ACF (m"*.(context)*")"),
                                colour = "forestgreen") 
 gg_mean_min_acf_all <- gg_mean_min_acf_all +
-  facet_grid(cols = vars(chr), scales = "free_x")
+  facet_grid(cols = vars(chr), scales = "free_x") +
+  geom_rect(data = mito_ins_bounds,
+            mapping = aes(x = NULL, y = NULL,
+                          xmin = xmin, xmax = xmax,
+                          ymin = ymin, ymax = ymax),
+            alpha = 0.4, fill = "grey50")
 
 gg_genes <- chrPlot(dataFrame = genes,
                     xvar = midpoint,
@@ -382,7 +479,12 @@ gg_genes <- chrPlot(dataFrame = genes,
                     ylab = bquote("Genes"),
                     colour = "lightseagreen") 
 gg_genes <- gg_genes +
-  facet_grid(cols = vars(chr), scales = "free_x")
+  facet_grid(cols = vars(chr), scales = "free_x") +
+  geom_rect(data = mito_ins_bounds,
+            mapping = aes(x = NULL, y = NULL,
+                          xmin = xmin, xmax = xmax,
+                          ymin = ymin, ymax = ymax),
+            alpha = 0.4, fill = "grey50")
 
 gg_gypsy <- chrPlot(dataFrame = gypsy,
                     xvar = midpoint,
@@ -391,7 +493,12 @@ gg_gypsy <- chrPlot(dataFrame = gypsy,
                     ylab = bquote(italic(GYPSY)),
                     colour = "purple4") 
 gg_gypsy <- gg_gypsy +
-  facet_grid(cols = vars(chr), scales = "free_x")
+  facet_grid(cols = vars(chr), scales = "free_x") +
+  geom_rect(data = mito_ins_bounds,
+            mapping = aes(x = NULL, y = NULL,
+                          xmin = xmin, xmax = xmax,
+                          ymin = ymin, ymax = ymax),
+            alpha = 0.4, fill = "grey50")
 
 gg_CEN180 <- chrPlot(dataFrame = CEN180,
                      xvar = midpoint,
@@ -400,10 +507,16 @@ gg_CEN180 <- chrPlot(dataFrame = CEN180,
                      ylab = bquote(italic("CEN180")),
                      colour = "darkorange") 
 gg_CEN180 <- gg_CEN180 +
-  facet_grid(cols = vars(chr), scales = "free_x")
+  facet_grid(cols = vars(chr), scales = "free_x") +
+  geom_rect(data = mito_ins_bounds,
+            mapping = aes(x = NULL, y = NULL,
+                          xmin = xmin, xmax = xmax,
+                          ymin = ymin, ymax = ymax),
+            alpha = 0.4, fill = "grey50")
+
 
 gg_cow_list <- list(
-                    gg_MA1_2_mean.D, gg_fk_kappa_all, gg_mean_stocha_all, gg_mean_mean_acf_all, gg_mean_min_acf_all,
+                    gg_MA1_2_D, gg_MA1_2_mean.D, gg_fk_kappa_all, gg_mean_stocha_all, gg_mean_mean_acf_all, gg_mean_min_acf_all,
                     gg_genes, gg_gypsy, gg_CEN180,
                     gg_fk_num_reads_all, gg_fk_num_Cs_all
                    )
