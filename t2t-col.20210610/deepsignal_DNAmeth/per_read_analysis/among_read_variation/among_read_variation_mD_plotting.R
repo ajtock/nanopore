@@ -330,13 +330,13 @@ gg_MA1_2_D <- chrPlot3(dataFrame = tab_mD,
 gg_MA1_2_D <- gg_MA1_2_D +
   facet_grid(cols = vars(chr), scales = "free_x")
 
-MA1_2_mean.D <- chrPlot(dataFrame = tab_mD,
-                        xvar = midpoint,
-                        yvar = MA1_2_mean.D,
-                        xlab = paste0("Coordinates (Mb; ", genomeBinNamePlot, " windows, ", genomeStepNamePlot, " step)"),
-                        ylab = bquote("MA1_2" ~ italic("D") ~ "(m"*.(context)*")"),
-                        colour = "darkgreen") 
-MA1_2_mean.D <- MA1_2_mean.D +
+gg_MA1_2_mean.D <- chrPlot(dataFrame = tab_mD,
+                           xvar = midpoint,
+                           yvar = MA1_2_mean.D,
+                           xlab = paste0("Coordinates (Mb; ", genomeBinNamePlot, " windows, ", genomeStepNamePlot, " step)"),
+                           ylab = bquote("MA1_2" ~ italic("D") ~ "(m"*.(context)*")"),
+                           colour = "darkgreen") 
+gg_MA1_2_mean.D <- gg_MA1_2_mean.D +
   facet_grid(cols = vars(chr), scales = "free_x")
 
 gg_fk_kappa_all <- chrPlot(dataFrame = tab,
