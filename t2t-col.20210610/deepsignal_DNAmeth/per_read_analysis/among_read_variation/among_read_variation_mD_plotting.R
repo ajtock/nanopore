@@ -594,12 +594,18 @@ ggTrend_fk_kappa_all_MA1_2_mean.D <- trendPlot(dataFrame = tab_mD,
                                                yvar = MA1_2_mean.D,
                                                xlab = bquote("Fleiss' kappa (m"*.(context)*")"),
                                                ylab = bquote("MA1_2" ~ italic(D) ~ italic(bar(x)) ~ "(m"*.(context)*")"),
-                                               xtrans = "identity",
-                                               ytrans = "identity",
-                                               xbreaks = waiver(),
-                                               ybreaks = waiver(),
-                                               xlabels = waiver(),
-                                               ylabels = waiver())
+                                               xtrans = log10_trans(),
+                                               ytrans = log10_trans(),
+                                               xbreaks = trans_breaks("log10", function(x) 10^x),
+                                               ybreaks = trans_breaks("log10", function(x) 10^x),
+                                               xlabels = trans_format("log10", math_format(10^.x)),
+                                               ylabels = trans_format("log10", math_format(10^.x)))
+                                               #xtrans = "identity",
+                                               #ytrans = "identity",
+                                               #xbreaks = waiver(),
+                                               #ybreaks = waiver(),
+                                               #xlabels = waiver(),
+                                               #ylabels = waiver())
 ggTrend_fk_kappa_all_MA1_2_mean.D <- ggTrend_fk_kappa_all_MA1_2_mean.D +
   facet_grid(cols = vars(chr), scales = "free_x")
 
@@ -608,12 +614,18 @@ ggTrend_mean_stocha_all_MA1_2_mean.D <- trendPlot(dataFrame = tab_mD,
                                                   yvar = MA1_2_mean.D,
                                                   xlab = bquote("Stochasticity" ~ italic(bar(x)) ~ "(m"*.(context)*")"),
                                                   ylab = bquote("MA1_2" ~ italic(D) ~ italic(bar(x)) ~ "(m"*.(context)*")"),
-                                                  xtrans = "identity",
-                                                  ytrans = "identity",
-                                                  xbreaks = waiver(),
-                                                  ybreaks = waiver(),
-                                                  xlabels = waiver(),
-                                                  ylabels = waiver())
+                                                  xtrans = log10_trans(),
+                                                  ytrans = log10_trans(),
+                                                  xbreaks = trans_breaks("log10", function(x) 10^x),
+                                                  ybreaks = trans_breaks("log10", function(x) 10^x),
+                                                  xlabels = trans_format("log10", math_format(10^.x)),
+                                                  ylabels = trans_format("log10", math_format(10^.x)))
+#                                                  xtrans = "identity",
+#                                                  ytrans = "identity",
+#                                                  xbreaks = waiver(),
+#                                                  ybreaks = waiver(),
+#                                                  xlabels = waiver(),
+#                                                  ylabels = waiver())
 ggTrend_mean_stocha_all_MA1_2_mean.D <- ggTrend_mean_stocha_all_MA1_2_mean.D +
   facet_grid(cols = vars(chr), scales = "free_x")
 
@@ -622,12 +634,18 @@ ggTrend_fk_kappa_all_mean_stocha_all <- trendPlot(dataFrame = tab,
                                                   yvar = mean_stocha_all,
                                                   xlab = bquote("Fleiss' kappa (m"*.(context)*")"),
                                                   ylab = bquote("Stochasticity" ~ italic(bar(x)) ~ "(m"*.(context)*")"),
-                                                  xtrans = "identity",
-                                                  ytrans = "identity",
-                                                  xbreaks = waiver(),
-                                                  ybreaks = waiver(),
-                                                  xlabels = waiver(),
-                                                  ylabels = waiver())
+                                                  xtrans = log10_trans(),
+                                                  ytrans = log10_trans(),
+                                                  xbreaks = trans_breaks("log10", function(x) 10^x),
+                                                  ybreaks = trans_breaks("log10", function(x) 10^x),
+                                                  xlabels = trans_format("log10", math_format(10^.x)),
+                                                  ylabels = trans_format("log10", math_format(10^.x)))
+#                                                  xtrans = "identity",
+#                                                  ytrans = "identity",
+#                                                  xbreaks = waiver(),
+#                                                  ybreaks = waiver(),
+#                                                  xlabels = waiver(),
+#                                                  ylabels = waiver())
 ggTrend_fk_kappa_all_mean_stocha_all <- ggTrend_fk_kappa_all_mean_stocha_all +
   facet_grid(cols = vars(chr), scales = "free_x")
 
