@@ -127,7 +127,11 @@ rm(MA1_2_mD_list); gc()
 tab_mD <- merge(x = tab, y = MA1_2_mD,
                 by.x = c("chr", "start", "end"),
                 by.y = c("chr", "start", "end"))
-
+tab_mD <- tab_mD[
+  with(tab_mD, order(chr, start, end)),
+]
+stopifnot(identical(tab_mD$fk_kappa_all, tab$fk_kappa_all))
+stopifnot(identical(tab_mD$MA1_2_mean.D, MA1_2_mD$MA1_2_mean.D))
 
 genes <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase,
                            "/annotation/genes/", refbase, "_gene_frequency_per_",
@@ -219,6 +223,52 @@ chrPlot2 <- function(dataFrame, xvar, yvar1, yvar2, yvar1lab, yvar2lab, ylims, x
         plot.margin = unit(c(0.3,1.2,0.3,0.3), "cm"))
 }
 
+chrPlot3 <- function(dataFrame, xvar, yvar, yvarmin, yvarmax, xlab, ylab, colour) {
+  xvar <- enquo(xvar)
+  yvar <- enquo(yvar)
+  yvarmin <- enquo(yvarmin)
+  yvarmax <- enquo(yvarmax)
+  ggplot(data = dataFrame,
+         mapping = aes(x = !!xvar,
+                       y = !!yvar)) +
+#  geom_line(size = 1, colour = colour) +
+  geom_bbands(data = dataFrame,
+              mapping = aes(low = !!yvarmin,
+                            high = !!yvarmax,
+                            close = !!yvar),
+              ma_fun = SMA, n = 10,
+              color_ma = colour,
+              color_bands = NA,
+              fill = colour,
+              alpha = 0.4,
+              linetype = 1, size = 1) +
+#  geom_ma(ma_fun = SMA, n = 10, colour = colour, linetype = 1, size = 1) +
+#  geom_ribbon(data = dataFrame,
+#              mapping = aes(ymin = !!xvarmin,
+#                            ymax = !!xvarmax,
+#                            fill = colour),
+#              alpha = 0.4) + 
+  scale_x_continuous(
+                     labels = function(x) x/1e6) +
+  labs(x = xlab,
+       y = ylab) +
+  theme_bw() +
+  theme(
+        axis.ticks = element_line(size = 0.5, colour = "black"),
+        axis.ticks.length = unit(0.25, "cm"),
+        axis.text.x = element_text(size = 16, colour = "black"),
+        axis.text.y = element_text(size = 16, colour = "black"),
+        axis.title = element_text(size = 18, colour = "black"),
+        axis.line = element_line(size = 1.5, colour = "black"),
+        panel.background = element_blank(),
+        panel.border = element_blank(),
+#        panel.border = element_rect(size = 1.0, colour = "black"),
+#        panel.grid = element_blank(),
+        strip.text.x = element_text(size = 30, colour = "white"),
+        strip.background = element_rect(fill = "black", colour = "black"),
+        plot.margin = unit(c(0.3,1.2,0.3,0.3), "cm"))
+}
+
 tab2 <- tab %>%
   mutate(fk_total_reads_all = tab$fk_num_reads_all/tab$fk_prop_reads_all,
          fk_total_Cs_all = tab$fk_num_Cs_all/tab$fk_prop_Cs_all)
@@ -267,6 +317,17 @@ gg_fk_prop_Cs_all <- chrPlot(dataFrame = tab,
                              ylab = bquote("Proportion of sites kept (m"*.(context)*")"),
                              colour = "red") 
 gg_fk_prop_Cs_all <- gg_fk_prop_Cs_all +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+gg_MA1_2_mean.D <- chrPlot3(dataFrame = tab_mD,
+                            xvar = midpoint,
+                            yvar = MA1_2_mean.D,
+                            yvarmin = MA1_2_min.D,
+                            yvarmax = MA1_2_max.D,
+                            xlab = paste0("Coordinates (Mb; ", genomeBinNamePlot, " windows, ", genomeStepNamePlot, " step)"),
+                            ylab = bquote("MA1_2" ~ italic("D") ~ "(m"*.(context)*")"),
+                            colour = "darkgreen") 
+gg_MA1_2_mean.D <- gg_MA1_2_mean.D +
   facet_grid(cols = vars(chr), scales = "free_x")
 
 gg_fk_kappa_all <- chrPlot(dataFrame = tab,
@@ -333,23 +394,23 @@ gg_CEN180 <- gg_CEN180 +
   facet_grid(cols = vars(chr), scales = "free_x")
 
 gg_cow_list <- list(
-                    gg_fk_num_reads_all, gg_fk_num_Cs_all,
-                    gg_fk_kappa_all, gg_mean_stocha_all, gg_mean_mean_acf_all, gg_mean_min_acf_all,
-                    gg_genes, gg_gypsy, gg_CEN180
+                    gg_MA1_2_mean.D, gg_fk_kappa_all, gg_mean_stocha_all, gg_mean_mean_acf_all, gg_mean_min_acf_all,
+                    gg_genes, gg_gypsy, gg_CEN180,
+                    gg_fk_num_reads_all, gg_fk_num_Cs_all
                    )
 gg_cow <- plot_grid(plotlist = gg_cow_list,
-                    labels = c("A", "B", "C", "D", "E", "F", "G", "H", "I"), label_size = 30,
+                    labels = toupper(letters[1:length(gg_cow_list)]), label_size = 30,
                     align = "hv",
                     axis = "l",
                     nrow = length(gg_cow_list), ncol = 1)
-
 ggsave(paste0(plotDir,
               sampleName, "_MappedOn_", refbase, "_", context,
               "_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
               "_NAmax", NAmax, "_all_chrPlot_", paste0(chrName, collapse = "_"),
-              ".pdf"),
+              "_incl_MA1_2_mD.pdf"),
        plot = gg_cow,
        height = 5*length(gg_cow_list), width = 15*length(chrName), limitsize = F)
+
 
 trendPlot <- function(dataFrame, xvar, yvar, xlab, ylab, xtrans, ytrans, xbreaks, ybreaks, xlabels, ylabels) {
   xvar <- enquo(xvar)
