@@ -146,7 +146,7 @@ tab_mD <- tab_mD[
 stopifnot(identical(tab_mD$fk_kappa_all, tab$fk_kappa_all))
 stopifnot(identical(tab_mD$MA1_2_mean.D, MA1_2_mD$MA1_2_mean.D))
 
-# Remove genomic bins tab_mD overlapping the mitochondrial insertion on Chr2,
+# Remove genomic bins in tab_mD overlapping the mitochondrial insertion on Chr2,
 # as we cannot be sure that these BS-seq reads come from the nuclear genome
 # Note that long reads wholly contained within the boundaries of the Chr2 mito insertion
 # have already been removed for the among-read and within-read mC variation analysis,
@@ -174,22 +174,127 @@ genes <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase,
                            "/annotation/genes/", refbase, "_gene_frequency_per_",
                            genomeBinName, "_unsmoothed.tsv"),
                     header = T)
-genes$midpoint <- (genes$window-1) + (genomeBinSize/2)
+colnames(genes)[2] <- "start"
+genes$midpoint <- (genes$start-1) + (genomeBinSize/2)
 genes <- genes[genes$chr %in% chrName,]
 
 gypsy <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase,
                            "/annotation/TEs_EDTA/", refbase, "_TEs_Gypsy_LTR_frequency_per_",
                            genomeBinName, "_unsmoothed.tsv"),
                     header = T)
-gypsy$midpoint <- (gypsy$window-1) + (genomeBinSize/2)
+colnames(gypsy)[2] <- "start"
+gypsy$midpoint <- (gypsy$start-1) + (genomeBinSize/2)
 gypsy <- gypsy[gypsy$chr %in% chrName,]
 
 CEN180 <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase,
                            "/annotation/CEN180/", refbase, "_CEN180_frequency_per_",
                            genomeBinName, "_unsmoothed.tsv"),
                     header = T)
-CEN180$midpoint <- (CEN180$window-1) + (genomeBinSize/2)
+colnames(CEN180)[2] <- "start"
+CEN180$midpoint <- (CEN180$start-1) + (genomeBinSize/2)
 CEN180 <- CEN180[CEN180$chr %in% chrName,]
+
+
+# Merge genes with MA1_2_mD to remove of mito windows for correlations
+genes_mD <- merge(x = genes, y = MA1_2_mD,
+                  by.x = c("chr", "start"),
+                  by.y = c("chr", "start"))
+genes_mD <- genes_mD[
+  with(genes_mD, order(chr, start, end)),
+]
+stopifnot(identical(genes_mD$fk_kappa_all, genes$fk_kappa_all))
+stopifnot(identical(genes_mD$MA1_2_mean.D, MA1_2_mD$MA1_2_mean.D))
+
+# Remove genomic bins in genes_mD overlapping the mitochondrial insertion on Chr2,
+# as we cannot be sure that these BS-seq reads come from the nuclear genome
+# Note that long reads wholly contained within the boundaries of the Chr2 mito insertion
+# have already been removed for the among-read and within-read mC variation analysis,
+# by among_read_variation_scoring.R
+genes_mD_mito <- genes_mD %>%
+  dplyr::filter(chr == mito_ins_chr) %>%
+  dplyr::filter( (start >= mito_ins_start &
+                  start <= mito_ins_end) |
+                 (end >= mito_ins_start &
+                  end <= mito_ins_end) )
+
+stopifnot(unique(genes_mD_mito$chr) == mito_ins_chr)
+stopifnot(genes_mD_mito$end[1] >= mito_ins_start)
+stopifnot(genes_mD_mito$start[nrow(genes_mD_mito)] <= mito_ins_end)
+print(head(genes_mD_mito[,1:6]))
+print(tail(genes_mD_mito[,1:6]))
+print(paste0("Mitochondrial insetion on ", mito_ins_chr, ":", mito_ins_start, "-", mito_ins_end))
+
+genes_mD <- genes_mD %>%
+  dplyr::anti_join(genes_mD_mito)
+stopifnot(identical(genes_mD$start, tab_mD$start))
+
+
+# Merge gypsy with MA1_2_mD to remove of mito windows for correlations
+gypsy_mD <- merge(x = gypsy, y = MA1_2_mD,
+                  by.x = c("chr", "start"),
+                  by.y = c("chr", "start"))
+gypsy_mD <- gypsy_mD[
+  with(gypsy_mD, order(chr, start, end)),
+]
+stopifnot(identical(gypsy_mD$fk_kappa_all, gypsy$fk_kappa_all))
+stopifnot(identical(gypsy_mD$MA1_2_mean.D, MA1_2_mD$MA1_2_mean.D))
+
+# Remove genomic bins in gypsy_mD overlapping the mitochondrial insertion on Chr2,
+# as we cannot be sure that these BS-seq reads come from the nuclear genome
+# Note that long reads wholly contained within the boundaries of the Chr2 mito insertion
+# have already been removed for the among-read and within-read mC variation analysis,
+# by among_read_variation_scoring.R
+gypsy_mD_mito <- gypsy_mD %>%
+  dplyr::filter(chr == mito_ins_chr) %>%
+  dplyr::filter( (start >= mito_ins_start &
+                  start <= mito_ins_end) |
+                 (end >= mito_ins_start &
+                  end <= mito_ins_end) )
+
+stopifnot(unique(gypsy_mD_mito$chr) == mito_ins_chr)
+stopifnot(gypsy_mD_mito$end[1] >= mito_ins_start)
+stopifnot(gypsy_mD_mito$start[nrow(gypsy_mD_mito)] <= mito_ins_end)
+print(head(gypsy_mD_mito[,1:6]))
+print(tail(gypsy_mD_mito[,1:6]))
+print(paste0("Mitochondrial insetion on ", mito_ins_chr, ":", mito_ins_start, "-", mito_ins_end))
+
+gypsy_mD <- gypsy_mD %>%
+  dplyr::anti_join(gypsy_mD_mito)
+stopifnot(identical(gypsy_mD$start, tab_mD$start))
+
+
+# Merge CEN180 with MA1_2_mD to remove of mito windows for correlations
+CEN180_mD <- merge(x = CEN180, y = MA1_2_mD,
+                   by.x = c("chr", "start"),
+                   by.y = c("chr", "start"))
+CEN180_mD <- CEN180_mD[
+  with(CEN180_mD, order(chr, start, end)),
+]
+stopifnot(identical(CEN180_mD$fk_kappa_all, CEN180$fk_kappa_all))
+stopifnot(identical(CEN180_mD$MA1_2_mean.D, MA1_2_mD$MA1_2_mean.D))
+
+# Remove genomic bins in CEN180_mD overlapping the mitochondrial insertion on Chr2,
+# as we cannot be sure that these BS-seq reads come from the nuclear genome
+# Note that long reads wholly contained within the boundaries of the Chr2 mito insertion
+# have already been removed for the among-read and within-read mC variation analysis,
+# by among_read_variation_scoring.R
+CEN180_mD_mito <- CEN180_mD %>%
+  dplyr::filter(chr == mito_ins_chr) %>%
+  dplyr::filter( (start >= mito_ins_start &
+                  start <= mito_ins_end) |
+                 (end >= mito_ins_start &
+                  end <= mito_ins_end) )
+
+stopifnot(unique(CEN180_mD_mito$chr) == mito_ins_chr)
+stopifnot(CEN180_mD_mito$end[1] >= mito_ins_start)
+stopifnot(CEN180_mD_mito$start[nrow(CEN180_mD_mito)] <= mito_ins_end)
+print(head(CEN180_mD_mito[,1:6]))
+print(tail(CEN180_mD_mito[,1:6]))
+print(paste0("Mitochondrial insetion on ", mito_ins_chr, ":", mito_ins_start, "-", mito_ins_end))
+
+CEN180_mD <- CEN180_mD %>%
+  dplyr::anti_join(CEN180_mD_mito)
+stopifnot(identical(CEN180_mD$start, tab_mD$start))
 
 
 chrPlot <- function(dataFrame, xvar, yvar, xlab, ylab, colour) {
@@ -433,7 +538,7 @@ gg_mean_stocha_all <- chrPlot(dataFrame = tab,
                               xvar = midpoint,
                               yvar = mean_stocha_all,
                               xlab = paste0("Coordinates (Mb; ", genomeBinNamePlot, " windows, ", genomeStepNamePlot, " step)"),
-                              ylab = bquote("Mean stochasticity (m"*.(context)*")"),
+                              ylab = bquote("Stochasticity" ~ italic(bar(x)) ~ "(m"*.(context)*")"),
                               colour = "dodgerblue") 
 gg_mean_stocha_all <- gg_mean_stocha_all +
   facet_grid(cols = vars(chr), scales = "free_x") +
@@ -447,7 +552,7 @@ gg_mean_mean_acf_all <- chrPlot(dataFrame = tab,
                                 xvar = midpoint,
                                 yvar = mean_mean_acf_all,
                                 xlab = paste0("Coordinates (Mb; ", genomeBinNamePlot, " windows, ", genomeStepNamePlot, " step)"),
-                                ylab = bquote("Mean mean ACF (m"*.(context)*")"),
+                                ylab = bquote("Mean ACF" ~ italic(bar(x)) ~ "(m"*.(context)*")"),
                                 colour = "darkgreen") 
 gg_mean_mean_acf_all <- gg_mean_mean_acf_all +
   facet_grid(cols = vars(chr), scales = "free_x") +
@@ -461,7 +566,7 @@ gg_mean_min_acf_all <- chrPlot(dataFrame = tab,
                                xvar = midpoint,
                                yvar = mean_min_acf_all,
                                xlab = paste0("Coordinates (Mb; ", genomeBinNamePlot, " windows, ", genomeStepNamePlot, " step)"),
-                               ylab = bquote("Mean min. ACF (m"*.(context)*")"),
+                               ylab = bquote("Minimum ACF" ~ italic(bar(x)) ~ "(m"*.(context)*")"),
                                colour = "forestgreen") 
 gg_mean_min_acf_all <- gg_mean_min_acf_all +
   facet_grid(cols = vars(chr), scales = "free_x") +
@@ -576,18 +681,6 @@ trendPlot <- function(dataFrame, xvar, yvar, xlab, ylab, xtrans, ytrans, xbreaks
                  "(" * .(genomeBinNamePlot) * " windows)"))
 }
 
-#ggTrend_fk_kappa_all_mean_stocha_all <- trendPlot(dataFrame = tab,
-#                                                  xvar = fk_kappa_all,
-#                                                  yvar = mean_stocha_all,
-#                                                  xlab = bquote("Fleiss' kappa (m"*.(context)*")"),
-#                                                  ylab = bquote("Mean stochasticity (m"*.(context)*")"),
-#                                                  xtrans = log10_trans(),
-#                                                  ytrans = log10_trans(),
-#                                                  xbreaks = trans_breaks("log10", function(x) 10^x),
-#                                                  ybreaks = trans_breaks("log10", function(x) 10^x),
-#                                                  xlabels = trans_format("log10", math_format(10^.x)),
-#                                                  ylabels = trans_format("log10", math_format(10^.x)))
-
 ggTrend_fk_kappa_all_MA1_2_mean.D <- trendPlot(dataFrame = tab_mD,
                                                xvar = fk_kappa_all,
                                                yvar = MA1_2_mean.D,
@@ -619,12 +712,6 @@ ggTrend_mean_stocha_all_MA1_2_mean.D <- trendPlot(dataFrame = tab_mD,
                                                   ybreaks = trans_breaks("log10", function(x) 10^x),
                                                   xlabels = trans_format("log10", math_format(10^.x)),
                                                   ylabels = trans_format("log10", math_format(10^.x)))
-#                                                  xtrans = "identity",
-#                                                  ytrans = "identity",
-#                                                  xbreaks = waiver(),
-#                                                  ybreaks = waiver(),
-#                                                  xlabels = waiver(),
-#                                                  ylabels = waiver())
 ggTrend_mean_stocha_all_MA1_2_mean.D <- ggTrend_mean_stocha_all_MA1_2_mean.D +
   facet_grid(cols = vars(chr), scales = "free_x")
 
@@ -639,12 +726,6 @@ ggTrend_fk_kappa_all_mean_stocha_all <- trendPlot(dataFrame = tab,
                                                   ybreaks = trans_breaks("log10", function(x) 10^x),
                                                   xlabels = trans_format("log10", math_format(10^.x)),
                                                   ylabels = trans_format("log10", math_format(10^.x)))
-#                                                  xtrans = "identity",
-#                                                  ytrans = "identity",
-#                                                  xbreaks = waiver(),
-#                                                  ybreaks = waiver(),
-#                                                  xlabels = waiver(),
-#                                                  ylabels = waiver())
 ggTrend_fk_kappa_all_mean_stocha_all <- ggTrend_fk_kappa_all_mean_stocha_all +
   facet_grid(cols = vars(chr), scales = "free_x")
 
@@ -652,13 +733,13 @@ ggTrend_fk_kappa_all_mean_mean_acf_all <- trendPlot(dataFrame = tab,
                                                     xvar = fk_kappa_all,
                                                     yvar = mean_mean_acf_all,
                                                     xlab = bquote("Fleiss' kappa (m"*.(context)*")"),
-                                                    ylab = bquote("Mean mean ACF (m"*.(context)*")"),
-                                                    xtrans = "identity",
-                                                    ytrans = "identity",
-                                                    xbreaks = waiver(),
-                                                    ybreaks = waiver(),
-                                                    xlabels = waiver(),
-                                                    ylabels = waiver())
+                                                    ylab = bquote("Mean ACF" ~ italic(bar(x)) ~ "(m"*.(context)*")"),
+                                                    xtrans = log10_trans(),
+                                                    ytrans = log10_trans(),
+                                                    xbreaks = trans_breaks("log10", function(x) 10^x),
+                                                    ybreaks = trans_breaks("log10", function(x) 10^x),
+                                                    xlabels = trans_format("log10", math_format(10^.x)),
+                                                    ylabels = trans_format("log10", math_format(10^.x)))
 ggTrend_fk_kappa_all_mean_mean_acf_all <- ggTrend_fk_kappa_all_mean_mean_acf_all +
   facet_grid(cols = vars(chr), scales = "free_x")
 
@@ -666,13 +747,13 @@ ggTrend_fk_kappa_all_mean_min_acf_all <- trendPlot(dataFrame = tab,
                                                    xvar = fk_kappa_all,
                                                    yvar = mean_min_acf_all,
                                                    xlab = bquote("Fleiss' kappa (m"*.(context)*")"),
-                                                   ylab = bquote("Mean min. ACF (m"*.(context)*")"),
-                                                   xtrans = "identity",
-                                                   ytrans = "identity",
-                                                   xbreaks = waiver(),
-                                                   ybreaks = waiver(),
-                                                   xlabels = waiver(),
-                                                   ylabels = waiver())
+                                                   ylab = bquote("Minimum ACF" ~ italic(bar(x)) ~ "(m"*.(context)*")"),
+                                                   xtrans = log10_trans(),
+                                                   ytrans = log10_trans(),
+                                                   xbreaks = trans_breaks("log10", function(x) 10^x),
+                                                   ybreaks = trans_breaks("log10", function(x) 10^x),
+                                                   xlabels = trans_format("log10", math_format(10^.x)),
+                                                   ylabels = trans_format("log10", math_format(10^.x)))
 ggTrend_fk_kappa_all_mean_min_acf_all <- ggTrend_fk_kappa_all_mean_min_acf_all +
   facet_grid(cols = vars(chr), scales = "free_x")
 
@@ -680,13 +761,13 @@ ggTrend_mean_stocha_all_mean_mean_acf_all <- trendPlot(dataFrame = tab,
                                                        xvar = mean_stocha_all,
                                                        yvar = mean_mean_acf_all,
                                                        xlab = bquote("Stochasticity" ~ italic(bar(x)) ~ "(m"*.(context)*")"),
-                                                       ylab = bquote("Mean mean ACF (m"*.(context)*")"),
-                                                       xtrans = "identity",
-                                                       ytrans = "identity",
-                                                       xbreaks = waiver(),
-                                                       ybreaks = waiver(),
-                                                       xlabels = waiver(),
-                                                       ylabels = waiver())
+                                                       ylab = bquote("Mean ACF" ~ italic(bar(x)) ~ "(m"*.(context)*")"),
+                                                       xtrans = log10_trans(),
+                                                       ytrans = log10_trans(),
+                                                       xbreaks = trans_breaks("log10", function(x) 10^x),
+                                                       ybreaks = trans_breaks("log10", function(x) 10^x),
+                                                       xlabels = trans_format("log10", math_format(10^.x)),
+                                                       ylabels = trans_format("log10", math_format(10^.x)))
 ggTrend_mean_stocha_all_mean_mean_acf_all <- ggTrend_mean_stocha_all_mean_mean_acf_all +
   facet_grid(cols = vars(chr), scales = "free_x")
 
@@ -694,13 +775,13 @@ ggTrend_mean_stocha_all_mean_min_acf_all <- trendPlot(dataFrame = tab,
                                                       xvar = mean_stocha_all,
                                                       yvar = mean_min_acf_all,
                                                       xlab = bquote("Stochasticity" ~ italic(bar(x)) ~ "(m"*.(context)*")"),
-                                                      ylab = bquote("Mean min. ACF (m"*.(context)*")"),
-                                                      xtrans = "identity",
-                                                      ytrans = "identity",
-                                                      xbreaks = waiver(),
-                                                      ybreaks = waiver(),
-                                                      xlabels = waiver(),
-                                                      ylabels = waiver())
+                                                      ylab = bquote("Minimum ACF" ~ italic(bar(x)) ~ "(m"*.(context)*")"),
+                                                      xtrans = log10_trans(),
+                                                      ytrans = log10_trans(),
+                                                      xbreaks = trans_breaks("log10", function(x) 10^x),
+                                                      ybreaks = trans_breaks("log10", function(x) 10^x),
+                                                      xlabels = trans_format("log10", math_format(10^.x)),
+                                                      ylabels = trans_format("log10", math_format(10^.x)))
 ggTrend_mean_stocha_all_mean_min_acf_all <- ggTrend_mean_stocha_all_mean_min_acf_all +
   facet_grid(cols = vars(chr), scales = "free_x")
 
@@ -709,11 +790,11 @@ ggTrend_fk_kappa_all_genes <- trendPlot(dataFrame = cbind(tab, genes[,3:4]),
                                         yvar = features,
                                         xlab = bquote("Fleiss' kappa (m"*.(context)*")"),
                                         ylab = bquote("Genes"),
-                                        xtrans = "identity",
+                                        xtrans = log10_trans(),
                                         ytrans = "identity",
-                                        xbreaks = waiver(),
+                                        xbreaks = trans_breaks("log10", function(x) 10^x),
                                         ybreaks = waiver(),
-                                        xlabels = waiver(),
+                                        xlabels = trans_format("log10", math_format(10^.x)),
                                         ylabels = waiver())
 ggTrend_fk_kappa_all_genes <- ggTrend_fk_kappa_all_genes +
   facet_grid(cols = vars(chr), scales = "free_x")
@@ -723,11 +804,11 @@ ggTrend_fk_kappa_all_gypsy <- trendPlot(dataFrame = cbind(tab, gypsy[,3:4]),
                                         yvar = features,
                                         xlab = bquote("Fleiss' kappa (m"*.(context)*")"),
                                         ylab = bquote(italic("GYPSY")),
-                                        xtrans = "identity",
+                                        xtrans = log10_trans(),
                                         ytrans = "identity",
-                                        xbreaks = waiver(),
+                                        xbreaks = trans_breaks("log10", function(x) 10^x),
                                         ybreaks = waiver(),
-                                        xlabels = waiver(),
+                                        xlabels = trans_format("log10", math_format(10^.x)),
                                         ylabels = waiver())
 ggTrend_fk_kappa_all_gypsy <- ggTrend_fk_kappa_all_gypsy +
   facet_grid(cols = vars(chr), scales = "free_x")
@@ -737,11 +818,11 @@ ggTrend_mean_stocha_all_genes <- trendPlot(dataFrame = cbind(tab, genes[,3:4]),
                                            yvar = features,
                                            xlab = bquote("Stochasticity" ~ italic(bar(x)) ~ "(m"*.(context)*")"),
                                            ylab = bquote("Genes"),
-                                           xtrans = "identity",
+                                           xtrans = log10_trans(),
                                            ytrans = "identity",
-                                           xbreaks = waiver(),
+                                           xbreaks = trans_breaks("log10", function(x) 10^x),
                                            ybreaks = waiver(),
-                                           xlabels = waiver(),
+                                           xlabels = trans_format("log10", math_format(10^.x)),
                                            ylabels = waiver())
 ggTrend_mean_stocha_all_genes <- ggTrend_mean_stocha_all_genes +
   facet_grid(cols = vars(chr), scales = "free_x")
@@ -751,25 +832,53 @@ ggTrend_mean_stocha_all_gypsy <- trendPlot(dataFrame = cbind(tab, gypsy[,3:4]),
                                            yvar = features,
                                            xlab = bquote("Stochasticity" ~ italic(bar(x)) ~ "(m"*.(context)*")"),
                                            ylab = bquote(italic("GYPSY")),
-                                           xtrans = "identity",
+                                           xtrans = log10_trans(),
                                            ytrans = "identity",
-                                           xbreaks = waiver(),
+                                           xbreaks = trans_breaks("log10", function(x) 10^x),
                                            ybreaks = waiver(),
-                                           xlabels = waiver(),
+                                           xlabels = trans_format("log10", math_format(10^.x)),
                                            ylabels = waiver())
 ggTrend_mean_stocha_all_gypsy <- ggTrend_mean_stocha_all_gypsy +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+ggTrend_MA1_2_mean.D_genes <- trendPlot(dataFrame = cbind(tab_mD, genes_mD[,3:4]),
+                                        xvar = MA1_2_mean.D,
+                                        yvar = features,
+                                        xlab = bquote("MA1_2" ~ italic(D) ~ italic(bar(x)) ~ "(m"*.(context)*")"),
+                                        ylab = bquote("Genes"),
+                                        xtrans = log10_trans(),
+                                        ytrans = "identity",
+                                        xbreaks = trans_breaks("log10", function(x) 10^x),
+                                        ybreaks = waiver(),
+                                        xlabels = trans_format("log10", math_format(10^.x)),
+                                        ylabels = waiver())
+ggTrend_MA1_2_mean.D_genes <- ggTrend_MA1_2_mean.D_genes +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+ggTrend_MA1_2_mean.D_gypsy <- trendPlot(dataFrame = cbind(tab_mD, gypsy_mD[,3:4]),
+                                        xvar = MA1_2_mean.D,
+                                        yvar = features,
+                                        xlab = bquote("MA1_2" ~ italic(D) ~ italic(bar(x)) ~ "(m"*.(context)*")"),
+                                        ylab = bquote(italic("GYPSY")),
+                                        xtrans = log10_trans(),
+                                        ytrans = "identity",
+                                        xbreaks = trans_breaks("log10", function(x) 10^x),
+                                        ybreaks = waiver(),
+                                        xlabels = trans_format("log10", math_format(10^.x)),
+                                        ylabels = waiver())
+ggTrend_MA1_2_mean.D_gypsy <- ggTrend_MA1_2_mean.D_gypsy +
   facet_grid(cols = vars(chr), scales = "free_x")
 
 ggTrend_mean_mean_acf_all_genes <- trendPlot(dataFrame = cbind(tab, genes[,3:4]),
                                            xvar = mean_mean_acf_all,
                                            yvar = features,
-                                           xlab = bquote("Mean mean ACF (m"*.(context)*")"),
+                                           xlab = bquote("Mean ACF" ~ italic(bar(x)) ~ "(m"*.(context)*")"),
                                            ylab = bquote("Genes"),
-                                           xtrans = "identity",
+                                           xtrans = log10_trans(),
                                            ytrans = "identity",
-                                           xbreaks = waiver(),
+                                           xbreaks = trans_breaks("log10", function(x) 10^x),
                                            ybreaks = waiver(),
-                                           xlabels = waiver(),
+                                           xlabels = trans_format("log10", math_format(10^.x)),
                                            ylabels = waiver())
 ggTrend_mean_mean_acf_all_genes <- ggTrend_mean_mean_acf_all_genes +
   facet_grid(cols = vars(chr), scales = "free_x")
@@ -777,13 +886,13 @@ ggTrend_mean_mean_acf_all_genes <- ggTrend_mean_mean_acf_all_genes +
 ggTrend_mean_mean_acf_all_gypsy <- trendPlot(dataFrame = cbind(tab, gypsy[,3:4]),
                                              xvar = mean_mean_acf_all,
                                              yvar = features,
-                                             xlab = bquote("Mean mean ACF (m"*.(context)*")"),
+                                             xlab = bquote("Mean ACF" ~ italic(bar(x)) ~ "(m"*.(context)*")"),
                                              ylab = bquote(italic("GYPSY")),
-                                             xtrans = "identity",
+                                             xtrans = log10_trans(),
                                              ytrans = "identity",
-                                             xbreaks = waiver(),
+                                             xbreaks = trans_breaks("log10", function(x) 10^x),
                                              ybreaks = waiver(),
-                                             xlabels = waiver(),
+                                             xlabels = trans_format("log10", math_format(10^.x)),
                                              ylabels = waiver())
 ggTrend_mean_mean_acf_all_gypsy <- ggTrend_mean_mean_acf_all_gypsy +
   facet_grid(cols = vars(chr), scales = "free_x")
@@ -791,13 +900,13 @@ ggTrend_mean_mean_acf_all_gypsy <- ggTrend_mean_mean_acf_all_gypsy +
 ggTrend_mean_min_acf_all_genes <- trendPlot(dataFrame = cbind(tab, genes[,3:4]),
                                             xvar = mean_min_acf_all,
                                             yvar = features,
-                                            xlab = bquote("Mean min. ACF (m"*.(context)*")"),
+                                            xlab = bquote("Minimum ACF" ~ italic(bar(x)) ~ "(m"*.(context)*")"),
                                             ylab = bquote("Genes"),
-                                            xtrans = "identity",
+                                            xtrans = log10_trans(),
                                             ytrans = "identity",
-                                            xbreaks = waiver(),
+                                            xbreaks = trans_breaks("log10", function(x) 10^x),
                                             ybreaks = waiver(),
-                                            xlabels = waiver(),
+                                            xlabels = trans_format("log10", math_format(10^.x)),
                                             ylabels = waiver())
 ggTrend_mean_min_acf_all_genes <- ggTrend_mean_min_acf_all_genes +
   facet_grid(cols = vars(chr), scales = "free_x")
@@ -805,13 +914,13 @@ ggTrend_mean_min_acf_all_genes <- ggTrend_mean_min_acf_all_genes +
 ggTrend_mean_min_acf_all_gypsy <- trendPlot(dataFrame = cbind(tab, gypsy[,3:4]),
                                             xvar = mean_min_acf_all,
                                             yvar = features,
-                                            xlab = bquote("Mean min. ACF (m"*.(context)*")"),
+                                            xlab = bquote("Minimum ACF" ~ italic(bar(x)) ~ "(m"*.(context)*")"),
                                             ylab = bquote(italic("GYPSY")),
-                                            xtrans = "identity",
+                                            xtrans = log10_trans(),
                                             ytrans = "identity",
-                                            xbreaks = waiver(),
+                                            xbreaks = trans_breaks("log10", function(x) 10^x),
                                             ybreaks = waiver(),
-                                            xlabels = waiver(),
+                                            xlabels = trans_format("log10", math_format(10^.x)),
                                             ylabels = waiver())
 ggTrend_mean_min_acf_all_gypsy <- ggTrend_mean_min_acf_all_gypsy +
   facet_grid(cols = vars(chr), scales = "free_x")
@@ -822,6 +931,7 @@ gg_cow_list2 <- list(
                      ggTrend_mean_stocha_all_mean_mean_acf_all, ggTrend_mean_stocha_all_mean_min_acf_all,
                      ggTrend_fk_kappa_all_genes, ggTrend_fk_kappa_all_gypsy,
                      ggTrend_mean_stocha_all_genes, ggTrend_mean_stocha_all_gypsy,
+                     ggTrend_MA1_2_mean.D_genes, ggTrend_MA1_2_mean.D_gypsy,
                      ggTrend_mean_mean_acf_all_genes, ggTrend_mean_mean_acf_all_gypsy,
                      ggTrend_mean_min_acf_all_genes, ggTrend_mean_min_acf_all_gypsy
                     )
