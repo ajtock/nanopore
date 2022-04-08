@@ -45,13 +45,12 @@ library(tidyr)
 #library(ComplexHeatmap)
 #library(RColorBrewer)
 #library(circlize)
- 
 library(ggplot2)
 library(cowplot)
 library(scales)
 #library(ggcorrplot)
 library(viridis)
-library(ggthemes)
+#library(ggthemes)
 library(tidyquant)
 #library(grid)
 
@@ -516,9 +515,9 @@ gg_CEN180 <- gg_CEN180 +
 
 
 gg_cow_list <- list(
+                    gg_fk_num_reads_all, gg_fk_num_Cs_all,
                     gg_MA1_2_D, gg_MA1_2_mean.D, gg_fk_kappa_all, gg_mean_stocha_all, gg_mean_mean_acf_all, gg_mean_min_acf_all,
-                    gg_genes, gg_gypsy, gg_CEN180,
-                    gg_fk_num_reads_all, gg_fk_num_Cs_all
+                    gg_genes, gg_gypsy, gg_CEN180
                    )
 gg_cow <- plot_grid(plotlist = gg_cow_list,
                     labels = toupper(letters[1:length(gg_cow_list)]), label_size = 30,
@@ -849,3 +848,4 @@ ggsave(paste0(plotDir,
 #       plot = ggTrend_fk_kappa_all_genes,
 #       height = 5, width = 5*length(chrName), limitsize = F)
 
+print(warnings())
