@@ -106,9 +106,11 @@ if(floor(log10(genomeStepSize)) + 1 < 4) {
 
 
 outDir <- paste0(featName, "_", featRegion, "/", paste0(chrName, collapse = "_"), "/")
+plotDir <- paste0(outDir, "plots/")
 plotDir_kappa_mC <- paste0(outDir, "plots/hypergeom_epimutation_hotspots_", context, "_kappa_mC/")
 plotDir_stocha_mC <- paste0(outDir, "plots/hypergeom_epimutation_hotspots_", context, "_stocha_mC/")
 plotDir_kappa_stocha <- paste0(outDir, "plots/hypergeom_epimutation_hotspots_", context, "_kappa_stocha/")
+system(paste0("[ -d ", plotDir, " ] || mkdir -p ", plotDir))
 system(paste0("[ -d ", plotDir_kappa_mC, " ] || mkdir -p ", plotDir_kappa_mC))
 system(paste0("[ -d ", plotDir_stocha_mC, " ] || mkdir -p ", plotDir_stocha_mC))
 system(paste0("[ -d ", plotDir_kappa_stocha, " ] || mkdir -p ", plotDir_kappa_stocha))
@@ -218,6 +220,23 @@ tab_mD <- tab_mD[!is.na(tab_mD$MA1_2_mean.D),]
 tab_mD$rank <- rank(tab_mD$MA1_2_mean.D)/nrow(tab_mD)
 
 mD_hs <- tab_mD[tab_mD$rank >= 0.9,]
+mD_cs <- tab_mD[tab_mD$rank <= 0.1,]
+
+# Histogram of mD values
+gg_dens_mD <- ggplot(tab_mD,
+                     mapping = aes(x = MA1_2_mean.D)) +
+  geom_histogram(binwidth = function(x) 2 * IQR(x) / (length(x)^(1/3)), colour = "black", fill = "white") +
+  geom_vline(mapping = aes(xintercept = min(mD_hs$MA1_2_mean.D)),
+             linetype = "dashed", size = 0.5, colour = "red") +
+  geom_vline(mapping = aes(xintercept = min(mD_cs$MA1_2_mean.D)),
+             linetype = "dashed", size = 0.5, colour = "blue") +
+  xlab(bquote("m" * .(context) ~ "divergence (" * italic(D) * ")")) +
+  theme_bw()
+ggsave(paste0(plotDir,
+              "mD_at_dt62_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
+              "_MA1_2_MappedOn_", refbase, "_", paste0(chrName, collapse = "_"), "_", context, "_density.pdf"),
+       plot = gg_dens_mD,
+       height = 5, width = 4)
 
 
 
