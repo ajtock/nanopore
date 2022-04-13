@@ -79,7 +79,6 @@ library(extrafont)
 #library(tidyquant)
 ##library(grid)
 
-
 if(floor(log10(genomeBinSize)) + 1 < 4) {
   genomeBinName <- paste0(genomeBinSize, "bp")
   genomeBinNamePlot <- paste0(genomeBinSize, "-bp")
@@ -104,7 +103,6 @@ if(floor(log10(genomeStepSize)) + 1 < 4) {
   genomeStepNamePlot <- paste0(genomeStepSize/1e6, "-Mb")
 }
 
-
 outDir <- paste0(featName, "_", featRegion, "/", paste0(chrName, collapse = "_"), "/")
 plotDir <- paste0(outDir, "plots/")
 plotDir_kappa_mC <- paste0(outDir, "plots/hypergeom_epimutation_hotspots_", context, "_kappa_mC/")
@@ -115,36 +113,6 @@ system(paste0("[ -d ", plotDir_kappa_mC, " ] || mkdir -p ", plotDir_kappa_mC))
 system(paste0("[ -d ", plotDir_stocha_mC, " ] || mkdir -p ", plotDir_stocha_mC))
 system(paste0("[ -d ", plotDir_kappa_stocha, " ] || mkdir -p ", plotDir_kappa_stocha))
 
-## Genomic definitions
-#fai <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase, "/", refbase, ".fa.fai"), header = F)
-#if(!grepl("Chr", fai[,1][1])) {
-#  chrs <- paste0("Chr", fai[,1])[which(paste0("Chr", fai[,1]) %in% chrName)]
-#} else {
-#  chrs <- fai[,1][which(fai[,1] %in% chrName)]
-#}
-#chrLens <- fai[,2][which(fai[,1] %in% chrName)]
-#
-## Load coordinates for mitochondrial insertion on Chr2, in BED format
-#mito_ins <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase, "/annotation/", refbase , ".mitochondrial_insertion.bed"),
-#                       header = F)
-#colnames(mito_ins) <- c("chr", "start", "end", "name", "score", "strand")
-#mito_ins <- mito_ins[ mito_ins$chr %in% "Chr2",]
-#mito_ins <- mito_ins[ with(mito_ins, order(chr, start, end)) , ]
-#mito_ins_GR <- GRanges(seqnames = "Chr2",
-#                       ranges = IRanges(start = min(mito_ins$start)+1,
-#                                        end = max(mito_ins$end)),
-#                       strand = "*")
-#
-## Mask out featGR within mitochondrial insertion on Chr2
-#fOverlaps_feat_mito_ins <- findOverlaps(query = featGR,
-#                                        subject = mito_ins_GR,
-#                                        type = "any",
-#                                        select = "all",
-#                                        ignore.strand = T)
-#if(length(fOverlaps_feat_mito_ins) > 0) {
-#  featGR <- featGR[-unique(queryHits(fOverlaps_feat_mito_ins))]
-#}
-
 # Genomic definitions
 fai <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase, "/", refbase, ".fa.fai"), header = F)
 if(!grepl("Chr", fai[,1][1])) {
@@ -153,8 +121,6 @@ if(!grepl("Chr", fai[,1][1])) {
   chrs <- fai[,1][which(fai[,1] %in% chrName)]
 }
 chrLens <- fai[,2][which(fai[,1] %in% chrName)]
-
-
 
 # Load coordinates for mitochondrial insertion on Chr2, in BED format
 mito_ins <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase, "/annotation/", refbase , ".mitochondrial_insertion.bed"),
@@ -219,8 +185,18 @@ tab_mD <- tab_mD[!is.na(tab_mD$MA1_2_mean.D),]
 
 tab_mD$rank <- rank(tab_mD$MA1_2_mean.D)/nrow(tab_mD)
 
+# Define epimutation hotspots (mD_hs) and coldspots (mD_cs)
 mD_hs <- tab_mD[tab_mD$rank >= 0.9,]
 mD_cs <- tab_mD[tab_mD$rank <= 0.1,]
+
+mD_hs_GR <- GRanges(seqnames = mD_hs$chr,
+                    ranges = IRanges(start = mD_hs$start, end = mD_hs$end),
+                    strand = "*",
+                    mD = mD_hs$MA1_2_mean.D)
+mD_cs_GR <- GRanges(seqnames = mD_cs$chr,
+                    ranges = IRanges(start = mD_cs$start, end = mD_cs$end),
+                    strand = "*",
+                    mD = mD_cs$MA1_2_mean.D)
 
 # Histogram of mD values
 gg_dens_mD <- ggplot(tab_mD,
@@ -239,6 +215,42 @@ ggsave(paste0(plotDir,
        height = 5, width = 4)
 
 
+# Get features that overlap epimutation hotspots and coldspots
+featDF <- read.table(paste0(outDir,
+                            featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                            "_", context,
+                            "_NAmax", NAmax,
+                            "_filt_df_fk_kappa_all_mean_mC_all_complete_",
+                            paste0(chrName, collapse = "_"), ".tsv"),
+                     header = T)
+
+featGR <- GRanges(seqnames = featDF$chr,
+                  ranges = IRanges(start = featDF$start, end = featDF$end),
+                  strand = "*",
+                  featID = featDF$name)
+
+fOverlaps_feat_mD_hs <- findOverlaps(query = featGR,
+                                     subject = mD_hs_GR,
+                                     type = "any",
+                                     select = "all",
+                                     ignore.strand = T)
+featGR_mD_hs <- featGR[unique(queryHits(fOverlaps_feat_mD_hs))]
+featID_mD_hs <- unique(featGR_mD_hs$featID)
+#featID_mD_hs <- sub(pattern = "\\.\\d+", replacement = "", x = featID_mD_hs)
+#featID_mD_hs <- sub(pattern = "_\\d+", replacement = "", x = featID_mD_hs)
+#featID_mD_hs <- unique(featID_mD_hs)
+
+fOverlaps_feat_mD_cs <- findOverlaps(query = featGR,
+                                     subject = mD_cs_GR,
+                                     type = "any",
+                                     select = "all",
+                                     ignore.strand = T)
+featGR_mD_cs <- featGR[unique(queryHits(fOverlaps_feat_mD_cs))]
+featID_mD_cs <- unique(featGR_mD_cs$featID)
+#featID_mD_cs <- sub(pattern = "\\.\\d+", replacement = "", x = featID_mD_cs)
+#featID_mD_cs <- sub(pattern = "_\\d+", replacement = "", x = featID_mD_cs)
+#featID_mD_cs <- unique(featID_mD_cs)
+ 
 
 # Load feature groups (defined based on Fleiss' kappa vs mean mC trend plots) to enable enrichment analysis
 
@@ -250,267 +262,198 @@ filt_kappa_mC_groups <- lapply(seq_along(1:8), function(x) {
                            "_filt_df_fk_kappa_all_mean_mC_all_group", x , "_",
                            paste0(chrName, collapse = "_"), ".tsv"),
                     header = T)
-  tmp$name <- sub(pattern = "\\.\\d+", replacement = "", x = tmp$name)
-  tmp$name <- sub(pattern = "_\\d+", replacement = "", x = tmp$name)
+#  tmp$name <- sub(pattern = "\\.\\d+", replacement = "", x = tmp$name)
+#  tmp$name <- sub(pattern = "_\\d+", replacement = "", x = tmp$name)
   tmp[ with(tmp, order(fk_kappa_all, decreasing = T)), ]
 })
 
 filt_kappa_mC_groups_featID <- lapply(seq_along(filt_kappa_mC_groups), function(x) {
   tmp <- filt_kappa_mC_groups[[x]]$fk_kappa_all
   names(tmp) <- filt_kappa_mC_groups[[x]]$name
-  na.omit(tmp)
+  names(tmp)
+#  na.omit(tmp)
 })
 
 filt_kappa_mC_groups_featID_universe <- unlist(filt_kappa_mC_groups_featID)
+stopifnot(length(filt_kappa_mC_groups_featID_universe) == length(featGR))
 
-keytypes(org.At.tair.db)
-ids <- select(org.At.tair.db, keys = keys(org.At.tair.db), columns = c("TAIR"))[,1]
+# Set class for hypergeometric test results object
+setClass("hypergeomTest",
+         representation(alternative = "character",
+                        alpha0.05 = "numeric",
+                        pval = "numeric",
+                        observed = "numeric",
+                        expected = "numeric",
+                        log2obsexp = "numeric",
+                        log2alpha = "numeric",
+                        group_feat = "numeric",
+                        proportion_of_group = "numeric",
+                        random_proportions_of_group = "numeric",
+                        hypergeomDist = "numeric"))
 
-filt_kappa_mC_groups_enrichGO <- lapply(seq_along(filt_kappa_mC_groups_featID), function(x) {
-  print(x)
-  enrichGO(gene = names(filt_kappa_mC_groups_featID[[x]]),
-           universe = names(filt_kappa_mC_groups_featID_universe),
-           OrgDb = org.At.tair.db,
-           keyType = "TAIR",
-           readable = T,
-           ont = ontology,
-#           minGSSize = 10,
-#           maxGSSize = 500,
-           pvalueCutoff = 0.05,
-           qvalueCutoff = 0.10,
-           pAdjustMethod = "BH")
-})
+# P-value is the probability of drawing >= length(group_feat_mD_hs) [x] features
+# in a sample size of length(group_feat) [k] from a total feature set consisting of
+# length(genome_feat_mD_hs) [m] + ( length(genome_feat) - length(genome_feat_mD_hs) ) [n]
 
-for(x in 1:length(filt_kappa_mC_groups_enrichGO)) {
-  if( !is.null(filt_kappa_mC_groups_enrichGO[[x]]) ) {
-    if( sum(filt_kappa_mC_groups_enrichGO[[x]]@result$p.adjust <= 0.05) > 0 ) {
-      print(x)
-      dp_enrichGO <- dotplot(filt_kappa_mC_groups_enrichGO[[x]],
-                             showCategory = 50,
-                             title = paste0("Fleiss' kappa and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
-                             font.size = 12)
-      ggsave(paste0(plotDir_kappa_mC,
-                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
-                    "_", context,
-                    "_NAmax", NAmax,
-                    "_filt_df_fk_kappa_all_mean_mC_all_group", x , "_",
-                    paste0(chrName, collapse = "_"), "_enrichGO_", ontology, "_dotplot.pdf"),
-             plot = dp_enrichGO,
-             height = 10, width = 12,
-             limitsize = F)
+# From Karl Broman's answer at
+# https://stats.stackexchange.com/questions/16247/calculating-the-probability-of-gene-list-overlap-between-an-rna-seq-and-a-chip-c:
+# dhyper(x, m, n, k) gives the probability of drawing exactly x.
+# So P-value is given by the sum of the probabilities of drawing
+# length(kappa_group_feat_mD_hs) to length(kappa_group_feat)
 
-      if(sum(filt_kappa_mC_groups_enrichGO[[x]]@result$p.adjust <= 0.05) > 1) {
-        emp_enrichGO <- emapplot(filt_kappa_mC_groups_enrichGO[[x]],
-                                 showCategory = 50,
-                                 title = paste0("Fleiss' kappa and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
-                                 font.size = 12)
-        ggsave(paste0(plotDir_kappa_mC,
-                      featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
-                      "_", context,
-                      "_NAmax", NAmax,
-                      "_filt_df_fk_kappa_all_mean_mC_all_group", x , "_",
-                      paste0(chrName, collapse = "_"), "_enrichGO_", ontology, "_emapplot.pdf"),
-               plot = emp_enrichGO,
-               height = 10, width = 12,
-               limitsize = F)
+#### TEMP
+#group = 1
+#group_feat_list = filt_kappa_mC_groups_featID
+#genome_feat = filt_kappa_mC_groups_featID_universe
+#genome_feat_mD_loci = featID_mD_hs
+#samples_num = 100000
+#### TEMP
+
+hgTest <- function(group, group_feat_list, genome_feat, genome_feat_mD_loci, samples_num) {
+
+  # Get group_feat from list of groups
+  group_feat <- group_feat_list[[group]]
   
-        gp_enrichGO <- goplot(filt_kappa_mC_groups_enrichGO[[x]],
-                              showCategory = 50,
-                              title = paste0("Fleiss' kappa and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
-                              font.size = 12)
-        ggsave(paste0(plotDir_kappa_mC,
-                      featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
-                      "_", context,
-                      "_NAmax", NAmax,
-                      "_filt_df_fk_kappa_all_mean_mC_all_group", x , "_",
-                      paste0(chrName, collapse = "_"), "_enrichGO_", ontology, "_goplot.pdf"),
-               plot = gp_enrichGO,
-               height = 10, width = 12,
-               limitsize = F)
-      }
-    }
+  # Get intersection of gene IDs in group and gene IDs of NLRs
+  group_feat_mD_loci <- intersect(group_feat, genome_feat_mD_loci)
+
+  # Calculate the P-values for over-representation and under-representation
+  # of NLRs among group genes
+  set.seed(2847502)
+  # Over-representation:
+  Pval_overrep <- sum(dhyper(x = length(group_feat_mD_loci):length(group_feat),
+                             m = length(genome_feat_mD_loci),
+                             n = length(genome_feat) - length(genome_feat_mD_loci),
+                             k = length(group_feat)))
+  print(Pval_overrep)
+
+  # Or by 1 minus the sum of the probabilities of drawing 0:(length(group_feat_mD_loci)-1)
+  print(1 - sum(dhyper(x = 0:(length(group_feat_mD_loci)-1),
+                       m = length(genome_feat_mD_loci),
+                       n = length(genome_feat) - length(genome_feat_mD_loci),
+                       k = length(group_feat))))
+
+  # Under-representation
+  Pval_underrep <- phyper(q = length(group_feat_mD_loci),
+                          m = length(genome_feat_mD_loci),
+                          n = length(genome_feat) - length(genome_feat_mD_loci),
+                          k = length(group_feat))
+  print(Pval_underrep)
+
+  # Sample without replacement
+  hgDist <- rhyper(nn = samples_num,
+                   m = length(genome_feat_mD_loci),
+                   n = length(genome_feat) - length(genome_feat_mD_loci),
+                   k = length(group_feat))
+
+  # Calculate P-values and significance levels
+  if(length(group_feat_mD_loci) > mean(hgDist)) {
+    Pval <- Pval_overrep
+    MoreOrLessThanRandom <- "MoreThanRandom"
+    alpha0.05 <- quantile(hgDist, probs = 0.95)[[1]]
+  } else {
+    Pval <- Pval_underrep
+    MoreOrLessThanRandom <- "LessThanRandom"
+    alpha0.05 <- quantile(hgDist, probs = 0.05)[[1]]
   }
+
+  hgTestResults <- new("hypergeomTest",
+                       alternative = MoreOrLessThanRandom,
+                       alpha0.05 = alpha0.05,
+                       pval = Pval,
+                       observed = length(group_feat_mD_loci),
+                       expected = mean(hgDist),
+                       log2obsexp = log2( (length(group_feat_mD_loci)+1) / (mean(hgDist)+1) ),
+                       log2alpha  = log2( (alpha0.05+1) / (mean(hgDist)+1) ),
+                       group_feat = length(group_feat),
+                       proportion_of_group = length(group_feat_mD_loci) / length(group_feat),
+                       random_proportions_of_group = hgDist / length(group_feat),
+                       hypergeomDist = hgDist)
+
+  data.frame(group = group,
+             group_feat = hgTestResults@group_feat,
+             alternative = hgTestResults@alternative,
+             alpha0.05 = hgTestResults@alpha0.05,
+             observed = hgTestResults@observed,
+             expected = hgTestResults@expected,
+             log2obsexp = hgTestResults@log2obsexp,
+             log2alpha = hgTestResults@log2alpha,
+             proportion_of_group = hgTestResults@proportion_of_group,
+             pval = hgTestResults@pval)
+
 }
 
-
-# Load feature groups (defined based on mean stocha vs mean mC trend plots) to enable enrichment analysis
-
-filt_stocha_mC_groups <- lapply(seq_along(1:8), function(x) {
-  tmp <- read.table(paste0(outDir,
-                           featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
-                           "_", context,
-                           "_NAmax", NAmax,
-                           "_filt_df_mean_stocha_all_mean_mC_all_group", x , "_",
-                           paste0(chrName, collapse = "_"), ".tsv"),
-                    header = T)
-  tmp$name <- sub(pattern = "\\.\\d+", replacement = "", x = tmp$name)
-  tmp$name <- sub(pattern = "_\\d+", replacement = "", x = tmp$name)
-  tmp[ with(tmp, order(mean_stocha_all, decreasing = T)), ]
+# Run hypergeometric test on each group of genes to evaluate
+# representation of epimutation hotspots
+hgTest_kappa_mD_hs_list <- lapply(seq_along(filt_kappa_mC_groups_featID), function(x) {
+  hgTest(group = x,
+         group_feat_list = filt_kappa_mC_groups_featID,
+         genome_feat = filt_kappa_mC_groups_featID_universe,
+         genome_feat_mD_loci = featID_mD_hs,
+         samples_num = 100000)
 })
 
-filt_stocha_mC_groups_featID <- lapply(seq_along(filt_stocha_mC_groups), function(x) {
-  tmp <- filt_stocha_mC_groups[[x]]$mean_stocha_all
-  names(tmp) <- filt_stocha_mC_groups[[x]]$name
-  na.omit(tmp)
+hgTest_kappa_mD_hs_DF <- dplyr::bind_rows(hgTest_kappa_mD_hs_list)
+hgTest_kappa_mD_hs_DF$group <- as.character(hgTest_kappa_mD_hs_DF$group)
+
+hgTest_kappa_mD_hs_DF$BHadj_pval <- p.adjust(hgTest_kappa_mD_hs_DF$pval, method = "BH")
+
+gg_hgTest_kappa_mD_hs <- ggplot(data = hgTest_kappa_mD_hs_DF,
+                                mapping = aes(x = group,
+                                              y = log2obsexp,
+                                              colour = BHadj_pval,
+                                              size = observed)) +
+  geom_point() +
+  scale_colour_gradient(low = "red", high = "blue") +
+  guides(colour = guide_colourbar(reverse = T)) +
+  geom_hline(mapping = aes(yintercept = 0),
+             linetype = "solid", size = 1, colour = "black") +
+  labs(size = "Count", colour = bquote("BH-adjusted" ~ italic(P))) +
+  xlab(bquote(atop("Fleiss' kappa and mean m" * .(context), .(featName) ~ .(featRegion) ~ "group"))) +
+  ylab(bquote(atop("Log"[2] * "(observed/expected)", "m" * .(context) ~ "divergence (" * italic(D) * ") hotspot overlap"))) +
+  ylim(-max(abs(hgTest_kappa_mD_hs_DF$log2obsexp)), max(abs(hgTest_kappa_mD_hs_DF$log2obsexp))) +
+  theme_bw()
+
+ggsave(paste0(plotDir_kappa_mC,
+              "mD_at_dt62_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
+              "_MA1_2_MappedOn_", refbase, "_", paste0(chrName, collapse = "_"), "_", context, "_hotspot_hypergeomTest.pdf"),
+       plot = gg_hgTest_kappa_mD_hs,
+       height = 5, width = 6)
+
+
+# Run hypergeometric test on each group of genes to evaluate
+# representation of epimutation coldspots
+hgTest_kappa_mD_cs_list <- lapply(seq_along(filt_kappa_mC_groups_featID), function(x) {
+  hgTest(group = x,
+         group_feat_list = filt_kappa_mC_groups_featID,
+         genome_feat = filt_kappa_mC_groups_featID_universe,
+         genome_feat_mD_loci = featID_mD_cs,
+         samples_num = 100000)
 })
 
-filt_stocha_mC_groups_featID_universe <- unlist(filt_stocha_mC_groups_featID)
+hgTest_kappa_mD_cs_DF <- dplyr::bind_rows(hgTest_kappa_mD_cs_list)
+hgTest_kappa_mD_cs_DF$group <- as.character(hgTest_kappa_mD_cs_DF$group)
 
-filt_stocha_mC_groups_enrichGO <- lapply(seq_along(filt_stocha_mC_groups_featID), function(x) {
-  print(x)
-  enrichGO(gene = names(filt_stocha_mC_groups_featID[[x]]),
-           universe = names(filt_stocha_mC_groups_featID_universe),
-           OrgDb = org.At.tair.db,
-           keyType = "TAIR",
-           readable = T,
-           ont = ontology,
-#           minGSSize = 10,
-#           maxGSSize = 500,
-           pvalueCutoff = 0.05,
-           qvalueCutoff = 0.10,
-           pAdjustMethod = "BH")
-})
+hgTest_kappa_mD_cs_DF$BHadj_pval <- p.adjust(hgTest_kappa_mD_cs_DF$pval, method = "BH")
 
-for(x in 1:length(filt_stocha_mC_groups_enrichGO)) {
-  if( !is.null(filt_stocha_mC_groups_enrichGO[[x]]) ) {
-    if( sum(filt_stocha_mC_groups_enrichGO[[x]]@result$p.adjust <= 0.05) > 0 ) {
-      print(x)
-      dp_enrichGO <- dotplot(filt_stocha_mC_groups_enrichGO[[x]],
-                             showCategory = 50,
-                             title = paste0("Stochasticity and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
-                             font.size = 12)
-      ggsave(paste0(plotDir_stocha_mC,
-                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
-                    "_", context,
-                    "_NAmax", NAmax,
-                    "_filt_df_mean_stocha_all_mean_mC_all_group", x , "_",
-                    paste0(chrName, collapse = "_"), "_enrichGO_", ontology, "_dotplot.pdf"),
-             plot = dp_enrichGO,
-             height = 10, width = 12,
-             limitsize = F)
+gg_hgTest_kappa_mD_cs <- ggplot(data = hgTest_kappa_mD_cs_DF,
+                                mapping = aes(x = group,
+                                              y = log2obsexp,
+                                              colour = BHadj_pval,
+                                              size = observed)) +
+  geom_point() +
+  scale_colour_gradient(low = "red", high = "blue") +
+  guides(colour = guide_colourbar(reverse = T)) +
+  geom_hline(mapping = aes(yintercept = 0),
+             linetype = "solid", size = 1, colour = "black") +
+  labs(size = "Count", colour = bquote("BH-adjusted" ~ italic(P))) +
+  xlab(bquote(atop("Fleiss' kappa and mean m" * .(context), .(featName) ~ .(featRegion) ~ "group"))) +
+  ylab(bquote(atop("Log"[2] * "(observed/expected)", "m" * .(context) ~ "divergence (" * italic(D) * ") coldspot overlap"))) +
+  ylim(-max(abs(hgTest_kappa_mD_cs_DF$log2obsexp)), max(abs(hgTest_kappa_mD_cs_DF$log2obsexp))) +
+  theme_bw()
 
-      if(sum(filt_stocha_mC_groups_enrichGO[[x]]@result$p.adjust <= 0.05) > 1) {
-        emp_enrichGO <- emapplot(filt_stocha_mC_groups_enrichGO[[x]],
-                                 showCategory = 50,
-                                 title = paste0("Stochasticity and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
-                                 font.size = 12)
-        ggsave(paste0(plotDir_stocha_mC,
-                      featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
-                      "_", context,
-                      "_NAmax", NAmax,
-                      "_filt_df_mean_stocha_all_mean_mC_all_group", x , "_",
-                      paste0(chrName, collapse = "_"), "_enrichGO_", ontology, "_emapplot.pdf"),
-               plot = emp_enrichGO,
-               height = 10, width = 12,
-               limitsize = F)
-
-        gp_enrichGO <- goplot(filt_stocha_mC_groups_enrichGO[[x]],
-                              showCategory = 50,
-                              title = paste0("Stochasticity and mean m", context, " in ", featName, " ", featRegion, " Group ", x),
-                              font.size = 12)
-        ggsave(paste0(plotDir_stocha_mC,
-                      featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
-                      "_", context,
-                      "_NAmax", NAmax,
-                      "_filt_df_mean_stocha_all_mean_mC_all_group", x , "_",
-                      paste0(chrName, collapse = "_"), "_enrichGO_", ontology, "_goplot.pdf"),
-               plot = gp_enrichGO,
-               height = 10, width = 12,
-               limitsize = F)
-      }
-    }
-  }
-}
-
-
-# Load feature groups (defined based on Fleiss' kappa vs mean stocha trend plots) to enable enrichment analysis
-
-filt_kappa_stocha_groups <- lapply(seq_along(1:8), function(x) {
-  tmp <- read.table(paste0(outDir,
-                           featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
-                           "_", context,
-                           "_NAmax", NAmax,
-                           "_filt_df_fk_kappa_all_mean_stocha_all_group", x , "_",
-                           paste0(chrName, collapse = "_"), ".tsv"),
-                    header = T)
-  tmp$name <- sub(pattern = "\\.\\d+", replacement = "", x = tmp$name)
-  tmp$name <- sub(pattern = "_\\d+", replacement = "", x = tmp$name)
-  tmp[ with(tmp, order(fk_kappa_all, decreasing = T)), ]
-})
-
-filt_kappa_stocha_groups_featID <- lapply(seq_along(filt_kappa_stocha_groups), function(x) {
-  tmp <- filt_kappa_stocha_groups[[x]]$fk_kappa_all
-  names(tmp) <- filt_kappa_stocha_groups[[x]]$name
-  na.omit(tmp)
-})
-
-filt_kappa_stocha_groups_featID_universe <- unlist(filt_kappa_stocha_groups_featID)
-
-keytypes(org.At.tair.db)
-ids <- select(org.At.tair.db, keys = keys(org.At.tair.db), columns = c("TAIR"))[,1]
-
-filt_kappa_stocha_groups_enrichGO <- lapply(seq_along(filt_kappa_stocha_groups_featID), function(x) {
-  print(x)
-  enrichGO(gene = names(filt_kappa_stocha_groups_featID[[x]]),
-           universe = names(filt_kappa_stocha_groups_featID_universe),
-           OrgDb = org.At.tair.db,
-           keyType = "TAIR",
-           readable = T,
-           ont = ontology,
-#           minGSSize = 10,
-#           maxGSSize = 500,
-           pvalueCutoff = 0.05,
-           qvalueCutoff = 0.10,
-           pAdjustMethod = "BH")
-})
-
-for(x in 1:length(filt_kappa_stocha_groups_enrichGO)) {
-  if( !is.null(filt_kappa_stocha_groups_enrichGO[[x]]) ) {
-    if( sum(filt_kappa_stocha_groups_enrichGO[[x]]@result$p.adjust <= 0.05) > 0 ) {
-      print(x)
-      dp_enrichGO <- dotplot(filt_kappa_stocha_groups_enrichGO[[x]],
-                             showCategory = 50,
-                             title = paste0("Fleiss' kappa and mean stochasticity (m", context, ") in ", featName, " ", featRegion, " Group ", x),
-                             font.size = 12)
-      ggsave(paste0(plotDir_kappa_stocha,
-                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
-                    "_", context,
-                    "_NAmax", NAmax,
-                    "_filt_df_fk_kappa_all_mean_stocha_all_group", x , "_",
-                    paste0(chrName, collapse = "_"), "_enrichGO_", ontology, "_dotplot.pdf"),
-             plot = dp_enrichGO,
-             height = 10, width = 12,
-             limitsize = F)
-
-      if(sum(filt_kappa_stocha_groups_enrichGO[[x]]@result$p.adjust <= 0.05) > 1) {
-        emp_enrichGO <- emapplot(filt_kappa_stocha_groups_enrichGO[[x]],
-                                 showCategory = 50,
-                                 title = paste0("Fleiss' kappa and mean stochasticity (m", context, ") in ", featName, " ", featRegion, " Group ", x),
-                                 font.size = 12)
-        ggsave(paste0(plotDir_kappa_stocha,
-                      featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
-                      "_", context,
-                      "_NAmax", NAmax,
-                      "_filt_df_fk_kappa_all_mean_stocha_all_group", x , "_",
-                      paste0(chrName, collapse = "_"), "_enrichGO_", ontology, "_emapplot.pdf"),
-               plot = emp_enrichGO,
-               height = 10, width = 12,
-               limitsize = F)
-  
-        gp_enrichGO <- goplot(filt_kappa_stocha_groups_enrichGO[[x]],
-                              showCategory = 50,
-                              title = paste0("Fleiss' kappa and mean stochasticity (m", context, ") in ", featName, " ", featRegion, " Group ", x),
-                              font.size = 12)
-        ggsave(paste0(plotDir_kappa_stocha,
-                      featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
-                      "_", context,
-                      "_NAmax", NAmax,
-                      "_filt_df_fk_kappa_all_mean_stocha_all_group", x , "_",
-                      paste0(chrName, collapse = "_"), "_enrichGO_", ontology, "_goplot.pdf"),
-               plot = gp_enrichGO,
-               height = 10, width = 12,
-               limitsize = F)
-      }
-    }
-  }
-}
+ggsave(paste0(plotDir_kappa_mC,
+              "mD_at_dt62_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
+              "_MA1_2_MappedOn_", refbase, "_", paste0(chrName, collapse = "_"), "_", context, "_coldspot_hypergeomTest.pdf"),
+       plot = gg_hgTest_kappa_mD_cs,
+       height = 5, width = 6)

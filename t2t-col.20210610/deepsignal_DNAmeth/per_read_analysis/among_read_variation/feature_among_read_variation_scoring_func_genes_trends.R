@@ -79,7 +79,7 @@ con_fk_df_all_filt <- read.table(paste0(outDir,
                                         featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                                         "_", context,
                                         "_NAmax", NAmax,
-                                        "_unfilt_df_fk_kappa_all_mean_mC_all_complete_",
+                                        "_filt_df_fk_kappa_all_mean_mC_all_complete_",
                                         paste0(chrName, collapse = "_"), ".tsv"),
                                  header = T)
 
