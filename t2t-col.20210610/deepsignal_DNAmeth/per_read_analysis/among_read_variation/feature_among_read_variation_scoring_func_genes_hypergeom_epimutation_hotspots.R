@@ -205,7 +205,7 @@ gg_dens_mD <- ggplot(tab_mD,
   geom_vline(mapping = aes(xintercept = min(mD_hs$MA1_2_mean.D)),
              linetype = "dashed", size = 0.5, colour = "red") +
   geom_vline(mapping = aes(xintercept = min(mD_cs$MA1_2_mean.D)),
-             linetype = "dashed", size = 0.5, colour = "blue") +
+             linetype = "dashed", size = 0.5, colour = "dodgerblue") +
   xlab(bquote("m" * .(context) ~ "divergence (" * italic(D) * ")")) +
   theme_bw()
 ggsave(paste0(plotDir,
