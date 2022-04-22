@@ -90,15 +90,16 @@ con_fk_df_all_filt$parent <- sub(pattern = "\\.\\d+", replacement = "", x = con_
 con_fk_df_all_filt$parent <- sub(pattern = "_\\d+", replacement = "", x = con_fk_df_all_filt$parent) 
 
 # Append intron retention ratio (calculated with IRFinder)
-Col_Rep3_IRFinder <- fread(paste0("/home/ajt200/analysis/RNAseq_leaf_Rigal_Mathieu_2016_PNAS/snakemake_RNAseq_IRFinder_TAIR10_chr_all/REF/TAIR10_chr_all/",
-                                  "Col_0_RNAseq_Rep3_ERR966159/IRFinder-IR-nondir.txt"),
+Col_Rep1_IRFinder <- fread(paste0("/home/ajt200/analysis/RNAseq_leaf_Rigal_Mathieu_2016_PNAS/snakemake_RNAseq_IRFinder_TAIR10_chr_all/REF/TAIR10_chr_all/",
+                                  "Col_0_RNAseq_Rep1_ERR966157/IRFinder-IR-dir.txt"),
                            sep = "\t", data.table = F)
-Col_Rep3_IRFinder <- Col_Rep3_IRFinder[grep("clean", Col_Rep3_IRFinder$Name),]
-nrow(Col_Rep3_IRFinder[which(Col_Rep3_IRFinder$Warnings == "-"),])
+Col_Rep1_IRFinder <- Col_Rep1_IRFinder[grep("clean", Col_Rep1_IRFinder$Name),]
+Col_Rep1_IRFinder <- Col_Rep1_IRFinder[-which(Col_Rep1_IRFinder$Warnings %in% c("LowCover")),]
+#nrow(Col_Rep1_IRFinder[which(Col_Rep1_IRFinder$Warnings == "-"),])
 #[1] 45907
 #[1] 22136
-Col_Rep3_IRFinder$Name <- str_extract(Col_Rep3_IRFinder$Name, "AT\\wG\\d+")
-Col_Rep3_IRFinder <- Col_Rep3_IRFinder[-which(is.na(Col_Rep3_IRFinder$Name)),]
+Col_Rep1_IRFinder$Name <- str_extract(Col_Rep1_IRFinder$Name, "AT\\wG\\d+")
+Col_Rep1_IRFinder <- Col_Rep1_IRFinder[-which(is.na(Col_Rep1_IRFinder$Name)),]
 
 library(doFuture)
 registerDoFuture()
@@ -108,15 +109,15 @@ print(getDoParName())
 print(getDoParVersion())
 print(getDoParWorkers())
 
-parentIDs <- unique(Col_Rep3_IRFinder$Name)
+parentIDs <- unique(Col_Rep1_IRFinder$Name)
 
-Col_Rep3_IRratio <- foreach(i = iter(parentIDs),
+Col_Rep1_IRratio <- foreach(i = iter(parentIDs),
                             .combine = "rbind",
                             .multicombine = T,
                             .maxcombine = length(parentIDs)+1e1,
                             .inorder = F,
                             .errorhandling = "pass") %dopar% {
-  tmpDF <- Col_Rep3_IRFinder[which(Col_Rep3_IRFinder$Name == i),]
+  tmpDF <- Col_Rep1_IRFinder[which(Col_Rep1_IRFinder$Name == i),]
   data.frame(chr = paste0("Chr", tmpDF$Chr[1]),
              start = min(tmpDF$Start, na.rm = T),
              end = max(tmpDF$End, na.rm = T),
@@ -133,17 +134,20 @@ Col_Rep3_IRratio <- foreach(i = iter(parentIDs),
              IRratio_max = max(tmpDF$IRratio, na.rm = T))
 }
 
-con_fk_df_all_tab <- base::merge(x = con_fk_df_all, y = Col_Rep3_IRratio,
+con_fk_df_all_tab <- base::merge(x = con_fk_df_all, y = Col_Rep1_IRratio,
                                  by.x = "parent", by.y = "parent")
-con_fk_df_all_filt_tab <- base::merge(x = con_fk_df_all_filt, y = Col_Rep3_IRratio,
+con_fk_df_all_filt_tab <- base::merge(x = con_fk_df_all_filt, y = Col_Rep1_IRratio,
                                       by.x = "parent", by.y = "parent")
 
 print(cor.test(con_fk_df_all_tab$fk_kappa_all, con_fk_df_all_tab$IRratio_mean, method = "spearman"))
 print(cor.test(con_fk_df_all_tab$fk_kappa_all, con_fk_df_all_tab$IRratio_median, method = "spearman"))
+
 print(cor.test(con_fk_df_all_tab$mean_stocha_all, con_fk_df_all_tab$IRratio_mean, method = "spearman"))
 print(cor.test(con_fk_df_all_tab$mean_stocha_all, con_fk_df_all_tab$IRratio_median, method = "spearman"))
+
 print(cor.test(con_fk_df_all_filt_tab$fk_kappa_all, con_fk_df_all_filt_tab$IRratio_mean, method = "spearman"))
 print(cor.test(con_fk_df_all_filt_tab$fk_kappa_all, con_fk_df_all_filt_tab$IRratio_median, method = "spearman"))
+
 print(cor.test(con_fk_df_all_filt_tab$mean_stocha_all, con_fk_df_all_filt_tab$IRratio_mean, method = "spearman"))
 print(cor.test(con_fk_df_all_filt_tab$mean_stocha_all, con_fk_df_all_filt_tab$IRratio_median, method = "spearman"))
 
