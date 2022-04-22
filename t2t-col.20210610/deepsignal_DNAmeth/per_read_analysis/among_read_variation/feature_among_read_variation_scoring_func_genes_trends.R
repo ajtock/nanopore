@@ -1,4 +1,4 @@
-#!/applications/R/R-4.0.0/bin/Rscript
+#!/usr/bin/env Rscript
 
 # Analysis:
 # 1. Score among-read variation/agreement (e.g., Fleiss' kappa) for each feature
@@ -91,7 +91,7 @@ con_fk_df_all_filt$parent <- sub(pattern = "_\\d+", replacement = "", x = con_fk
 
 # Append intron retention ratio (calculated with IRFinder)
 Col_Rep1_IRFinder <- fread(paste0("/home/ajt200/analysis/RNAseq_leaf_Rigal_Mathieu_2016_PNAS/snakemake_RNAseq_IRFinder_TAIR10_chr_all/REF/TAIR10_chr_all/",
-                                  "Col_0_RNAseq_Rep1_ERR966157/IRFinder-IR-dir.txt"),
+                                  "Col_0_RNAseq_pooled_ERR96615/IRFinder-IR-dir.txt"),
                            sep = "\t", data.table = F)
 Col_Rep1_IRFinder <- Col_Rep1_IRFinder[grep("clean", Col_Rep1_IRFinder$Name),]
 Col_Rep1_IRFinder <- Col_Rep1_IRFinder[-which(Col_Rep1_IRFinder$Warnings %in% c("LowCover")),]
@@ -101,6 +101,7 @@ Col_Rep1_IRFinder <- Col_Rep1_IRFinder[-which(Col_Rep1_IRFinder$Warnings %in% c(
 Col_Rep1_IRFinder$Name <- str_extract(Col_Rep1_IRFinder$Name, "AT\\wG\\d+")
 Col_Rep1_IRFinder <- Col_Rep1_IRFinder[-which(is.na(Col_Rep1_IRFinder$Name)),]
 
+library(doParallel)
 library(doFuture)
 registerDoFuture()
 plan(multicore)
@@ -140,16 +141,24 @@ con_fk_df_all_filt_tab <- base::merge(x = con_fk_df_all_filt, y = Col_Rep1_IRrat
                                       by.x = "parent", by.y = "parent")
 
 print(cor.test(con_fk_df_all_tab$fk_kappa_all, con_fk_df_all_tab$IRratio_mean, method = "spearman"))
+#-0.1048385
 print(cor.test(con_fk_df_all_tab$fk_kappa_all, con_fk_df_all_tab$IRratio_median, method = "spearman"))
+#-0.3147091
 
 print(cor.test(con_fk_df_all_tab$mean_stocha_all, con_fk_df_all_tab$IRratio_mean, method = "spearman"))
+#-0.1166685
 print(cor.test(con_fk_df_all_tab$mean_stocha_all, con_fk_df_all_tab$IRratio_median, method = "spearman"))
+#-0.3260638
 
 print(cor.test(con_fk_df_all_filt_tab$fk_kappa_all, con_fk_df_all_filt_tab$IRratio_mean, method = "spearman"))
+#-0.1025338
 print(cor.test(con_fk_df_all_filt_tab$fk_kappa_all, con_fk_df_all_filt_tab$IRratio_median, method = "spearman"))
+#-0.3113267
 
 print(cor.test(con_fk_df_all_filt_tab$mean_stocha_all, con_fk_df_all_filt_tab$IRratio_mean, method = "spearman"))
+#-0.1164848
 print(cor.test(con_fk_df_all_filt_tab$mean_stocha_all, con_fk_df_all_filt_tab$IRratio_median, method = "spearman"))
+#-0.3240916
 
 
 # Plot relationships and define groups
