@@ -32,6 +32,8 @@ featRegion <- args[8]
 print(paste0("Proportion of CPUs:", CPUpc))
 options(stringsAsFactors = F)
 library(parallel)
+library(stringr)
+library(data.table)
 #library(GenomicRanges)
 #library(irr)
 library(dplyr)
@@ -74,6 +76,8 @@ con_fk_df_all <- read.table(paste0(outDir,
                                    "_unfilt_df_fk_kappa_all_mean_mC_all_complete_",
                                    paste0(chrName, collapse = "_"), ".tsv"),
                             header = T)
+con_fk_df_all$parent <- sub(pattern = "\\.\\d+", replacement = "", x = con_fk_df_all$name) 
+con_fk_df_all$parent <- sub(pattern = "_\\d+", replacement = "", x = con_fk_df_all$parent) 
 
 con_fk_df_all_filt <- read.table(paste0(outDir,
                                         featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
@@ -82,6 +86,67 @@ con_fk_df_all_filt <- read.table(paste0(outDir,
                                         "_filt_df_fk_kappa_all_mean_mC_all_complete_",
                                         paste0(chrName, collapse = "_"), ".tsv"),
                                  header = T)
+con_fk_df_all_filt$parent <- sub(pattern = "\\.\\d+", replacement = "", x = con_fk_df_all_filt$name) 
+con_fk_df_all_filt$parent <- sub(pattern = "_\\d+", replacement = "", x = con_fk_df_all_filt$parent) 
+
+# Append intron retention ratio (calculated with IRFinder)
+Col_Rep3_IRFinder <- fread(paste0("/home/ajt200/analysis/RNAseq_leaf_Rigal_Mathieu_2016_PNAS/snakemake_RNAseq_IRFinder_TAIR10_chr_all/REF/TAIR10_chr_all/",
+                                  "Col_0_RNAseq_Rep3_ERR966159/IRFinder-IR-nondir.txt"),
+                           sep = "\t", data.table = F)
+Col_Rep3_IRFinder <- Col_Rep3_IRFinder[grep("clean", Col_Rep3_IRFinder$Name),]
+nrow(Col_Rep3_IRFinder[which(Col_Rep3_IRFinder$Warnings == "-"),])
+#[1] 45907
+#[1] 22136
+Col_Rep3_IRFinder$Name <- str_extract(Col_Rep3_IRFinder$Name, "AT\\wG\\d+")
+Col_Rep3_IRFinder <- Col_Rep3_IRFinder[-which(is.na(Col_Rep3_IRFinder$Name)),]
+
+library(doFuture)
+registerDoFuture()
+plan(multicore)
+print("Currently registered parallel backend name, version and cores")
+print(getDoParName())
+print(getDoParVersion())
+print(getDoParWorkers())
+
+parentIDs <- unique(Col_Rep3_IRFinder$Name)
+
+Col_Rep3_IRratio <- foreach(i = iter(parentIDs),
+                            .combine = "rbind",
+                            .multicombine = T,
+                            .maxcombine = length(parentIDs)+1e1,
+                            .inorder = F,
+                            .errorhandling = "pass") %dopar% {
+  tmpDF <- Col_Rep3_IRFinder[which(Col_Rep3_IRFinder$Name == i),]
+  data.frame(chr = paste0("Chr", tmpDF$Chr[1]),
+             start = min(tmpDF$Start, na.rm = T),
+             end = max(tmpDF$End, na.rm = T),
+             parent = i,
+             strand = tmpDF$Strand[1],
+             intronWidth_sum = sum(tmpDF$End - tmpDF$Start + 1, na.rm = T),
+             excludedBases_sum = sum(tmpDF$ExcludedBases, na.rm = T),
+             coverage_sum = sum(tmpDF$Coverage, na.rm = T),
+             intronDepth_sum = sum(tmpDF$IntronDepth, na.rm = T),
+             IRratio_mean = mean(tmpDF$IRratio, na.rm = T),
+             IRratio_median = median(tmpDF$IRratio, na.rm = T),
+             IRratio_sd = sd(tmpDF$IRratio, na.rm = T),
+             IRratio_min = min(tmpDF$IRratio, na.rm = T),
+             IRratio_max = max(tmpDF$IRratio, na.rm = T))
+}
+
+con_fk_df_all_tab <- base::merge(x = con_fk_df_all, y = Col_Rep3_IRratio,
+                                 by.x = "parent", by.y = "parent")
+con_fk_df_all_filt_tab <- base::merge(x = con_fk_df_all_filt, y = Col_Rep3_IRratio,
+                                      by.x = "parent", by.y = "parent")
+
+print(cor.test(con_fk_df_all_tab$fk_kappa_all, con_fk_df_all_tab$IRratio_mean, method = "spearman"))
+print(cor.test(con_fk_df_all_tab$fk_kappa_all, con_fk_df_all_tab$IRratio_median, method = "spearman"))
+print(cor.test(con_fk_df_all_tab$mean_stocha_all, con_fk_df_all_tab$IRratio_mean, method = "spearman"))
+print(cor.test(con_fk_df_all_tab$mean_stocha_all, con_fk_df_all_tab$IRratio_median, method = "spearman"))
+print(cor.test(con_fk_df_all_filt_tab$fk_kappa_all, con_fk_df_all_filt_tab$IRratio_mean, method = "spearman"))
+print(cor.test(con_fk_df_all_filt_tab$fk_kappa_all, con_fk_df_all_filt_tab$IRratio_median, method = "spearman"))
+print(cor.test(con_fk_df_all_filt_tab$mean_stocha_all, con_fk_df_all_filt_tab$IRratio_mean, method = "spearman"))
+print(cor.test(con_fk_df_all_filt_tab$mean_stocha_all, con_fk_df_all_filt_tab$IRratio_median, method = "spearman"))
+
 
 # Plot relationships and define groups
 trendPlot <- function(dataFrame, mapping, xvar, yvar, xlab, ylab, xaxtrans, yaxtrans, xbreaks, ybreaks, xlabels, ylabels) {
