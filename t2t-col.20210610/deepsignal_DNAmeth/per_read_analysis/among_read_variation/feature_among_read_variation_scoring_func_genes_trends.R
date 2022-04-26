@@ -629,12 +629,12 @@ if(context == "CpG") {
     dplyr::filter(mean_mC_all  <= mean_mC_all_high)
   
   con_fk_df_all_filt_kappa_mC_group7 <- con_fk_df_all_filt %>%
-    dplyr::filter(fk_kappa_all <= fk_kappa_all_low) %>%
-    dplyr::filter(mean_mC_all  >  mean_mC_all_high)
-  
-  con_fk_df_all_filt_kappa_mC_group8 <- con_fk_df_all_filt %>%
     dplyr::filter(fk_kappa_all > fk_kappa_all_low) %>%
     dplyr::filter(mean_mC_all  > mean_mC_all_high)
+  
+  con_fk_df_all_filt_kappa_mC_group8 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all <= fk_kappa_all_low) %>%
+    dplyr::filter(mean_mC_all  >  mean_mC_all_high)
 } else if(context == "CHG") {
   con_fk_df_all_filt_kappa_mC_group1 <- con_fk_df_all_filt %>%
     dplyr::filter(fk_kappa_all <= fk_kappa_all_low) %>%
@@ -665,12 +665,12 @@ if(context == "CpG") {
     dplyr::filter(mean_mC_all  <= mean_mC_all_high)
   
   con_fk_df_all_filt_kappa_mC_group7 <- con_fk_df_all_filt %>%
-    dplyr::filter(fk_kappa_all <= fk_kappa_all_high) %>%
-    dplyr::filter(mean_mC_all  >  mean_mC_all_high)
-  
-  con_fk_df_all_filt_kappa_mC_group8 <- con_fk_df_all_filt %>%
     dplyr::filter(fk_kappa_all > fk_kappa_all_high) %>%
     dplyr::filter(mean_mC_all  > mean_mC_all_high)
+  
+  con_fk_df_all_filt_kappa_mC_group8 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all <= fk_kappa_all_high) %>%
+    dplyr::filter(mean_mC_all  >  mean_mC_all_high)
 } else if(context == "CHH") {
   con_fk_df_all_filt_kappa_mC_group1 <- con_fk_df_all_filt %>%
     dplyr::filter(fk_kappa_all <= fk_kappa_all_low) %>%
@@ -701,12 +701,12 @@ if(context == "CpG") {
     dplyr::filter(mean_mC_all  <= mean_mC_all_high)
   
   con_fk_df_all_filt_kappa_mC_group7 <- con_fk_df_all_filt %>%
-    dplyr::filter(fk_kappa_all <= fk_kappa_all_high) %>%
-    dplyr::filter(mean_mC_all  >  mean_mC_all_high)
-  
-  con_fk_df_all_filt_kappa_mC_group8 <- con_fk_df_all_filt %>%
     dplyr::filter(fk_kappa_all > fk_kappa_all_high) %>%
     dplyr::filter(mean_mC_all  > mean_mC_all_high)
+  
+  con_fk_df_all_filt_kappa_mC_group8 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all <= fk_kappa_all_high) %>%
+    dplyr::filter(mean_mC_all  >  mean_mC_all_high)
 }
 
 write.table(con_fk_df_all_filt_kappa_mC_group1,
@@ -806,12 +806,12 @@ if(context == "CpG") {
     dplyr::filter(mean_mC_all     <= mean_mC_all_high)
   
   con_fk_df_all_filt_stocha_mC_group7 <- con_fk_df_all_filt %>%
-    dplyr::filter(mean_stocha_all <= mean_stocha_all_mid) %>%
-    dplyr::filter(mean_mC_all     >  mean_mC_all_high)
-  
-  con_fk_df_all_filt_stocha_mC_group8 <- con_fk_df_all_filt %>%
     dplyr::filter(mean_stocha_all > mean_stocha_all_mid) %>%
     dplyr::filter(mean_mC_all     > mean_mC_all_high)
+  
+  con_fk_df_all_filt_stocha_mC_group8 <- con_fk_df_all_filt %>%
+    dplyr::filter(mean_stocha_all <= mean_stocha_all_mid) %>%
+    dplyr::filter(mean_mC_all     >  mean_mC_all_high)
 } else if(context == "CHG") {
   con_fk_df_all_filt_stocha_mC_group1 <- con_fk_df_all_filt %>%
     dplyr::filter(mean_stocha_all <= mean_stocha_all_low) %>%
@@ -842,12 +842,12 @@ if(context == "CpG") {
     dplyr::filter(mean_mC_all     <= mean_mC_all_high)
   
   con_fk_df_all_filt_stocha_mC_group7 <- con_fk_df_all_filt %>%
-    dplyr::filter(mean_stocha_all <= mean_stocha_all_high) %>%
-    dplyr::filter(mean_mC_all     >  mean_mC_all_high)
-  
-  con_fk_df_all_filt_stocha_mC_group8 <- con_fk_df_all_filt %>%
     dplyr::filter(mean_stocha_all > mean_stocha_all_high) %>%
     dplyr::filter(mean_mC_all     > mean_mC_all_high)
+  
+  con_fk_df_all_filt_stocha_mC_group8 <- con_fk_df_all_filt %>%
+    dplyr::filter(mean_stocha_all <= mean_stocha_all_high) %>%
+    dplyr::filter(mean_mC_all     >  mean_mC_all_high)
 } else if(context == "CHH") {
   con_fk_df_all_filt_stocha_mC_group1 <- con_fk_df_all_filt %>%
     dplyr::filter(mean_stocha_all <= mean_stocha_all_low) %>%
@@ -878,12 +878,12 @@ if(context == "CpG") {
     dplyr::filter(mean_mC_all     <= mean_mC_all_high)
 
   con_fk_df_all_filt_stocha_mC_group7 <- con_fk_df_all_filt %>%
-    dplyr::filter(mean_stocha_all <= mean_stocha_all_high) %>%
-    dplyr::filter(mean_mC_all     >  mean_mC_all_high)
-
-  con_fk_df_all_filt_stocha_mC_group8 <- con_fk_df_all_filt %>%
     dplyr::filter(mean_stocha_all > mean_stocha_all_high) %>%
     dplyr::filter(mean_mC_all     > mean_mC_all_high)
+
+  con_fk_df_all_filt_stocha_mC_group8 <- con_fk_df_all_filt %>%
+    dplyr::filter(mean_stocha_all <= mean_stocha_all_high) %>%
+    dplyr::filter(mean_mC_all     >  mean_mC_all_high)
 }
 
 
@@ -984,12 +984,12 @@ if(context == "CpG") {
     dplyr::filter(mean_stocha_all <= mean_stocha_all_high)
   
   con_fk_df_all_filt_kappa_stocha_group7 <- con_fk_df_all_filt %>%
-    dplyr::filter(fk_kappa_all    <= fk_kappa_all_high) %>%
-    dplyr::filter(mean_stocha_all >  mean_stocha_all_high)
-  
-  con_fk_df_all_filt_kappa_stocha_group8 <- con_fk_df_all_filt %>%
     dplyr::filter(fk_kappa_all    > fk_kappa_all_high) %>%
     dplyr::filter(mean_stocha_all > mean_stocha_all_high)
+  
+  con_fk_df_all_filt_kappa_stocha_group8 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all    <= fk_kappa_all_high) %>%
+    dplyr::filter(mean_stocha_all >  mean_stocha_all_high)
 } else if(context == "CHG") {
   con_fk_df_all_filt_kappa_stocha_group1 <- con_fk_df_all_filt %>%
     dplyr::filter(fk_kappa_all    <= fk_kappa_all_low) %>%
@@ -1020,12 +1020,12 @@ if(context == "CpG") {
     dplyr::filter(mean_stocha_all <= mean_stocha_all_high)
   
   con_fk_df_all_filt_kappa_stocha_group7 <- con_fk_df_all_filt %>%
-    dplyr::filter(fk_kappa_all    <= fk_kappa_all_high) %>%
-    dplyr::filter(mean_stocha_all >  mean_stocha_all_high)
-  
-  con_fk_df_all_filt_kappa_stocha_group8 <- con_fk_df_all_filt %>%
     dplyr::filter(fk_kappa_all    > fk_kappa_all_high) %>%
     dplyr::filter(mean_stocha_all > mean_stocha_all_high)
+  
+  con_fk_df_all_filt_kappa_stocha_group8 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all    <= fk_kappa_all_high) %>%
+    dplyr::filter(mean_stocha_all >  mean_stocha_all_high)
 } else if(context == "CHH") {
   con_fk_df_all_filt_kappa_stocha_group1 <- con_fk_df_all_filt %>%
     dplyr::filter(fk_kappa_all    <= fk_kappa_all_low) %>%
@@ -1056,12 +1056,12 @@ if(context == "CpG") {
     dplyr::filter(mean_stocha_all <= mean_stocha_all_high)
   
   con_fk_df_all_filt_kappa_stocha_group7 <- con_fk_df_all_filt %>%
-    dplyr::filter(fk_kappa_all    <= fk_kappa_all_high) %>%
-    dplyr::filter(mean_stocha_all >  mean_stocha_all_high)
-  
-  con_fk_df_all_filt_kappa_stocha_group8 <- con_fk_df_all_filt %>%
     dplyr::filter(fk_kappa_all    > fk_kappa_all_high) %>%
     dplyr::filter(mean_stocha_all > mean_stocha_all_high)
+  
+  con_fk_df_all_filt_kappa_stocha_group8 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all    <= fk_kappa_all_high) %>%
+    dplyr::filter(mean_stocha_all >  mean_stocha_all_high)
 }
 
 write.table(con_fk_df_all_filt_kappa_stocha_group1,
