@@ -6,7 +6,7 @@
 
 # Usage:
 # conda activate R-4.0.0
-# ./feature_among_read_variation_scoring_func_genes_hypergeom_Lloyd_2015_PlantCell_lethal.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 'Chr1,Chr2,Chr3,Chr4,Chr5' 'gene' 'regions'
+# ./feature_among_read_variation_scoring_func_genes_hypergeom_Lloyd_2015_PlantCell_alphaWGD.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 'Chr1,Chr2,Chr3,Chr4,Chr5' 'gene' 'regions'
 # conda deactivate
  
 #sampleName <- "Col_0_deepsignalDNAmeth_30kb_90pc"
@@ -106,14 +106,13 @@ chrLens <- fai[,2][which(fai[,1] %in% chrName)]
 ##                       strand = "*")
 
 # Read in Lloyd et al. (2015) Plant Cell gene features
-ds1 <- read.csv(paste0("Lloyd_2015_Plant_Cell_SupplData/plcell_v27_8_2133_s1/plcell_v27_8_2133_s1/",
-                       "TPC2015-00051-LSBR3_Supplemental_Data_set_1_Sheet1.csv"),
-                header = T)
+ds3 <- read.csv(paste0("Lloyd_2015_Plant_Cell_SupplData/plcell_v27_8_2133_s1/plcell_v27_8_2133_s1/",
+                       "TPC2015-00051-LSBR3_Supplemental_Data_set_3_Sheet1.csv"),
+                header = T, na.strings = c("NA", "?"))
+nrow(ds3)
 
-lethal <- ds1[ds1[,2] == "Lethal" |
-              ds1[,3] == "Yes",]
-nonlethal <- ds1[ds1[,2] == "Non-Lethal" |
-                 ds1[,3] == "No",]
+alphaWGD <- ds3[which(ds3$alpha.WGD.paralog.retained == 1),]
+nrow(alphaWGD)
 
 
 # Define hypergeometric test function
@@ -228,8 +227,7 @@ featDF <- read.table(paste0(outDir,
 featDF$parent <- sub(pattern = "\\.\\d+", replacement = "", x = featDF$name)
 featDF$parent <- sub(pattern = "_\\d+", replacement = "", x = featDF$parent)
 
-featID_lethal <- unique(featDF[which(featDF$parent %in% lethal[,1]),]$parent)
-featID_nonlethal <- unique(featDF[which(featDF$parent %in% nonlethal[,1]),]$parent)
+featID_alphaWGD <- unique(featDF[which(featDF$parent %in% alphaWGD[,1]),]$parent)
  
 
 # Load feature groups (defined based on Fleiss' kappa vs mean mC trend plots) to enable enrichment analysis
@@ -259,21 +257,21 @@ stopifnot(length(filt_kappa_mC_groups_featID_universe) == nrow(featDF))
 
 
 # Run hypergeometric test on each group of genes to evaluate
-# representation of lethal genes
-hgTest_kappa_lethal_list <- lapply(seq_along(filt_kappa_mC_groups_featID), function(x) {
+# representation of alphaWGD genes
+hgTest_kappa_alphaWGD_list <- lapply(seq_along(filt_kappa_mC_groups_featID), function(x) {
   hgTest(group = x,
          group_feat_list = filt_kappa_mC_groups_featID,
          genome_feat = filt_kappa_mC_groups_featID_universe,
-         genome_feat_query = featID_lethal,
+         genome_feat_query = featID_alphaWGD,
          samples_num = 1e5)
 })
 
-hgTest_kappa_lethal_DF <- dplyr::bind_rows(hgTest_kappa_lethal_list)
-hgTest_kappa_lethal_DF$group <- as.character(hgTest_kappa_lethal_DF$group)
+hgTest_kappa_alphaWGD_DF <- dplyr::bind_rows(hgTest_kappa_alphaWGD_list)
+hgTest_kappa_alphaWGD_DF$group <- as.character(hgTest_kappa_alphaWGD_DF$group)
 
-hgTest_kappa_lethal_DF$BHadj_pval <- p.adjust(hgTest_kappa_lethal_DF$pval, method = "BH")
+hgTest_kappa_alphaWGD_DF$BHadj_pval <- p.adjust(hgTest_kappa_alphaWGD_DF$pval, method = "BH")
 
-gg_hgTest_kappa_lethal <- ggplot(data = hgTest_kappa_lethal_DF,
+gg_hgTest_kappa_alphaWGD <- ggplot(data = hgTest_kappa_alphaWGD_DF,
                                  mapping = aes(x = group,
                                                y = log2obsexp,
                                                colour = pval,
@@ -286,68 +284,22 @@ gg_hgTest_kappa_lethal <- ggplot(data = hgTest_kappa_lethal_DF,
 #  labs(size = "Count", colour = bquote("BH-adjusted" ~ italic(P))) +
   labs(size = "Count", colour = bquote(italic(P)*"-value")) +
   xlab(bquote(atop("Fleiss' kappa and mean m" * .(context), .(featName) ~ .(featRegion) ~ "group"))) +
-  ylab(bquote(atop("Log"[2] * "(observed/expected) lethal genes"))) +
-  ylim(-max(abs(hgTest_kappa_lethal_DF$log2obsexp)), max(abs(hgTest_kappa_lethal_DF$log2obsexp))) +
+  ylab(bquote(atop("Log"[2] * "(observed/expected)" ~ alpha ~ "WGD paralog retained"))) +
+  ylim(-max(abs(hgTest_kappa_alphaWGD_DF$log2obsexp)), max(abs(hgTest_kappa_alphaWGD_DF$log2obsexp))) +
   theme_bw()
 ggsave(paste0(plotDir_kappa_mC,
               sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
               featName, "_", featRegion,
               "_", paste0(chrName, collapse = "_"), "_", context,
-              "_lethal_genes_hypergeomTest.pdf"),
-       plot = gg_hgTest_kappa_lethal,
+              "_alphaWGD_genes_hypergeomTest.pdf"),
+       plot = gg_hgTest_kappa_alphaWGD,
        height = 5, width = 6)
-write.table(hgTest_kappa_lethal_DF,
+write.table(hgTest_kappa_alphaWGD_DF,
             paste0(outDir,
                    sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
                    featName, "_", featRegion,
                    "_", paste0(chrName, collapse = "_"), "_", context,
-                   "_lethal_genes_hypergeomTest.tsv"),
-            quote = F, sep = "\t", row.names = F, col.names = T)
-
-# Run hypergeometric test on each group of genes to evaluate
-# representation of nonlethal genes
-hgTest_kappa_nonlethal_list <- lapply(seq_along(filt_kappa_mC_groups_featID), function(x) {
-  hgTest(group = x,
-         group_feat_list = filt_kappa_mC_groups_featID,
-         genome_feat = filt_kappa_mC_groups_featID_universe,
-         genome_feat_query = featID_nonlethal,
-         samples_num = 1e5)
-})
-
-hgTest_kappa_nonlethal_DF <- dplyr::bind_rows(hgTest_kappa_nonlethal_list)
-hgTest_kappa_nonlethal_DF$group <- as.character(hgTest_kappa_nonlethal_DF$group)
-
-hgTest_kappa_nonlethal_DF$BHadj_pval <- p.adjust(hgTest_kappa_nonlethal_DF$pval, method = "BH")
-
-gg_hgTest_kappa_nonlethal <- ggplot(data = hgTest_kappa_nonlethal_DF,
-                                    mapping = aes(x = group,
-                                                  y = log2obsexp,
-                                                  colour = pval,
-                                                  size = observed)) +
-  geom_point() +
-  scale_colour_gradient(low = "red", high = "blue") +
-  guides(colour = guide_colourbar(reverse = T)) +
-  geom_hline(mapping = aes(yintercept = 0),
-             linetype = "solid", size = 1, colour = "black") +
-#  labs(size = "Count", colour = bquote("BH-adjusted" ~ italic(P))) +
-  labs(size = "Count", colour = bquote(italic(P)*"-value")) +
-  xlab(bquote(atop("Fleiss' kappa and mean m" * .(context), .(featName) ~ .(featRegion) ~ "group"))) +
-  ylab(bquote(atop("Log"[2] * "(observed/expected) nonlethal genes"))) +
-  ylim(-max(abs(hgTest_kappa_nonlethal_DF$log2obsexp)), max(abs(hgTest_kappa_nonlethal_DF$log2obsexp))) +
-  theme_bw()
-ggsave(paste0(plotDir_kappa_mC,
-              sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
-              featName, "_", featRegion,
-              "_", paste0(chrName, collapse = "_"), "_", context,
-              "_nonlethal_genes_hypergeomTest.pdf"),
-       plot = gg_hgTest_kappa_nonlethal,
-       height = 5, width = 6)
-write.table(hgTest_kappa_nonlethal_DF,
-            paste0(outDir,
-                   sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
-                   featName, "_", featRegion,
-                   "_", paste0(chrName, collapse = "_"), "_", context,
-                   "_nonlethal_genes_hypergeomTest.tsv"),
+                   "_alphaWGD_genes_hypergeomTest.tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
 
 
@@ -380,21 +332,21 @@ stopifnot(length(filt_stocha_mC_groups_featID_universe) == nrow(featDF))
 
 
 # Run hypergeometric test on each group of genes to evaluate
-# representation of lethal genes
-hgTest_stocha_lethal_list <- lapply(seq_along(filt_stocha_mC_groups_featID), function(x) {
+# representation of alphaWGD genes
+hgTest_stocha_alphaWGD_list <- lapply(seq_along(filt_stocha_mC_groups_featID), function(x) {
   hgTest(group = x,
          group_feat_list = filt_stocha_mC_groups_featID,
          genome_feat = filt_stocha_mC_groups_featID_universe,
-         genome_feat_query = featID_lethal,
+         genome_feat_query = featID_alphaWGD,
          samples_num = 1e5)
 })
 
-hgTest_stocha_lethal_DF <- dplyr::bind_rows(hgTest_stocha_lethal_list)
-hgTest_stocha_lethal_DF$group <- as.character(hgTest_stocha_lethal_DF$group)
+hgTest_stocha_alphaWGD_DF <- dplyr::bind_rows(hgTest_stocha_alphaWGD_list)
+hgTest_stocha_alphaWGD_DF$group <- as.character(hgTest_stocha_alphaWGD_DF$group)
 
-hgTest_stocha_lethal_DF$BHadj_pval <- p.adjust(hgTest_stocha_lethal_DF$pval, method = "BH")
+hgTest_stocha_alphaWGD_DF$BHadj_pval <- p.adjust(hgTest_stocha_alphaWGD_DF$pval, method = "BH")
 
-gg_hgTest_stocha_lethal <- ggplot(data = hgTest_stocha_lethal_DF,
+gg_hgTest_stocha_alphaWGD <- ggplot(data = hgTest_stocha_alphaWGD_DF,
                                 mapping = aes(x = group,
                                               y = log2obsexp,
                                               colour = pval,
@@ -407,67 +359,20 @@ gg_hgTest_stocha_lethal <- ggplot(data = hgTest_stocha_lethal_DF,
 #  labs(size = "Count", colour = bquote("BH-adjusted" ~ italic(P))) +
   labs(size = "Count", colour = bquote(italic(P)*"-value")) +
   xlab(bquote(atop("Stochasticity and mean m" * .(context), .(featName) ~ .(featRegion) ~ "group"))) +
-  ylab(bquote(atop("Log"[2] * "(observed/expected) lethal genes"))) +
-  ylim(-max(abs(hgTest_stocha_lethal_DF$log2obsexp)), max(abs(hgTest_stocha_lethal_DF$log2obsexp))) +
+  ylab(bquote(atop("Log"[2] * "(observed/expected)" ~ alpha ~ "WGD paralog retained"))) +
+  ylim(-max(abs(hgTest_stocha_alphaWGD_DF$log2obsexp)), max(abs(hgTest_stocha_alphaWGD_DF$log2obsexp))) +
   theme_bw()
 ggsave(paste0(plotDir_stocha_mC,
               sampleName, "_filt_df_mean_stocha_all_mean_mC_all_",
               featName, "_", featRegion,
               "_", paste0(chrName, collapse = "_"), "_", context,
-              "_lethal_genes_hypergeomTest.pdf"),
-       plot = gg_hgTest_stocha_lethal,
+              "_alphaWGD_genes_hypergeomTest.pdf"),
+       plot = gg_hgTest_stocha_alphaWGD,
        height = 5, width = 6)
-write.table(hgTest_stocha_lethal_DF,
+write.table(hgTest_stocha_alphaWGD_DF,
             paste0(outDir,
                    sampleName, "_filt_df_mean_stocha_all_mean_mC_all_",
                    featName, "_", featRegion,
                    "_", paste0(chrName, collapse = "_"), "_", context,
-                   "_lethal_genes_hypergeomTest.tsv"),
-            quote = F, sep = "\t", row.names = F, col.names = T)
-
-
-# Run hypergeometric test on each group of genes to evaluate
-# representation of nonlethal genes
-hgTest_stocha_nonlethal_list <- lapply(seq_along(filt_stocha_mC_groups_featID), function(x) {
-  hgTest(group = x,
-         group_feat_list = filt_stocha_mC_groups_featID,
-         genome_feat = filt_stocha_mC_groups_featID_universe,
-         genome_feat_query = featID_nonlethal,
-         samples_num = 1e5)
-})
-
-hgTest_stocha_nonlethal_DF <- dplyr::bind_rows(hgTest_stocha_nonlethal_list)
-hgTest_stocha_nonlethal_DF$group <- as.character(hgTest_stocha_nonlethal_DF$group)
-
-hgTest_stocha_nonlethal_DF$BHadj_pval <- p.adjust(hgTest_stocha_nonlethal_DF$pval, method = "BH")
-
-gg_hgTest_stocha_nonlethal <- ggplot(data = hgTest_stocha_nonlethal_DF,
-                                     mapping = aes(x = group,
-                                                   y = log2obsexp,
-                                                   colour = pval,
-                                                   size = observed)) +
-  geom_point() +
-  scale_colour_gradient(low = "red", high = "blue") +
-  guides(colour = guide_colourbar(reverse = T)) +
-  geom_hline(mapping = aes(yintercept = 0),
-             linetype = "solid", size = 1, colour = "black") +
-#  labs(size = "Count", colour = bquote("BH-adjusted" ~ italic(P))) +
-  labs(size = "Count", colour = bquote(italic(P)*"-value")) +
-  xlab(bquote(atop("Stochasticity and mean m" * .(context), .(featName) ~ .(featRegion) ~ "group"))) +
-  ylab(bquote(atop("Log"[2] * "(observed/expected) nonlethal genes"))) +
-  ylim(-max(abs(hgTest_stocha_nonlethal_DF$log2obsexp)), max(abs(hgTest_stocha_nonlethal_DF$log2obsexp))) +
-  theme_bw()
-ggsave(paste0(plotDir_stocha_mC,
-              sampleName, "_filt_df_mean_stocha_all_mean_mC_all_",
-              featName, "_", featRegion,
-              "_", paste0(chrName, collapse = "_"), "_", context,
-              "_nonlethal_genes_hypergeomTest.pdf"),
-       plot = gg_hgTest_stocha_nonlethal,
-       height = 5, width = 6)
-write.table(hgTest_stocha_nonlethal_DF,
-            paste0(outDir,
-                   sampleName, "_filt_df_mean_stocha_all_mean_mC_all_",
-                   featName, "_", featRegion,
-                   "_", paste0(chrName, collapse = "_"), "_", context,
-                   "_nonlethal_genes_hypergeomTest.tsv"),
+                   "_alphaWGD_genes_hypergeomTest.tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
