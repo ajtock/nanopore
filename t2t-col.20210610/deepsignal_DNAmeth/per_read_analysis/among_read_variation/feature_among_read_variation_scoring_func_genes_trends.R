@@ -5,8 +5,10 @@
 # 2. Examine relationships between feature among-read agreement and other metrics
 
 # Usage:
-# /applications/R/R-4.0.0/bin/Rscript feature_among_read_variation_scoring_func_genes_trends.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'gene' 'bodies'
- 
+# conda activate R-4.0.0
+# ./feature_among_read_variation_scoring_func_genes_trends.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'gene' 'regions'
+# conda deactivate
+
 # Divide each read into adjacent segments each consisting of a given number of consecutive cytosines,
 # and calculate the methylation proportion for each segment of each read
 
@@ -17,7 +19,7 @@
 #CPUpc <- 1.00
 #chrName <- unlist(strsplit("Chr1,Chr2,Chr3,Chr4,Chr5", split = ","))
 #featName <- "gene"
-#featRegion <- "bodies"
+#featRegion <- "regions"
 
 args <- commandArgs(trailingOnly = T)
 sampleName <- args[1]
