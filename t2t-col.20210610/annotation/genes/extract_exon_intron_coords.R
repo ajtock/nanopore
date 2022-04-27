@@ -46,6 +46,8 @@ CENGR <- GRanges(seqnames = chrs,
 # Load table of gene coordinates in t2t-col.20210610 (GFF3 derived from Liftoff tool)
 mRNA_rep <- readGFF(paste0("t2t-col.20210610_representative_mRNA_", paste0(chrName, collapse = "_"), ".gff3"))
 mRNA_rep <- mRNA_rep[mRNA_rep$seqid %in% chrName,]
+mRNA_rep <- data.frame(mRNA_rep)
+mRNA_rep$group <- as.character(mRNA_rep$group)
 print(dim(mRNA_rep))
 #[1] 27258     9
 
@@ -56,6 +58,11 @@ genes <- genes[genes$seqid %in% chrName,]
 # Get exons for each representative gene model
 exons <- genes[genes$type == "exon",]
 exons_rep <- exons[which(as.character(exons$Parent) %in% mRNA_rep$group),]
+exons_rep <- data.frame(exons_rep)
+exons_rep$Parent <- unlist(exons_rep$Parent)
+exons_rep$seqid <- as.character(exons_rep$seqid)
+# Remove problem exons on Chr4
+exons_rep <- exons_rep[-which(exons_rep$seqid == "Chr4" & exons_rep$Parent == "AT2G01021.1_1"),]
 
 exons_rep <- exons_rep[ order(exons_rep$seqid,
                               exons_rep$start,
