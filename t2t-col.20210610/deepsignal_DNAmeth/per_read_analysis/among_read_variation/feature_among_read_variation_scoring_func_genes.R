@@ -214,11 +214,11 @@ intronsGR <- GRanges(seqnames = introns$chr,
 # Calculate number and total width of all exons or introns within each gene
 genesIDs <- as.character(genesGR$name)
 featGR_c <- foreach(x = iter(genesIDs),
-                       .combine = "c",
-                       .multicombine = T,
-                       .maxcombine = length(genesIDs)+1e1,
-                       .inorder = T,
-                       .errorhandling = "pass") %dopar% {
+                    .combine = "c",
+                    .multicombine = T,
+                    .maxcombine = length(genesIDs)+1e1,
+                    .inorder = T,
+                    .errorhandling = "pass") %dopar% {
 
   feat_genesID_x <- featGR[featGR$name == x]
 
@@ -238,7 +238,9 @@ featGR_c <- foreach(x = iter(genesIDs),
   introns_genesID_x_count_per_kb <- introns_genesID_x_count / (genes_genesID_x_width / 1e3)
 
   GRanges(feat_genesID_x,
-          gene_width = genes_genesID_x_width,
+          name = x,
+          score = NA,
+          feature_width = genes_genesID_x_width,
           exons_width = exons_genesID_x_width,
           exons_width_prop = exons_genesID_x_width_prop,
           exons_count = exons_genesID_x_count,
@@ -408,6 +410,17 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
                                   name = chr_featGR[featNum]$name,
                                   score = chr_featGR[featNum]$score,
 
+                                  feature_width = chr_featGR[featNum]$feature_width,
+
+                                  exons_width = chr_featGR[featNum]$exons_width,
+                                  exons_width_prop = chr_featGR[featNum]$exons_width_prop,
+                                  exons_count = chr_featGR[featNum]$exons_count,
+                                  exons_count_per_kb = chr_featGR[featNum]$exons_count_per_kb,
+                                  introns_width = chr_featGR[featNum]$introns_width,
+                                  introns_width_prop = chr_featGR[featNum]$introns_width_prop,
+                                  introns_count = chr_featGR[featNum]$introns_count,
+                                  introns_count_per_kb = chr_featGR[featNum]$introns_count_per_kb,
+
                                   mean_mC_str = mean_mC_pwider_str_x,
 
                                   fk_kappa_str = fkappa_pwider_str_x_kappa,
@@ -432,6 +445,17 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
                                   strand = strand(chr_featGR[featNum]),
                                   name = chr_featGR[featNum]$name,
                                   score = chr_featGR[featNum]$score,
+
+                                  feature_width = chr_featGR[featNum]$feature_width,
+
+                                  exons_width = chr_featGR[featNum]$exons_width,
+                                  exons_width_prop = chr_featGR[featNum]$exons_width_prop,
+                                  exons_count = chr_featGR[featNum]$exons_count,
+                                  exons_count_per_kb = chr_featGR[featNum]$exons_count_per_kb,
+                                  introns_width = chr_featGR[featNum]$introns_width,
+                                  introns_width_prop = chr_featGR[featNum]$introns_width_prop,
+                                  introns_count = chr_featGR[featNum]$introns_count,
+                                  introns_count_per_kb = chr_featGR[featNum]$introns_count_per_kb,
 
                                   mean_mC_str = NaN,
 
