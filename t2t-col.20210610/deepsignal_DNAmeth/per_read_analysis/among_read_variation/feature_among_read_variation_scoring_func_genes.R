@@ -251,8 +251,9 @@ featGR_c <- foreach(x = iter(genesIDs),
           introns_count_per_kb = introns_genesID_x_count_per_kb)
 
 } 
-
-
+featGR <- featGR_c
+stopifnot(identical(featGR$name, genesIDs))
+rm(featGR_c); gc()
 
 # Read in the raw output .tsv file from Deepsignal methylation model
 tab_list <- mclapply(seq_along(chrName), function(x) {
