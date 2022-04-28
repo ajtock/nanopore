@@ -50,25 +50,32 @@ print(paste0("Proportion of CPUs:", CPUpc))
 options(stringsAsFactors = F)
 library(parallel)
 library(GenomicRanges)
-library(irr)
+library(irr) #
 library(dplyr)
 library(tidyr)
 library(cluster)
-library(fpc)
+library(fpc) #
 #library(data.table)
 #library(segmentSeq)
 library(ComplexHeatmap)
 #library(RColorBrewer)
 library(scales)
 #library(circlize)
- 
 library(ggplot2)
 library(cowplot)
 #library(ggcorrplot)
 library(viridis)
-library(ggthemes)
-library(tidyquant)
+#library(ggthemes)
+library(tidyquant) #
 #library(grid)
+library(doParallel)
+library(doFuture)
+registerDoFuture()
+plan(multicore)
+print("Currently registered parallel backend name, version and cores")
+print(getDoParName())
+print(getDoParVersion())
+print(getDoParWorkers())
 
 outDir <- paste0(featName, "_", featRegion, "/", paste0(chrName, collapse = "_"), "/")
 plotDir <- paste0(outDir, "plots/")
@@ -153,6 +160,9 @@ if(length(fOverlaps_feat_mito_ins) > 0) {
   featGR <- featGR[-unique(queryHits(fOverlaps_feat_mito_ins))]
 }
 
+# Define separate GRanges object for use with calculating exon and intron stats
+genesGR <- featGR
+
 # Get ranges corresponding to featRegion
 if(featRegion == "bodies") {
   featGR <- featGR
@@ -173,6 +183,74 @@ if(featRegion == "bodies") {
 } else {
   stop("featRegion is none of bodies, promoters, terminators or regions")
 }
+
+# Load exons and introns
+exons <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase,
+                           "/annotation/genes/", refbase, "_representative_exons",
+                           "_", paste0(chrName, collapse = "_"), ".bed"),
+                    header = F)
+colnames(exons) <- c("chr", "start0based", "end", "name", "score", "strand")
+exons <- exons[which(exons$name %in% genesGR$name),]
+exonsGR <- GRanges(seqnames = exons$chr,
+                   ranges = IRanges(start = exons$start0based+1,
+                                    end = exons$end),
+                   strand = exons$strand,
+                   name = exons$name,
+                   score = exons$score)
+
+introns <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase,
+                             "/annotation/genes/", refbase, "_representative_introns",
+                             "_", paste0(chrName, collapse = "_"), ".bed"),
+                      header = F)
+colnames(introns) <- c("chr", "start0based", "end", "name", "score", "strand")
+introns <- introns[which(introns$name %in% genesGR$name),]
+intronsGR <- GRanges(seqnames = introns$chr,
+                     ranges = IRanges(start = introns$start0based+1,
+                                      end = introns$end),
+                     strand = introns$strand,
+                     name = introns$name,
+                     score = introns$score)
+
+# Calculate number and total width of all exons or introns within each gene
+genesIDs <- as.character(genesGR$name)
+featGR_c <- foreach(x = iter(genesIDs),
+                       .combine = "c",
+                       .multicombine = T,
+                       .maxcombine = length(genesIDs)+1e1,
+                       .inorder = T,
+                       .errorhandling = "pass") %dopar% {
+
+  feat_genesID_x <- featGR[featGR$name == x]
+
+  genes_genesID_x <- genesGR[genesGR$name == x]
+  genes_genesID_x_width <- width(genes_genesID_x)
+
+  exons_genesID_x <- exonsGR[exonsGR$name == x]
+  exons_genesID_x_width <- sum(width(exons_genesID_x), na.rm = T)
+  exons_genesID_x_width_prop <- exons_genesID_x_width / genes_genesID_x_width
+  exons_genesID_x_count <- length(exons_genesID_x)
+  exons_genesID_x_count_per_kb <- exons_genesID_x_count / (genes_genesID_x_width / 1e3)
+
+  introns_genesID_x <- intronsGR[intronsGR$name == x]
+  introns_genesID_x_width <- sum(width(introns_genesID_x), na.rm = T)
+  introns_genesID_x_width_prop <- introns_genesID_x_width / genes_genesID_x_width
+  introns_genesID_x_count <- length(introns_genesID_x)
+  introns_genesID_x_count_per_kb <- introns_genesID_x_count / (genes_genesID_x_width / 1e3)
+
+  GRanges(feat_genesID_x,
+          gene_width = genes_genesID_x_width,
+          exons_width = exons_genesID_x_width,
+          exons_width_prop = exons_genesID_x_width_prop,
+          exons_count = exons_genesID_x_count,
+          exons_count_per_kb = exons_genesID_x_count_per_kb,
+          introns_width = introns_genesID_x_width,
+          introns_width_prop = introns_genesID_x_width_prop,
+          introns_count = introns_genesID_x_count,
+          introns_count_per_kb = introns_genesID_x_count_per_kb)
+
+} 
+
+
 
 # Read in the raw output .tsv file from Deepsignal methylation model
 tab_list <- mclapply(seq_along(chrName), function(x) {
