@@ -309,7 +309,7 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
 
     # kappam.fleiss() uses only rows (cytosines) with complete information
     # across all columns (reads)
-    # Therefore, remove columns (reads) containing > NAmax proportion NAs to
+    # Therefore, remove columns (reads) containing >= NAmax proportion NAs to
     # to retain more cytosines in the data.frame for kappa calculation
 
     mask_cols <- apply(pwider_str_x, MARGIN = 2, FUN = function(col) sum(is.na(col)) >= nrow(pwider_str_x) * NAmax)    
@@ -317,7 +317,7 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
     prop_reads_retained_str_x <- sum(!(mask_cols)) / ncol(pwider_str_x)
     # Report number of columns (reads) to be retained:
     num_reads_retained_str_x <- sum(!(mask_cols)) 
-    # Conditionally remove columns (reads) containing > NAmax proportion NAs
+    # Conditionally remove columns (reads) containing >= NAmax proportion NAs
     if(sum(mask_cols) > 0) {
       pwider_str_x <- pwider_str_x[ , !(mask_cols), drop = F]
     }
@@ -501,12 +501,18 @@ for(chrIndex in 1:length(chrName)) {
 
   # Analyse each strand separately
   # fwd
-  makeDFx_list_fwd <- mclapply(1:length(chr_featGR), function(x) {
+#  makeDFx_list_fwd <- mclapply(1:length(chr_featGR), function(x) {
+  makeDFx_list_fwd <- foreach(x = 1:length(chr_featGR),
+                              .combine = "list",
+                              .multicombine = T,
+                              .maxcombine = length(chr_featGR)+1e1,
+                              .inorder = T) %dopar% {
     makeDFx_strand(fOverlaps_str = fOverlaps_fwd,
                    chr_tabGR_str = chr_tabGR_fwd,
                    chr_featGR = chr_featGR,
                    featNum = x)
-  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
+  }
+#  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
    
   chr_fk_df_fwd <- dplyr::bind_rows(makeDFx_list_fwd, .id = "column_label")
   
@@ -514,12 +520,18 @@ for(chrIndex in 1:length(chrName)) {
                               fk_adj_pval_str = p.adjust(chr_fk_df_fwd$fk_pval_str, method = "BH"))
 
   # rev  
-  makeDFx_list_rev <- mclapply(1:length(chr_featGR), function(x) {
+#  makeDFx_list_rev <- mclapply(1:length(chr_featGR), function(x) {
+  makeDFx_list_rev <- foreach(x = 1:length(chr_featGR),
+                              .combine = "list",
+                              .multicombine = T,
+                              .maxcombine = length(chr_featGR)+1e1,
+                              .inorder = T) %dopar% {
     makeDFx_strand(fOverlaps_str = fOverlaps_rev,
                    chr_tabGR_str = chr_tabGR_rev,
                    chr_featGR = chr_featGR,
                    featNum = x)
-  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
+  }
+#  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
    
   chr_fk_df_rev <- dplyr::bind_rows(makeDFx_list_rev, .id = "column_label")
   
