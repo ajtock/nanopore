@@ -311,7 +311,6 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
     # across all columns (reads)
     # Therefore, remove columns (reads) containing >= NAmax proportion NAs to
     # to retain more cytosines in the data.frame for kappa calculation
-
     mask_cols <- apply(pwider_str_x, MARGIN = 2, FUN = function(col) sum(is.na(col)) >= nrow(pwider_str_x) * NAmax)    
     # Report proportion of columns (reads) to be retained:
     prop_reads_retained_str_x <- sum(!(mask_cols)) / ncol(pwider_str_x)
@@ -323,18 +322,22 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
     }
 
     # Identify rows (cytosines) containing any NAs across the retained columns (reads),
-    # as these will not be used by kappam.fleiss() in any case
+    # as these will not be used by kappam.fleiss()
     mask_rows <- apply(pwider_str_x, MARGIN = 1, FUN = function(row) sum(is.na(row)) > 0)
     # Report proportion of rows (cytosines) to be retained:
     prop_Cs_retained_str_x <- sum(!(mask_rows)) / nrow(pwider_str_x) 
-    # Report number of rows (cytosines) to be retained:
-    num_Cs_retained_str_x <- sum(!(mask_rows))
+    # Keep rows (cytosines) with NAs for other calculations
+    stocha_pwider_str_x <- pwider_str_x
     # Conditionally remove rows (cytosines) containing any NAs
     if(sum(mask_rows) > 0) {
       pwider_str_x <- pwider_str_x[ !(mask_rows), , drop = F]
     }
+    # Report number of rows (cytosines) retained for kappa and other calculations
+    num_Cs_retained_str_x <- nrow(pwider_str_x)
+    stocha_num_Cs_retained_str_x <- nrow(stocha_pwider_str_x)
 
-    mean_mC_pwider_str_x <- mean(as.matrix(pwider_str_x), na.rm = T)
+    # Calculate mean methylation for region
+    mean_mC_pwider_str_x <- mean(as.matrix(stocha_pwider_str_x), na.rm = T)
 
     # Calculate Fleiss' kappa
     if(nrow(pwider_str_x) >= min_Cs && nrow(pwider_str_x) <= max_Cs &&
@@ -353,17 +356,34 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
       fkappa_pwider_str_x_reads <- fkappa_pwider_str_x$raters
       fkappa_pwider_str_x_Cs <- fkappa_pwider_str_x$subjects
 
+    } else {
+
+      fkappa_pwider_str_x_kappa <- NaN
+      fkappa_pwider_str_x_pval <- NaN
+      fkappa_pwider_str_x_zstat <- NaN
+      fkappa_pwider_str_x_reads <- NaN
+      fkappa_pwider_str_x_Cs <- NaN
+
+    }
+
+    if(nrow(stocha_pwider_str_x) >= min_Cs && nrow(stocha_pwider_str_x) <= max_Cs &&
+       ncol(stocha_pwider_str_x) >= min_reads && ncol(stocha_pwider_str_x) <= max_reads) {
+
       # Calculate absolute differences between methylation statuses of neighbouring Cs within each read 
-      absdiff_pwider_str_x <- abs(diff(as.matrix(pwider_str_x)))
+      absdiff_pwider_str_x <- abs(diff(as.matrix(stocha_pwider_str_x)))
       # Calculate the mean absolute difference for each read
       colMeans_absdiff_pwider_str_x <- colMeans(absdiff_pwider_str_x, na.rm = T)
-      # Across all reads overlapping a given feature, calculate the mean of mean absolute differences
+      # Across all reads overlapping a given feature, calculate the mean and median of mean absolute differences
       mean_stocha_pwider_str_x <- mean(colMeans_absdiff_pwider_str_x, na.rm = T)
+      median_stocha_pwider_str_x <- median(colMeans_absdiff_pwider_str_x, na.rm = T)
       # Across all reads overlapping a given feature, calculate the sd of mean absolute differences
       sd_stocha_pwider_str_x <- sd(colMeans_absdiff_pwider_str_x, na.rm = T)
 
+      # Report number of rows (cytosines) retained for other calculations
+      stocha_pwider_str_x_Cs <- nrow(stocha_pwider_str_x)
+
       # Calculate autocorrelations between methylation statuses of neighbouring Cs within each read
-      acf_pwider_str_x_list <- apply(pwider_str_x, MARGIN = 2,
+      acf_pwider_str_x_list <- apply(stocha_pwider_str_x, MARGIN = 2,
                                      FUN = function(col) acf(col, lag.max = 10, plot = F, na.action = na.pass))
       mean_min_acf_pwider_str_x <- mean(sapply(seq_along(acf_pwider_str_x_list), function(col) {
         if(sum(acf_pwider_str_x_list[[col]]$acf) != "NaN") {
@@ -389,14 +409,10 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
 
     } else {
 
-      fkappa_pwider_str_x_kappa <- NaN
-      fkappa_pwider_str_x_pval <- NaN
-      fkappa_pwider_str_x_zstat <- NaN
-      fkappa_pwider_str_x_reads <- NaN
-      fkappa_pwider_str_x_Cs <- NaN
-
       mean_stocha_pwider_str_x <- NaN
+      median_stocha_pwider_str_x <- NaN
       sd_stocha_pwider_str_x <- NaN
+      stocha_pwider_str_x_Cs <- NaN
       mean_min_acf_pwider_str_x <- NaN
       mean_max_acf_pwider_str_x <- NaN
       mean_mean_acf_pwider_str_x <- NaN
@@ -431,7 +447,9 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
                                   fk_Cs_str = fkappa_pwider_str_x_Cs,
 
                                   mean_stocha_str = mean_stocha_pwider_str_x,
+                                  median_stocha_str = median_stocha_pwider_str_x,
                                   sd_stocha_str = sd_stocha_pwider_str_x,
+                                  stocha_Cs_str = stocha_pwider_str_x_Cs,
                                   mean_min_acf_str = mean_min_acf_pwider_str_x,
                                   mean_max_acf_str = mean_max_acf_pwider_str_x,
                                   mean_mean_acf_str = mean_mean_acf_pwider_str_x
@@ -467,7 +485,9 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
                                   fk_Cs_str = NaN,
 
                                   mean_stocha_str = NaN,
+                                  median_stocha_str = NaN,
                                   sd_stocha_str = NaN,
+                                  stocha_Cs_str = NaN,
                                   mean_min_acf_str = NaN,
                                   mean_max_acf_str = NaN,
                                   mean_mean_acf_str = NaN
@@ -561,9 +581,9 @@ if(context == "CpG") {
   min_reads <- 10
   max_reads <- Inf
 } else if(context == "CHG") {
-  min_Cs <- 15
+  min_Cs <- 10
   max_Cs <- Inf
-  min_reads <- 15
+  min_reads <- 10
   max_reads <- Inf
 } else if(context == "CHH") {
   min_Cs <- 20
