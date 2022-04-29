@@ -76,7 +76,7 @@ print("Currently registered parallel backend name, version and cores")
 print(getDoParName())
 print(getDoParVersion())
 print(getDoParWorkers())
-options(future.globals.maxSize = 891289600)
+options(future.globals.maxSize = 1000*1024^2)
 
 outDir <- paste0(featName, "_", featRegion, "/", paste0(chrName, collapse = "_"), "/")
 plotDir <- paste0(outDir, "plots/")
