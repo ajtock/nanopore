@@ -71,11 +71,12 @@ library(tidyquant) #
 library(doParallel)
 library(doFuture)
 registerDoFuture()
-plan(multicore)
+plan(multicore, workers = round(detectCores()*CPUpc))
 print("Currently registered parallel backend name, version and cores")
 print(getDoParName())
 print(getDoParVersion())
 print(getDoParWorkers())
+options(future.globals.maxSize = 891289600)
 
 outDir <- paste0(featName, "_", featRegion, "/", paste0(chrName, collapse = "_"), "/")
 plotDir <- paste0(outDir, "plots/")
@@ -301,7 +302,7 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
 
     pwider_str_x <- as.data.frame(tidyr::pivot_wider(data = df_str_x,
                                                      names_from = read,
-#                                                      names_prefix = "read_",
+#                                                     names_prefix = "read_",
                                                      values_from = call))
     pwider_str_x <- pwider_str_x[ with(data = pwider_str_x, expr = order(pos)), ]
     rownames(pwider_str_x) <- pwider_str_x[,1]
@@ -312,19 +313,19 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
     # Therefore, remove columns (reads) containing >= NAmax proportion NAs to
     # to retain more cytosines in the data.frame for kappa calculation
     mask_cols <- apply(pwider_str_x, MARGIN = 2, FUN = function(col) sum(is.na(col)) >= nrow(pwider_str_x) * NAmax)    
-    # Report proportion of columns (reads) to be retained:
+    # Report proportion of columns (reads) to be retained
     prop_reads_retained_str_x <- sum(!(mask_cols)) / ncol(pwider_str_x)
-    # Report number of columns (reads) to be retained:
-    num_reads_retained_str_x <- sum(!(mask_cols)) 
     # Conditionally remove columns (reads) containing >= NAmax proportion NAs
     if(sum(mask_cols) > 0) {
       pwider_str_x <- pwider_str_x[ , !(mask_cols), drop = F]
     }
+    # Report number of columns (reads) to be retained for kappa and other calculations
+    num_reads_retained_str_x <- ncol(pwider_str_x) 
 
     # Identify rows (cytosines) containing any NAs across the retained columns (reads),
     # as these will not be used by kappam.fleiss()
     mask_rows <- apply(pwider_str_x, MARGIN = 1, FUN = function(row) sum(is.na(row)) > 0)
-    # Report proportion of rows (cytosines) to be retained:
+    # Report proportion of rows (cytosines) to be retained
     prop_Cs_retained_str_x <- sum(!(mask_rows)) / nrow(pwider_str_x) 
     # Keep rows (cytosines) with NAs for other calculations
     stocha_pwider_str_x <- pwider_str_x
@@ -332,7 +333,7 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
     if(sum(mask_rows) > 0) {
       pwider_str_x <- pwider_str_x[ !(mask_rows), , drop = F]
     }
-    # Report number of rows (cytosines) retained for kappa and other calculations
+    # Report number of rows (cytosines) to be retained for kappa and other calculations
     num_Cs_retained_str_x <- nrow(pwider_str_x)
     stocha_num_Cs_retained_str_x <- nrow(stocha_pwider_str_x)
 
@@ -386,22 +387,30 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
       acf_pwider_str_x_list <- apply(stocha_pwider_str_x, MARGIN = 2,
                                      FUN = function(col) acf(col, lag.max = 10, plot = F, na.action = na.pass))
       mean_min_acf_pwider_str_x <- mean(sapply(seq_along(acf_pwider_str_x_list), function(col) {
-        if(sum(acf_pwider_str_x_list[[col]]$acf) != "NaN") {
-          min(as.vector(acf_pwider_str_x_list[[col]]$acf)[-1])
+        print(col)
+        if(sum(acf_pwider_str_x_list[[col]]$acf, na.rm = T) != 0) {
+          min(as.vector(acf_pwider_str_x_list[[col]]$acf)[-1], na.rm = T)
         } else {
           NA
         }
       }), na.rm = T)
       mean_max_acf_pwider_str_x <- mean(sapply(seq_along(acf_pwider_str_x_list), function(col) {
-        if(sum(acf_pwider_str_x_list[[col]]$acf) != "NaN") {
-          max(as.vector(acf_pwider_str_x_list[[col]]$acf)[-1])
+        if(sum(acf_pwider_str_x_list[[col]]$acf, na.rm = T) != 0) {
+          max(as.vector(acf_pwider_str_x_list[[col]]$acf)[-1], na.rm = T)
         } else {
           NA
         }
       }), na.rm = T)
       mean_mean_acf_pwider_str_x <- mean(sapply(seq_along(acf_pwider_str_x_list), function(col) {
-        if(sum(acf_pwider_str_x_list[[col]]$acf) != "NaN") {
-          mean(as.vector(acf_pwider_str_x_list[[col]]$acf)[-1])
+        if(sum(acf_pwider_str_x_list[[col]]$acf, na.rm = T) != 0) {
+          mean(as.vector(acf_pwider_str_x_list[[col]]$acf)[-1], na.rm = T)
+        } else {
+          NA
+        }
+      }), na.rm = T)
+      mean_median_acf_pwider_str_x <- mean(sapply(seq_along(acf_pwider_str_x_list), function(col) {
+        if(sum(acf_pwider_str_x_list[[col]]$acf, na.rm = T) != 0) {
+          median(as.vector(acf_pwider_str_x_list[[col]]$acf)[-1], na.rm = T)
         } else {
           NA
         }
@@ -416,6 +425,7 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
       mean_min_acf_pwider_str_x <- NaN
       mean_max_acf_pwider_str_x <- NaN
       mean_mean_acf_pwider_str_x <- NaN
+      mean_median_acf_pwider_str_x <- NaN
 
     }
 
@@ -452,7 +462,8 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
                                   stocha_Cs_str = stocha_pwider_str_x_Cs,
                                   mean_min_acf_str = mean_min_acf_pwider_str_x,
                                   mean_max_acf_str = mean_max_acf_pwider_str_x,
-                                  mean_mean_acf_str = mean_mean_acf_pwider_str_x
+                                  mean_mean_acf_str = mean_mean_acf_pwider_str_x,
+                                  mean_median_acf_str = mean_median_acf_pwider_str_x
                                  ) 
 
   } else {
@@ -490,7 +501,8 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
                                   stocha_Cs_str = NaN,
                                   mean_min_acf_str = NaN,
                                   mean_max_acf_str = NaN,
-                                  mean_mean_acf_str = NaN
+                                  mean_mean_acf_str = NaN,
+                                  mean_median_acf_str = NaN
                                  ) 
 
   }
@@ -521,18 +533,18 @@ for(chrIndex in 1:length(chrName)) {
 
   # Analyse each strand separately
   # fwd
-  makeDFx_list_fwd <- mclapply(1:length(chr_featGR), function(x) {
-#  makeDFx_list_fwd <- foreach(x = 1:length(chr_featGR),
-#                              .combine = "list",
-#                              .multicombine = T,
-#                              .maxcombine = length(chr_featGR)+1e1,
-#                              .inorder = T) %dopar% {
+#  makeDFx_list_fwd <- mclapply(1:length(chr_featGR), function(x) {
+  makeDFx_list_fwd <- foreach(x = 1:length(chr_featGR),
+                              .combine = "list",
+                              .multicombine = T,
+                              .maxcombine = length(chr_featGR)+1e1,
+                              .inorder = T) %dopar% {
     makeDFx_strand(fOverlaps_str = fOverlaps_fwd,
                    chr_tabGR_str = chr_tabGR_fwd,
                    chr_featGR = chr_featGR,
                    featNum = x)
-#  }
-  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
+  }
+#  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
    
   chr_fk_df_fwd <- dplyr::bind_rows(makeDFx_list_fwd, .id = "column_label")
   
@@ -540,18 +552,18 @@ for(chrIndex in 1:length(chrName)) {
                               fk_adj_pval_str = p.adjust(chr_fk_df_fwd$fk_pval_str, method = "BH"))
 
   # rev  
-  makeDFx_list_rev <- mclapply(1:length(chr_featGR), function(x) {
-#  makeDFx_list_rev <- foreach(x = 1:length(chr_featGR),
-#                              .combine = "list",
-#                              .multicombine = T,
-#                              .maxcombine = length(chr_featGR)+1e1,
-#                              .inorder = T) %dopar% {
+#  makeDFx_list_rev <- mclapply(1:length(chr_featGR), function(x) {
+  makeDFx_list_rev <- foreach(x = 1:length(chr_featGR),
+                              .combine = "list",
+                              .multicombine = T,
+                              .maxcombine = length(chr_featGR)+1e1,
+                              .inorder = T) %dopar% {
     makeDFx_strand(fOverlaps_str = fOverlaps_rev,
                    chr_tabGR_str = chr_tabGR_rev,
                    chr_featGR = chr_featGR,
                    featNum = x)
-#  }
-  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
+  }
+#  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
    
   chr_fk_df_rev <- dplyr::bind_rows(makeDFx_list_rev, .id = "column_label")
   
