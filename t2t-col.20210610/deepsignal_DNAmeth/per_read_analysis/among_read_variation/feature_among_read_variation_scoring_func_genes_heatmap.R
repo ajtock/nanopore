@@ -91,12 +91,12 @@ print(getDoParWorkers())
 
 outDir <- paste0(featName, "_", featRegion, "/", paste0(chrName, collapse = "_"), "/")
 plotDir <- paste0(outDir, "plots/")
-plotDir_kappa_mC <- paste0(outDir, "plots/heatmaps_", context, "_kappa_mC/")
-plotDir_stocha_mC <- paste0(outDir, "plots/heatmaps_", context, "_stocha_mC/")
+plotDir_kappa <- paste0(outDir, "plots/heatmaps_", context, "_kappa/")
+plotDir_stocha <- paste0(outDir, "plots/heatmaps_", context, "_stocha/")
 #plotDir_kappa_stocha <- paste0(outDir, "plots/heatmaps_", context, "_kappa_stocha/")
 system(paste0("[ -d ", plotDir, " ] || mkdir -p ", plotDir))
-system(paste0("[ -d ", plotDir_kappa_mC, " ] || mkdir -p ", plotDir_kappa_mC))
-system(paste0("[ -d ", plotDir_stocha_mC, " ] || mkdir -p ", plotDir_stocha_mC))
+system(paste0("[ -d ", plotDir_kappa, " ] || mkdir -p ", plotDir_kappa))
+system(paste0("[ -d ", plotDir_stocha, " ] || mkdir -p ", plotDir_stocha))
 #system(paste0("[ -d ", plotDir_kappa_stocha, " ] || mkdir -p ", plotDir_kappa_stocha))
 
 # Genomic definitions
@@ -113,6 +113,7 @@ ds1 <- read.csv(paste0("Lloyd_2015_Plant_Cell_SupplData/plcell_v27_8_2133_s1/plc
                        "TPC2015-00051-LSBR3_Supplemental_Data_set_1_Sheet1.csv"),
                 header = T)
 nrow(ds1)
+colnames(ds1)[1] <- "parent"
 
 lethal <- ds1[ds1[,2] == "Lethal" |
               ds1[,3] == "Yes",]
@@ -123,11 +124,23 @@ ds3 <- read.csv(paste0("Lloyd_2015_Plant_Cell_SupplData/plcell_v27_8_2133_s1/plc
                        "TPC2015-00051-LSBR3_Supplemental_Data_set_3_Sheet1.csv"),
                 header = T, na.strings = c("NA", "?"))
 nrow(ds3)
+ds3 <- ds3[,c(1, 2, 4, 5, 7, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 31, 34, 35, 41, 49, 50)]
+ncol(ds3)
+ds3 <- ds3[,c(1, 21, 2, 16, 12, 3, 7, 13, 5, 6, 4, 8, 14, 9, 15, 10, 11, 17, 18, 20, 22, 23, 19, 24)] 
+ncol(ds3)
+colnames(ds3) <- c("parent",
+                   "gbM",
+                   "Median_expression", "Expression_breadth", "Expression_variation", "Expression_correlation", "Expression_correlation_Ks_<2",
+                   "Coexpression_module_size", "AraNet_edges", "PPIs",
+                   "Protein_domains", "Amino_acids",
+                   "PI_with_paralog", "Ks_with_paralog", "KaKs_with_paralog",
+                   "Nucleotide_diversity", "Sequence_conservation", "OrthoMCL_paralog_cluster_size", "Core_eukaryotic_gene",
+                   "beta_gamma_WGD_paralog_retained", "alpha_WGD_paralog_retained",
+                   "Tandem_duplicate", "Pseudogene_homolog_present", "No_homolog_in_rice") 
 
-tandemdup <- ds3[which(ds3$Tandem.duplicate == 1),]
-nrow(tandemdup)
-
-
+ds3$Lethal <- NA
+ds3[which(ds3$parent %in% lethal$Gene),]$Lethal <- 1
+ds3[which(ds3$parent %in% nonlethal$Gene),]$Lethal <- 0
 
 # Load among-read and within-read mC data for featName featRegion
 featDF <- read.table(paste0(outDir,
@@ -137,6 +150,13 @@ featDF <- read.table(paste0(outDir,
                             "_unfilt_df_fk_kappa_all_mean_mC_all_complete_",
                             paste0(chrName, collapse = "_"), ".tsv"),
                      header = T)
+colnames(featDF)[which(colnames(featDF) == "fk_kappa_all")] <- "Kappa"
+colnames(featDF)[which(colnames(featDF) == "mean_stocha_all")] <- "Stocha"
+colnames(featDF)[which(colnames(featDF) == "mean_min_acf_all")] <- "Min_ACF"
+colnames(featDF)[which(colnames(featDF) == "mean_mean_acf_all")] <- "Mean_ACF"
+colnames(featDF)[which(colnames(featDF) == "mean_mC_all")] <- paste0("Mean_m", context)
+featDF$Kappa_C_density <- featDF$fk_Cs_all / ( (featDF$end - featDF$start + 1) / 1e3)
+featDF$Stocha_C_density <- featDF$stocha_Cs_all / ( (featDF$end - featDF$start + 1) / 1e3)
 featDF$parent <- sub(pattern = "\\.\\d+", replacement = "", x = featDF$name)
 featDF$parent <- sub(pattern = "_\\d+", replacement = "", x = featDF$parent)
 
@@ -177,7 +197,161 @@ Col_Rep1_IRratio <- foreach(i = iter(parentIDs),
              IRratio_max = max(tmpDF$IRratio, na.rm = T))
 }
 
-featDF_tab <- base::merge(x = featDF, y = Col_Rep1_IRratio,
-                          by.x = "parent", by.y = "parent")
+featDF_merge <- base::merge(x = featDF, y = Col_Rep1_IRratio,
+                            by.x = "parent", by.y = "parent",
+                            all.x = T)
+featDF_merge <- base::merge(x = featDF_merge, y = ds3,
+                            by.x = "parent", by.y = "parent",
+                            all.x = T)
+
+featDF_kappa <- featDF_merge[
+  with(featDF_merge, 
+       order(Kappa, decreasing = T)),
+]
+
+featDF_stocha <- featDF_merge[
+  with(featDF_merge, 
+       order(Stocha, decreasing = T)),
+]
+
+# Define heatmap colours
+rich12 <- function() {manual_pal(values = c("#000040","#000093","#0020E9","#0076FF","#00B8C2","#04E466","#49FB25","#E7FD09","#FEEA02","#FFC200","#FF8500","#FF3300"))}
+rich10 <- function() {manual_pal(values = c("#000041","#0000A9","#0049FF","#00A4DE","#03E070","#5DFC21","#F6F905","#FFD701","#FF9500","#FF3300"))}
+rich8 <- function() {manual_pal(values = c("#000041","#0000CB","#0081FF","#02DA81","#80FE1A","#FDEE02","#FFAB00","#FF3300"))}
+rich6 <- function() {manual_pal(values = c("#000043","#0033FF","#01CCA4","#BAFF12","#FFCC00","#FF3300"))}
+rich8to6equal <- c("#0000CB", "#0081FF", "#87CEFA", "#FDEE02", "#FFAB00", "#FF3300")
+revSpectralScale11 <- rev(brewer.pal(11, "Spectral"))
+viridisScale6 <- viridis_pal()(6)
+
+# Heatmap plotting function
+featureHeatmap <- function(mat,
+                           colFun,
+                           datName,
+                           rowOrder) {
+  Heatmap(matrix = mat,
+          col = colFun,
+          row_order = rowOrder,
+#          column_title = datName,
+#          column_title_rot = 45,
+#          column_title_gp = gpar(fontsize = 13),
+          column_labels = datName,
+          column_names_gp = gpar(fontsize = 13),
+          column_names_side = "top",
+          column_names_rot = 45,
+          column_names_centered = TRUE,
+          cluster_columns = FALSE,
+          cluster_column_slices = FALSE,
+          cluster_rows = FALSE,
+          cluster_row_slices = FALSE,
+          heatmap_legend_param = list(title = datName,
+                                      title_position = "topcenter",
+                                      title_gp = gpar(font = 2, fontsize = 12),
+                                      legend_direction = "horizontal",
+                                      labels_gp = gpar(fontsize = 10)),
+          heatmap_width = unit(2, "npc"),
+          heatmap_height = unit(4, "npc"),
+          column_gap = unit(0, "mm"),
+          row_gap = unit(1.0, "mm"),
+#          row_split = factor(tab_extend$phylo,
+#                             levels = sort(unique(as.character(tab_extend$phylo)))),
+          row_title = NULL,
+          show_row_names = FALSE,
+          border = FALSE,
+          # If converting into png with pdfTotiffTopng.sh,
+          # set use_raster to FALSE
+          use_raster = FALSE)
+          #use_raster = TRUE, raster_device = "png", raster_quality = 4)
+}
+
+Kappa_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Kappa")])
+Stocha_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Stocha")])
+Kappa_C_density_mat <- as.matrix(featDF_kappa[,which(grepl("Kappa_C_density", colnames(featDF_kappa)))])
+Stocha_C_density_mat <- as.matrix(featDF_kappa[,which(grepl("Stocha_C_density", colnames(featDF_kappa)))])
+Min_ACF_mat <- as.matrix(featDF_kappa[,which(grepl("Min_ACF", colnames(featDF_kappa)))])
+Mean_mC_mat <- as.matrix(featDF_kappa[,which(grepl(paste0("Mean_m", context), colnames(featDF_kappa)))])
+Expression_breadth_mat <- as.matrix(featDF_kappa[,which(grepl("Expression_breadth", colnames(featDF_kappa)))])
+
+Kappa_colFun <- colorRamp2(quantile(
+    Kappa_mat,
+    c(0.01, 0.2, 0.4, 0.6, 0.8, 0.99),
+    na.rm = T),
+  heat.colors(6))
+Stocha_colFun <- colorRamp2(quantile(
+    Stocha_mat,
+    c(0.01, 0.2, 0.4, 0.6, 0.8, 0.99),
+    na.rm = T),
+  plasma(6))
+Kappa_C_density_colFun <- colorRamp2(quantile(
+    Kappa_C_density_mat,
+    c(0.01, 0.2, 0.4, 0.6, 0.8, 0.99),
+    na.rm = T),
+  heat.colors(6))
+Stocha_C_density_colFun <- colorRamp2(quantile(
+    Stocha_C_density_mat,
+    c(0.01, 0.2, 0.4, 0.6, 0.8, 0.99),
+    na.rm = T),
+  plasma(6))
+Min_ACF_colFun <- colorRamp2(quantile(
+    Min_ACF_mat,
+    c(0.01, 0.2, 0.4, 0.6, 0.8, 0.99),
+    na.rm = T),
+  plasma(6))
+Mean_mC_colFun <- colorRamp2(quantile(
+    Mean_mC_mat,
+    c(0.01, 0.2, 0.4, 0.6, 0.8, 0.99),
+    na.rm = T),
+  viridis(6))
+Expression_breadth_colFun <- colorRamp2(quantile(
+    Expression_breadth_mat,
+    c(0.25, 0.75),
+    na.rm = T),
+  c("blue", "red"))
+
+Kappa_htmp <- featureHeatmap(mat = Kappa_mat,
+  colFun = Kappa_colFun,
+  datName = "Kappa",
+  rowOrder = c(1:nrow(Kappa_mat)))
+Stocha_htmp <- featureHeatmap(mat = Stocha_mat,
+  colFun = Stocha_colFun,
+  datName = "Stocha",
+  rowOrder = c(1:nrow(Stocha_mat)))
+Kappa_C_density_htmp <- featureHeatmap(mat = Kappa_C_density_mat,
+  colFun = Kappa_C_density_colFun,
+  datName = "Kappa_C_density",
+  rowOrder = c(1:nrow(Kappa_C_density_mat)))
+Stocha_C_density_htmp <- featureHeatmap(mat = Stocha_C_density_mat,
+  colFun = Stocha_C_density_colFun,
+  datName = "Stocha_C_density",
+  rowOrder = c(1:nrow(Stocha_C_density_mat)))
+Min_ACF_htmp <- featureHeatmap(mat = Min_ACF_mat,
+  colFun = Min_ACF_colFun,
+  datName = "Min_ACF",
+  rowOrder = c(1:nrow(Min_ACF_mat)))
+Mean_mC_htmp <- featureHeatmap(mat = Mean_mC_mat,
+  colFun = Mean_mC_colFun,
+  datName = "Mean_mC",
+  rowOrder = c(1:nrow(Mean_mC_mat)))
+Expression_breadth_htmp <- featureHeatmap(mat = Expression_breadth_mat,
+  colFun = Expression_breadth_colFun,
+  datName = "Expression_breadth",
+  rowOrder = c(1:nrow(Expression_breadth_mat)))
+
+
+htmps <- Kappa_htmp + Stocha_htmp + Kappa_C_density_htmp + Stocha_C_density_htmp + Min_ACF_htmp + Mean_mC_htmp + Expression_breadth_htmp
+
+legendGap <- unit(15, "mm")
+
+pdf(paste0(plotDir_kappa,
+           featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase, "_", context,
+           "_NAmax", NAmax, "_all_unfilt_heatmap_kappa_", paste0(chrName, collapse = "_"), ".pdf"),
+    width = 1.5*length(htmps), height = 10)
+draw(htmps,
+     gap = unit(1, "mm"),
+     column_title = paste0("Genes by among-read agreement in gene ", featRegion), 
+     column_title_gp = gpar(font = 2, fontsize = 16),
+     heatmap_legend_side = "bottom",
+     legend_gap = legendGap)
+dev.off()
+
 
 
