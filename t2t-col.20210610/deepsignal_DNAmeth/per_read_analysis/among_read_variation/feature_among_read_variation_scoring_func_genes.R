@@ -387,7 +387,6 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
       acf_pwider_str_x_list <- apply(stocha_pwider_str_x, MARGIN = 2,
                                      FUN = function(col) acf(col, lag.max = 10, plot = F, na.action = na.pass))
       mean_min_acf_pwider_str_x <- mean(sapply(seq_along(acf_pwider_str_x_list), function(col) {
-        print(col)
         if(sum(acf_pwider_str_x_list[[col]]$acf, na.rm = T) != 0) {
           min(as.vector(acf_pwider_str_x_list[[col]]$acf)[-1], na.rm = T)
         } else {
