@@ -382,7 +382,7 @@ IRratio_median_colFun <- colorRamp2(quantile(
     c(0.05, 0.2, 0.4, 0.6, 0.8, 0.95),
     na.rm = T),
   viridis(6))
-Lethal_colFun <- c("0" = "white", "1" = "firebrick3") 
+Lethal_colFun <- c("0" = "white", "1" = "black") 
 Core_eukaryotic_gene_colFun <- c("0" = "white", "1" = "firebrick3") 
 Tandem_duplicate_colFun <- c("0" = "dodgerblue", "1" = "darkgreen") 
 OrthoMCL_paralog_cluster_size_colFun <- colorRamp2(quantile(
@@ -515,7 +515,7 @@ IRratio_median_htmp <- featureHeatmap(mat = IRratio_median_mat,
   rowOrder = c(1:nrow(IRratio_median_mat)))
 Lethal_htmp <- featureHeatmap(mat = Lethal_mat,
   colFun = Lethal_colFun,
-  datName = "Lethal/predicted lethal",
+  datName = "Lethal",
   rowOrder = c(1:nrow(Lethal_mat)))
 Core_eukaryotic_gene_htmp <- featureHeatmap(mat = Core_eukaryotic_gene_mat,
   colFun = Core_eukaryotic_gene_colFun,
