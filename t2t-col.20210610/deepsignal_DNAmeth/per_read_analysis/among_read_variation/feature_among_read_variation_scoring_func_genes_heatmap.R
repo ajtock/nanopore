@@ -35,6 +35,7 @@ library(scales)
 library(circlize)
 library(data.table)
 library(stringr)
+library(GenomicRanges)
 library(doParallel)
 library(doFuture)
 registerDoFuture()
@@ -108,6 +109,20 @@ if(!grepl("Chr", fai[,1][1])) {
 }
 chrLens <- fai[,2][which(fai[,1] %in% chrName)]
 
+# Load coordinates for mitochondrial insertion on Chr2, in BED format
+mito_ins <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase, "/annotation/", refbase , ".mitochondrial_insertion.bed"),
+                       header = F)
+colnames(mito_ins) <- c("chr", "start", "end", "name", "score", "strand")
+mito_ins <- mito_ins[ mito_ins$chr %in% "Chr2",]
+mito_ins <- mito_ins[ with(mito_ins, order(chr, start, end)) , ]
+mito_ins_chr <- unique(mito_ins$chr)
+mito_ins_start <- min(mito_ins$start)+1
+mito_ins_end <- max(mito_ins$end)
+#mito_ins_GR <- GRanges(seqnames = "Chr2",
+#                       ranges = IRanges(start = min(mito_ins$start)+1,
+#                                        end = max(mito_ins$end)),
+#                       strand = "*")
+
 # Read in Lloyd et al. (2015) Plant Cell gene classifiers
 ds1 <- read.csv(paste0("Lloyd_2015_Plant_Cell_SupplData/plcell_v27_8_2133_s1/plcell_v27_8_2133_s1/",
                        "TPC2015-00051-LSBR3_Supplemental_Data_set_1_Sheet1.csv"),
@@ -139,8 +154,71 @@ colnames(ds3) <- c("parent",
                    "Tandem_duplicate", "Pseudogene_homolog_present", "No_homolog_in_rice") 
 
 ds3$Lethal <- NA
-ds3[which(ds3$parent %in% lethal$Gene),]$Lethal <- 1
-ds3[which(ds3$parent %in% nonlethal$Gene),]$Lethal <- 0
+ds3[which(ds3$parent %in% lethal$parent),]$Lethal <- 1
+ds3[which(ds3$parent %in% nonlethal$parent),]$Lethal <- 0
+
+
+# Read in methylation divergence (mD) files
+mDdir <- "/home/ajt200/analysis/BSseq_leaf_Hazarika_Johannes_2022_NatPlants/snakemake_BSseq_t2t-col.20210610/MA1_2/coverage/report/alphabeta/"
+MA1_2_mD_list <- mclapply(seq_along(chrName), function(x) {
+  read.table(paste0(mDdir,
+                    "mD_at_dt62_genomeBinSize10kb_genomeStepSize1kb",
+                    "_MA1_2_MappedOn_", refbase, "_", chrName[x], "_", context, ".tsv"),
+             header = T)
+}, mc.cores = length(chrName), mc.preschedule = F)
+
+if(length(chrName) > 1) {
+  MA1_2_mD <- dplyr::bind_rows(MA1_2_mD_list)
+} else {
+  MA1_2_mD <- MA1_2_mD_list[[1]]
+}
+rm(MA1_2_mD_list); gc()
+
+tab_mD <- MA1_2_mD
+rm(MA1_2_mD); gc()
+
+tab_mD <- tab_mD[
+  with(tab_mD, order(chr, start, end)),
+]
+
+# Remove genomic bins in tab_mD overlapping the mitochondrial insertion on Chr2,
+# as we cannot be sure that these BS-seq reads come from the nuclear genome
+# Note that long reads wholly contained within the boundaries of the Chr2 mito insertion
+# have already been removed for the among-read and within-read mC variation analysis,
+# by among_read_variation_scoring.R
+tab_mD_mito <- tab_mD %>%
+  dplyr::filter(chr == mito_ins_chr) %>%
+  dplyr::filter( (start >= mito_ins_start &
+                  start <= mito_ins_end) |
+                 (end >= mito_ins_start &
+                  end <= mito_ins_end) )
+
+stopifnot(unique(tab_mD_mito$chr) == mito_ins_chr)
+stopifnot(tab_mD_mito$end[1] >= mito_ins_start)
+stopifnot(tab_mD_mito$start[nrow(tab_mD_mito)] <= mito_ins_end)
+print(head(tab_mD_mito[,1:6]))
+print(tail(tab_mD_mito[,1:6]))
+print(paste0("Mitochondrial insetion on ", mito_ins_chr, ":", mito_ins_start, "-", mito_ins_end))
+
+tab_mD <- tab_mD %>%
+  dplyr::anti_join(tab_mD_mito)
+
+tab_mD <- tab_mD[!is.na(tab_mD$MA1_2_mean.D),]
+
+tab_mD$rank <- rank(tab_mD$MA1_2_mean.D)/nrow(tab_mD)
+
+# Define epimutation hotspots (mD_hs) and coldspots (mD_cs)
+mD_hs <- tab_mD[tab_mD$rank >= 0.9,]
+mD_cs <- tab_mD[tab_mD$rank <= 0.1,]
+
+mD_hs_GR <- GRanges(seqnames = mD_hs$chr,
+                    ranges = IRanges(start = mD_hs$start, end = mD_hs$end),
+                    strand = "*",
+                    mD = mD_hs$MA1_2_mean.D)
+mD_cs_GR <- GRanges(seqnames = mD_cs$chr,
+                    ranges = IRanges(start = mD_cs$start, end = mD_cs$end),
+                    strand = "*",
+                    mD = mD_cs$MA1_2_mean.D)
 
 # Load among-read and within-read mC data for featName featRegion
 featDF <- read.table(paste0(outDir,
@@ -159,6 +237,27 @@ featDF$Kappa_C_density <- featDF$fk_Cs_all / ( (featDF$end - featDF$start + 1) /
 featDF$Stocha_C_density <- featDF$stocha_Cs_all / ( (featDF$end - featDF$start + 1) / 1e3)
 featDF$parent <- sub(pattern = "\\.\\d+", replacement = "", x = featDF$name)
 featDF$parent <- sub(pattern = "_\\d+", replacement = "", x = featDF$parent)
+
+featGR <- GRanges(seqnames = featDF$chr,
+                  ranges = IRanges(start = featDF$start, end = featDF$end),
+                  strand = "*",
+                  featID = featDF$name)
+
+fOverlaps_feat_mD_hs <- findOverlaps(query = featGR,
+                                     subject = mD_hs_GR,
+                                     type = "any",
+                                     select = "all",
+                                     ignore.strand = T)
+featGR_mD_hs <- featGR[unique(queryHits(fOverlaps_feat_mD_hs))]
+featID_mD_hs <- unique(featGR_mD_hs$featID)
+
+fOverlaps_feat_mD_cs <- findOverlaps(query = featGR,
+                                     subject = mD_cs_GR,
+                                     type = "any",
+                                     select = "all",
+                                     ignore.strand = T)
+featGR_mD_cs <- featGR[unique(queryHits(fOverlaps_feat_mD_cs))]
+featID_mD_cs <- unique(featGR_mD_cs$featID)
 
 # Append intron retention ratio (calculated with IRFinder)
 Col_Rep1_IRFinder <- fread(paste0("/home/ajt200/analysis/RNAseq_leaf_Rigal_Mathieu_2016_PNAS/snakemake_RNAseq_IRFinder_TAIR10_chr_all/REF/TAIR10_chr_all/",
@@ -203,6 +302,13 @@ featDF_merge <- base::merge(x = featDF, y = Col_Rep1_IRratio,
 featDF_merge <- base::merge(x = featDF_merge, y = ds3,
                             by.x = "parent", by.y = "parent",
                             all.x = T)
+
+featDF_merge$mD_hotspot <- NA
+featDF_merge[which(featDF_merge$name %in% featID_mD_hs),]$mD_hotspot <- 1
+featDF_merge[which(!(featDF_merge$name %in% featID_mD_hs)),]$mD_hotspot <- 0
+featDF_merge$mD_coldspot <- NA
+featDF_merge[which(featDF_merge$name %in% featID_mD_cs),]$mD_coldspot <- 1
+featDF_merge[which(!(featDF_merge$name %in% featID_mD_cs)),]$mD_coldspot <- 0
 
 featDF_kappa <- featDF_merge[
   with(featDF_merge, 
@@ -289,6 +395,8 @@ Sequence_conservation_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa
 Nucleotide_diversity_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Nucleotide_diversity")])
 Ks_with_paralog_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Ks_with_paralog")])
 KaKs_with_paralog_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "KaKs_with_paralog")])
+mD_hotspot_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "mD_hotspot")])
+mD_coldspot_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "mD_coldspot")])
 
 #Min_ACF_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Min_ACF")])
 #AraNet_edges_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "AraNet_edges")])
@@ -410,6 +518,8 @@ KaKs_with_paralog_colFun <- colorRamp2(quantile(
     c(0.05, 0.2, 0.4, 0.6, 0.8, 0.95),
     na.rm = T),
   heat.colors(6))
+mD_hotspot_colFun <- c("0" = "white", "1" = "firebrick3") 
+mD_coldspot_colFun <- c("0" = "white", "1" = "dodgerblue4") 
 
 
 #Min_ACF_colFun <- colorRamp2(quantile(
@@ -545,6 +655,14 @@ KaKs_with_paralog_htmp <- featureHeatmap(mat = KaKs_with_paralog_mat,
   colFun = KaKs_with_paralog_colFun,
   datName = "Ka/Ks with paralog",
   rowOrder = c(1:nrow(KaKs_with_paralog_mat)))
+mD_hotspot_htmp <- featureHeatmap(mat = mD_hotspot_mat,
+  colFun = mD_hotspot_colFun,
+  datName = "Epimutation hotspot",
+  rowOrder = c(1:nrow(mD_hotspot_mat)))
+mD_coldspot_htmp <- featureHeatmap(mat = mD_coldspot_mat,
+  colFun = mD_coldspot_colFun,
+  datName = "Epimutation coldspot",
+  rowOrder = c(1:nrow(mD_coldspot_mat)))
 
 #Min_ACF_htmp <- featureHeatmap(mat = Min_ACF_mat,
 #  colFun = Min_ACF_colFun,
@@ -573,6 +691,7 @@ KaKs_with_paralog_htmp <- featureHeatmap(mat = KaKs_with_paralog_mat,
 htmps <- Kappa_htmp + Stocha_htmp +
          Kappa_C_density_htmp + Stocha_C_density_htmp +
          Mean_mC_htmp + gbM_htmp +
+         mD_hotspot_htmp + mD_coldspot_htmp +
          Expression_breadth_htmp + Expression_variation_htmp + Median_expression_htmp + Coexpression_module_size_htmp +
          feature_width_htmp + exons_width_prop_htmp + introns_width_prop_htmp + IRratio_median_htmp +
          Lethal_htmp + Sequence_conservation_htmp + Nucleotide_diversity_htmp
