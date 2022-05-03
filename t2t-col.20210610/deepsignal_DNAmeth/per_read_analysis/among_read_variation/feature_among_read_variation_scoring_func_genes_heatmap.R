@@ -281,6 +281,14 @@ exons_width_prop_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == 
 introns_count_per_kb_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "introns_count_per_kb")])
 introns_width_prop_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "introns_width_prop")])
 IRratio_median_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "IRratio_median")])
+Lethal_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Lethal")])
+Core_eukaryotic_gene_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Core_eukaryotic_gene")])
+Tandem_duplicate_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Tandem_duplicate")])
+OrthoMCL_paralog_cluster_size_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "OrthoMCL_paralog_cluster_size")])
+Sequence_conservation_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Sequence_conservation")])
+Nucleotide_diversity_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Nucleotide_diversity")])
+Ks_with_paralog_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Ks_with_paralog")])
+KaKs_with_paralog_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "KaKs_with_paralog")])
 
 #Min_ACF_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Min_ACF")])
 #AraNet_edges_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "AraNet_edges")])
@@ -334,11 +342,74 @@ Coexpression_module_size_colFun <- colorRamp2(quantile(
     c(0.05, 0.95),
     na.rm = T),
   c("blue", "red"))
+feature_width_colFun <- colorRamp2(quantile(
+    feature_width_mat,
+    c(0.05, 0.2, 0.4, 0.6, 0.8, 0.95),
+    na.rm = T),
+  viridis(6))
+Amino_acids_colFun <- colorRamp2(quantile(
+    Amino_acids_mat,
+    c(0.05, 0.2, 0.4, 0.6, 0.8, 0.95),
+    na.rm = T),
+  viridis(6))
+Protein_domains_colFun <- colorRamp2(quantile(
+    Protein_domains_mat,
+    c(0.05, 0.2, 0.4, 0.6, 0.8, 0.95),
+    na.rm = T),
+  viridis(6))
+exons_count_per_kb_colFun <- colorRamp2(quantile(
+    exons_count_per_kb_mat,
+    c(0.05, 0.2, 0.4, 0.6, 0.8, 0.95),
+    na.rm = T),
+  viridis(6))
+exons_width_prop_colFun <- colorRamp2(quantile(
+    exons_width_prop_mat,
+    c(0.05, 0.2, 0.4, 0.6, 0.8, 0.95),
+    na.rm = T),
+  viridis(6))
+introns_count_per_kb_colFun <- colorRamp2(quantile(
+    introns_count_per_kb_mat,
+    c(0.05, 0.2, 0.4, 0.6, 0.8, 0.95),
+    na.rm = T),
+  viridis(6))
+introns_width_prop_colFun <- colorRamp2(quantile(
+    introns_width_prop_mat,
+    c(0.05, 0.2, 0.4, 0.6, 0.8, 0.95),
+    na.rm = T),
+  viridis(6))
 IRratio_median_colFun <- colorRamp2(quantile(
     IRratio_median_mat,
-    c(0.05, 0.95),
+    c(0.05, 0.2, 0.4, 0.6, 0.8, 0.95),
     na.rm = T),
-  c("blue", "red"))
+  viridis(6))
+Lethal_colFun <- c("0" = "white", "1" = "firebrick2") 
+Core_eukaryotic_gene_colFun <- c("0" = "white", "1" = "firebrick2") 
+Tandem_duplicate_colFun <- c("0" = "dodgerblue", "1" = "darkgreen") 
+OrthoMCL_paralog_cluster_size_colFun <- colorRamp2(quantile(
+    OrthoMCL_paralog_cluster_size_mat,
+    c(0.05, 0.2, 0.4, 0.6, 0.8, 0.95),
+    na.rm = T),
+  heat.colors(6))
+Sequence_conservation_colFun <- colorRamp2(quantile(
+    Sequence_conservation_mat,
+    c(0.05, 0.2, 0.4, 0.6, 0.8, 0.95),
+    na.rm = T),
+  heat.colors(6))
+Nucleotide_diversity_colFun <- colorRamp2(quantile(
+    Nucleotide_diversity_mat,
+    c(0.05, 0.2, 0.4, 0.6, 0.8, 0.95),
+    na.rm = T),
+  heat.colors(6))
+Ks_with_paralog_colFun <- colorRamp2(quantile(
+    Ks_with_paralog_mat,
+    c(0.05, 0.2, 0.4, 0.6, 0.8, 0.95),
+    na.rm = T),
+  heat.colors(6))
+KaKs_with_paralog_colFun <- colorRamp2(quantile(
+    KaKs_with_paralog_mat,
+    c(0.05, 0.2, 0.4, 0.6, 0.8, 0.95),
+    na.rm = T),
+  heat.colors(6))
 
 
 #Min_ACF_colFun <- colorRamp2(quantile(
@@ -380,7 +451,7 @@ Stocha_htmp <- featureHeatmap(mat = Stocha_mat,
   rowOrder = c(1:nrow(Stocha_mat)))
 Kappa_C_density_htmp <- featureHeatmap(mat = Kappa_C_density_mat,
   colFun = Kappa_C_density_colFun,
-  datName = "C density Fk",
+  datName = "C density kappa",
   rowOrder = c(1:nrow(Kappa_C_density_mat)))
 Stocha_C_density_htmp <- featureHeatmap(mat = Stocha_C_density_mat,
   colFun = Stocha_C_density_colFun,
@@ -410,10 +481,70 @@ Coexpression_module_size_htmp <- featureHeatmap(mat = Coexpression_module_size_m
   colFun = Coexpression_module_size_colFun,
   datName = "Exp. module size",
   rowOrder = c(1:nrow(Coexpression_module_size_mat)))
+feature_width_htmp <- featureHeatmap(mat = feature_width_mat,
+  colFun = feature_width_colFun,
+  datName = "Gene length",
+  rowOrder = c(1:nrow(feature_width_mat)))
+Amino_acids_htmp <- featureHeatmap(mat = Amino_acids_mat,
+  colFun = Amino_acids_colFun,
+  datName = "Protein length",
+  rowOrder = c(1:nrow(Amino_acids_mat)))
+Protein_domains_htmp <- featureHeatmap(mat = Protein_domains_mat,
+  colFun = Protein_domains_colFun,
+  datName = "Protein domains",
+  rowOrder = c(1:nrow(Protein_domains_mat)))
+exons_count_per_kb_htmp <- featureHeatmap(mat = exons_count_per_kb_mat,
+  colFun = exons_count_per_kb_colFun,
+  datName = "Exons per kb",
+  rowOrder = c(1:nrow(exons_count_per_kb_mat)))
+exons_width_prop_htmp <- featureHeatmap(mat = exons_width_prop_mat,
+  colFun = exons_width_prop_colFun,
+  datName = "Proportion exonic",
+  rowOrder = c(1:nrow(exons_width_prop_mat)))
+introns_count_per_kb_htmp <- featureHeatmap(mat = introns_count_per_kb_mat,
+  colFun = introns_count_per_kb_colFun,
+  datName = "Introns per kb",
+  rowOrder = c(1:nrow(introns_count_per_kb_mat)))
+introns_width_prop_htmp <- featureHeatmap(mat = introns_width_prop_mat,
+  colFun = introns_width_prop_colFun,
+  datName = "Proportion intronic",
+  rowOrder = c(1:nrow(introns_width_prop_mat)))
 IRratio_median_htmp <- featureHeatmap(mat = IRratio_median_mat,
   colFun = IRratio_median_colFun,
-  datName = "IR ratio avg.",
+  datName = "Intron retention",
   rowOrder = c(1:nrow(IRratio_median_mat)))
+Lethal_htmp <- featureHeatmap(mat = Lethal_mat,
+  colFun = Lethal_colFun,
+  datName = "Lethal",
+  rowOrder = c(1:nrow(Lethal_mat)))
+Core_eukaryotic_gene_htmp <- featureHeatmap(mat = Core_eukaryotic_gene_mat,
+  colFun = Core_eukaryotic_gene_colFun,
+  datName = "Core eukaryotic gene",
+  rowOrder = c(1:nrow(Core_eukaryotic_gene_mat)))
+Tandem_duplicate_htmp <- featureHeatmap(mat = Tandem_duplicate_mat,
+  colFun = Tandem_duplicate_colFun,
+  datName = "Tandem duplicate",
+  rowOrder = c(1:nrow(Tandem_duplicate_mat)))
+OrthoMCL_paralog_cluster_size_htmp <- featureHeatmap(mat = OrthoMCL_paralog_cluster_size_mat,
+  colFun = OrthoMCL_paralog_cluster_size_colFun,
+  datName = "Ortho. cluster size",
+  rowOrder = c(1:nrow(OrthoMCL_paralog_cluster_size_mat)))
+Sequence_conservation_htmp <- featureHeatmap(mat = Sequence_conservation_mat,
+  colFun = Sequence_conservation_colFun,
+  datName = "Sequence conservation",
+  rowOrder = c(1:nrow(Sequence_conservation_mat)))
+Nucleotide_diversity_htmp <- featureHeatmap(mat = Nucleotide_diversity_mat,
+  colFun = Nucleotide_diversity_colFun,
+  datName = "Nucleotide diversity",
+  rowOrder = c(1:nrow(Nucleotide_diversity_mat)))
+Ks_with_paralog_htmp <- featureHeatmap(mat = Ks_with_paralog_mat,
+  colFun = Ks_with_paralog_colFun,
+  datName = "Ks with paralog",
+  rowOrder = c(1:nrow(Ks_with_paralog_mat)))
+KaKs_with_paralog_htmp <- featureHeatmap(mat = KaKs_with_paralog_mat,
+  colFun = KaKs_with_paralog_colFun,
+  datName = "Ka/Ks with paralog",
+  rowOrder = c(1:nrow(KaKs_with_paralog_mat)))
 
 #Min_ACF_htmp <- featureHeatmap(mat = Min_ACF_mat,
 #  colFun = Min_ACF_colFun,
@@ -440,10 +571,12 @@ IRratio_median_htmp <- featureHeatmap(mat = IRratio_median_mat,
 
 
 htmps <- Kappa_htmp + Stocha_htmp +
+         Kappa_C_density_htmp + Stocha_C_density_htmp +
          Mean_mC_htmp + gbM_htmp +
          Expression_breadth_htmp + Expression_variation_htmp + Median_expression_htmp + Coexpression_module_size_htmp +
-         IRratio_median_htmp +
-         Kappa_C_density_htmp + Stocha_C_density_htmp
+         feature_width_htmp + exons_width_prop_htmp + introns_width_prop_htmp + IRratio_median_htmp +
+         Lethal_htmp + Core_eukaryotic_gene_htmp + 
+         Sequence_conservation_htmp + Nucleotide_diversity_htmp
 
 legendGap <- unit(15, "mm")
 
@@ -458,6 +591,4 @@ draw(htmps,
      heatmap_legend_side = "bottom",
      legend_gap = legendGap)
 dev.off()
-
-
 
