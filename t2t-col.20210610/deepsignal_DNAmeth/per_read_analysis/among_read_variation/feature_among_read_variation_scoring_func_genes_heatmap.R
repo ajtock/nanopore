@@ -130,7 +130,7 @@ ds3 <- ds3[,c(1, 21, 2, 16, 12, 3, 7, 13, 5, 6, 4, 8, 14, 9, 15, 10, 11, 17, 18,
 ncol(ds3)
 colnames(ds3) <- c("parent",
                    "gbM",
-                   "Median_expression", "Expression_breadth", "Expression_variation", "Expression_correlation", "Expression_correlation_Ks_<2",
+                   "Median_expression", "Expression_breadth", "Expression_variation", "Expression_correlation", "Expression_correlation_Ks_lt2",
                    "Coexpression_module_size", "AraNet_edges", "PPIs",
                    "Protein_domains", "Amino_acids",
                    "PI_with_paralog", "Ks_with_paralog", "KaKs_with_paralog",
@@ -245,7 +245,7 @@ featureHeatmap <- function(mat,
           cluster_row_slices = FALSE,
           heatmap_legend_param = list(title = datName,
                                       title_position = "topcenter",
-                                      title_gp = gpar(font = 2, fontsize = 12),
+                                      title_gp = gpar(font = 1, fontsize = 11),
                                       legend_direction = "horizontal",
                                       labels_gp = gpar(fontsize = 10)),
           heatmap_width = unit(2, "npc"),
@@ -265,79 +265,185 @@ featureHeatmap <- function(mat,
 
 Kappa_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Kappa")])
 Stocha_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Stocha")])
-Kappa_C_density_mat <- as.matrix(featDF_kappa[,which(grepl("Kappa_C_density", colnames(featDF_kappa)))])
-Stocha_C_density_mat <- as.matrix(featDF_kappa[,which(grepl("Stocha_C_density", colnames(featDF_kappa)))])
-Min_ACF_mat <- as.matrix(featDF_kappa[,which(grepl("Min_ACF", colnames(featDF_kappa)))])
-Mean_mC_mat <- as.matrix(featDF_kappa[,which(grepl(paste0("Mean_m", context), colnames(featDF_kappa)))])
-Expression_breadth_mat <- as.matrix(featDF_kappa[,which(grepl("Expression_breadth", colnames(featDF_kappa)))])
+Kappa_C_density_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Kappa_C_density")])
+Stocha_C_density_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Stocha_C_density")])
+Mean_mC_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == paste0("Mean_m", context))])
+gbM_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "gbM")])
+Expression_breadth_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Expression_breadth")])
+Expression_variation_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Expression_variation")])
+Median_expression_mat <- log2(as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Median_expression")])+1)
+Coexpression_module_size_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Coexpression_module_size")])
+feature_width_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "feature_width")])
+Amino_acids_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Amino_acids")])
+Protein_domains_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Protein_domains")])
+exons_count_per_kb_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "exons_count_per_kb")])
+exons_width_prop_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "exons_width_prop")])
+introns_count_per_kb_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "introns_count_per_kb")])
+introns_width_prop_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "introns_width_prop")])
+IRratio_median_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "IRratio_median")])
+
+#Min_ACF_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Min_ACF")])
+#AraNet_edges_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "AraNet_edges")])
+#PPIs_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "PPIs")])
+#Expression_correlation_Ks_lt2_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Expression_correlation_Ks_lt2")])
+#Expression_correlation_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Expression_correlation")])
 
 Kappa_colFun <- colorRamp2(quantile(
     Kappa_mat,
-    c(0.01, 0.2, 0.4, 0.6, 0.8, 0.99),
+    c(0.05, 0.2, 0.4, 0.6, 0.8, 0.95),
     na.rm = T),
   heat.colors(6))
 Stocha_colFun <- colorRamp2(quantile(
     Stocha_mat,
-    c(0.01, 0.2, 0.4, 0.6, 0.8, 0.99),
+    c(0.05, 0.2, 0.4, 0.6, 0.8, 0.95),
     na.rm = T),
   plasma(6))
 Kappa_C_density_colFun <- colorRamp2(quantile(
     Kappa_C_density_mat,
-    c(0.01, 0.2, 0.4, 0.6, 0.8, 0.99),
+    c(0.05, 0.2, 0.4, 0.6, 0.8, 0.95),
     na.rm = T),
   heat.colors(6))
 Stocha_C_density_colFun <- colorRamp2(quantile(
     Stocha_C_density_mat,
-    c(0.01, 0.2, 0.4, 0.6, 0.8, 0.99),
-    na.rm = T),
-  plasma(6))
-Min_ACF_colFun <- colorRamp2(quantile(
-    Min_ACF_mat,
-    c(0.01, 0.2, 0.4, 0.6, 0.8, 0.99),
+    c(0.05, 0.2, 0.4, 0.6, 0.8, 0.95),
     na.rm = T),
   plasma(6))
 Mean_mC_colFun <- colorRamp2(quantile(
     Mean_mC_mat,
-    c(0.01, 0.2, 0.4, 0.6, 0.8, 0.99),
+    c(0.05, 0.2, 0.4, 0.6, 0.8, 0.95),
     na.rm = T),
   viridis(6))
+gbM_colFun <- c("0" = "dodgerblue4", "1" = "darkorange1") 
 Expression_breadth_colFun <- colorRamp2(quantile(
     Expression_breadth_mat,
-    c(0.25, 0.75),
+    c(0.05, 0.95),
+    na.rm = T),
+  c("blue", "red"))
+Expression_variation_colFun <- colorRamp2(quantile(
+    Expression_variation_mat,
+    c(0.05, 0.95),
+    na.rm = T),
+  c("blue", "red"))
+Median_expression_colFun <- colorRamp2(quantile(
+    Median_expression_mat,
+    c(0.05, 0.95),
+    na.rm = T),
+  c("blue", "red"))
+Coexpression_module_size_colFun <- colorRamp2(quantile(
+    Coexpression_module_size_mat,
+    c(0.05, 0.95),
+    na.rm = T),
+  c("blue", "red"))
+IRratio_median_colFun <- colorRamp2(quantile(
+    IRratio_median_mat,
+    c(0.05, 0.95),
     na.rm = T),
   c("blue", "red"))
 
+
+#Min_ACF_colFun <- colorRamp2(quantile(
+#    Min_ACF_mat,
+#    c(0.05, 0.2, 0.4, 0.6, 0.8, 0.95),
+#    na.rm = T),
+#  plasma(6))
+
+#AraNet_edges_colFun <- colorRamp2(quantile(
+#    AraNet_edges_mat,
+#    c(0.05, 0.95),
+#    na.rm = T),
+#  c("blue", "red"))
+#PPIs_colFun <- colorRamp2(quantile(
+#    PPIs_mat,
+#    c(0.05, 0.95),
+#    na.rm = T),
+#  c("blue", "red"))
+
+#Expression_correlation_Ks_lt2_colFun <- colorRamp2(quantile(
+#    Expression_correlation_Ks_lt2_mat,
+#    c(0.05, 0.2, 0.4, 0.6, 0.8, 0.95),
+#    na.rm = T),
+#  magma(6))
+#Expression_correlation_colFun <- colorRamp2(quantile(
+#    Expression_correlation_mat,
+#    c(0.05, 0.2, 0.4, 0.6, 0.8, 0.95),
+#    na.rm = T),
+#  magma(6))
+
+
 Kappa_htmp <- featureHeatmap(mat = Kappa_mat,
   colFun = Kappa_colFun,
-  datName = "Kappa",
+  datName = "Agreement",
   rowOrder = c(1:nrow(Kappa_mat)))
 Stocha_htmp <- featureHeatmap(mat = Stocha_mat,
   colFun = Stocha_colFun,
-  datName = "Stocha",
+  datName = "Stochasticity",
   rowOrder = c(1:nrow(Stocha_mat)))
 Kappa_C_density_htmp <- featureHeatmap(mat = Kappa_C_density_mat,
   colFun = Kappa_C_density_colFun,
-  datName = "Kappa_C_density",
+  datName = "C density Fk",
   rowOrder = c(1:nrow(Kappa_C_density_mat)))
 Stocha_C_density_htmp <- featureHeatmap(mat = Stocha_C_density_mat,
   colFun = Stocha_C_density_colFun,
-  datName = "Stocha_C_density",
+  datName = "C density",
   rowOrder = c(1:nrow(Stocha_C_density_mat)))
-Min_ACF_htmp <- featureHeatmap(mat = Min_ACF_mat,
-  colFun = Min_ACF_colFun,
-  datName = "Min_ACF",
-  rowOrder = c(1:nrow(Min_ACF_mat)))
 Mean_mC_htmp <- featureHeatmap(mat = Mean_mC_mat,
   colFun = Mean_mC_colFun,
-  datName = "Mean_mC",
+  datName = paste0("m", context, " avg."),
   rowOrder = c(1:nrow(Mean_mC_mat)))
+gbM_htmp <- featureHeatmap(mat = gbM_mat,
+  colFun = gbM_colFun,
+  datName = "gbM",
+  rowOrder = c(1:nrow(gbM_mat)))
 Expression_breadth_htmp <- featureHeatmap(mat = Expression_breadth_mat,
   colFun = Expression_breadth_colFun,
-  datName = "Expression_breadth",
+  datName = "Exp. breadth",
   rowOrder = c(1:nrow(Expression_breadth_mat)))
+Expression_variation_htmp <- featureHeatmap(mat = Expression_variation_mat,
+  colFun = Expression_variation_colFun,
+  datName = "Exp. variation",
+  rowOrder = c(1:nrow(Expression_variation_mat)))
+Median_expression_htmp <- featureHeatmap(mat = Median_expression_mat,
+  colFun = Median_expression_colFun,
+  datName = "Exp. avg.",
+  rowOrder = c(1:nrow(Median_expression_mat)))
+Coexpression_module_size_htmp <- featureHeatmap(mat = Coexpression_module_size_mat,
+  colFun = Coexpression_module_size_colFun,
+  datName = "Exp. module size",
+  rowOrder = c(1:nrow(Coexpression_module_size_mat)))
+IRratio_median_htmp <- featureHeatmap(mat = IRratio_median_mat,
+  colFun = IRratio_median_colFun,
+  datName = "IR ratio avg.",
+  rowOrder = c(1:nrow(IRratio_median_mat)))
+
+#Min_ACF_htmp <- featureHeatmap(mat = Min_ACF_mat,
+#  colFun = Min_ACF_colFun,
+#  datName = "ACF min.",
+#  rowOrder = c(1:nrow(Min_ACF_mat)))
+
+#AraNet_edges_htmp <- featureHeatmap(mat = AraNet_edges_mat,
+#  colFun = AraNet_edges_colFun,
+#  datName = "AraNet edges",
+#  rowOrder = c(1:nrow(AraNet_edges_mat)))
+#PPIs_htmp <- featureHeatmap(mat = PPIs_mat,
+#  colFun = PPIs_colFun,
+#  datName = "PPIs",
+#  rowOrder = c(1:nrow(PPIs_mat)))
+
+#Expression_correlation_Ks_lt2_htmp <- featureHeatmap(mat = Expression_correlation_Ks_lt2_mat,
+#  colFun = Expression_correlation_Ks_lt2_colFun,
+#  datName = "Expr. corr. Ks<2",
+#  rowOrder = c(1:nrow(Expression_correlation_Ks_lt2_mat)))
+#Expression_correlation_htmp <- featureHeatmap(mat = Expression_correlation_mat,
+#  colFun = Expression_correlation_colFun,
+#  datName = "Expr. corr.",
+#  rowOrder = c(1:nrow(Expression_correlation_mat)))
 
 
-htmps <- Kappa_htmp + Stocha_htmp + Kappa_C_density_htmp + Stocha_C_density_htmp + Min_ACF_htmp + Mean_mC_htmp + Expression_breadth_htmp
+htmps <- Kappa_htmp + Stocha_htmp +
+         Mean_mC_htmp + gbM_htmp +
+         Expression_breadth_htmp + Expression_variation_htmp + Median_expression_htmp + Coexpression_module_size_htmp +
+         IRratio_median_htmp +
+         Kappa_C_density_htmp + Stocha_C_density_htmp
 
 legendGap <- unit(15, "mm")
 
@@ -347,7 +453,7 @@ pdf(paste0(plotDir_kappa,
     width = 1.5*length(htmps), height = 10)
 draw(htmps,
      gap = unit(1, "mm"),
-     column_title = paste0("Genes by among-read agreement in gene ", featRegion), 
+     column_title = paste0("Genes ordered by decreasing among-read agreement (m", context, ") in gene ", featRegion), 
      column_title_gp = gpar(font = 2, fontsize = 16),
      heatmap_legend_side = "bottom",
      legend_gap = legendGap)
