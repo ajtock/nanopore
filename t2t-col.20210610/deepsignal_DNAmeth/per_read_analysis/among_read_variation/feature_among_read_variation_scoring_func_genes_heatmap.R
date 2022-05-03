@@ -657,11 +657,11 @@ KaKs_with_paralog_htmp <- featureHeatmap(mat = KaKs_with_paralog_mat,
   rowOrder = c(1:nrow(KaKs_with_paralog_mat)))
 mD_hotspot_htmp <- featureHeatmap(mat = mD_hotspot_mat,
   colFun = mD_hotspot_colFun,
-  datName = "Epimutation hotspot",
+  datName = expression(italic(D) ~ "hotspot"),
   rowOrder = c(1:nrow(mD_hotspot_mat)))
 mD_coldspot_htmp <- featureHeatmap(mat = mD_coldspot_mat,
   colFun = mD_coldspot_colFun,
-  datName = "Epimutation coldspot",
+  datName = expression(italic(D) ~ "coldspot"),
   rowOrder = c(1:nrow(mD_coldspot_mat)))
 
 #Min_ACF_htmp <- featureHeatmap(mat = Min_ACF_mat,
