@@ -1,0 +1,245 @@
+#!/usr/bin/env Rscript
+
+# Analysis:
+# 1. Plot combined results of over- and under-representation analysis of genes grouped by both among-read agreement and mean methylation proportion
+# 2. Plot combined results of over- and under-representation analysis of genes grouped by both mean within-read stochasticity and mean methylation proportion
+
+# Usage:
+# conda activate R-4.0.0
+# ./feature_among_read_variation_scoring_func_genes_hypergeom_combined_bargraph_kappa.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 'Chr1,Chr2,Chr3,Chr4,Chr5' 'gene' 'regions' 10000 1000
+# conda deactivate
+ 
+# Divide each read into adjacent segments each consisting of a given number of consecutive cytosines,
+# and calculate the methylation proportion for each segment of each read
+
+#sampleName <- "Col_0_deepsignalDNAmeth_30kb_90pc"
+#refbase <- "t2t-col.20210610"
+#context <- "CpG"
+#NAmax <- 0.50
+#chrName <- unlist(strsplit("Chr1,Chr2,Chr3,Chr4,Chr5", split = ","))
+#featName <- "gene"
+#featRegion <- "regions"
+#genomeBinSize <- 10000
+#genomeStepSize <- 1000
+
+args <- commandArgs(trailingOnly = T)
+sampleName <- args[1]
+refbase <- args[2]
+context <- args[3]
+NAmax <- as.numeric(args[4])
+chrName <- unlist(strsplit(args[5], split = ","))
+featName <- args[6]
+featRegion <- args[7]
+genomeBinSize <- as.numeric(args[8])
+genomeStepSize <- as.numeric(args[9])
+
+options(stringsAsFactors = F)
+options(scipen = 999)
+library(parallel)
+library(dplyr)
+library(ggplot2)
+library(methods)
+library(plotrix)
+library(ggbeeswarm)
+library(ggthemes)
+library(grid)
+library(gridExtra)
+library(extrafont)
+library(RColorBrewer)
+
+if(floor(log10(genomeBinSize)) + 1 < 4) {
+  genomeBinName <- paste0(genomeBinSize, "bp")
+  genomeBinNamePlot <- paste0(genomeBinSize, "-bp")
+} else if(floor(log10(genomeBinSize)) + 1 >= 4 &
+          floor(log10(genomeBinSize)) + 1 <= 6) {
+  genomeBinName <- paste0(genomeBinSize/1e3, "kb")
+  genomeBinNamePlot <- paste0(genomeBinSize/1e3, "-kb")
+} else if(floor(log10(genomeBinSize)) + 1 >= 7) {
+  genomeBinName <- paste0(genomeBinSize/1e6, "Mb")
+  genomeBinNamePlot <- paste0(genomeBinSize/1e6, "-Mb")
+}
+
+if(floor(log10(genomeStepSize)) + 1 < 4) {
+  genomeStepName <- paste0(genomeStepSize, "bp")
+  genomeStepNamePlot <- paste0(genomeStepSize, "-bp")
+} else if(floor(log10(genomeStepSize)) + 1 >= 4 &
+          floor(log10(genomeStepSize)) + 1 <= 6) {
+  genomeStepName <- paste0(genomeStepSize/1e3, "kb")
+  genomeStepNamePlot <- paste0(genomeStepSize/1e3, "-kb")
+} else if(floor(log10(genomeStepSize)) + 1 >= 7) {
+  genomeStepName <- paste0(genomeStepSize/1e6, "Mb")
+  genomeStepNamePlot <- paste0(genomeStepSize/1e6, "-Mb")
+}
+
+outDir <- paste0(featName, "_", featRegion, "/", paste0(chrName, collapse = "_"), "/")
+plotDir <- paste0(outDir, "plots/")
+plotDir_kappa_mC <- paste0(outDir, "plots/hypergeom_combined_", context, "_kappa_mC/")
+plotDir_stocha_mC <- paste0(outDir, "plots/hypergeom_combined_", context, "_stocha_mC/")
+#plotDir_kappa_stocha <- paste0(outDir, "plots/hypergeom_combined_", context, "_kappa_stocha/")
+system(paste0("[ -d ", plotDir, " ] || mkdir -p ", plotDir))
+system(paste0("[ -d ", plotDir_kappa_mC, " ] || mkdir -p ", plotDir_kappa_mC))
+system(paste0("[ -d ", plotDir_stocha_mC, " ] || mkdir -p ", plotDir_stocha_mC))
+#system(paste0("[ -d ", plotDir_kappa_stocha, " ] || mkdir -p ", plotDir_kappa_stocha))
+
+
+mD_hs <- read.table(paste0(outDir,
+                           sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
+                           featName, "_", featRegion,
+                           "_mD_at_dt62_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
+                           "_MA1_2_MappedOn_", refbase, "_", paste0(chrName, collapse = "_"), "_", context,
+                           "_hotspot_hypergeomTest.tsv"),
+                    header = T)
+mD_hs <- data.frame(Feature = rep("Epimutation hotspots", 8),
+                    mD_hs)
+
+mD_cs <- read.table(paste0(outDir,
+                           sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
+                           featName, "_", featRegion,
+                           "_mD_at_dt62_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
+                           "_MA1_2_MappedOn_", refbase, "_", paste0(chrName, collapse = "_"), "_", context,
+                           "_coldspot_hypergeomTest.tsv"),
+                    header = T)
+mD_cs <- data.frame(Feature = rep("Epimutation coldspots", 8),
+                    mD_cs)
+
+lethal <- read.table(paste0(outDir,
+                            sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
+                            featName, "_", featRegion,
+                            "_", paste0(chrName, collapse = "_"), "_", context,
+                            "_lethal_genes_hypergeomTest.tsv"),
+                     header = T)
+lethal <- data.frame(Feature = rep("Lethal", 8),
+                     lethal)
+
+nonlethal <- read.table(paste0(outDir,
+                               sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
+                               featName, "_", featRegion,
+                               "_", paste0(chrName, collapse = "_"), "_", context,
+                               "_nonlethal_genes_hypergeomTest.tsv"),
+                        header = T)
+nonlethal <- data.frame(Feature = rep("Nonlethal", 8),
+                        nonlethal)
+
+gbM <- read.table(paste0(outDir,
+                         sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
+                         featName, "_", featRegion,
+                         "_", paste0(chrName, collapse = "_"), "_", context,
+                         "_gbM_genes_hypergeomTest.tsv"),
+                  header = T)
+gbM <- data.frame(Feature = rep("gbM", 8),
+                  gbM)
+
+broadly_expressed <- read.table(paste0(outDir,
+                                       sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
+                                       featName, "_", featRegion,
+                                       "_", paste0(chrName, collapse = "_"), "_", context,
+                                       "_broadly_expressed_genes_hypergeomTest.tsv"),
+                                header = T)
+broadly_expressed <- data.frame(Feature = rep("Broadly expressed", 8),
+                                broadly_expressed)
+
+CEG <- read.table(paste0(outDir,
+                         sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
+                         featName, "_", featRegion,
+                         "_", paste0(chrName, collapse = "_"), "_", context,
+                         "_CEG_genes_hypergeomTest.tsv"),
+                  header = T)
+CEG <- data.frame(Feature = rep("Core eukaryotic", 8),
+                  CEG)
+
+combined <- rbind(mD_hs, mD_cs, lethal, nonlethal, gbM, broadly_expressed, CEG)
+
+combined$group <- paste0("Group ", combined$group)
+colnames(combined)[which(colnames(combined) == "group")] <- "Group"
+combined$Group <- factor(combined$Group,
+                         levels = sort(unique(combined$Group)))
+combined$Feature <- factor(combined$Feature,
+                           levels = c(
+                                      "Epimutation hotspots", "Epimutation coldspots",
+                                      "Lethal", "Nonlethal",
+                                      "gbM",
+                                      "Broadly expressed",
+                                      "Core eukaryotic"
+                                     ))
+
+bp <- ggplot(data = combined,
+             mapping = aes(x = Group,
+                           y = log2obsexp,
+                           fill = Feature)) +
+  geom_bar(stat = "identity",
+           position = position_dodge()) +
+  scale_fill_brewer(name = "",
+                    palette = "Paired") +
+  geom_point(mapping = aes(x = Group,
+                           y = log2alpha),
+             position = position_dodge(0.9),
+             shape = "-", colour  = "grey30", size = 8) +
+  geom_segment(mapping = aes(x = 0.55, y = min(c(combined$log2obsexp, combined$log2alpha))-1.00,
+                             xend = 1.45, yend = min(c(combined$log2obsexp, combined$log2alpha))-1.00),
+               colour = "black",
+               inherit.aes = F, size = 2) +
+  geom_segment(mapping = aes(x = 1.55, y = min(c(combined$log2obsexp, combined$log2alpha))-1.00,
+                             xend = 2.45, yend = min(c(combined$log2obsexp, combined$log2alpha))-1.00),
+               colour = "black",
+               inherit.aes = F, size = 2) +
+  geom_segment(mapping = aes(x = 2.55, y = min(c(combined$log2obsexp, combined$log2alpha))-1.00,
+                             xend = 3.45, yend = min(c(combined$log2obsexp, combined$log2alpha))-1.00),
+               colour = "black",
+               inherit.aes = F, size = 2) +
+  geom_segment(mapping = aes(x = 3.55, y = min(c(combined$log2obsexp, combined$log2alpha))-1.00,
+                             xend = 4.45, yend = min(c(combined$log2obsexp, combined$log2alpha))-1.00),
+               colour = "black",
+               inherit.aes = F, size = 2) +
+  geom_segment(mapping = aes(x = 4.55, y = min(c(combined$log2obsexp, combined$log2alpha))-1.00,
+                             xend = 5.45, yend = min(c(combined$log2obsexp, combined$log2alpha))-1.00),
+               colour = "black",
+               inherit.aes = F, size = 2) +
+  geom_segment(mapping = aes(x = 5.55, y = min(c(combined$log2obsexp, combined$log2alpha))-1.00,
+                             xend = 6.45, yend = min(c(combined$log2obsexp, combined$log2alpha))-1.00),
+               colour = "black",
+               inherit.aes = F, size = 2) +
+  geom_segment(mapping = aes(x = 6.55, y = min(c(combined$log2obsexp, combined$log2alpha))-1.00,
+                             xend = 7.45, yend = min(c(combined$log2obsexp, combined$log2alpha))-1.00),
+               colour = "black",
+               inherit.aes = F, size = 2) +
+  geom_segment(mapping = aes(x = 7.55, y = min(c(combined$log2obsexp, combined$log2alpha))-1.00,
+                             xend = 8.45, yend = min(c(combined$log2obsexp, combined$log2alpha))-1.00),
+               colour = "black",
+               inherit.aes = F, size = 2) +
+
+  xlab(bquote(atop("Among-read agreement and mean m" * .(context), .(featName) ~ .(featRegion) ~ "group"))) +
+  ylab(bquote("Log"[2] * "(observed/expected) genes in group")) +
+#  scale_y_continuous(limits = c(-4.0, 4.0)) +
+  scale_x_discrete(position = "bottom") +
+  guides(fill = guide_legend(direction = "vertical",
+                             label.position = "right",
+                             label.theme = element_text(size = 16, hjust = 0, vjust = 0.5, angle = 0),
+                             nrow = length(unique(combined$Feature)),
+                             byrow = TRUE)) +
+  theme_bw() +
+  theme(axis.line.y = element_line(size = 0.5, colour = "black"),
+        axis.ticks.y = element_line(size = 0.5, colour = "black"),
+        axis.text.y = element_text(size = 20, colour = "black", hjust = 0.5, vjust = 0.5, angle = 90),
+        axis.title.y = element_text(size = 20, colour = "black"),
+        axis.ticks.x = element_blank(),
+        axis.text.x = element_text(size = 20, colour = "black", hjust = 0.5, vjust = 0.5, angle = 0),
+        axis.title.x = element_text(size = 20, colour = "black"),
+        panel.grid = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank(),
+        legend.background = element_rect(fill = "transparent"),
+        legend.key = element_rect(colour = "transparent",
+                                  fill = "transparent"),
+        plot.margin = unit(c(5.5, 5.5, 40.5, 5.5), "pt"),
+        plot.title = element_text(size = 20, colour = "black", hjust = 0.5)) +
+  ggtitle(bquote(
+                 .(prettyNum(1e5,
+                             big.mark = ",",
+                             trim = T)) ~ "samples from hypergeometric distribution"))
+ggsave(paste0(plotDir_kappa_mC,
+              sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
+              featName, "_", featRegion,
+              "_", paste0(chrName, collapse = "_"), "_", context,
+              "_combined_bargraph_hypergeomTest.pdf"),
+       plot = bp,
+       height = 10, width = 16)
