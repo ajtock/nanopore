@@ -143,24 +143,24 @@ con_fk_df_all_filt_tab <- base::merge(x = con_fk_df_all_filt, y = Col_Rep1_IRrat
                                       by.x = "parent", by.y = "parent")
 
 print(cor.test(con_fk_df_all_tab$fk_kappa_all, con_fk_df_all_tab$IRratio_mean, method = "spearman"))
-#-0.1048385
+#-0.1014645
 print(cor.test(con_fk_df_all_tab$fk_kappa_all, con_fk_df_all_tab$IRratio_median, method = "spearman"))
-#-0.3147091
+#-0.2831168
 
 print(cor.test(con_fk_df_all_tab$mean_stocha_all, con_fk_df_all_tab$IRratio_mean, method = "spearman"))
-#-0.1166685
+#-0.1112373
 print(cor.test(con_fk_df_all_tab$mean_stocha_all, con_fk_df_all_tab$IRratio_median, method = "spearman"))
-#-0.3260638
+#-0.3075674
 
 print(cor.test(con_fk_df_all_filt_tab$fk_kappa_all, con_fk_df_all_filt_tab$IRratio_mean, method = "spearman"))
-#-0.1025338
+#-0.1034838
 print(cor.test(con_fk_df_all_filt_tab$fk_kappa_all, con_fk_df_all_filt_tab$IRratio_median, method = "spearman"))
-#-0.3113267
+#-0.2840318
 
 print(cor.test(con_fk_df_all_filt_tab$mean_stocha_all, con_fk_df_all_filt_tab$IRratio_mean, method = "spearman"))
-#-0.1164848
+#-0.1120429
 print(cor.test(con_fk_df_all_filt_tab$mean_stocha_all, con_fk_df_all_filt_tab$IRratio_median, method = "spearman"))
-#-0.3240916
+#-0.3074874
 
 
 # Plot relationships and define groups
@@ -210,15 +210,21 @@ if(featRegion %in% c("bodies", "regions")) {
     fk_kappa_all_high <- 0.55
     fk_kappa_all_mid  <- 0.35
     fk_kappa_all_low  <- 0.04
-    mean_stocha_all_high <- 0.28
-    mean_stocha_all_mid  <- 0.17
+    mean_stocha_all_high <- 0.22
+    mean_stocha_all_mid  <- 0.14
     mean_stocha_all_low  <- 0.08
     mean_min_acf_all_high <- -0.05
     mean_min_acf_all_mid  <- -0.10
     mean_min_acf_all_low  <- -0.15
-    mean_mC_all_high  <- 0.75
-    mean_mC_all_mid   <- 0.25
-    mean_mC_all_low   <- 0.10
+    mean_mC_all_high  <- 0.56
+    mean_mC_all_mid   <- 0.20
+    mean_mC_all_low   <- 0.07
+#    mean_stocha_all_high <- 0.28
+#    mean_stocha_all_mid  <- 0.17
+#    mean_stocha_all_low  <- 0.08
+#    mean_mC_all_high  <- 0.75
+#    mean_mC_all_mid   <- 0.25
+#    mean_mC_all_low   <- 0.10
   } else if(context == "CHG") {
     fk_kappa_all_high <- 0.05623413
     fk_kappa_all_mid  <- 0.01778279 
