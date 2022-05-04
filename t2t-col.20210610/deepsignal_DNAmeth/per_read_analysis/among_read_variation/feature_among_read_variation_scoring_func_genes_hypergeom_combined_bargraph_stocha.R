@@ -1,11 +1,11 @@
 #!/usr/bin/env Rscript
 
 # Analysis:
-# Plot combined results of over- and under-representation analysis of genes grouped by both among-read agreement and mean methylation proportion
+# Plot combined results of over- and under-representation analysis of genes grouped by both mean within-read stochasticity and mean methylation proportion
 
 # Usage:
 # conda activate R-4.0.0
-# ./feature_among_read_variation_scoring_func_genes_hypergeom_combined_bargraph_kappa.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 'Chr1,Chr2,Chr3,Chr4,Chr5' 'gene' 'regions' 10000 1000
+# ./feature_among_read_variation_scoring_func_genes_hypergeom_combined_bargraph_stocha.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 'Chr1,Chr2,Chr3,Chr4,Chr5' 'gene' 'regions' 10000 1000
 # conda deactivate
  
 # Divide each read into adjacent segments each consisting of a given number of consecutive cytosines,
@@ -82,7 +82,7 @@ system(paste0("[ -d ", plotDir_stocha_mC, " ] || mkdir -p ", plotDir_stocha_mC))
 
 
 mD_hs <- read.table(paste0(outDir,
-                           sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
+                           sampleName, "_filt_df_mean_stocha_all_mean_mC_all_",
                            featName, "_", featRegion,
                            "_mD_at_dt62_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
                            "_MA1_2_MappedOn_", refbase, "_", paste0(chrName, collapse = "_"), "_", context,
@@ -92,7 +92,7 @@ mD_hs <- data.frame(Feature = rep("Epimutation hotspots", 8),
                     mD_hs)
 
 mD_cs <- read.table(paste0(outDir,
-                           sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
+                           sampleName, "_filt_df_mean_stocha_all_mean_mC_all_",
                            featName, "_", featRegion,
                            "_mD_at_dt62_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
                            "_MA1_2_MappedOn_", refbase, "_", paste0(chrName, collapse = "_"), "_", context,
@@ -102,7 +102,7 @@ mD_cs <- data.frame(Feature = rep("Epimutation coldspots", 8),
                     mD_cs)
 
 lethal <- read.table(paste0(outDir,
-                            sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
+                            sampleName, "_filt_df_mean_stocha_all_mean_mC_all_",
                             featName, "_", featRegion,
                             "_", paste0(chrName, collapse = "_"), "_", context,
                             "_lethal_genes_hypergeomTest.tsv"),
@@ -111,7 +111,7 @@ lethal <- data.frame(Feature = rep("Lethal", 8),
                      lethal)
 
 nonlethal <- read.table(paste0(outDir,
-                               sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
+                               sampleName, "_filt_df_mean_stocha_all_mean_mC_all_",
                                featName, "_", featRegion,
                                "_", paste0(chrName, collapse = "_"), "_", context,
                                "_nonlethal_genes_hypergeomTest.tsv"),
@@ -120,7 +120,7 @@ nonlethal <- data.frame(Feature = rep("Nonlethal", 8),
                         nonlethal)
 
 gbM <- read.table(paste0(outDir,
-                         sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
+                         sampleName, "_filt_df_mean_stocha_all_mean_mC_all_",
                          featName, "_", featRegion,
                          "_", paste0(chrName, collapse = "_"), "_", context,
                          "_gbM_genes_hypergeomTest.tsv"),
@@ -129,7 +129,7 @@ gbM <- data.frame(Feature = rep("gbM", 8),
                   gbM)
 
 broadly_expressed <- read.table(paste0(outDir,
-                                       sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
+                                       sampleName, "_filt_df_mean_stocha_all_mean_mC_all_",
                                        featName, "_", featRegion,
                                        "_", paste0(chrName, collapse = "_"), "_", context,
                                        "_broadly_expressed_genes_hypergeomTest.tsv"),
@@ -138,7 +138,7 @@ broadly_expressed <- data.frame(Feature = rep("Broadly expressed", 8),
                                 broadly_expressed)
 
 CEG <- read.table(paste0(outDir,
-                         sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
+                         sampleName, "_filt_df_mean_stocha_all_mean_mC_all_",
                          featName, "_", featRegion,
                          "_", paste0(chrName, collapse = "_"), "_", context,
                          "_CEG_genes_hypergeomTest.tsv"),
@@ -147,7 +147,7 @@ CEG <- data.frame(Feature = rep("Core eukaryotic", 8),
                   CEG)
 
 betagammaWGD <- read.table(paste0(outDir,
-                                  sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
+                                  sampleName, "_filt_df_mean_stocha_all_mean_mC_all_",
                                   featName, "_", featRegion,
                                   "_", paste0(chrName, collapse = "_"), "_", context,
                                   "_betagammaWGD_genes_hypergeomTest.tsv"),
@@ -156,7 +156,7 @@ betagammaWGD <- data.frame(Feature = rep("Beta gamma WGD", 8),
                            betagammaWGD)
 
 alphaWGD <- read.table(paste0(outDir,
-                              sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
+                              sampleName, "_filt_df_mean_stocha_all_mean_mC_all_",
                               featName, "_", featRegion,
                               "_", paste0(chrName, collapse = "_"), "_", context,
                               "_alphaWGD_genes_hypergeomTest.tsv"),
@@ -165,7 +165,7 @@ alphaWGD <- data.frame(Feature = rep("Alpha WGD", 8),
                        alphaWGD)
 
 tandemdup <- read.table(paste0(outDir,
-                               sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
+                               sampleName, "_filt_df_mean_stocha_all_mean_mC_all_",
                                featName, "_", featRegion,
                                "_", paste0(chrName, collapse = "_"), "_", context,
                                "_tandemdup_genes_hypergeomTest.tsv"),
@@ -240,7 +240,7 @@ bp <- ggplot(data = combined,
                colour = "black",
                inherit.aes = F, size = 2) +
 
-  xlab(bquote(atop("Among-read agreement and mean m" * .(context), .(featName) ~ .(featRegion) ~ "group"))) +
+  xlab(bquote(atop("Stochasticity and mean m" * .(context), .(featName) ~ .(featRegion) ~ "group"))) +
   ylab(bquote("Log"[2] * "(observed/expected) genes in group")) +
 #  scale_y_continuous(limits = c(-4.0, 4.0)) +
   scale_x_discrete(position = "bottom") +
@@ -269,8 +269,8 @@ bp <- ggplot(data = combined,
                  .(prettyNum(1e5,
                              big.mark = ",",
                              trim = T)) ~ "samples from hypergeometric distribution"))
-ggsave(paste0(plotDir_kappa_mC,
-              sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
+ggsave(paste0(plotDir_stocha_mC,
+              sampleName, "_filt_df_mean_stocha_all_mean_mC_all_",
               featName, "_", featRegion,
               "_", paste0(chrName, collapse = "_"), "_", context,
               "_combined_bargraph_hypergeomTest.pdf"),
