@@ -332,16 +332,16 @@ for(chrIndex in 1:length(chrName)) {
   chr_fk_df_rev <- data.frame(chr_fk_df_rev,
                               fk_adj_pval_str = p.adjust(chr_fk_df_rev$fk_pval_str, method = "BH"))
   
-  stopifnot(identical(chr_fk_df_fwd[,1:8], chr_fk_df_rev[,1:8]))
+  stopifnot(identical(chr_fk_df_fwd[,1:16], chr_fk_df_rev[,1:16]))
  
   # Take mean of fwd and rev equivalent columns 
-  chr_fk_df_all_mean_list <- lapply(9:ncol(chr_fk_df_fwd), function(x) {
+  chr_fk_df_all_mean_list <- lapply(17:ncol(chr_fk_df_fwd), function(x) {
     sapply(1:nrow(chr_fk_df_fwd), function(y) {
       mean(c(chr_fk_df_fwd[y, x], chr_fk_df_rev[y, x]), na.rm = T)
     })
   })
   
-  chr_fk_df_all <- data.frame(chr_fk_df_fwd[,1:8],
+  chr_fk_df_all <- data.frame(chr_fk_df_fwd[,1:16],
                               dplyr::bind_cols(chr_fk_df_all_mean_list))
   colnames(chr_fk_df_all) <- sub("_str", "_all", colnames(chr_fk_df_fwd))
 

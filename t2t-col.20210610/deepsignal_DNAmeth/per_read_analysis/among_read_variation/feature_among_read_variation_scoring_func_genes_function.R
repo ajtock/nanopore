@@ -165,9 +165,7 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
                                   strand = strand(chr_featGR[featNum]),
                                   name = chr_featGR[featNum]$name,
                                   score = chr_featGR[featNum]$score,
-
                                   feature_width = chr_featGR[featNum]$feature_width,
-
                                   exons_width = chr_featGR[featNum]$exons_width,
                                   exons_width_prop = chr_featGR[featNum]$exons_width_prop,
                                   exons_count = chr_featGR[featNum]$exons_count,
@@ -204,9 +202,7 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
                                   strand = strand(chr_featGR[featNum]),
                                   name = chr_featGR[featNum]$name,
                                   score = chr_featGR[featNum]$score,
-
                                   feature_width = chr_featGR[featNum]$feature_width,
-
                                   exons_width = chr_featGR[featNum]$exons_width,
                                   exons_width_prop = chr_featGR[featNum]$exons_width_prop,
                                   exons_count = chr_featGR[featNum]$exons_count,

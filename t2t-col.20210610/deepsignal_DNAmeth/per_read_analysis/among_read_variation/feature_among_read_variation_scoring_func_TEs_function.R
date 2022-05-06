@@ -167,7 +167,6 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
                                   score = chr_featGR[featNum]$score,
                                   DNA_RNA = chr_featGR[featNum]$DNA_RNA,
                                   ltr_identity = chr_featGR[featNum]$ltr_identity,
-
                                   feature_width = chr_featGR[featNum]$feature_width,
 
                                   mean_mC_str = mean_mC_pwider_str_x,
@@ -199,7 +198,6 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
                                   score = chr_featGR[featNum]$score,
                                   DNA_RNA = chr_featGR[featNum]$DNA_RNA,
                                   ltr_identity = chr_featGR[featNum]$ltr_identity,
-
                                   feature_width = chr_featGR[featNum]$feature_width,
 
                                   mean_mC_str = NaN,
