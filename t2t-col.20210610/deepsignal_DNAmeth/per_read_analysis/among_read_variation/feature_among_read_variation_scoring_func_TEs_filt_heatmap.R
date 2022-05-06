@@ -6,7 +6,7 @@
 
 # Usage:
 # conda activate R-4.0.3
-# ./feature_among_read_variation_scoring_func_TEs_unfilt_heatmap.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CHG 0.50 'Chr1,Chr2,Chr3,Chr4,Chr5' 'TE' 'regions'
+# ./feature_among_read_variation_scoring_func_TEs_filt_heatmap.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CHG 0.50 'Chr1,Chr2,Chr3,Chr4,Chr5' 'TE' 'regions'
 # conda deactivate
 
 #sampleName <- "Col_0_deepsignalDNAmeth_30kb_90pc"
@@ -115,7 +115,7 @@ featDF <- read.table(paste0(outDir,
                             featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                             "_", context,
                             "_NAmax", NAmax,
-                            "_unfilt_df_fk_kappa_all_mean_mC_all_complete_",
+                            "_filt_df_fk_kappa_all_mean_mC_all_complete_",
                             paste0(chrName, collapse = "_"), ".tsv"),
                      header = T)
 colnames(featDF)[which(colnames(featDF) == "fk_kappa_all")] <- "Kappa"
@@ -552,7 +552,7 @@ legendGap <- unit(15, "mm")
 
 pdf(paste0(plotDir_kappa,
            featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase, "_", context,
-           "_NAmax", NAmax, "_all_unfilt_heatmap_kappa_", paste0(chrName, collapse = "_"), ".pdf"),
+           "_NAmax", NAmax, "_all_filt_heatmap_kappa_", paste0(chrName, collapse = "_"), ".pdf"),
     width = 1.5*length(htmps), height = 10)
 draw(htmps,
      gap = unit(1, "mm"),
