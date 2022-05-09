@@ -295,19 +295,19 @@ for(chrIndex in 1:length(chrName)) {
 }
 
 if(context == "CpG") {
-  min_Cs <- 10
+  min_Cs <- 4
   max_Cs <- Inf
-  min_reads <- 10
+  min_reads <- 4
   max_reads <- Inf
 } else if(context == "CHG") {
-  min_Cs <- 10
+  min_Cs <- 4
   max_Cs <- Inf
-  min_reads <- 10
+  min_reads <- 4
   max_reads <- Inf
 } else if(context == "CHH") {
-  min_Cs <- 20
+  min_Cs <- 12
   max_Cs <- Inf
-  min_reads <- 20
+  min_reads <- 12
   max_reads <- Inf
 }
 

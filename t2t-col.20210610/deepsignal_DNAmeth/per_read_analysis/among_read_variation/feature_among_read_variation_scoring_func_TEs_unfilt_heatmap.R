@@ -6,7 +6,7 @@
 
 # Usage:
 # conda activate R-4.0.3
-# ./feature_among_read_variation_scoring_func_TEs_unfilt_heatmap.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CHG 0.50 'Chr1,Chr2,Chr3,Chr4,Chr5' 'TE' 'regions'
+# ./feature_among_read_variation_scoring_func_TEs_unfilt_heatmap.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CHG 0.50 'Chr1,Chr2,Chr3,Chr4,Chr5' 'TE' 'bodies' 1
 # conda deactivate
 
 #sampleName <- "Col_0_deepsignalDNAmeth_30kb_90pc"
@@ -16,6 +16,7 @@
 #chrName <- unlist(strsplit("Chr1,Chr2,Chr3,Chr4,Chr5", split = ","))
 #featName <- "TE"
 #featRegion <- "regions"
+#featMinLen <- 1
 
 args <- commandArgs(trailingOnly = T)
 sampleName <- args[1]
@@ -25,6 +26,7 @@ NAmax <- as.numeric(args[4])
 chrName <- unlist(strsplit(args[5], split = ","))
 featName <- args[6]
 featRegion <- args[7]
+featMinLen <- as.numeric(args[8])
 
 options(stringsAsFactors = F)
 library(ComplexHeatmap)
@@ -118,6 +120,7 @@ featDF <- read.table(paste0(outDir,
                             "_unfilt_df_fk_kappa_all_mean_mC_all_complete_",
                             paste0(chrName, collapse = "_"), ".tsv"),
                      header = T)
+featDF <- featDF[which(featDF$feature_width >= featMinLen),]
 colnames(featDF)[which(colnames(featDF) == "fk_kappa_all")] <- "Kappa"
 colnames(featDF)[which(colnames(featDF) == "mean_stocha_all")] <- "Stocha"
 colnames(featDF)[which(colnames(featDF) == "mean_min_acf_all")] <- "Min_ACF"
@@ -127,6 +130,18 @@ featDF$Kappa_C_density <- featDF$fk_Cs_all / ( (featDF$end - featDF$start + 1) /
 featDF$Stocha_C_density <- featDF$stocha_Cs_all / ( (featDF$end - featDF$start + 1) / 1e3)
 featDF$parent <- featDF$name
 featDF$name <- paste0(featDF$name, "_", 1:length(featDF$name))
+
+##
+#gypsy <- featDF[which(featDF$score == "Gypsy_LTR"),]
+#cor.test(gypsy$Kappa, gypsy$ltr_identity, use = "pairwise.complete.obs", method = "spearman")
+#cor.test(gypsy$Stocha, gypsy$ltr_identity, use = "pairwise.complete.obs", method = "spearman")
+#copia <- featDF[which(featDF$score == "Copia_LTR"),]
+#cor.test(copia$Kappa, copia$ltr_identity, use = "pairwise.complete.obs", method = "spearman")
+#cor.test(copia$Stocha, copia$ltr_identity, use = "pairwise.complete.obs", method = "spearman")
+#unltr <- featDF[which(featDF$score == "Unclassified_LTR"),]
+#cor.test(unltr$Kappa, unltr$ltr_identity, use = "pairwise.complete.obs", method = "spearman")
+#cor.test(unltr$Stocha, unltr$ltr_identity, use = "pairwise.complete.obs", method = "spearman")
+##
 
 featGR <- GRanges(seqnames = featDF$chr,
                   ranges = IRanges(start = featDF$start, end = featDF$end),
@@ -472,7 +487,7 @@ names(score_colFun) <- superfamNames
 superfam_colFun_list <- lapply(1:length(superfam_mat_list), function(x) {
   c("0" = "white", "1" = cols25(n = 25)[-c(7:16, 25)][x])
 })
-DNA_RNA_colFun <- c("RNA" = "darkorange1", "DNA" = "dodgerblue4", "Unclassified" = "grey50")
+DNA_RNA_colFun <- c("RNA" = "darkorange1", "DNA" = "dodgerblue4", "Unclassified" = "grey80")
 DMR_colFun_list <- lapply(1:length(DMR_mat_list), function(x) {
  c("0" = "white", "1" = cols25(n = 4)[x])
 })
@@ -540,13 +555,14 @@ mD_coldspot_htmp <- featureHeatmap(mat = mD_coldspot_mat,
 htmps <- Kappa_htmp + Stocha_htmp +
          Kappa_C_density_htmp + Stocha_C_density_htmp +
          Mean_mC_htmp + feature_width_htmp +
-         ltr_identity_htmp + score_htmp +
+#         ltr_identity_htmp + score_htmp +
+         score_htmp +
          superfam_htmp_list[[1]] + superfam_htmp_list[[2]] + superfam_htmp_list[[3]] + superfam_htmp_list[[4]] + superfam_htmp_list[[5]] +
          superfam_htmp_list[[6]] + superfam_htmp_list[[7]] + superfam_htmp_list[[8]] + superfam_htmp_list[[9]] + superfam_htmp_list[[10]] +
          superfam_htmp_list[[11]] + superfam_htmp_list[[12]] + superfam_htmp_list[[13]] + superfam_htmp_list[[14]] +
          DNA_RNA_htmp +
-         DMR_htmp_list[[1]] + DMR_htmp_list[[2]] + DMR_htmp_list[[3]] + DMR_htmp_list[[4]] +
-         mD_hotspot_htmp + mD_coldspot_htmp
+         DMR_htmp_list[[1]] + DMR_htmp_list[[2]] + DMR_htmp_list[[3]] + DMR_htmp_list[[4]]
+#         mD_hotspot_htmp + mD_coldspot_htmp
 
 legendGap <- unit(15, "mm")
 
