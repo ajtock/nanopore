@@ -1,26 +1,23 @@
-#!/usr/bin/env Rscript
+#!/applications/R/R-4.0.0/bin/Rscript
 
 # Analysis:
 # 1. Score among-read variation/agreement (e.g., Fleiss' kappa) for each feature
 # 2. Examine relationships between feature among-read agreement and other metrics
 
 # Usage:
-# conda activate R-4.0.0
-# ./feature_among_read_variation_scoring_func_TEs_trends.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CHG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'TE' 'bodies' 1
-# conda deactivate
-
+# /applications/R/R-4.0.0/bin/Rscript feature_among_read_variation_scoring_func_TEs_trends.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'TE' 'bodies'
+ 
 # Divide each read into adjacent segments each consisting of a given number of consecutive cytosines,
 # and calculate the methylation proportion for each segment of each read
 
 #sampleName <- "Col_0_deepsignalDNAmeth_30kb_90pc"
 #refbase <- "t2t-col.20210610"
-#context <- "CHG"
+#context <- "CpG"
 #NAmax <- 0.50
 #CPUpc <- 1.00
 #chrName <- unlist(strsplit("Chr1,Chr2,Chr3,Chr4,Chr5", split = ","))
 #featName <- "TE"
 #featRegion <- "bodies"
-#featMinLen <- 1
 
 args <- commandArgs(trailingOnly = T)
 sampleName <- args[1]
@@ -31,13 +28,10 @@ CPUpc <- as.numeric(args[5])
 chrName <- unlist(strsplit(args[6], split = ","))
 featName <- args[7]
 featRegion <- args[8]
-featMinLen <- as.numeric(args[9])
 
 print(paste0("Proportion of CPUs:", CPUpc))
 options(stringsAsFactors = F)
 library(parallel)
-library(stringr)
-library(data.table)
 #library(GenomicRanges)
 #library(irr)
 library(dplyr)
@@ -73,25 +67,6 @@ if(!grepl("Chr", fai[,1][1])) {
 chrLens <- fai[,2][which(fai[,1] %in% chrName)]
 
 # Load among-read and within-read mC data for featName featRegion
-featDF <- read.table(paste0(outDir,
-                            featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
-                            "_", context,
-                            "_NAmax", NAmax,
-                            "_filt_df_fk_kappa_all_mean_mC_all_complete_",
-                            paste0(chrName, collapse = "_"), ".tsv"),
-                     header = T)
-featDF <- featDF[which(featDF$feature_width >= featMinLen),]
-colnames(featDF)[which(colnames(featDF) == "fk_kappa_all")] <- "Kappa"
-colnames(featDF)[which(colnames(featDF) == "mean_stocha_all")] <- "Stocha"
-colnames(featDF)[which(colnames(featDF) == "mean_min_acf_all")] <- "Min_ACF"
-colnames(featDF)[which(colnames(featDF) == "mean_mean_acf_all")] <- "Mean_ACF"
-colnames(featDF)[which(colnames(featDF) == "mean_mC_all")] <- paste0("Mean_m", context)
-featDF$Kappa_C_density <- featDF$fk_Cs_all / ( (featDF$end - featDF$start + 1) / 1e3)
-featDF$Stocha_C_density <- featDF$stocha_Cs_all / ( (featDF$end - featDF$start + 1) / 1e3)
-featDF$parent <- featDF$name
-featDF$name <- paste0(featDF$name, "_", 1:length(featDF$name))
-
-
 con_fk_df_all <- read.table(paste0(outDir,
                                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                                    "_", context,
@@ -99,90 +74,14 @@ con_fk_df_all <- read.table(paste0(outDir,
                                    "_unfilt_df_fk_kappa_all_mean_mC_all_complete_",
                                    paste0(chrName, collapse = "_"), ".tsv"),
                             header = T)
-con_fk_df_all$parent <- sub(pattern = "\\.\\d+", replacement = "", x = con_fk_df_all$name) 
-con_fk_df_all$parent <- sub(pattern = "_\\d+", replacement = "", x = con_fk_df_all$parent) 
 
 con_fk_df_all_filt <- read.table(paste0(outDir,
                                         featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                                         "_", context,
                                         "_NAmax", NAmax,
-                                        "_filt_df_fk_kappa_all_mean_mC_all_complete_",
+                                        "_unfilt_df_fk_kappa_all_mean_mC_all_complete_",
                                         paste0(chrName, collapse = "_"), ".tsv"),
                                  header = T)
-con_fk_df_all_filt$parent <- sub(pattern = "\\.\\d+", replacement = "", x = con_fk_df_all_filt$name) 
-con_fk_df_all_filt$parent <- sub(pattern = "_\\d+", replacement = "", x = con_fk_df_all_filt$parent) 
-
-# Append intron retention ratio (calculated with IRFinder)
-Col_Rep1_IRFinder <- fread(paste0("/home/ajt200/analysis/RNAseq_leaf_Rigal_Mathieu_2016_PNAS/snakemake_RNAseq_IRFinder_TAIR10_chr_all/REF/TAIR10_chr_all/",
-                                  "Col_0_RNAseq_pooled_ERR96615/IRFinder-IR-dir.txt"),
-                           sep = "\t", data.table = F)
-Col_Rep1_IRFinder <- Col_Rep1_IRFinder[grep("clean", Col_Rep1_IRFinder$Name),]
-Col_Rep1_IRFinder <- Col_Rep1_IRFinder[-which(Col_Rep1_IRFinder$Warnings %in% c("LowCover")),]
-#nrow(Col_Rep1_IRFinder[which(Col_Rep1_IRFinder$Warnings == "-"),])
-#[1] 45907
-#[1] 22136
-Col_Rep1_IRFinder$Name <- str_extract(Col_Rep1_IRFinder$Name, "AT\\wG\\d+")
-Col_Rep1_IRFinder <- Col_Rep1_IRFinder[-which(is.na(Col_Rep1_IRFinder$Name)),]
-
-library(doParallel)
-library(doFuture)
-registerDoFuture()
-plan(multicore)
-print("Currently registered parallel backend name, version and cores")
-print(getDoParName())
-print(getDoParVersion())
-print(getDoParWorkers())
-
-parentIDs <- unique(Col_Rep1_IRFinder$Name)
-
-Col_Rep1_IRratio <- foreach(i = iter(parentIDs),
-                            .combine = "rbind",
-                            .multicombine = T,
-                            .maxcombine = length(parentIDs)+1e1,
-                            .inorder = F,
-                            .errorhandling = "pass") %dopar% {
-  tmpDF <- Col_Rep1_IRFinder[which(Col_Rep1_IRFinder$Name == i),]
-  data.frame(chr = paste0("Chr", tmpDF$Chr[1]),
-             start = min(tmpDF$Start, na.rm = T),
-             end = max(tmpDF$End, na.rm = T),
-             parent = i,
-             strand = tmpDF$Strand[1],
-             intronWidth_sum = sum(tmpDF$End - tmpDF$Start + 1, na.rm = T),
-             excludedBases_sum = sum(tmpDF$ExcludedBases, na.rm = T),
-             coverage_sum = sum(tmpDF$Coverage, na.rm = T),
-             intronDepth_sum = sum(tmpDF$IntronDepth, na.rm = T),
-             IRratio_mean = mean(tmpDF$IRratio, na.rm = T),
-             IRratio_median = median(tmpDF$IRratio, na.rm = T),
-             IRratio_sd = sd(tmpDF$IRratio, na.rm = T),
-             IRratio_min = min(tmpDF$IRratio, na.rm = T),
-             IRratio_max = max(tmpDF$IRratio, na.rm = T))
-}
-
-con_fk_df_all_tab <- base::merge(x = con_fk_df_all, y = Col_Rep1_IRratio,
-                                 by.x = "parent", by.y = "parent")
-con_fk_df_all_filt_tab <- base::merge(x = con_fk_df_all_filt, y = Col_Rep1_IRratio,
-                                      by.x = "parent", by.y = "parent")
-
-print(cor.test(con_fk_df_all_tab$fk_kappa_all, con_fk_df_all_tab$IRratio_mean, method = "spearman"))
-#-0.1014645
-print(cor.test(con_fk_df_all_tab$fk_kappa_all, con_fk_df_all_tab$IRratio_median, method = "spearman"))
-#-0.2831168
-
-print(cor.test(con_fk_df_all_tab$mean_stocha_all, con_fk_df_all_tab$IRratio_mean, method = "spearman"))
-#-0.1112373
-print(cor.test(con_fk_df_all_tab$mean_stocha_all, con_fk_df_all_tab$IRratio_median, method = "spearman"))
-#-0.3075674
-
-print(cor.test(con_fk_df_all_filt_tab$fk_kappa_all, con_fk_df_all_filt_tab$IRratio_mean, method = "spearman"))
-#-0.1034838
-print(cor.test(con_fk_df_all_filt_tab$fk_kappa_all, con_fk_df_all_filt_tab$IRratio_median, method = "spearman"))
-#-0.2840318
-
-print(cor.test(con_fk_df_all_filt_tab$mean_stocha_all, con_fk_df_all_filt_tab$IRratio_mean, method = "spearman"))
-#-0.1120429
-print(cor.test(con_fk_df_all_filt_tab$mean_stocha_all, con_fk_df_all_filt_tab$IRratio_median, method = "spearman"))
-#-0.3074874
-
 
 # Plot relationships and define groups
 trendPlot <- function(dataFrame, mapping, xvar, yvar, xlab, ylab, xaxtrans, yaxtrans, xbreaks, ybreaks, xlabels, ylabels) {
@@ -231,21 +130,15 @@ if(featRegion %in% c("bodies", "regions")) {
     fk_kappa_all_high <- 0.55
     fk_kappa_all_mid  <- 0.35
     fk_kappa_all_low  <- 0.04
-    mean_stocha_all_high <- 0.22
-    mean_stocha_all_mid  <- 0.14
+    mean_stocha_all_high <- 0.28
+    mean_stocha_all_mid  <- 0.17
     mean_stocha_all_low  <- 0.08
     mean_min_acf_all_high <- -0.05
     mean_min_acf_all_mid  <- -0.10
     mean_min_acf_all_low  <- -0.15
-    mean_mC_all_high  <- 0.56
-    mean_mC_all_mid   <- 0.20
-    mean_mC_all_low   <- 0.07
-#    mean_stocha_all_high <- 0.28
-#    mean_stocha_all_mid  <- 0.17
-#    mean_stocha_all_low  <- 0.08
-#    mean_mC_all_high  <- 0.75
-#    mean_mC_all_mid   <- 0.25
-#    mean_mC_all_low   <- 0.10
+    mean_mC_all_high  <- 0.75
+    mean_mC_all_mid   <- 0.25
+    mean_mC_all_low   <- 0.10
   } else if(context == "CHG") {
     fk_kappa_all_high <- 0.05623413
     fk_kappa_all_mid  <- 0.01778279 
@@ -658,12 +551,12 @@ if(context == "CpG") {
     dplyr::filter(mean_mC_all  <= mean_mC_all_high)
   
   con_fk_df_all_filt_kappa_mC_group7 <- con_fk_df_all_filt %>%
-    dplyr::filter(fk_kappa_all > fk_kappa_all_low) %>%
-    dplyr::filter(mean_mC_all  > mean_mC_all_high)
-  
-  con_fk_df_all_filt_kappa_mC_group8 <- con_fk_df_all_filt %>%
     dplyr::filter(fk_kappa_all <= fk_kappa_all_low) %>%
     dplyr::filter(mean_mC_all  >  mean_mC_all_high)
+  
+  con_fk_df_all_filt_kappa_mC_group8 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all > fk_kappa_all_low) %>%
+    dplyr::filter(mean_mC_all  > mean_mC_all_high)
 } else if(context == "CHG") {
   con_fk_df_all_filt_kappa_mC_group1 <- con_fk_df_all_filt %>%
     dplyr::filter(fk_kappa_all <= fk_kappa_all_low) %>%
@@ -694,12 +587,12 @@ if(context == "CpG") {
     dplyr::filter(mean_mC_all  <= mean_mC_all_high)
   
   con_fk_df_all_filt_kappa_mC_group7 <- con_fk_df_all_filt %>%
-    dplyr::filter(fk_kappa_all > fk_kappa_all_high) %>%
-    dplyr::filter(mean_mC_all  > mean_mC_all_high)
-  
-  con_fk_df_all_filt_kappa_mC_group8 <- con_fk_df_all_filt %>%
     dplyr::filter(fk_kappa_all <= fk_kappa_all_high) %>%
     dplyr::filter(mean_mC_all  >  mean_mC_all_high)
+  
+  con_fk_df_all_filt_kappa_mC_group8 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all > fk_kappa_all_high) %>%
+    dplyr::filter(mean_mC_all  > mean_mC_all_high)
 } else if(context == "CHH") {
   con_fk_df_all_filt_kappa_mC_group1 <- con_fk_df_all_filt %>%
     dplyr::filter(fk_kappa_all <= fk_kappa_all_low) %>%
@@ -730,12 +623,12 @@ if(context == "CpG") {
     dplyr::filter(mean_mC_all  <= mean_mC_all_high)
   
   con_fk_df_all_filt_kappa_mC_group7 <- con_fk_df_all_filt %>%
-    dplyr::filter(fk_kappa_all > fk_kappa_all_high) %>%
-    dplyr::filter(mean_mC_all  > mean_mC_all_high)
-  
-  con_fk_df_all_filt_kappa_mC_group8 <- con_fk_df_all_filt %>%
     dplyr::filter(fk_kappa_all <= fk_kappa_all_high) %>%
     dplyr::filter(mean_mC_all  >  mean_mC_all_high)
+  
+  con_fk_df_all_filt_kappa_mC_group8 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all > fk_kappa_all_high) %>%
+    dplyr::filter(mean_mC_all  > mean_mC_all_high)
 }
 
 write.table(con_fk_df_all_filt_kappa_mC_group1,
@@ -835,12 +728,12 @@ if(context == "CpG") {
     dplyr::filter(mean_mC_all     <= mean_mC_all_high)
   
   con_fk_df_all_filt_stocha_mC_group7 <- con_fk_df_all_filt %>%
-    dplyr::filter(mean_stocha_all > mean_stocha_all_mid) %>%
-    dplyr::filter(mean_mC_all     > mean_mC_all_high)
-  
-  con_fk_df_all_filt_stocha_mC_group8 <- con_fk_df_all_filt %>%
     dplyr::filter(mean_stocha_all <= mean_stocha_all_mid) %>%
     dplyr::filter(mean_mC_all     >  mean_mC_all_high)
+  
+  con_fk_df_all_filt_stocha_mC_group8 <- con_fk_df_all_filt %>%
+    dplyr::filter(mean_stocha_all > mean_stocha_all_mid) %>%
+    dplyr::filter(mean_mC_all     > mean_mC_all_high)
 } else if(context == "CHG") {
   con_fk_df_all_filt_stocha_mC_group1 <- con_fk_df_all_filt %>%
     dplyr::filter(mean_stocha_all <= mean_stocha_all_low) %>%
@@ -871,12 +764,12 @@ if(context == "CpG") {
     dplyr::filter(mean_mC_all     <= mean_mC_all_high)
   
   con_fk_df_all_filt_stocha_mC_group7 <- con_fk_df_all_filt %>%
-    dplyr::filter(mean_stocha_all > mean_stocha_all_high) %>%
-    dplyr::filter(mean_mC_all     > mean_mC_all_high)
-  
-  con_fk_df_all_filt_stocha_mC_group8 <- con_fk_df_all_filt %>%
     dplyr::filter(mean_stocha_all <= mean_stocha_all_high) %>%
     dplyr::filter(mean_mC_all     >  mean_mC_all_high)
+  
+  con_fk_df_all_filt_stocha_mC_group8 <- con_fk_df_all_filt %>%
+    dplyr::filter(mean_stocha_all > mean_stocha_all_high) %>%
+    dplyr::filter(mean_mC_all     > mean_mC_all_high)
 } else if(context == "CHH") {
   con_fk_df_all_filt_stocha_mC_group1 <- con_fk_df_all_filt %>%
     dplyr::filter(mean_stocha_all <= mean_stocha_all_low) %>%
@@ -907,12 +800,12 @@ if(context == "CpG") {
     dplyr::filter(mean_mC_all     <= mean_mC_all_high)
 
   con_fk_df_all_filt_stocha_mC_group7 <- con_fk_df_all_filt %>%
-    dplyr::filter(mean_stocha_all > mean_stocha_all_high) %>%
-    dplyr::filter(mean_mC_all     > mean_mC_all_high)
-
-  con_fk_df_all_filt_stocha_mC_group8 <- con_fk_df_all_filt %>%
     dplyr::filter(mean_stocha_all <= mean_stocha_all_high) %>%
     dplyr::filter(mean_mC_all     >  mean_mC_all_high)
+
+  con_fk_df_all_filt_stocha_mC_group8 <- con_fk_df_all_filt %>%
+    dplyr::filter(mean_stocha_all > mean_stocha_all_high) %>%
+    dplyr::filter(mean_mC_all     > mean_mC_all_high)
 }
 
 
@@ -1013,12 +906,12 @@ if(context == "CpG") {
     dplyr::filter(mean_stocha_all <= mean_stocha_all_high)
   
   con_fk_df_all_filt_kappa_stocha_group7 <- con_fk_df_all_filt %>%
-    dplyr::filter(fk_kappa_all    > fk_kappa_all_high) %>%
-    dplyr::filter(mean_stocha_all > mean_stocha_all_high)
-  
-  con_fk_df_all_filt_kappa_stocha_group8 <- con_fk_df_all_filt %>%
     dplyr::filter(fk_kappa_all    <= fk_kappa_all_high) %>%
     dplyr::filter(mean_stocha_all >  mean_stocha_all_high)
+  
+  con_fk_df_all_filt_kappa_stocha_group8 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all    > fk_kappa_all_high) %>%
+    dplyr::filter(mean_stocha_all > mean_stocha_all_high)
 } else if(context == "CHG") {
   con_fk_df_all_filt_kappa_stocha_group1 <- con_fk_df_all_filt %>%
     dplyr::filter(fk_kappa_all    <= fk_kappa_all_low) %>%
@@ -1049,12 +942,12 @@ if(context == "CpG") {
     dplyr::filter(mean_stocha_all <= mean_stocha_all_high)
   
   con_fk_df_all_filt_kappa_stocha_group7 <- con_fk_df_all_filt %>%
-    dplyr::filter(fk_kappa_all    > fk_kappa_all_high) %>%
-    dplyr::filter(mean_stocha_all > mean_stocha_all_high)
-  
-  con_fk_df_all_filt_kappa_stocha_group8 <- con_fk_df_all_filt %>%
     dplyr::filter(fk_kappa_all    <= fk_kappa_all_high) %>%
     dplyr::filter(mean_stocha_all >  mean_stocha_all_high)
+  
+  con_fk_df_all_filt_kappa_stocha_group8 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all    > fk_kappa_all_high) %>%
+    dplyr::filter(mean_stocha_all > mean_stocha_all_high)
 } else if(context == "CHH") {
   con_fk_df_all_filt_kappa_stocha_group1 <- con_fk_df_all_filt %>%
     dplyr::filter(fk_kappa_all    <= fk_kappa_all_low) %>%
@@ -1085,12 +978,12 @@ if(context == "CpG") {
     dplyr::filter(mean_stocha_all <= mean_stocha_all_high)
   
   con_fk_df_all_filt_kappa_stocha_group7 <- con_fk_df_all_filt %>%
-    dplyr::filter(fk_kappa_all    > fk_kappa_all_high) %>%
-    dplyr::filter(mean_stocha_all > mean_stocha_all_high)
-  
-  con_fk_df_all_filt_kappa_stocha_group8 <- con_fk_df_all_filt %>%
     dplyr::filter(fk_kappa_all    <= fk_kappa_all_high) %>%
     dplyr::filter(mean_stocha_all >  mean_stocha_all_high)
+  
+  con_fk_df_all_filt_kappa_stocha_group8 <- con_fk_df_all_filt %>%
+    dplyr::filter(fk_kappa_all    > fk_kappa_all_high) %>%
+    dplyr::filter(mean_stocha_all > mean_stocha_all_high)
 }
 
 write.table(con_fk_df_all_filt_kappa_stocha_group1,
