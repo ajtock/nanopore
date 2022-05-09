@@ -83,8 +83,7 @@ con_fk_df_all <- read.table(paste0(outDir,
 con_fk_df_all <- con_fk_df_all[which(con_fk_df_all$feature_width >= featMinLen),]
 con_fk_df_all$Kappa_C_density <- con_fk_df_all$fk_Cs_all / ( (con_fk_df_all$end - con_fk_df_all$start + 1) / 1e3)
 con_fk_df_all$Stocha_C_density <- con_fk_df_all$stocha_Cs_all / ( (con_fk_df_all$end - con_fk_df_all$start + 1) / 1e3)
-con_fk_df_all$parent <- con_fk_df_all$name
-con_fk_df_all$name <- paste0(con_fk_df_all$name, "_", 1:length(con_fk_df_all$name))
+con_fk_df_all$parent <- sub("_\\d+", "", con_fk_df_all$name)
 
 con_fk_df_all_filt <- read.table(paste0(outDir,
                                         featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
@@ -96,8 +95,7 @@ con_fk_df_all_filt <- read.table(paste0(outDir,
 con_fk_df_all_filt <- con_fk_df_all_filt[which(con_fk_df_all_filt$feature_width >= featMinLen),]
 con_fk_df_all_filt$Kappa_C_density <- con_fk_df_all_filt$fk_Cs_all / ( (con_fk_df_all_filt$end - con_fk_df_all_filt$start + 1) / 1e3)
 con_fk_df_all_filt$Stocha_C_density <- con_fk_df_all_filt$stocha_Cs_all / ( (con_fk_df_all_filt$end - con_fk_df_all_filt$start + 1) / 1e3)
-con_fk_df_all_filt$parent <- con_fk_df_all_filt$name
-con_fk_df_all_filt$name <- paste0(con_fk_df_all_filt$name, "_", 1:length(con_fk_df_all_filt$name))
+con_fk_df_all_filt$parent <- sub("_\\d+", "", con_fk_df_all_filt$name)
 
 
 # Plot relationships and define groups

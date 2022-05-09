@@ -141,7 +141,7 @@ if(featName == "CEN180") {
                     ranges = IRanges(start = feat$start,
                                      end = feat$end),
                     strand = feat$strand,
-                    name = feat$Name,
+                    name = paste0(feat$Name, "_", 1:length(feat$Name)),
                     score = feat$superfamName,
                     DNA_RNA = feat$DNA_RNA,
                     ltr_identity = feat$ltr_identity)
