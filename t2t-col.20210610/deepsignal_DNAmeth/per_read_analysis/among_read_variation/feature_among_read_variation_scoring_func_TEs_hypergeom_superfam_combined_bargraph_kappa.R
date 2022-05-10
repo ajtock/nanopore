@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 
 # Analysis:
-# Plot combined results of over- and under-representation analysis of TEs grouped by both among-read agreement and mean methylation proportion
+# Plot combined results of TE superfamily over- and under-representation analysis of TEs grouped by both among-read agreement and mean methylation proportion
 
 # Usage:
 # conda activate R-4.0.0
