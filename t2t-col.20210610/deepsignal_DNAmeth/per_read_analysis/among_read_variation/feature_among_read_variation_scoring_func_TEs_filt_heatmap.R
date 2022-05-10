@@ -15,7 +15,7 @@
 #NAmax <- 0.50
 #chrName <- unlist(strsplit("Chr1,Chr2,Chr3,Chr4,Chr5", split = ","))
 #featName <- "TE"
-#featRegion <- "regions"
+#featRegion <- "bodies"
 #featMinLen <- 1
 
 args <- commandArgs(trailingOnly = T)
@@ -129,7 +129,6 @@ colnames(featDF)[which(colnames(featDF) == "mean_mC_all")] <- paste0("Mean_m", c
 featDF$Kappa_C_density <- featDF$fk_Cs_all / ( (featDF$end - featDF$start + 1) / 1e3)
 featDF$Stocha_C_density <- featDF$stocha_Cs_all / ( (featDF$end - featDF$start + 1) / 1e3)
 featDF$parent <- featDF$name
-featDF$name <- paste0(featDF$name, "_", 1:length(featDF$name))
 
 ##
 #gypsy <- featDF[which(featDF$score == "Gypsy_LTR"),]
@@ -154,15 +153,15 @@ superfamNames <- c(superfamNames[3], superfamNames[1], superfamNames[14],
                    superfamNames[6], superfamNames[2], superfamNames[4],
                    superfamNames[5], superfamNames[8], superfamNames[9],
                    superfamNames[12], superfamNames[11])
-superfamNamesPlot <- gsub("PogoTc1Mariner", "Pogo/Tc1/Mar", superfamNames)
+superfamNamesPlot <- gsub("Pogo_Tc1_Mariner", "Pogo/Tc1/Mar", superfamNames)
 superfamNamesPlot <- gsub("_", " ", superfamNamesPlot)
 superfamNamesPlot <- gsub("classified", ".", superfamNamesPlot)
 
 featDF_merge <- featDF
-for(x in superfamNames) {
-  featDF_merge[, x] <- NA
-  featDF_merge[which(featDF_merge$score == x), x] <- 1
-  featDF_merge[which(featDF_merge$score != x), x] <- 0
+for(x in 1:length(superfamNames)) {
+  featDF_merge[, superfamNamesPlot[x]] <- NA
+  featDF_merge[which(featDF_merge$score == superfamNames[x]), superfamNamesPlot[x]] <- 1
+  featDF_merge[which(featDF_merge$score != superfamNames[x]), superfamNamesPlot[x]] <- 0
 }
 
 
@@ -437,7 +436,7 @@ Mean_mC_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == paste0("M
 feature_width_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "feature_width")])
 ltr_identity_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "ltr_identity")])
 score_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "score")])
-superfam_mat_list <- lapply(superfamNames, function(x) {
+superfam_mat_list <- lapply(superfamNamesPlot, function(x) {
   as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == x)])
 })
 DNA_RNA_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "DNA_RNA")])
@@ -564,7 +563,7 @@ htmps <- Kappa_htmp + Stocha_htmp +
          DMR_htmp_list[[1]] + DMR_htmp_list[[2]] + DMR_htmp_list[[3]] + DMR_htmp_list[[4]]
 #         mD_hotspot_htmp + mD_coldspot_htmp
 
-legendGap <- unit(15, "mm")
+legendGap <- unit(20, "mm")
 
 pdf(paste0(plotDir_kappa,
            featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase, "_", context,

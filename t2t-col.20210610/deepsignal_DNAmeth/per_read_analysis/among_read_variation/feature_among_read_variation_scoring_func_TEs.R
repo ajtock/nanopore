@@ -240,18 +240,18 @@ for(chrIndex in 1:length(chrName)) {
 
   # Analyse each strand separately
   # fwd
-#  makeDFx_list_fwd <- mclapply(1:length(chr_featGR), function(x) {
-  makeDFx_list_fwd <- foreach(x = 1:length(chr_featGR),
-                              .combine = "list",
-                              .multicombine = T,
-                              .maxcombine = length(chr_featGR)+1e1,
-                              .inorder = T) %dopar% {
+  makeDFx_list_fwd <- mclapply(1:length(chr_featGR), function(x) {
+#  makeDFx_list_fwd <- foreach(x = 1:length(chr_featGR),
+#                              .combine = "list",
+#                              .multicombine = T,
+#                              .maxcombine = length(chr_featGR)+1e1,
+#                              .inorder = T) %dopar% {
     makeDFx_strand(fOverlaps_str = fOverlaps_fwd,
                    chr_tabGR_str = chr_tabGR_fwd,
                    chr_featGR = chr_featGR,
                    featNum = x)
-  }
-#  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
+#  }
+  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
    
   chr_fk_df_fwd <- dplyr::bind_rows(makeDFx_list_fwd, .id = "column_label")
   
@@ -259,18 +259,18 @@ for(chrIndex in 1:length(chrName)) {
                               fk_adj_pval_str = p.adjust(chr_fk_df_fwd$fk_pval_str, method = "BH"))
 
   # rev  
-#  makeDFx_list_rev <- mclapply(1:length(chr_featGR), function(x) {
-  makeDFx_list_rev <- foreach(x = 1:length(chr_featGR),
-                              .combine = "list",
-                              .multicombine = T,
-                              .maxcombine = length(chr_featGR)+1e1,
-                              .inorder = T) %dopar% {
+  makeDFx_list_rev <- mclapply(1:length(chr_featGR), function(x) {
+#  makeDFx_list_rev <- foreach(x = 1:length(chr_featGR),
+#                              .combine = "list",
+#                              .multicombine = T,
+#                              .maxcombine = length(chr_featGR)+1e1,
+#                              .inorder = T) %dopar% {
     makeDFx_strand(fOverlaps_str = fOverlaps_rev,
                    chr_tabGR_str = chr_tabGR_rev,
                    chr_featGR = chr_featGR,
                    featNum = x)
-  }
-#  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
+#  }
+  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
    
   chr_fk_df_rev <- dplyr::bind_rows(makeDFx_list_rev, .id = "column_label")
   

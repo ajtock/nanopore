@@ -95,7 +95,7 @@ superfamNames <- c(superfamNames[3], superfamNames[1], superfamNames[14],
                    superfamNames[6], superfamNames[2], superfamNames[4],
                    superfamNames[5], superfamNames[8], superfamNames[9],
                    superfamNames[12], superfamNames[11])
-superfamNamesPlot <- gsub("PogoTc1Mariner", "Pogo/Tc1/Mar", superfamNames)
+superfamNamesPlot <- gsub("Pogo_Tc1_Mariner", "Pogo/Tc1/Mar", superfamNames)
 superfamNamesPlot <- gsub("_", " ", superfamNamesPlot)
 superfamNamesPlot <- gsub("classified", ".", superfamNamesPlot)
 
