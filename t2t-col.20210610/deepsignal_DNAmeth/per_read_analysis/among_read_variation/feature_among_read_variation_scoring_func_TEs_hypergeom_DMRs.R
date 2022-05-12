@@ -197,7 +197,7 @@ hgTest <- function(group, group_feat_list, genome_feat, genome_feat_query, sampl
 
 # DMRs in different DNA methylation mutants
 DMRs <- read.table(paste0("/home/ajt200/analysis/BSseq_leaf_Stroud_Jacobsen_2013_Cell_2014_NSMB/",
-                          "snakemake_BSseq_", refbase, "/coverage/report/DMRs/hypoDMRs/",
+                          "hpc_snakemake_BSseq_", refbase, "/coverage/report/DMRs/hypoDMRs/",
                           paste0(chrName, collapse = "_"),
                           "/features_6quantiles_by_change_in_", DMRsName, "_DMRs_vs3reps_",
                           "mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD_0.4_0.2_0.1_mG200_in_",
