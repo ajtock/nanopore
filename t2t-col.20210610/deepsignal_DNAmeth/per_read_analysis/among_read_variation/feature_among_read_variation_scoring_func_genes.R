@@ -362,7 +362,7 @@ if(context == "CpG") {
 } else if(context == "CHH") {
   min_Cs <- 20
   max_Cs <- Inf
-  min_reads <- 20
+  min_reads <- 10
   max_reads <- Inf
 }
 

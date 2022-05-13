@@ -5,7 +5,7 @@
 # 2. Examine relationships between feature among-read agreement and other metrics
 
 # Usage on hydrogen node7:
-# csmit -m 200G -c 48 "/applications/R/R-4.0.0/bin/Rscript feature_among_read_variation_scoring_func_TEs.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CHG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'TE' 'bodies'"
+# csmit -m 200G -c 48 "/applications/R/R-4.0.0/bin/Rscript feature_among_read_variation_scoring_func_DMRs.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CHG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'kss_BSseq_Rep1_hypoCHG 'bodies'"
  
 # Divide each read into adjacent segments each consisting of a given number of consecutive cytosines,
 # and calculate the methylation proportion for each segment of each read
@@ -16,7 +16,7 @@
 #NAmax <- 0.50
 #CPUpc <- 1.00
 #chrName <- unlist(strsplit("Chr1,Chr2,Chr3,Chr4,Chr5", split = ","))
-#featName <- "TE"
+#featName <- "kss_BSseq_Rep1_hypoCHG"
 #featRegion <- "bodies"
 
 args <- commandArgs(trailingOnly = T)
@@ -48,8 +48,9 @@ if(context == "CpG") {
 
 print(paste0("Proportion of CPUs:", CPUpc))
 options(stringsAsFactors = F)
-source("feature_among_read_variation_scoring_func_TEs_function.R")
+source("feature_among_read_variation_scoring_func_DMRs_function.R")
 source("/projects/meiosis/ajt200/Rfunctions/TTSplus.R")
+library(rtracklayer)
 library(parallel)
 library(GenomicRanges)
 library(irr) #
@@ -94,60 +95,26 @@ if(!grepl("Chr", fai[,1][1])) {
 }
 chrLens <- fai[,2][which(fai[,1] %in% chrName)]
 
-# Read in feature annotation
-if(featName == "CEN180") {
-  feat <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase,
-                            "/annotation/CEN180/CEN180_in_", refbase,
-                            "_", paste0(chrName, collapse = "_"), ".bed"),
-                     header = F)
-  colnames(feat) <- c("chr", "start0based", "end", "name", "score", "strand",
-                      "HORlengthsSum", "HORcount", "percentageIdentity")
-  featGR <- GRanges(seqnames = feat$chr,
-                    ranges = IRanges(start = feat$start0based+1,
-                                     end = feat$end),
-                    strand = feat$strand,
-                    name = feat$name,
-                    score = feat$HORlengthsSum)
-} else if(featName == "gene") {
-  feat <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase,
-                            "/annotation/genes/", refbase, "_representative_mRNA",
-                            "_", paste0(chrName, collapse = "_"), ".bed"),
-                     header = F)
-  colnames(feat) <- c("chr", "start0based", "end", "name", "score", "strand")
-  featGR <- GRanges(seqnames = feat$chr,
-                    ranges = IRanges(start = feat$start0based+1,
-                                     end = feat$end),
-                    strand = feat$strand,
-                    name = feat$name,
-                    score = feat$score)
-} else if(featName == "GYPSY") {
-  feat <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase,
-                            "/annotation/TEs_EDTA/", refbase, "_TEs_Gypsy_LTR",
-                            "_", paste0(chrName, collapse = "_"), ".bed"),
-                     header = F)
-  colnames(feat) <- c("chr", "start0based", "end", "name", "score", "strand")
-  featGR <- GRanges(seqnames = feat$chr,
-                    ranges = IRanges(start = feat$start0based+1,
-                                     end = feat$end),
-                    strand = feat$strand,
-                    name = feat$name,
-                    score = feat$score)
-} else if(featName == "TE") {
-  feat <- read.table(paste0("/home/ajt200/analysis/nanopore/", refbase,
-                            "/annotation/TEs_EDTA/", refbase, "_TEs_All",
-                            "_", paste0(chrName, collapse = "_"), ".tsv"),
-                     header = T)
-  featGR <- GRanges(seqnames = feat$seqid,
-                    ranges = IRanges(start = feat$start,
-                                     end = feat$end),
-                    strand = feat$strand,
-                    name = paste0(feat$Name, "_", 1:length(feat$Name)),
-                    score = feat$superfamName,
-                    DNA_RNA = feat$DNA_RNA,
-                    ltr_identity = feat$ltr_identity)
-} else {
-  stop(print("featName not one of CEN180, gene, GYPSY, or TE"))
-}
+# Load DMRs
+feat <- readGFF(paste0("/home/ajt200/analysis/BSseq_leaf_Stroud_Jacobsen_2013_Cell_2014_NSMB/",
+                       "hpc_snakemake_BSseq_", refbase, "/coverage/report/DMRs/hypoDMRs/",
+                       paste0(chrName, collapse = "_"),
+                       "/features_6quantiles_by_change_in_", featName, "_DMRs_vs3reps_",
+                       "mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD_0.4_0.2_0.1_mG200_in_",
+                       refbase, "_", paste0(chrName, collapse = "_"), "_genomewide.gff3"))
+featGR <- GRanges(seqnames = as.character(feat$seqid),
+                  ranges = IRanges(start = as.integer(feat$start),
+                                   end = as.integer(feat$end)),
+                  strand = "*",
+                  pValue = as.numeric(feat$pValue),
+                  minuslog10_pValue = -log10(as.numeric(feat$pValue)),
+                  absolute_change = as.numeric(feat$absolute_change),
+                  log2_fold_change = as.numeric(feat$log2_fold_change),
+                  relative_change = as.numeric(feat$relative_change),
+                  ml10pv_percentile = as.numeric( rank( -log10(as.numeric(feat$pValue)) ) / length( -log10(as.numeric(feat$pValue)) ) ), 
+                  ac_percentile = as.numeric(feat$ac_percentile),
+                  l2fc_percentile = as.numeric(feat$l2fc_percentile),
+                  rc_percentile = as.numeric(feat$rc_percentile))
 
 featGR$feature_width <- width(featGR)
 
