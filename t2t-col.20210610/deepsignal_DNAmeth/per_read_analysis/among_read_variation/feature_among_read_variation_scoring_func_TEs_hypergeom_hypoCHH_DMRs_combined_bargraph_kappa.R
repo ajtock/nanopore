@@ -6,6 +6,7 @@
 # Usage:
 # conda activate R-4.0.0
 # ./feature_among_read_variation_scoring_func_TEs_hypergeom_hypoCHH_DMRs_combined_bargraph_kappa.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CHG 0.50 'Chr1,Chr2,Chr3,Chr4,Chr5' 'TE' 'bodies' 'drd1_BSseq_Rep1_hypoCHH,cmt2_BSseq_Rep1_hypoCHH,cmt3_BSseq_Rep1_hypoCHH,kss_BSseq_Rep1_hypoCHH,suvh4_BSseq_Rep1_hypoCHH,suvh5_BSseq_Rep1_hypoCHH,suvh6_BSseq_Rep1_hypoCHH,met1_BSseq_Rep1_hypoCHH,ddm1_BSseq_Rep1_hypoCHH'
+# ./feature_among_read_variation_scoring_func_TEs_hypergeom_hypoCHH_DMRs_combined_bargraph_kappa.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CHG 0.50 'Chr1,Chr2,Chr3,Chr4,Chr5' 'TE' 'bodies' 'drd1_BSseq_Rep1_hypoCHH,drm1_drm2_BSseq_Rep1_hypoCHH,cmt2_BSseq_Rep1_hypoCHH,cmt3_BSseq_Rep1_hypoCHH,cmt2_cmt3_BSseq_Rep1_hypoCHH,kss_BSseq_Rep1_hypoCHH,suvh4_BSseq_Rep1_hypoCHH,suvh5_BSseq_Rep1_hypoCHH,suvh6_BSseq_Rep1_hypoCHH,met1_BSseq_Rep1_hypoCHH,met1_cmt3_BSseq_Rep1_hypoCHH,met1het_BSseq_Rep1_hypoCHH,ddm1_BSseq_Rep1_hypoCHH'
 # conda deactivate
  
 # Divide each read into adjacent segments each consisting of a given number of consecutive cytosines,
@@ -96,38 +97,38 @@ bp <- ggplot(data = combined,
   geom_point(mapping = aes(x = Group,
                            y = log2alpha),
              position = position_dodge(0.9),
-             shape = "-", colour  = "grey60", size = 6) +
+             shape = "-", colour  = "grey70", size = 6) +
   geom_segment(mapping = aes(x = 0.55, y = min(c(combined$log2obsexp, combined$log2alpha))-0.50,
                              xend = 1.45, yend = min(c(combined$log2obsexp, combined$log2alpha))-0.50),
-               colour = "black",
+               colour = "dodgerblue1",
                inherit.aes = F, size = 2) +
   geom_segment(mapping = aes(x = 1.55, y = min(c(combined$log2obsexp, combined$log2alpha))-0.50,
                              xend = 2.45, yend = min(c(combined$log2obsexp, combined$log2alpha))-0.50),
-               colour = "black",
+               colour = "dodgerblue3",
                inherit.aes = F, size = 2) +
   geom_segment(mapping = aes(x = 2.55, y = min(c(combined$log2obsexp, combined$log2alpha))-0.50,
                              xend = 3.45, yend = min(c(combined$log2obsexp, combined$log2alpha))-0.50),
-               colour = "black",
+               colour = "magenta1",
                inherit.aes = F, size = 2) +
   geom_segment(mapping = aes(x = 3.55, y = min(c(combined$log2obsexp, combined$log2alpha))-0.50,
                              xend = 4.45, yend = min(c(combined$log2obsexp, combined$log2alpha))-0.50),
-               colour = "black",
+               colour = "magenta3",
                inherit.aes = F, size = 2) +
   geom_segment(mapping = aes(x = 4.55, y = min(c(combined$log2obsexp, combined$log2alpha))-0.50,
                              xend = 5.45, yend = min(c(combined$log2obsexp, combined$log2alpha))-0.50),
-               colour = "black",
+               colour = "darkorange1",
                inherit.aes = F, size = 2) +
   geom_segment(mapping = aes(x = 5.55, y = min(c(combined$log2obsexp, combined$log2alpha))-0.50,
                              xend = 6.45, yend = min(c(combined$log2obsexp, combined$log2alpha))-0.50),
-               colour = "black",
+               colour = "darkorange3",
                inherit.aes = F, size = 2) +
   geom_segment(mapping = aes(x = 6.55, y = min(c(combined$log2obsexp, combined$log2alpha))-0.50,
                              xend = 7.45, yend = min(c(combined$log2obsexp, combined$log2alpha))-0.50),
-               colour = "black",
+               colour = "firebrick1",
                inherit.aes = F, size = 2) +
   geom_segment(mapping = aes(x = 7.55, y = min(c(combined$log2obsexp, combined$log2alpha))-0.50,
                              xend = 8.45, yend = min(c(combined$log2obsexp, combined$log2alpha))-0.50),
-               colour = "black",
+               colour = "firebrick3",
                inherit.aes = F, size = 2) +
 
   xlab(bquote(atop("Among-read agreement and mean m" * .(context), .(featName) ~ .(featRegion) ~ "group"))) +

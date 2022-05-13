@@ -139,38 +139,38 @@ bp <- ggplot(data = combined,
   geom_point(mapping = aes(x = Group,
                            y = log2alpha),
              position = position_dodge(0.9),
-             shape = "-", colour  = "grey60", size = 6) +
+             shape = "-", colour  = "grey70", size = 6) +
   geom_segment(mapping = aes(x = 0.55, y = min(c(combined$log2obsexp, combined$log2alpha))-0.50,
                              xend = 1.45, yend = min(c(combined$log2obsexp, combined$log2alpha))-0.50),
-               colour = "black",
+               colour = "dodgerblue1",
                inherit.aes = F, size = 2) +
   geom_segment(mapping = aes(x = 1.55, y = min(c(combined$log2obsexp, combined$log2alpha))-0.50,
                              xend = 2.45, yend = min(c(combined$log2obsexp, combined$log2alpha))-0.50),
-               colour = "black",
+               colour = "dodgerblue3",
                inherit.aes = F, size = 2) +
   geom_segment(mapping = aes(x = 2.55, y = min(c(combined$log2obsexp, combined$log2alpha))-0.50,
                              xend = 3.45, yend = min(c(combined$log2obsexp, combined$log2alpha))-0.50),
-               colour = "black",
+               colour = "magenta1",
                inherit.aes = F, size = 2) +
   geom_segment(mapping = aes(x = 3.55, y = min(c(combined$log2obsexp, combined$log2alpha))-0.50,
                              xend = 4.45, yend = min(c(combined$log2obsexp, combined$log2alpha))-0.50),
-               colour = "black",
+               colour = "magenta3",
                inherit.aes = F, size = 2) +
   geom_segment(mapping = aes(x = 4.55, y = min(c(combined$log2obsexp, combined$log2alpha))-0.50,
                              xend = 5.45, yend = min(c(combined$log2obsexp, combined$log2alpha))-0.50),
-               colour = "black",
+               colour = "darkorange1",
                inherit.aes = F, size = 2) +
   geom_segment(mapping = aes(x = 5.55, y = min(c(combined$log2obsexp, combined$log2alpha))-0.50,
                              xend = 6.45, yend = min(c(combined$log2obsexp, combined$log2alpha))-0.50),
-               colour = "black",
+               colour = "darkorange3",
                inherit.aes = F, size = 2) +
   geom_segment(mapping = aes(x = 6.55, y = min(c(combined$log2obsexp, combined$log2alpha))-0.50,
                              xend = 7.45, yend = min(c(combined$log2obsexp, combined$log2alpha))-0.50),
-               colour = "black",
+               colour = "firebrick1",
                inherit.aes = F, size = 2) +
   geom_segment(mapping = aes(x = 7.55, y = min(c(combined$log2obsexp, combined$log2alpha))-0.50,
                              xend = 8.45, yend = min(c(combined$log2obsexp, combined$log2alpha))-0.50),
-               colour = "black",
+               colour = "firebrick3",
                inherit.aes = F, size = 2) +
 
   xlab(bquote(atop("Among-read agreement and mean m" * .(context), .(featName) ~ .(featRegion) ~ "group"))) +
