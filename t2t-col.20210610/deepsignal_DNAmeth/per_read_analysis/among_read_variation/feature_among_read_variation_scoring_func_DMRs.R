@@ -106,6 +106,7 @@ featGR <- GRanges(seqnames = as.character(feat$seqid),
                   ranges = IRanges(start = as.integer(feat$start),
                                    end = as.integer(feat$end)),
                   strand = "*",
+                  name = paste0(featName, "_", 1:nrow(feat)),
                   pValue = as.numeric(feat$pValue),
                   minuslog10_pValue = -log10(as.numeric(feat$pValue)),
                   absolute_change = as.numeric(feat$absolute_change),
@@ -133,8 +134,7 @@ featextGR <- GRanges(seqnames = seqnames(featGR),
                      ranges = IRanges(start = start(featGR)-1000,
                                       end = end(featGR)+1000),
                      strand = strand(featGR),
-                     name = featGR$name,
-                     score = featGR$score)
+                     name = featGR$name)
 
 # Mask out featGR within mitochondrial insertion on Chr2
 fOverlaps_feat_mito_ins <- findOverlaps(query = featextGR,
@@ -162,9 +162,15 @@ if(featRegion == "bodies") {
                                      end = end(featGR)+1000),
                     strand = strand(featGR),
                     name = featGR$name,
-                    score = featGR$score,
-                    DNA_RNA = featGR$DNA_RNA,
-                    ltr_identity = featGR$ltr_identity,
+                    pValue = featGR$pValue,
+                    minuslog10_pValue = featGR$minuslog10_pValue,
+                    absolute_change = featGR$absolute_change,
+                    log2_fold_change = featGR$log2_fold_change,
+                    relative_change = featGR$relative_change,
+                    ml10pv_percentile = featGR$ml10pv_percentile,
+                    ac_percentile = featGR$ac_percentile,
+                    l2fc_percentile = featGR$l2fc_percentile,
+                    rc_percentile = featGR$rc_percentile,
                     feature_width = featGR$feature_width)
 } else {
   stop("featRegion is none of bodies, promoters, terminators or regions")
@@ -184,7 +190,7 @@ if(length(chrName) > 1) {
 }
 rm(tab_list); gc()
 
-source("feature_among_read_variation_scoring_func_TEs_function.R")
+source("feature_among_read_variation_scoring_func_DMRs_function.R")
 
 con_fk_df_all <- data.frame()
 for(chrIndex in 1:length(chrName)) {
@@ -207,18 +213,18 @@ for(chrIndex in 1:length(chrName)) {
 
   # Analyse each strand separately
   # fwd
-  makeDFx_list_fwd <- mclapply(1:length(chr_featGR), function(x) {
-#  makeDFx_list_fwd <- foreach(x = 1:length(chr_featGR),
-#                              .combine = "list",
-#                              .multicombine = T,
-#                              .maxcombine = length(chr_featGR)+1e1,
-#                              .inorder = T) %dopar% {
+#  makeDFx_list_fwd <- mclapply(1:length(chr_featGR), function(x) {
+  makeDFx_list_fwd <- foreach(x = 1:length(chr_featGR),
+                              .combine = "list",
+                              .multicombine = T,
+                              .maxcombine = length(chr_featGR)+1e1,
+                              .inorder = T) %dopar% {
     makeDFx_strand(fOverlaps_str = fOverlaps_fwd,
                    chr_tabGR_str = chr_tabGR_fwd,
                    chr_featGR = chr_featGR,
                    featNum = x)
-#  }
-  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
+  }
+#  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
    
   chr_fk_df_fwd <- dplyr::bind_rows(makeDFx_list_fwd, .id = "column_label")
   
@@ -226,18 +232,18 @@ for(chrIndex in 1:length(chrName)) {
                               fk_adj_pval_str = p.adjust(chr_fk_df_fwd$fk_pval_str, method = "BH"))
 
   # rev  
-  makeDFx_list_rev <- mclapply(1:length(chr_featGR), function(x) {
-#  makeDFx_list_rev <- foreach(x = 1:length(chr_featGR),
-#                              .combine = "list",
-#                              .multicombine = T,
-#                              .maxcombine = length(chr_featGR)+1e1,
-#                              .inorder = T) %dopar% {
+#  makeDFx_list_rev <- mclapply(1:length(chr_featGR), function(x) {
+  makeDFx_list_rev <- foreach(x = 1:length(chr_featGR),
+                              .combine = "list",
+                              .multicombine = T,
+                              .maxcombine = length(chr_featGR)+1e1,
+                              .inorder = T) %dopar% {
     makeDFx_strand(fOverlaps_str = fOverlaps_rev,
                    chr_tabGR_str = chr_tabGR_rev,
                    chr_featGR = chr_featGR,
                    featNum = x)
-#  }
-  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
+  }
+#  }, mc.cores = round(detectCores()*CPUpc), mc.preschedule = T)
    
   chr_fk_df_rev <- dplyr::bind_rows(makeDFx_list_rev, .id = "column_label")
   
