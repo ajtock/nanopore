@@ -22,6 +22,7 @@
 #DMRsNames <- unlist(strsplit("kss_BSseq_Rep1_hypoCHG,cmt3_BSseq_Rep1_hypoCHG,kss_BSseq_Rep1_hypoCHH,cmt3_BSseq_Rep1_hypoCHH",
 #                              split = ",")) 
 #DMRsNamesPlot <- sub("_BSseq_Rep1_", " ", DMRsNames)
+#DMRsNamesPlot <- sub("_", " ", DMRsNamesPlot)
 
 args <- commandArgs(trailingOnly = T)
 sampleName <- args[1]
@@ -33,6 +34,7 @@ featName <- args[6]
 featRegion <- args[7]
 DMRsNames <- unlist(strsplit(args[8], split = ","))
 DMRsNamesPlot <- sub("_BSseq_Rep1_", " ", DMRsNames)
+DMRsNamesPlot <- sub("_", " ", DMRsNamesPlot)
 
 options(stringsAsFactors = F)
 options(scipen = 999)

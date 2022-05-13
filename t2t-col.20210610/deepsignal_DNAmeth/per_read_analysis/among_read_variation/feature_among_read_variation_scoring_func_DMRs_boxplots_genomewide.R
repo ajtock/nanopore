@@ -4,18 +4,18 @@
 # 1. Plot among-read variation/agreement (e.g., Fleiss' kappa) and stochasticity for each TE superfamily (e.g., as boxplots or violin plots)
 
 # Usage:
-# /applications/R/R-4.0.0/bin/Rscript feature_among_read_variation_scoring_func_TEs_boxplots.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'TE' 'bodies'
+# /applications/R/R-4.0.0/bin/Rscript feature_among_read_variation_scoring_func_DMRs_boxplots_genomewide.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CHG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'cmt3_BSseq_Rep1_hypoCHG,kss_BSseq_Rep1_hypoCHG' 'bodies'
  
 # Divide each read into adjacent segments each consisting of a given number of consecutive cytosines,
 # and calculate the methylation proportion for each segment of each read
 
 #sampleName <- "Col_0_deepsignalDNAmeth_30kb_90pc"
 #refbase <- "t2t-col.20210610"
-#context <- "CpG"
+#context <- "CHG"
 #NAmax <- 0.50
 #CPUpc <- 1.00
 #chrName <- unlist(strsplit("Chr1,Chr2,Chr3,Chr4,Chr5", split = ","))
-#featName <- "TE"
+#featName <- unlist(strsplit("cmt3_BSseq_Rep1_hypoCHG,kss_BSseq_Rep1_hypoCHG", split = ","))
 #featRegion <- "bodies"
 
 args <- commandArgs(trailingOnly = T)
@@ -25,8 +25,12 @@ context <- args[3]
 NAmax <- as.numeric(args[4])
 CPUpc <- as.numeric(args[5])
 chrName <- unlist(strsplit(args[6], split = ","))
-featName <- args[7]
+featName <- unlist(strsplit(args[7], split = ","))
 featRegion <- args[8]
+
+
+featNamesPlot <- sub("_BSseq_Rep1_", " ", featName)
+featNamesPlot <- sub("_", " ", featNamesPlot)
 
 print(paste0("Proportion of CPUs:", CPUpc))
 options(stringsAsFactors = F)
@@ -43,7 +47,7 @@ library(dplyr)
 ##library(RColorBrewer)
 library(scales)
 ##library(circlize)
- 
+
 library(ggplot2)
 library(cowplot)
 library(ggbeeswarm)
@@ -54,7 +58,8 @@ library(viridis)
 #library(tidyquant)
 ##library(grid)
 
-outDir <- paste0(featName, "_", featRegion, "/", paste0(chrName, collapse = "_"), "/")
+inDir <- paste0(featName, "_", featRegion, "/", paste0(chrName, collapse = "_"), "/")
+outDir <- paste0("hypoCHG_DMRs_", featRegion, "/", paste0(chrName, collapse = "_"), "/")
 plotDir <- paste0(outDir, "plots/")
 system(paste0("[ -d ", plotDir, " ] || mkdir -p ", plotDir))
 
@@ -68,13 +73,15 @@ if(!grepl("Chr", fai[,1][1])) {
 chrLens <- fai[,2][which(fai[,1] %in% chrName)]
 
 # Load among-read and within-read mC data for featName featRegion
-con_fk_df_all <- read.table(paste0(outDir,
-                                   featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
-                                   "_", context,
-                                   "_NAmax", NAmax,
-                                   "_unfilt_df_fk_kappa_all_mean_mC_all_complete_",
-                                   paste0(chrName, collapse = "_"), ".tsv"),
-                            header = T)
+con_fk_df_all_list <- lapply(1:length(featName), function(x) {
+  read.table(paste0(inDir[x],
+                    featName[x], "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                    "_", context,
+                    "_NAmax", NAmax,
+                    "_unfilt_df_fk_kappa_all_mean_mC_all_complete_",
+                    paste0(chrName, collapse = "_"), ".tsv"),
+             header = T)
+})
 colnames(con_fk_df_all)[colnames(con_fk_df_all) == "score"] <- "Superfamily"
 
 con_fk_df_all_filt <- read.table(paste0(outDir,
@@ -137,8 +144,6 @@ ggTrend_fk_kappa_all <- violinPlot(dataFrame = con_fk_df_all,
 #                                   yaxtrans = log2_trans(),
 #                                   ybreaks = trans_breaks("log2", function(x) 2^x),
 #                                   ylabels = trans_format("log2", math_format(2^.x)))
-ggTrend_fk_kappa_all <- ggTrend_fk_kappa_all +
-  facet_grid(cols = vars(chr), scales = "fixed")
 
 ggTrend_fk_kappa_all_filt <- violinPlot(dataFrame = con_fk_df_all_filt,
                                         mapping = aes(x = Superfamily, y = fk_kappa_all, colour = Superfamily),
@@ -152,8 +157,6 @@ ggTrend_fk_kappa_all_filt <- violinPlot(dataFrame = con_fk_df_all_filt,
 #                                        yaxtrans = log2_trans(),
 #                                        ybreaks = trans_breaks("log2", function(x) 2^x),
 #                                        ylabels = trans_format("log2", math_format(2^.x)))
-ggTrend_fk_kappa_all_filt <- ggTrend_fk_kappa_all_filt +
-  facet_grid(cols = vars(chr), scales = "fixed")
 
 
 ggTrend_mean_stocha_all <- violinPlot(dataFrame = con_fk_df_all,
@@ -168,8 +171,6 @@ ggTrend_mean_stocha_all <- violinPlot(dataFrame = con_fk_df_all,
 #                                      yaxtrans = log2_trans(),
 #                                      ybreaks = trans_breaks("log2", function(x) 2^x),
 #                                      ylabels = trans_format("log2", math_format(2^.x)))
-ggTrend_mean_stocha_all <- ggTrend_mean_stocha_all +
-  facet_grid(cols = vars(chr), scales = "fixed")
 
 ggTrend_mean_stocha_all_filt <- violinPlot(dataFrame = con_fk_df_all_filt,
                                            mapping = aes(x = Superfamily, y = mean_stocha_all, colour = Superfamily),
@@ -183,8 +184,6 @@ ggTrend_mean_stocha_all_filt <- violinPlot(dataFrame = con_fk_df_all_filt,
 #                                          yaxtrans = log2_trans(),
 #                                          ybreaks = trans_breaks("log2", function(x) 2^x),
 #                                          ylabels = trans_format("log2", math_format(2^.x)))
-ggTrend_mean_stocha_all_filt <- ggTrend_mean_stocha_all_filt +
-  facet_grid(cols = vars(chr), scales = "fixed")
 
 
 ggTrend_mean_mC_all <- violinPlot(dataFrame = con_fk_df_all,
@@ -196,8 +195,6 @@ ggTrend_mean_mC_all <- violinPlot(dataFrame = con_fk_df_all,
                                   yaxtrans = "identity",
                                   ybreaks = waiver(),
                                   ylabels = waiver())
-ggTrend_mean_mC_all <- ggTrend_mean_mC_all +
-  facet_grid(cols = vars(chr), scales = "fixed")
 
 ggTrend_mean_mC_all_filt <- violinPlot(dataFrame = con_fk_df_all_filt,
                                        mapping = aes(x = Superfamily, y = mean_mC_all, colour = Superfamily),
@@ -208,15 +205,13 @@ ggTrend_mean_mC_all_filt <- violinPlot(dataFrame = con_fk_df_all_filt,
                                        yaxtrans = "identity",
                                        ybreaks = waiver(),
                                        ylabels = waiver())
-ggTrend_mean_mC_all_filt <- ggTrend_mean_mC_all_filt +
-  facet_grid(cols = vars(chr), scales = "fixed")
 
 gg_cow_list1 <- list(
-                     ggTrend_fk_kappa_all,
+#                     ggTrend_fk_kappa_all,
                      ggTrend_fk_kappa_all_filt,
-                     ggTrend_mean_stocha_all,
+#                     ggTrend_mean_stocha_all,
                      ggTrend_mean_stocha_all_filt,
-                     ggTrend_mean_mC_all,
+#                     ggTrend_mean_mC_all,
                      ggTrend_mean_mC_all_filt
                     )
 
@@ -229,6 +224,6 @@ gg_cow1 <- plot_grid(plotlist = gg_cow_list1,
 ggsave(paste0(plotDir,
               featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase, "_", context,
               "_NAmax", NAmax, "_all_violinPlot_", paste0(chrName, collapse = "_"),
-              ".pdf"),
+              "_genomewide.pdf"),
        plot = gg_cow1,
-       height = 6*length(gg_cow_list1), width = 10*length(chrName), limitsize = F)
+       height = 6*length(gg_cow_list1), width = 10, limitsize = F)
