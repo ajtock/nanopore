@@ -4,7 +4,7 @@
 # 1. Plot among-read variation/agreement (e.g., Fleiss' kappa) and stochasticity for each TE superfamily (e.g., as boxplots or violin plots)
 
 # Usage:
-# /applications/R/R-4.0.0/bin/Rscript feature_among_read_variation_scoring_func_DMRs_boxplots_genomewide.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CHG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'drd1_BSseq_Rep1_hypoCHG,drm1_drm2_BSseq_Rep1_hypoCHG,cmt2_BSseq_Rep1_hypoCHG,cmt3_BSseq_Rep1_hypoCHG,cmt2_cmt3_BSseq_Rep1_hypoCHG,kss_BSseq_Rep1_hypoCHG,suvh4_BSseq_Rep1_hypoCHG,suvh5_BSseq_Rep1_hypoCHG,suvh6_BSseq_Rep1_hypoCHG,met1_BSseq_Rep1_hypoCHG,met1_cmt3_BSseq_Rep1_hypoCHG' 'bodies'
+# /applications/R/R-4.0.0/bin/Rscript feature_among_read_variation_scoring_func_DMRs_boxplots_genomewide.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CHG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'drd1_BSseq_Rep1_hypoCHG,drm1_drm2_BSseq_Rep1_hypoCHG,cmt2_BSseq_Rep1_hypoCHG,cmt3_BSseq_Rep1_hypoCHG,cmt2_cmt3_BSseq_Rep1_hypoCHG,kss_BSseq_Rep1_hypoCHG,suvh4_BSseq_Rep1_hypoCHG,suvh5_BSseq_Rep1_hypoCHG,suvh6_BSseq_Rep1_hypoCHG,met1_BSseq_Rep1_hypoCHG,met1_cmt3_BSseq_Rep1_hypoCHG,met1het_BSseq_Rep1_hypoCHG,ddm1_BSseq_Rep1_hypoCHG' 'bodies'
  
 # Divide each read into adjacent segments each consisting of a given number of consecutive cytosines,
 # and calculate the methylation proportion for each segment of each read
@@ -15,7 +15,7 @@
 #NAmax <- 0.50
 #CPUpc <- 1.00
 #chrName <- unlist(strsplit("Chr1,Chr2,Chr3,Chr4,Chr5", split = ","))
-#featName <- unlist(strsplit("drd1_BSseq_Rep1_hypoCHG,drm1_drm2_BSseq_Rep1_hypoCHG,cmt2_BSseq_Rep1_hypoCHG,cmt3_BSseq_Rep1_hypoCHG,cmt2_cmt3_BSseq_Rep1_hypoCHG,kss_BSseq_Rep1_hypoCHG,suvh4_BSseq_Rep1_hypoCHG,suvh5_BSseq_Rep1_hypoCHG,suvh6_BSseq_Rep1_hypoCHG,met1_BSseq_Rep1_hypoCHG,met1_cmt3_BSseq_Rep1_hypoCHG", split = ","))
+#featName <- unlist(strsplit("drd1_BSseq_Rep1_hypoCHG,drm1_drm2_BSseq_Rep1_hypoCHG,cmt2_BSseq_Rep1_hypoCHG,cmt3_BSseq_Rep1_hypoCHG,cmt2_cmt3_BSseq_Rep1_hypoCHG,kss_BSseq_Rep1_hypoCHG,suvh4_BSseq_Rep1_hypoCHG,suvh5_BSseq_Rep1_hypoCHG,suvh6_BSseq_Rep1_hypoCHG,met1_BSseq_Rep1_hypoCHG,met1_cmt3_BSseq_Rep1_hypoCHG,met1het_BSseq_Rep1_hypoCHG,ddm1_BSseq_Rep1_hypoCHG", split = ","))
 #featRegion <- "bodies"
 
 args <- commandArgs(trailingOnly = T)
