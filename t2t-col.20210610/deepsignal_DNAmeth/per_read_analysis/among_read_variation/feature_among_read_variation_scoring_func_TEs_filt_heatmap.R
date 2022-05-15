@@ -265,10 +265,60 @@ featDF_merge$mD_coldspot <- NA
 featDF_merge[which(featDF_merge$name %in% featID_mD_cs),]$mD_coldspot <- 1
 featDF_merge[which(!(featDF_merge$name %in% featID_mD_cs)),]$mD_coldspot <- 0
 
+
 # DMRs in different DNA methylation mutants
+
+# met1_hypoCG
+met1_hypoCG <- read.table(paste0("/home/ajt200/analysis/BSseq_leaf_Stroud_Jacobsen_2013_Cell_2014_NSMB/",
+                                 "hpc_snakemake_BSseq_", refbase, "/coverage/report/DMRs/hypoDMRs/",
+                                 paste0(chrName, collapse = "_"),
+                                 "/features_6quantiles_by_change_in_met1_BSseq_Rep1_hypoCG_DMRs_vs3reps_",
+                                 "mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD_0.4_0.2_0.1_mG200_in_",
+                                 refbase, "_", paste0(chrName, collapse = "_"), "_genomewide.bed"),
+                          header = F)
+met1_hypoCG_GR <- GRanges(seqnames = met1_hypoCG[,1],
+                          ranges = IRanges(start = met1_hypoCG[,2]+1,
+                                           end = met1_hypoCG[,3]),
+                          strand = "*",
+                          l2fc = met1_hypoCG[,5])
+fOverlaps_feat_met1_hypoCG <- findOverlaps(query = featGR,
+                                           subject = met1_hypoCG_GR,
+                                           type = "any",
+                                           select = "all",
+                                           ignore.strand = T)
+featGR_met1_hypoCG <- featGR[unique(queryHits(fOverlaps_feat_met1_hypoCG))]
+featID_met1_hypoCG <- unique(featGR_met1_hypoCG$featID)
+featDF_merge$met1_hypoCG <- NA
+featDF_merge[which(featDF_merge$name %in% featID_met1_hypoCG),]$met1_hypoCG <- 1
+featDF_merge[which(!(featDF_merge$name %in% featID_met1_hypoCG)),]$met1_hypoCG <- 0
+
+# ddm1_hypoCG
+ddm1_hypoCG <- read.table(paste0("/home/ajt200/analysis/BSseq_leaf_Stroud_Jacobsen_2013_Cell_2014_NSMB/",
+                                 "hpc_snakemake_BSseq_", refbase, "/coverage/report/DMRs/hypoDMRs/",
+                                 paste0(chrName, collapse = "_"),
+                                 "/features_6quantiles_by_change_in_ddm1_BSseq_Rep1_hypoCG_DMRs_vs3reps_",
+                                 "mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD_0.4_0.2_0.1_mG200_in_",
+                                 refbase, "_", paste0(chrName, collapse = "_"), "_genomewide.bed"),
+                          header = F)
+ddm1_hypoCG_GR <- GRanges(seqnames = ddm1_hypoCG[,1],
+                          ranges = IRanges(start = ddm1_hypoCG[,2]+1,
+                                           end = ddm1_hypoCG[,3]),
+                          strand = "*",
+                          l2fc = ddm1_hypoCG[,5])
+fOverlaps_feat_ddm1_hypoCG <- findOverlaps(query = featGR,
+                                           subject = ddm1_hypoCG_GR,
+                                           type = "any",
+                                           select = "all",
+                                           ignore.strand = T)
+featGR_ddm1_hypoCG <- featGR[unique(queryHits(fOverlaps_feat_ddm1_hypoCG))]
+featID_ddm1_hypoCG <- unique(featGR_ddm1_hypoCG$featID)
+featDF_merge$ddm1_hypoCG <- NA
+featDF_merge[which(featDF_merge$name %in% featID_ddm1_hypoCG),]$ddm1_hypoCG <- 1
+featDF_merge[which(!(featDF_merge$name %in% featID_ddm1_hypoCG)),]$ddm1_hypoCG <- 0
+
 # kss_hypoCHG
 kss_hypoCHG <- read.table(paste0("/home/ajt200/analysis/BSseq_leaf_Stroud_Jacobsen_2013_Cell_2014_NSMB/",
-                                 "snakemake_BSseq_", refbase, "/coverage/report/DMRs/hypoDMRs/",
+                                 "hpc_snakemake_BSseq_", refbase, "/coverage/report/DMRs/hypoDMRs/",
                                  paste0(chrName, collapse = "_"),
                                  "/features_6quantiles_by_change_in_kss_BSseq_Rep1_hypoCHG_DMRs_vs3reps_",
                                  "mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD_0.4_0.2_0.1_mG200_in_",
@@ -286,14 +336,13 @@ fOverlaps_feat_kss_hypoCHG <- findOverlaps(query = featGR,
                                            ignore.strand = T)
 featGR_kss_hypoCHG <- featGR[unique(queryHits(fOverlaps_feat_kss_hypoCHG))]
 featID_kss_hypoCHG <- unique(featGR_kss_hypoCHG$featID)
-
 featDF_merge$kss_hypoCHG <- NA
 featDF_merge[which(featDF_merge$name %in% featID_kss_hypoCHG),]$kss_hypoCHG <- 1
 featDF_merge[which(!(featDF_merge$name %in% featID_kss_hypoCHG)),]$kss_hypoCHG <- 0
 
 # cmt3_hypoCHG
 cmt3_hypoCHG <- read.table(paste0("/home/ajt200/analysis/BSseq_leaf_Stroud_Jacobsen_2013_Cell_2014_NSMB/",
-                                  "snakemake_BSseq_", refbase, "/coverage/report/DMRs/hypoDMRs/",
+                                  "hpc_snakemake_BSseq_", refbase, "/coverage/report/DMRs/hypoDMRs/",
                                   paste0(chrName, collapse = "_"),
                                   "/features_6quantiles_by_change_in_cmt3_BSseq_Rep1_hypoCHG_DMRs_vs3reps_",
                                   "mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD_0.4_0.2_0.1_mG200_in_",
@@ -311,62 +360,61 @@ fOverlaps_feat_cmt3_hypoCHG <- findOverlaps(query = featGR,
                                             ignore.strand = T)
 featGR_cmt3_hypoCHG <- featGR[unique(queryHits(fOverlaps_feat_cmt3_hypoCHG))]
 featID_cmt3_hypoCHG <- unique(featGR_cmt3_hypoCHG$featID)
-
 featDF_merge$cmt3_hypoCHG <- NA
 featDF_merge[which(featDF_merge$name %in% featID_cmt3_hypoCHG),]$cmt3_hypoCHG <- 1
 featDF_merge[which(!(featDF_merge$name %in% featID_cmt3_hypoCHG)),]$cmt3_hypoCHG <- 0
 
-# kss_hypoCHH
-kss_hypoCHH <- read.table(paste0("/home/ajt200/analysis/BSseq_leaf_Stroud_Jacobsen_2013_Cell_2014_NSMB/",
-                                 "snakemake_BSseq_", refbase, "/coverage/report/DMRs/hypoDMRs/",
-                                 paste0(chrName, collapse = "_"),
-                                 "/features_6quantiles_by_change_in_kss_BSseq_Rep1_hypoCHH_DMRs_vs3reps_",
-                                 "mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD_0.4_0.2_0.1_mG200_in_",
-                                 refbase, "_", paste0(chrName, collapse = "_"), "_genomewide.bed"),
-                          header = F)
-kss_hypoCHH_GR <- GRanges(seqnames = kss_hypoCHH[,1],
-                          ranges = IRanges(start = kss_hypoCHH[,2]+1,
-                                           end = kss_hypoCHH[,3]),
-                          strand = "*",
-                          l2fc = kss_hypoCHH[,5])
-fOverlaps_feat_kss_hypoCHH <- findOverlaps(query = featGR,
-                                           subject = kss_hypoCHH_GR,
-                                           type = "any",
-                                           select = "all",
-                                           ignore.strand = T)
-featGR_kss_hypoCHH <- featGR[unique(queryHits(fOverlaps_feat_kss_hypoCHH))]
-featID_kss_hypoCHH <- unique(featGR_kss_hypoCHH$featID)
 
-featDF_merge$kss_hypoCHH <- NA
-featDF_merge[which(featDF_merge$name %in% featID_kss_hypoCHH),]$kss_hypoCHH <- 1
-featDF_merge[which(!(featDF_merge$name %in% featID_kss_hypoCHH)),]$kss_hypoCHH <- 0
-
-# cmt3_hypoCHH
-cmt3_hypoCHH <- read.table(paste0("/home/ajt200/analysis/BSseq_leaf_Stroud_Jacobsen_2013_Cell_2014_NSMB/",
-                                  "snakemake_BSseq_", refbase, "/coverage/report/DMRs/hypoDMRs/",
+# cmt2_hypoCHH
+cmt2_hypoCHH <- read.table(paste0("/home/ajt200/analysis/BSseq_leaf_Stroud_Jacobsen_2013_Cell_2014_NSMB/",
+                                  "hpc_snakemake_BSseq_", refbase, "/coverage/report/DMRs/hypoDMRs/",
                                   paste0(chrName, collapse = "_"),
-                                  "/features_6quantiles_by_change_in_cmt3_BSseq_Rep1_hypoCHH_DMRs_vs3reps_",
+                                  "/features_6quantiles_by_change_in_cmt2_BSseq_Rep1_hypoCHH_DMRs_vs3reps_",
                                   "mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD_0.4_0.2_0.1_mG200_in_",
                                   refbase, "_", paste0(chrName, collapse = "_"), "_genomewide.bed"),
                            header = F)
-cmt3_hypoCHH_GR <- GRanges(seqnames = cmt3_hypoCHH[,1],
-                           ranges = IRanges(start = cmt3_hypoCHH[,2]+1,
-                                            end = cmt3_hypoCHH[,3]),
+cmt2_hypoCHH_GR <- GRanges(seqnames = cmt2_hypoCHH[,1],
+                           ranges = IRanges(start = cmt2_hypoCHH[,2]+1,
+                                            end = cmt2_hypoCHH[,3]),
                            strand = "*",
-                           l2fc = cmt3_hypoCHH[,5])
-fOverlaps_feat_cmt3_hypoCHH <- findOverlaps(query = featGR,
-                                            subject = cmt3_hypoCHH_GR,
+                           l2fc = cmt2_hypoCHH[,5])
+fOverlaps_feat_cmt2_hypoCHH <- findOverlaps(query = featGR,
+                                            subject = cmt2_hypoCHH_GR,
                                             type = "any",
                                             select = "all",
                                             ignore.strand = T)
-featGR_cmt3_hypoCHH <- featGR[unique(queryHits(fOverlaps_feat_cmt3_hypoCHH))]
-featID_cmt3_hypoCHH <- unique(featGR_cmt3_hypoCHH$featID)
+featGR_cmt2_hypoCHH <- featGR[unique(queryHits(fOverlaps_feat_cmt2_hypoCHH))]
+featID_cmt2_hypoCHH <- unique(featGR_cmt2_hypoCHH$featID)
+featDF_merge$cmt2_hypoCHH <- NA
+featDF_merge[which(featDF_merge$name %in% featID_cmt2_hypoCHH),]$cmt2_hypoCHH <- 1
+featDF_merge[which(!(featDF_merge$name %in% featID_cmt2_hypoCHH)),]$cmt2_hypoCHH <- 0
 
-featDF_merge$cmt3_hypoCHH <- NA
-featDF_merge[which(featDF_merge$name %in% featID_cmt3_hypoCHH),]$cmt3_hypoCHH <- 1
-featDF_merge[which(!(featDF_merge$name %in% featID_cmt3_hypoCHH)),]$cmt3_hypoCHH <- 0
+# drd1_hypoCHH
+drd1_hypoCHH <- read.table(paste0("/home/ajt200/analysis/BSseq_leaf_Stroud_Jacobsen_2013_Cell_2014_NSMB/",
+                                  "hpc_snakemake_BSseq_", refbase, "/coverage/report/DMRs/hypoDMRs/",
+                                  paste0(chrName, collapse = "_"),
+                                  "/features_6quantiles_by_change_in_drd1_BSseq_Rep1_hypoCHH_DMRs_vs3reps_",
+                                  "mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD_0.4_0.2_0.1_mG200_in_",
+                                  refbase, "_", paste0(chrName, collapse = "_"), "_genomewide.bed"),
+                           header = F)
+drd1_hypoCHH_GR <- GRanges(seqnames = drd1_hypoCHH[,1],
+                           ranges = IRanges(start = drd1_hypoCHH[,2]+1,
+                                            end = drd1_hypoCHH[,3]),
+                           strand = "*",
+                           l2fc = drd1_hypoCHH[,5])
+fOverlaps_feat_drd1_hypoCHH <- findOverlaps(query = featGR,
+                                            subject = drd1_hypoCHH_GR,
+                                            type = "any",
+                                            select = "all",
+                                            ignore.strand = T)
+featGR_drd1_hypoCHH <- featGR[unique(queryHits(fOverlaps_feat_drd1_hypoCHH))]
+featID_drd1_hypoCHH <- unique(featGR_drd1_hypoCHH$featID)
+featDF_merge$drd1_hypoCHH <- NA
+featDF_merge[which(featDF_merge$name %in% featID_drd1_hypoCHH),]$drd1_hypoCHH <- 1
+featDF_merge[which(!(featDF_merge$name %in% featID_drd1_hypoCHH)),]$drd1_hypoCHH <- 0
 
-DMRnames <- colnames(featDF_merge)[(ncol(featDF_merge)-3):ncol(featDF_merge)]
+
+DMRnames <- colnames(featDF_merge)[(ncol(featDF_merge)-5):ncol(featDF_merge)]
 DMRnamesPlot <- gsub("_", " ", DMRnames)
 
 featDF_kappa <- featDF_merge[
@@ -488,7 +536,7 @@ superfam_colFun_list <- lapply(1:length(superfam_mat_list), function(x) {
 })
 DNA_RNA_colFun <- c("RNA" = "darkorange1", "DNA" = "dodgerblue4", "Unclassified" = "grey80")
 DMR_colFun_list <- lapply(1:length(DMR_mat_list), function(x) {
- c("0" = "white", "1" = cols25(n = 4)[x])
+ c("0" = "white", "1" = cols25(n = 6)[x])
 })
 mD_hotspot_colFun <- c("0" = "white", "1" = "firebrick3") 
 mD_coldspot_colFun <- c("0" = "white", "1" = "dodgerblue4") 
@@ -560,7 +608,7 @@ htmps <- Kappa_htmp + Stocha_htmp +
          superfam_htmp_list[[6]] + superfam_htmp_list[[7]] + superfam_htmp_list[[8]] + superfam_htmp_list[[9]] + superfam_htmp_list[[10]] +
          superfam_htmp_list[[11]] + superfam_htmp_list[[12]] + superfam_htmp_list[[13]] + superfam_htmp_list[[14]] +
          DNA_RNA_htmp +
-         DMR_htmp_list[[1]] + DMR_htmp_list[[2]] + DMR_htmp_list[[3]] + DMR_htmp_list[[4]]
+         DMR_htmp_list[[1]] + DMR_htmp_list[[2]] + DMR_htmp_list[[3]] + DMR_htmp_list[[4]] + DMR_htmp_list[[5]] + DMR_htmp_list[[6]]
 #         mD_hotspot_htmp + mD_coldspot_htmp
 
 legendGap <- unit(20, "mm")

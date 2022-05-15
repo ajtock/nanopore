@@ -4,11 +4,11 @@
 # 1. Plot among-read variation/agreement (e.g., Fleiss' kappa) and stochasticity for each DMR set (e.g., as boxplots or violin plots)
 
 # Usage:
-# /applications/R/R-4.0.0/bin/Rscript feature_among_read_variation_scoring_func_DMRs_boxplots_genomewide.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CHG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'drd1_BSseq_Rep1_hypoCHG,drm1_drm2_BSseq_Rep1_hypoCHG,cmt2_BSseq_Rep1_hypoCHG,cmt3_BSseq_Rep1_hypoCHG,cmt2_cmt3_BSseq_Rep1_hypoCHG,kss_BSseq_Rep1_hypoCHG,suvh4_BSseq_Rep1_hypoCHG,suvh5_BSseq_Rep1_hypoCHG,suvh6_BSseq_Rep1_hypoCHG,met1_BSseq_Rep1_hypoCHG,met1het_BSseq_Rep1_hypoCHG,met1_cmt3_BSseq_Rep1_hypoCHG,ddm1_BSseq_Rep1_hypoCHG' 'bodies'
- 
+# /applications/R/R-4.0.0/bin/Rscript feature_among_read_variation_scoring_func_DMRs_boxplots_genomewide_contexts.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 'CpG,CHG' 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'drd1_BSseq_Rep1_hypoCHG,drm1_drm2_BSseq_Rep1_hypoCHG,cmt2_BSseq_Rep1_hypoCHG,cmt3_BSseq_Rep1_hypoCHG,cmt2_cmt3_BSseq_Rep1_hypoCHG,kss_BSseq_Rep1_hypoCHG,suvh4_BSseq_Rep1_hypoCHG,suvh5_BSseq_Rep1_hypoCHG,suvh6_BSseq_Rep1_hypoCHG,met1_BSseq_Rep1_hypoCHG,met1het_BSseq_Rep1_hypoCHG,met1_cmt3_BSseq_Rep1_hypoCHG,ddm1_BSseq_Rep1_hypoCHG' 'bodies'
+
 #sampleName <- "Col_0_deepsignalDNAmeth_30kb_90pc"
 #refbase <- "t2t-col.20210610"
-#context <- "CHG"
+#context <- unlist(strsplit("CpG,CHG", split = ","))
 #NAmax <- 0.50
 #CPUpc <- 1.00
 #chrName <- unlist(strsplit("Chr1,Chr2,Chr3,Chr4,Chr5", split = ","))
@@ -18,7 +18,7 @@
 args <- commandArgs(trailingOnly = T)
 sampleName <- args[1]
 refbase <- args[2]
-context <- args[3]
+context <- unlist(strsplit(args[3], split = ","))
 NAmax <- as.numeric(args[4])
 CPUpc <- as.numeric(args[5])
 chrName <- unlist(strsplit(args[6], split = ","))
@@ -58,16 +58,22 @@ if(!grepl("Chr", fai[,1][1])) {
 chrLens <- fai[,2][which(fai[,1] %in% chrName)]
 
 # Load among-read and within-read mC data for featName featRegion
-con_fk_df_all_list <- lapply(1:length(featName), function(x) {
-  tmp <- read.table(paste0(inDir[x],
-                           featName[x], "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
-                           "_", context,
-                           "_NAmax", NAmax,
-                           "_unfilt_df_fk_kappa_all_mean_mC_all_complete_",
-                           paste0(chrName, collapse = "_"), ".tsv"),
-                    header = T)
-  tmp$Feature <- featNamePlot[x]  
-  tmp
+con_fk_df_all_list_of_lists <- lapply(1:length(context), function(y) {
+  lapply(1:length(featName), function(x) {
+    tmp <- read.table(paste0(inDir[x],
+                             featName[x], "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                             "_", context[y],
+                             "_NAmax", NAmax,
+                             "_unfilt_df_fk_kappa_all_mean_mC_all_complete_",
+                             paste0(chrName, collapse = "_"), ".tsv"),
+                      header = T)
+    tmp$Context <- sub("p", "", context[y])
+    tmp$Feature <- featNamePlot[x]  
+    tmp
+  })
+})
+con_fk_df_all_list <- lapply(1:length(context), function(y) {
+  dplyr::bind_rows(con_fk_df_all_list_of_lists[[y]])
 })
 con_fk_df_all <- dplyr::bind_rows(con_fk_df_all_list)
 con_fk_df_all$kappa_C_density <- con_fk_df_all$fk_Cs_all / ( (con_fk_df_all$end - con_fk_df_all$start + 1) / 1e3 )
@@ -75,16 +81,22 @@ con_fk_df_all$stocha_C_density <- con_fk_df_all$stocha_Cs_all / ( (con_fk_df_all
 con_fk_df_all$Feature <- factor(con_fk_df_all$Feature,
                                 levels = c(featNamePlot))
 
-con_fk_df_all_filt_list <- lapply(1:length(featName), function(x) {
-  tmp <- read.table(paste0(inDir[x],
-                           featName[x], "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
-                           "_", context,
-                           "_NAmax", NAmax,
-                           "_filt_df_fk_kappa_all_mean_mC_all_complete_",
-                           paste0(chrName, collapse = "_"), ".tsv"),
-                    header = T)
-  tmp$Feature <- featNamePlot[x]  
-  tmp
+con_fk_df_all_filt_list_of_lists <- lapply(1:length(context), function(y) {
+  lapply(1:length(featName), function(x) {
+    tmp <- read.table(paste0(inDir[x],
+                             featName[x], "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                             "_", context[y],
+                             "_NAmax", NAmax,
+                             "_filt_df_fk_kappa_all_mean_mC_all_complete_",
+                             paste0(chrName, collapse = "_"), ".tsv"),
+                      header = T)
+    tmp$Context <- sub("p", "", context[y])
+    tmp$Feature <- featNamePlot[x]  
+    tmp
+  })
+})
+con_fk_df_all_filt_list <- lapply(1:length(context), function(y) {
+  dplyr::bind_rows(con_fk_df_all_filt_list_of_lists[[y]])
 })
 con_fk_df_all_filt <- dplyr::bind_rows(con_fk_df_all_filt_list)
 con_fk_df_all_filt$kappa_C_density <- con_fk_df_all_filt$fk_Cs_all / ( (con_fk_df_all_filt$end - con_fk_df_all_filt$start + 1) / 1e3 )
@@ -98,14 +110,14 @@ boxPlot <- function(dataFrame, mapping, xvar, yvar, xlab, ylab, yaxtrans, ybreak
   xvar <- enquo(xvar)
   yvar <- enquo(yvar)
   ggplot(data = dataFrame,
-         mapping = mapping,
-         fill = Feature) +
+         mapping = mapping) +
   scale_fill_manual(values = score_colFun) +
   geom_boxplot(notch = T,
                outlier.shape = 19,
                outlier.size = 1,
                outlier.alpha = 0.4,
-               show.legend = F,
+               show.legend = T,
+               width = 8,
                varwidth = T) +
 #  geom_violin(scale = "area",
 #              trim = T,
@@ -115,8 +127,10 @@ boxPlot <- function(dataFrame, mapping, xvar, yvar, xlab, ylab, yaxtrans, ybreak
   scale_y_continuous(trans = yaxtrans,
                      breaks = ybreaks,
                      labels = ylabels) +
-  labs(x = xlab,
+  labs(fill = "",
+       x = xlab,
        y = ylab) +
+
 #  geom_hline(yintercept = mean(dplyr::mutate(dataFrame, yvar = !!yvar)$yvar, na.rm = T), linetype = "dashed", size = 1, colour = "darkorange1") +
   theme_bw() +
   theme(
@@ -137,48 +151,48 @@ boxPlot <- function(dataFrame, mapping, xvar, yvar, xlab, ylab, yaxtrans, ybreak
 }
 
 gg_fk_kappa_all <- boxPlot(dataFrame = con_fk_df_all,
-                           mapping = aes(x = Feature, y = fk_kappa_all, fill = Feature),
-                           xvar = Feature,
+                           mapping = aes(x = Context, y = fk_kappa_all, fill = Feature),
+                           xvar = Context,
                            yvar = fk_kappa_all,
                            xlab = "",
-                           ylab  = bquote("DMR agreement (m"*.(context)*")"),
+                           ylab  = bquote("DMR agreement (mC)"),
                            yaxtrans = "identity",
                            ybreaks = waiver(),
                            ylabels = waiver())
 
 gg_fk_kappa_all_filt <- boxPlot(dataFrame = con_fk_df_all_filt,
-                                mapping = aes(x = Feature, y = fk_kappa_all, fill = Feature),
-                                xvar = Feature,
+                                mapping = aes(x = Context, y = fk_kappa_all, fill = Feature),
+                                xvar = Context,
                                 yvar = fk_kappa_all,
                                 xlab = "",
-                                ylab  = bquote("DMR agreement (m"*.(context)*")"),
+                                ylab  = bquote("DMR agreement (mC)"),
                                 yaxtrans = "identity",
                                 ybreaks = waiver(),
                                 ylabels = waiver())
 
 gg_mean_stocha_all <- boxPlot(dataFrame = con_fk_df_all,
-                              mapping = aes(x = Feature, y = mean_stocha_all, fill = Feature),
-                              xvar = Feature,
+                              mapping = aes(x = Context, y = mean_stocha_all, fill = Feature),
+                              xvar = Context,
                               yvar = mean_stocha_all,
                               xlab = "",
-                              ylab  = bquote("DMR mean stochasticity (m"*.(context)*")"),
+                              ylab  = bquote("DMR mean stochasticity (mC)"),
                               yaxtrans = "identity",
                               ybreaks = waiver(),
                               ylabels = waiver())
 
 gg_mean_stocha_all_filt <- boxPlot(dataFrame = con_fk_df_all_filt,
-                                   mapping = aes(x = Feature, y = mean_stocha_all, fill = Feature),
-                                   xvar = Feature,
+                                   mapping = aes(x = Context, y = mean_stocha_all, fill = Feature),
+                                   xvar = Context,
                                    yvar = mean_stocha_all,
                                    xlab = "",
-                                   ylab  = bquote("DMR mean stochasticity (m"*.(context)*")"),
+                                   ylab  = bquote("DMR mean stochasticity (mC)"),
                                    yaxtrans = "identity",
                                    ybreaks = waiver(),
                                    ylabels = waiver())
 
 gg_mean_mC_all <- boxPlot(dataFrame = con_fk_df_all,
-                          mapping = aes(x = Feature, y = mean_mC_all, fill = Feature),
-                          xvar = Feature,
+                          mapping = aes(x = Context, y = mean_mC_all, fill = Feature),
+                          xvar = Context,
                           yvar = mean_mC_all,
                           xlab = "",
                           ylab  = bquote("DMR mean m"*.(context)),
@@ -187,71 +201,71 @@ gg_mean_mC_all <- boxPlot(dataFrame = con_fk_df_all,
                           ylabels = waiver())
 
 gg_mean_mC_all_filt <- boxPlot(dataFrame = con_fk_df_all_filt,
-                               mapping = aes(x = Feature, y = mean_mC_all, fill = Feature),
-                               xvar = Feature,
+                               mapping = aes(x = Context, y = mean_mC_all, fill = Feature),
+                               xvar = Context,
                                yvar = mean_mC_all,
                                xlab = "",
-                               ylab  = bquote("DMR mean m"*.(context)),
+                               ylab  = bquote("DMR mean mC"),
                                yaxtrans = "identity",
                                ybreaks = waiver(),
                                ylabels = waiver())
 
 gg_kappa_C_density <- boxPlot(dataFrame = con_fk_df_all,
-                              mapping = aes(x = Feature, y = kappa_C_density, fill = Feature),
-                              xvar = Feature,
+                              mapping = aes(x = Context, y = kappa_C_density, fill = Feature),
+                              xvar = Context,
                               yvar = kappa_C_density,
                               xlab = "",
-                              ylab  = bquote("DMR"~.(context)~"density (kappa)"),
+                              ylab  = bquote("DMR mC density (kappa)"),
                               yaxtrans = "identity",
                               ybreaks = waiver(),
                               ylabels = waiver())
 
 gg_kappa_C_density_filt <- boxPlot(dataFrame = con_fk_df_all_filt,
-                                   mapping = aes(x = Feature, y = kappa_C_density, fill = Feature),
-                                   xvar = Feature,
+                                   mapping = aes(x = Context, y = kappa_C_density, fill = Feature),
+                                   xvar = Context,
                                    yvar = kappa_C_density,
                                    xlab = "",
-                                   ylab  = bquote("DMR"~.(context)~"density (kappa)"),
+                                   ylab  = bquote("DMR mC density (kappa)"),
                                    yaxtrans = "identity",
                                    ybreaks = waiver(),
                                    ylabels = waiver())
 
 gg_stocha_C_density <- boxPlot(dataFrame = con_fk_df_all,
-                               mapping = aes(x = Feature, y = stocha_C_density, fill = Feature),
-                               xvar = Feature,
+                               mapping = aes(x = Context, y = stocha_C_density, fill = Feature),
+                               xvar = Context,
                                yvar = stocha_C_density,
                                xlab = "",
-                               ylab  = bquote("DMR"~.(context)~"density"),
+                               ylab  = bquote("DMR mC density"),
                                yaxtrans = "identity",
                                ybreaks = waiver(),
                                ylabels = waiver())
 
 gg_stocha_C_density_filt <- boxPlot(dataFrame = con_fk_df_all_filt,
-                                    mapping = aes(x = Feature, y = stocha_C_density, fill = Feature),
-                                    xvar = Feature,
+                                    mapping = aes(x = Context, y = stocha_C_density, fill = Feature),
+                                    xvar = Context,
                                     yvar = stocha_C_density,
                                     xlab = "",
-                                    ylab  = bquote("DMR"~.(context)~"density"),
+                                    ylab  = bquote("DMR mC density"),
                                     yaxtrans = "identity",
                                     ybreaks = waiver(),
                                     ylabels = waiver())
 
 gg_fk_reads_all <- boxPlot(dataFrame = con_fk_df_all,
-                           mapping = aes(x = Feature, y = fk_reads_all, fill = Feature),
-                           xvar = Feature,
+                           mapping = aes(x = Context, y = fk_reads_all, fill = Feature),
+                           xvar = Context,
                            yvar = fk_reads_all,
                            xlab = "",
-                           ylab  = bquote("DMR reads (m"*.(context)*")"),
+                           ylab  = bquote("DMR reads (mC)"),
                            yaxtrans = "identity",
                            ybreaks = waiver(),
                            ylabels = waiver())
 
 gg_fk_reads_all_filt <- boxPlot(dataFrame = con_fk_df_all_filt,
-                                mapping = aes(x = Feature, y = fk_reads_all, fill = Feature),
-                                xvar = Feature,
+                                mapping = aes(x = Context, y = fk_reads_all, fill = Feature),
+                                xvar = Context,
                                 yvar = fk_reads_all,
                                 xlab = "",
-                                ylab  = bquote("DMR reads (m"*.(context)*")"),
+                                ylab  = bquote("DMR reads (mC)"),
                                 yaxtrans = "identity",
                                 ybreaks = waiver(),
                                 ylabels = waiver())
@@ -279,8 +293,9 @@ gg_cow1 <- plot_grid(plotlist = gg_cow_list1,
                      nrow = length(gg_cow_list1), ncol = 1)
 
 ggsave(paste0(plotDir,
-              "hypoCHG_DMRs_", featRegion, "_", sampleName, "_MappedOn_", refbase, "_", context,
+              "hypoCHG_DMRs_", featRegion, "_", sampleName, "_MappedOn_", refbase, "_",
+              paste0(context, collapse = "_"),
               "_NAmax", NAmax, "_all_boxPlot_", paste0(chrName, collapse = "_"),
-              "_genomewide.pdf"),
+              "_genomewide_contexts.pdf"),
        plot = gg_cow1,
-       height = 6*length(gg_cow_list1), width = 10, limitsize = F)
+       height = 6*length(gg_cow_list1), width = 15, limitsize = F)
