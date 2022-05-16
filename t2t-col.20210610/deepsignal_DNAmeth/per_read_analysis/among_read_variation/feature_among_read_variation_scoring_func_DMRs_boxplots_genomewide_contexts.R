@@ -4,7 +4,8 @@
 # 1. Plot among-read variation/agreement (e.g., Fleiss' kappa) and stochasticity for each DMR set (e.g., as boxplots or violin plots)
 
 # Usage:
-# /applications/R/R-4.0.0/bin/Rscript feature_among_read_variation_scoring_func_DMRs_boxplots_genomewide_contexts.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 'CpG,CHG' 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'drd1_BSseq_Rep1_hypoCHG,drm1_drm2_BSseq_Rep1_hypoCHG,cmt2_BSseq_Rep1_hypoCHG,cmt3_BSseq_Rep1_hypoCHG,cmt2_cmt3_BSseq_Rep1_hypoCHG,kss_BSseq_Rep1_hypoCHG,suvh4_BSseq_Rep1_hypoCHG,suvh5_BSseq_Rep1_hypoCHG,suvh6_BSseq_Rep1_hypoCHG,met1_BSseq_Rep1_hypoCHG,met1het_BSseq_Rep1_hypoCHG,met1_cmt3_BSseq_Rep1_hypoCHG,ddm1_BSseq_Rep1_hypoCHG' 'bodies'
+# ./feature_among_read_variation_scoring_func_DMRs_boxplots_genomewide_contexts.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 'CpG,CHG' 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'drd1_BSseq_Rep1_hypoCHG,drm1_drm2_BSseq_Rep1_hypoCHG,cmt2_BSseq_Rep1_hypoCHG,cmt3_BSseq_Rep1_hypoCHG,cmt2_cmt3_BSseq_Rep1_hypoCHG,kss_BSseq_Rep1_hypoCHG,suvh4_BSseq_Rep1_hypoCHG,suvh5_BSseq_Rep1_hypoCHG,suvh6_BSseq_Rep1_hypoCHG,met1_BSseq_Rep1_hypoCHG,met1het_BSseq_Rep1_hypoCHG,met1_cmt3_BSseq_Rep1_hypoCHG,ddm1_BSseq_Rep1_hypoCHG' 'bodies'
+# ./feature_among_read_variation_scoring_func_DMRs_boxplots_genomewide_contexts.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 'CpG,CHG' 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'met1_BSseq_Rep1_hypoCHG,ddm1_BSseq_Rep1_hypoCHG,cmt3_BSseq_Rep1_hypoCHG,kss_BSseq_Rep1_hypoCHG,drd1_BSseq_Rep1_hypoCHG,cmt2_BSseq_Rep1_hypoCHG' 'bodies'
 
 #sampleName <- "Col_0_deepsignalDNAmeth_30kb_90pc"
 #refbase <- "t2t-col.20210610"
@@ -111,13 +112,13 @@ boxPlot <- function(dataFrame, mapping, xvar, yvar, xlab, ylab, yaxtrans, ybreak
   yvar <- enquo(yvar)
   ggplot(data = dataFrame,
          mapping = mapping) +
-  scale_fill_manual(values = score_colFun) +
+#  scale_fill_manual(values = score_colFun) +
   geom_boxplot(notch = T,
                outlier.shape = 19,
                outlier.size = 1,
                outlier.alpha = 0.4,
                show.legend = T,
-               width = 8,
+               width = 1.5,
                varwidth = T) +
 #  geom_violin(scale = "area",
 #              trim = T,
@@ -136,10 +137,11 @@ boxPlot <- function(dataFrame, mapping, xvar, yvar, xlab, ylab, yaxtrans, ybreak
   theme(
         axis.ticks = element_line(size = 0.5, colour = "black"),
         axis.ticks.length = unit(0.25, "cm"),
-        axis.text.x = element_text(size = 16, colour = "black", angle = 45, vjust = 1.0, hjust = 1.0),
+        axis.text.x = element_text(size = 16, colour = "black"),
         axis.text.y = element_text(size = 16, colour = "black"),
         axis.title = element_text(size = 18, colour = "black"),
         axis.line = element_line(size = 0.5, colour = "black"),
+        legend.text = element_text(size = 14, colour = "black"),
         panel.background = element_blank(),
         panel.border = element_blank(),
 #        panel.border = element_rect(size = 1.0, colour = "black"),
@@ -298,4 +300,4 @@ ggsave(paste0(plotDir,
               "_NAmax", NAmax, "_all_boxPlot_", paste0(chrName, collapse = "_"),
               "_genomewide_contexts.pdf"),
        plot = gg_cow1,
-       height = 6*length(gg_cow_list1), width = 15, limitsize = F)
+       height = 6*length(gg_cow_list1), width = 10, limitsize = F)
