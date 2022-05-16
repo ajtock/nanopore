@@ -95,11 +95,12 @@ superfamNames <- c(superfamNames[3], superfamNames[1], superfamNames[14],
                    superfamNames[6], superfamNames[2], superfamNames[4],
                    superfamNames[5], superfamNames[8], superfamNames[9],
                    superfamNames[12], superfamNames[11])
+superfamNames <- superfamNames[-grep("Unclassified", superfamNames)]
 superfamNamesPlot <- gsub("Pogo_Tc1_Mariner", "Pogo/Tc1/Mar", superfamNames)
 superfamNamesPlot <- gsub("_", " ", superfamNamesPlot)
 superfamNamesPlot <- gsub("classified", ".", superfamNamesPlot)
 
-score_colFun <- cols25(n = 25)[-c(7:16, 25)]
+score_colFun <- cols25(n = 25)[-c(7:16, 25)][1:length(superfamNamesPlot)]
 stopifnot(length(score_colFun) == length(superfamNamesPlot))
 #names(score_colFun) <- superfamNamesPlot
 

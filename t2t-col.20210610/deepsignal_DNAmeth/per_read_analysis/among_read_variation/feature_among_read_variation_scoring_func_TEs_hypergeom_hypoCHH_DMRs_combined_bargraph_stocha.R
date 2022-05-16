@@ -5,8 +5,7 @@
 
 # Usage:
 # conda activate R-4.0.0
-# ./feature_among_read_variation_scoring_func_TEs_hypergeom_hypoCHH_DMRs_combined_bargraph_stocha.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CHG 0.50 'Chr1,Chr2,Chr3,Chr4,Chr5' 'TE' 'bodies' 'drd1_BSseq_Rep1_hypoCHH,cmt2_BSseq_Rep1_hypoCHH,cmt3_BSseq_Rep1_hypoCHH,kss_BSseq_Rep1_hypoCHH,suvh4_BSseq_Rep1_hypoCHH,suvh5_BSseq_Rep1_hypoCHH,suvh6_BSseq_Rep1_hypoCHH,met1_BSseq_Rep1_hypoCHH,ddm1_BSseq_Rep1_hypoCHH'
-# ./feature_among_read_variation_scoring_func_TEs_hypergeom_hypoCHH_DMRs_combined_bargraph_stocha.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CHG 0.50 'Chr1,Chr2,Chr3,Chr4,Chr5' 'TE' 'bodies' 'drd1_BSseq_Rep1_hypoCHH,drm1_drm2_BSseq_Rep1_hypoCHH,cmt2_BSseq_Rep1_hypoCHH,cmt3_BSseq_Rep1_hypoCHH,cmt2_cmt3_BSseq_Rep1_hypoCHH,kss_BSseq_Rep1_hypoCHH,suvh4_BSseq_Rep1_hypoCHH,suvh5_BSseq_Rep1_hypoCHH,suvh6_BSseq_Rep1_hypoCHH,met1_BSseq_Rep1_hypoCHH,met1_cmt3_BSseq_Rep1_hypoCHH,met1het_BSseq_Rep1_hypoCHH,ddm1_BSseq_Rep1_hypoCHH'
+# ./feature_among_read_variation_scoring_func_TEs_hypergeom_hypoCHH_DMRs_combined_bargraph_stocha.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CHG 0.50 'Chr1,Chr2,Chr3,Chr4,Chr5' 'TE' 'bodies' 'met1_BSseq_Rep1_hypoCHH,met1het_BSseq_Rep1_hypoCHH,met1_cmt3_BSseq_Rep1_hypoCHH,ddm1_BSseq_Rep1_hypoCHH,cmt3_BSseq_Rep1_hypoCHH,kss_BSseq_Rep1_hypoCHH,suvh4_BSseq_Rep1_hypoCHH,suvh5_BSseq_Rep1_hypoCHH,suvh6_BSseq_Rep1_hypoCHH,drd1_BSseq_Rep1_hypoCHH,drm1_drm2_BSseq_Rep1_hypoCHH,cmt2_BSseq_Rep1_hypoCHH'
 # conda deactivate
  
 # Divide each read into adjacent segments each consisting of a given number of consecutive cytosines,
