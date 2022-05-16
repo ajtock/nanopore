@@ -4,9 +4,8 @@
 # 1. Plot among-read variation/agreement (e.g., Fleiss' kappa) and stochasticity for each DMR set (e.g., as boxplots or violin plots)
 
 # Usage:
-# ./feature_among_read_variation_scoring_func_DMRs_boxplots_genomewide_contexts.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 'CpG,CHG' 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'drd1_BSseq_Rep1_hypoCHG,drm1_drm2_BSseq_Rep1_hypoCHG,cmt2_BSseq_Rep1_hypoCHG,cmt3_BSseq_Rep1_hypoCHG,cmt2_cmt3_BSseq_Rep1_hypoCHG,kss_BSseq_Rep1_hypoCHG,suvh4_BSseq_Rep1_hypoCHG,suvh5_BSseq_Rep1_hypoCHG,suvh6_BSseq_Rep1_hypoCHG,met1_BSseq_Rep1_hypoCHG,met1het_BSseq_Rep1_hypoCHG,met1_cmt3_BSseq_Rep1_hypoCHG,ddm1_BSseq_Rep1_hypoCHG' 'bodies'
-# ./feature_among_read_variation_scoring_func_DMRs_boxplots_genomewide_contexts.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 'CpG,CHG' 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'met1_BSseq_Rep1_hypoCHG,ddm1_BSseq_Rep1_hypoCHG,cmt3_BSseq_Rep1_hypoCHG,kss_BSseq_Rep1_hypoCHG,suvh4_BSseq_Rep1_hypoCHG,suvh5_BSseq_Rep1_hypoCHG,suvh6_BSseq_Rep1_hypoCHG,drd1_BSseq_Rep1_hypoCHG,cmt2_BSseq_Rep1_hypoCHG' 'bodies'
-# ./feature_among_read_variation_scoring_func_DMRs_boxplots_genomewide_contexts.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 'CpG,CHG' 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'met1_BSseq_Rep1_hypoCG,ddm1_BSseq_Rep1_hypoCG,cmt3_BSseq_Rep1_hypoCG,kss_BSseq_Rep1_hypoCG,suvh4_BSseq_Rep1_hypoCG,suvh5_BSseq_Rep1_hypoCG,suvh6_BSseq_Rep1_hypoCG,drd1_BSseq_Rep1_hypoCG,cmt2_BSseq_Rep1_hypoCG' 'bodies'
+# ./feature_among_read_variation_scoring_func_DMRs_boxplots_genomewide_contexts_intersection.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 'CpG,CHG' 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'met1_BSseq_Rep1_hypoCHG,cmt3_BSseq_Rep1_hypoCHG,cmt3_BSseq_Rep1_and_met1_BSseq_Rep1_hypoCHG,cmt3_BSseq_Rep1_not_met1_BSseq_Rep1_hypoCHG' 'bodies'
+# ./feature_among_read_variation_scoring_func_DMRs_boxplots_genomewide_contexts_intersection.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 'CpG,CHG' 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'met1_BSseq_Rep1_hypoCG,cmt3_BSseq_Rep1_hypoCG,met1_BSseq_Rep1_and_cmt3_BSseq_Rep1_hypoCG,met1_BSseq_Rep1_not_cmt3_BSseq_Rep1_hypoCG' 'bodies'
 
 #sampleName <- "Col_0_deepsignalDNAmeth_30kb_90pc"
 #refbase <- "t2t-col.20210610"
@@ -108,9 +107,9 @@ con_fk_df_all_filt$Feature <- factor(con_fk_df_all_filt$Feature,
 
 
 if(grepl("CG", featName[1])) {
-  boxwidth <- 3.5
+  boxwidth <- 1
 } else {
-  boxwidth <- 2
+  boxwidth <- 1
 }
 
 # Plot relationships and define groups
@@ -305,6 +304,6 @@ ggsave(paste0(plotDir,
               "hypoCHG_DMRs_", featRegion, "_", sampleName, "_MappedOn_", refbase, "_",
               paste0(context, collapse = "_"),
               "_NAmax", NAmax, "_all_boxPlot_", paste0(chrName, collapse = "_"),
-              "_genomewide_contexts.pdf"),
+              "_genomewide_contexts_intersection.pdf"),
        plot = gg_cow1,
        height = 6*length(gg_cow_list1), width = 14, limitsize = F)
