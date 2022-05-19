@@ -34,6 +34,10 @@ featRegion <- args[8]
 
 print(paste0("Proportion of CPUs:", CPUpc))
 options(stringsAsFactors = F)
+library(stringr)
+library(data.table)
+library(dplyr)
+library(scales)
 library(ggplot2)
 library(cowplot)
 library(fpc)
@@ -532,20 +536,8 @@ Col_Rep1_IRratio <- foreach(i = iter(parentIDs),
              IRratio_max = max(tmpDF$IRratio, na.rm = T))
 }
 
-con_fk_df_all_tab <- base::merge(x = con_fk_df_all, y = Col_Rep1_IRratio,
-                                 by.x = "parent", by.y = "parent")
 con_fk_df_all_filt_tab <- base::merge(x = con_fk_df_all_filt, y = Col_Rep1_IRratio,
                                       by.x = "parent", by.y = "parent")
-
-print(cor.test(con_fk_df_all_tab$fk_kappa_all, con_fk_df_all_tab$IRratio_mean, method = "spearman"))
-#-0.1014645
-print(cor.test(con_fk_df_all_tab$fk_kappa_all, con_fk_df_all_tab$IRratio_median, method = "spearman"))
-#-0.2831168
-
-print(cor.test(con_fk_df_all_tab$mean_stocha_all, con_fk_df_all_tab$IRratio_mean, method = "spearman"))
-#-0.1112373
-print(cor.test(con_fk_df_all_tab$mean_stocha_all, con_fk_df_all_tab$IRratio_median, method = "spearman"))
-#-0.3075674
 
 print(cor.test(con_fk_df_all_filt_tab$fk_kappa_all, con_fk_df_all_filt_tab$IRratio_mean, method = "spearman"))
 #-0.1034838
@@ -559,22 +551,23 @@ print(cor.test(con_fk_df_all_filt_tab$mean_stocha_all, con_fk_df_all_filt_tab$IR
 
 
 # Plot relationships and define groups
-trendPlot <- function(dataFrame, mapping, xvar, yvar, xlab, ylab, xaxtrans, yaxtrans, xbreaks, ybreaks, xlabels, ylabels) {
+trendPlot <- function(dataFrame, mapping, paletteName, xvar, yvar, clusterlab, xlab, ylab, xaxtrans, yaxtrans, xbreaks, ybreaks, xlabels, ylabels) {
   xvar <- enquo(xvar)
   yvar <- enquo(yvar)
   ggplot(data = dataFrame,
          mapping = mapping) +
-  geom_hex(bins = 60) +
+  geom_point(size = 0.7, alpha = 0.5) +
   scale_x_continuous(trans = xaxtrans,
                      breaks = xbreaks,
                      labels = xlabels) +
   scale_y_continuous(trans = yaxtrans,
                      breaks = ybreaks,
                      labels = ylabels) +
-  scale_fill_viridis() +
-  geom_smooth(colour = "red", fill = "grey70", alpha = 0.9,
+  scale_colour_brewer(palette = paletteName) +
+  geom_smooth(colour = "black", fill = "grey70", alpha = 0.9,
               method = "gam", formula = y ~ s(x, bs = "cs")) +
-  labs(x = xlab,
+  labs(colour = clusterlab,
+       x = xlab,
        y = ylab) +
   theme_bw() +
   theme(
@@ -583,11 +576,12 @@ trendPlot <- function(dataFrame, mapping, xvar, yvar, xlab, ylab, xaxtrans, yaxt
         axis.text.x = element_text(size = 16, colour = "black"),
         axis.text.y = element_text(size = 16, colour = "black"),
         axis.title = element_text(size = 18, colour = "black"),
-        axis.line = element_line(size = 1.5, colour = "black"),
+        axis.line = element_line(size = 0.5, colour = "black"),
         panel.background = element_blank(),
         panel.border = element_blank(),
 #        panel.border = element_rect(size = 1.0, colour = "black"),
 #        panel.grid = element_blank(),
+        legend.key.height = unit(4, "mm"),
         strip.text.x = element_text(size = 20, colour = "white"),
         strip.background = element_rect(fill = "black", colour = "black"),
         plot.margin = unit(c(0.3,1.2,0.3,0.3), "cm"),
@@ -600,122 +594,13 @@ trendPlot <- function(dataFrame, mapping, xvar, yvar, xlab, ylab, xaxtrans, yaxt
                          digits = 5))))
 }
 
-if(featRegion %in% c("bodies", "regions")) {
-  if(context == "CpG") {
-    fk_kappa_all_high <- 0.55
-    fk_kappa_all_mid  <- 0.35
-    fk_kappa_all_low  <- 0.04
-    mean_stocha_all_high <- 0.22
-    mean_stocha_all_mid  <- 0.14
-    mean_stocha_all_low  <- 0.08
-    mean_min_acf_all_high <- -0.05
-    mean_min_acf_all_mid  <- -0.10
-    mean_min_acf_all_low  <- -0.15
-    mean_mC_all_high  <- 0.56
-    mean_mC_all_mid   <- 0.20
-    mean_mC_all_low   <- 0.07
-#    mean_stocha_all_high <- 0.28
-#    mean_stocha_all_mid  <- 0.17
-#    mean_stocha_all_low  <- 0.08
-#    mean_mC_all_high  <- 0.75
-#    mean_mC_all_mid   <- 0.25
-#    mean_mC_all_low   <- 0.10
-  } else if(context == "CHG") {
-    fk_kappa_all_high <- 0.05623413
-    fk_kappa_all_mid  <- 0.01778279 
-    fk_kappa_all_low  <- 0.01000000 
-    mean_stocha_all_high <- 0.28183830
-    mean_stocha_all_mid  <- 0.05011872
-    mean_stocha_all_low  <- 0.03162278
-    mean_min_acf_all_high <- -0.05
-    mean_min_acf_all_mid  <- -0.10
-    mean_min_acf_all_low  <- -0.15
-    mean_mC_all_high  <- 0.05623413
-    mean_mC_all_mid   <- 0.02511886
-    mean_mC_all_low   <- 0.01778279
-  } else if(context == "CHH") {
-    fk_kappa_all_high <- 0.05623413
-    fk_kappa_all_mid  <- 0.02511886
-    fk_kappa_all_low  <- 0.01778279 
-    mean_stocha_all_high <- 0.03162278
-    mean_stocha_all_mid  <- 0.01737801
-    mean_stocha_all_low  <- 0.01000000
-    mean_min_acf_all_high <- -0.05
-    mean_min_acf_all_mid  <- -0.10
-    mean_min_acf_all_low  <- -0.15
-    mean_mC_all_high  <- 0.02500000
-    mean_mC_all_mid   <- 0.01737801
-    mean_mC_all_low   <- 0.01000000
-  }
-} else if(featRegion %in% c("promoters", "terminators")) {
-  if(context == "CpG") {
-    fk_kappa_all_high <- 0.55
-    fk_kappa_all_mid  <- 0.35
-    fk_kappa_all_low  <- 0.04
-    mean_stocha_all_high <- 0.22
-    mean_stocha_all_mid  <- 0.17
-    mean_stocha_all_low  <- 0.08
-    mean_min_acf_all_high <- -0.05
-    mean_min_acf_all_mid  <- -0.10
-    mean_min_acf_all_low  <- -0.15
-    mean_mC_all_high  <- 0.75
-    mean_mC_all_mid   <- 0.25
-    mean_mC_all_low   <- 0.10
-  } else if(context == "CHG") {
-    fk_kappa_all_high <- 0.05623413
-    fk_kappa_all_mid  <- 0.01778279 
-    fk_kappa_all_low  <- 0.01000000 
-    mean_stocha_all_high <- 0.22387210
-    mean_stocha_all_mid  <- 0.05011872
-    mean_stocha_all_low  <- 0.03162278
-    mean_min_acf_all_high <- -0.05
-    mean_min_acf_all_mid  <- -0.10
-    mean_min_acf_all_low  <- -0.15
-    mean_mC_all_high  <- 0.05623413
-    mean_mC_all_mid   <- 0.02511886
-    mean_mC_all_low   <- 0.01778279
-  } else if(context == "CHH") {
-    fk_kappa_all_high <- 0.05623413
-    fk_kappa_all_mid  <- 0.02511886
-    fk_kappa_all_low  <- 0.01778279 
-    mean_stocha_all_high <- 0.03162278
-    mean_stocha_all_mid  <- 0.01737801
-    mean_stocha_all_low  <- 0.01000000
-    mean_min_acf_all_high <- -0.05
-    mean_min_acf_all_mid  <- -0.10
-    mean_min_acf_all_low  <- -0.15
-    mean_mC_all_high  <- 0.02500000
-    mean_mC_all_mid   <- 0.01737801
-    mean_mC_all_low   <- 0.01000000
-  }
-}
-
-
-ggTrend_mean_mC_all_fk_kappa_all <- trendPlot(dataFrame = con_fk_df_all,
-                                              mapping = aes(x = mean_mC_all, y = fk_kappa_all),
-                                              xvar = mean_mC_all,
-                                              yvar = fk_kappa_all,
-                                              xlab = bquote(.(featName)*" mean m"*.(context)),
-                                              ylab = bquote(.(featName)*" agreement (m"*.(context)*")"),
-                                              xaxtrans = log10_trans(),
-                                              yaxtrans = log10_trans(),
-                                              xbreaks = trans_breaks("log10", function(x) 10^x),
-                                              ybreaks = trans_breaks("log10", function(x) 10^x),
-                                              xlabels = trans_format("log10", math_format(10^.x)),
-                                              ylabels = trans_format("log10", math_format(10^.x)))
-ggTrend_mean_mC_all_fk_kappa_all <- ggTrend_mean_mC_all_fk_kappa_all +
-  geom_hline(yintercept = fk_kappa_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
-  geom_hline(yintercept = fk_kappa_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
-  geom_hline(yintercept = fk_kappa_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
-  geom_vline(xintercept = mean_mC_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
-  geom_vline(xintercept = mean_mC_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
-  geom_vline(xintercept = mean_mC_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
-  facet_grid(cols = vars(chr), scales = "free_x")
 
 ggTrend_mean_mC_all_fk_kappa_all_filt <- trendPlot(dataFrame = con_fk_df_all_filt,
-                                                   mapping = aes(x = mean_mC_all, y = fk_kappa_all),
+                                                   mapping = aes(x = mean_mC_all, y = fk_kappa_all, colour = Agreement_cluster),
+                                                   paletteName = "Dark2",
                                                    xvar = mean_mC_all,
                                                    yvar = fk_kappa_all,
+                                                   clusterlab = bquote(atop("Agreement &", "m"*.(context)~"cluster")),
                                                    xlab = bquote(.(featName)*" mean m"*.(context)),
                                                    ylab = bquote(.(featName)*" agreement (m"*.(context)*")"),
                                                    xaxtrans = log10_trans(),
@@ -725,40 +610,14 @@ ggTrend_mean_mC_all_fk_kappa_all_filt <- trendPlot(dataFrame = con_fk_df_all_fil
                                                    xlabels = trans_format("log10", math_format(10^.x)),
                                                    ylabels = trans_format("log10", math_format(10^.x)))
 ggTrend_mean_mC_all_fk_kappa_all_filt <- ggTrend_mean_mC_all_fk_kappa_all_filt +
-  geom_hline(yintercept = fk_kappa_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
-  geom_hline(yintercept = fk_kappa_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
-  geom_hline(yintercept = fk_kappa_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
-  geom_vline(xintercept = mean_mC_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
-  geom_vline(xintercept = mean_mC_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
-  geom_vline(xintercept = mean_mC_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
-  facet_grid(cols = vars(chr), scales = "free_x")
-
-
-ggTrend_mean_mC_all_mean_stocha_all <- trendPlot(dataFrame = con_fk_df_all,
-                                                 mapping = aes(x = mean_mC_all, y = mean_stocha_all),
-                                                 xvar = mean_mC_all,
-                                                 yvar = mean_stocha_all,
-                                                 xlab = bquote(.(featName)*" mean m"*.(context)),
-                                                 ylab = bquote(.(featName)*" mean stochasticity (m"*.(context)*")"),
-                                                 xaxtrans = log10_trans(),
-                                                 yaxtrans = log10_trans(),
-                                                 xbreaks = trans_breaks("log10", function(x) 10^x),
-                                                 ybreaks = trans_breaks("log10", function(x) 10^x),
-                                                 xlabels = trans_format("log10", math_format(10^.x)),
-                                                 ylabels = trans_format("log10", math_format(10^.x)))
-ggTrend_mean_mC_all_mean_stocha_all <- ggTrend_mean_mC_all_mean_stocha_all +
-  geom_hline(yintercept = mean_stocha_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
-  geom_hline(yintercept = mean_stocha_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
-  geom_hline(yintercept = mean_stocha_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
-  geom_vline(xintercept = mean_mC_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
-  geom_vline(xintercept = mean_mC_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
-  geom_vline(xintercept = mean_mC_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
   facet_grid(cols = vars(chr), scales = "free_x")
 
 ggTrend_mean_mC_all_mean_stocha_all_filt <- trendPlot(dataFrame = con_fk_df_all_filt,
-                                                      mapping = aes(x = mean_mC_all, y = mean_stocha_all),
+                                                      mapping = aes(x = mean_mC_all, y = mean_stocha_all, colour = Stochasticity_cluster),
+                                                      paletteName = "Set1",
                                                       xvar = mean_mC_all,
                                                       yvar = mean_stocha_all,
+                                                      clusterlab = bquote(atop("Stochasticity &", "m"*.(context)~"cluster")),
                                                       xlab = bquote(.(featName)*" mean m"*.(context)),
                                                       ylab = bquote(.(featName)*" mean stochasticity (m"*.(context)*")"),
                                                       xaxtrans = log10_trans(),
@@ -768,188 +627,14 @@ ggTrend_mean_mC_all_mean_stocha_all_filt <- trendPlot(dataFrame = con_fk_df_all_
                                                       xlabels = trans_format("log10", math_format(10^.x)),
                                                       ylabels = trans_format("log10", math_format(10^.x)))
 ggTrend_mean_mC_all_mean_stocha_all_filt <- ggTrend_mean_mC_all_mean_stocha_all_filt +
-  geom_hline(yintercept = mean_stocha_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
-  geom_hline(yintercept = mean_stocha_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
-  geom_hline(yintercept = mean_stocha_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
-  geom_vline(xintercept = mean_mC_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
-  geom_vline(xintercept = mean_mC_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
-  geom_vline(xintercept = mean_mC_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
-  facet_grid(cols = vars(chr), scales = "free_x")
-
-
-ggTrend_fk_reads_all_fk_kappa_all <- trendPlot(dataFrame = con_fk_df_all,
-                                               mapping = aes(x = fk_reads_all, y = fk_kappa_all),
-                                               xvar = fk_reads_all,
-                                               yvar = fk_kappa_all,
-                                               xlab = bquote(.(featName)*" read coverage"),
-                                               ylab = bquote(.(featName)*" agreement (m"*.(context)*")"),
-                                               xaxtrans = log10_trans(),
-                                               yaxtrans = log10_trans(),
-                                               xbreaks = trans_breaks("log10", function(x) 10^x),
-                                               ybreaks = trans_breaks("log10", function(x) 10^x),
-                                               xlabels = trans_format("log10", math_format(10^.x)),
-                                               ylabels = trans_format("log10", math_format(10^.x)))
-ggTrend_fk_reads_all_fk_kappa_all <- ggTrend_fk_reads_all_fk_kappa_all +
-  geom_hline(yintercept = fk_kappa_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
-  geom_hline(yintercept = fk_kappa_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
-  geom_hline(yintercept = fk_kappa_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
-  facet_grid(cols = vars(chr), scales = "free_x")
-
-ggTrend_fk_reads_all_fk_kappa_all_filt <- trendPlot(dataFrame = con_fk_df_all_filt,
-                                                    mapping = aes(x = fk_reads_all, y = fk_kappa_all),
-                                                    xvar = fk_reads_all,
-                                                    yvar = fk_kappa_all,
-                                                    xlab = bquote(.(featName)*" read coverage"),
-                                                    ylab = bquote(.(featName)*" agreement (m"*.(context)*")"),
-                                                    xaxtrans = log10_trans(),
-                                                    yaxtrans = log10_trans(),
-                                                    xbreaks = trans_breaks("log10", function(x) 10^x),
-                                                    ybreaks = trans_breaks("log10", function(x) 10^x),
-                                                    xlabels = trans_format("log10", math_format(10^.x)),
-                                                    ylabels = trans_format("log10", math_format(10^.x)))
-ggTrend_fk_reads_all_fk_kappa_all_filt <- ggTrend_fk_reads_all_fk_kappa_all_filt +
-  geom_hline(yintercept = fk_kappa_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
-  geom_hline(yintercept = fk_kappa_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
-  geom_hline(yintercept = fk_kappa_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
-  facet_grid(cols = vars(chr), scales = "free_x")
-
-
-ggTrend_fk_reads_all_mean_stocha_all <- trendPlot(dataFrame = con_fk_df_all,
-                                                  mapping = aes(x = fk_reads_all, y = mean_stocha_all),
-                                                  xvar = fk_reads_all,
-                                                  yvar = mean_stocha_all,
-                                                  xlab = bquote(.(featName)*" read coverage"),
-                                                  ylab = bquote(.(featName)*" mean stochasticity (m"*.(context)*")"),
-                                                  xaxtrans = log10_trans(),
-                                                  yaxtrans = log10_trans(),
-                                                  xbreaks = trans_breaks("log10", function(x) 10^x),
-                                                  ybreaks = trans_breaks("log10", function(x) 10^x),
-                                                  xlabels = trans_format("log10", math_format(10^.x)),
-                                                  ylabels = trans_format("log10", math_format(10^.x)))
-ggTrend_fk_reads_all_mean_stocha_all <- ggTrend_fk_reads_all_mean_stocha_all +
-  geom_hline(yintercept = mean_stocha_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
-  geom_hline(yintercept = mean_stocha_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
-  geom_hline(yintercept = mean_stocha_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
-  facet_grid(cols = vars(chr), scales = "free_x")
-
-ggTrend_fk_reads_all_mean_stocha_all_filt <- trendPlot(dataFrame = con_fk_df_all_filt,
-                                                       mapping = aes(x = fk_reads_all, y = mean_stocha_all),
-                                                       xvar = fk_reads_all,
-                                                       yvar = mean_stocha_all,
-                                                       xlab = bquote(.(featName)*" read coverage"),
-                                                       ylab = bquote(.(featName)*" mean stochasticity (m"*.(context)*")"),
-                                                       xaxtrans = log10_trans(),
-                                                       yaxtrans = log10_trans(),
-                                                       xbreaks = trans_breaks("log10", function(x) 10^x),
-                                                       ybreaks = trans_breaks("log10", function(x) 10^x),
-                                                       xlabels = trans_format("log10", math_format(10^.x)),
-                                                       ylabels = trans_format("log10", math_format(10^.x)))
-ggTrend_fk_reads_all_mean_stocha_all_filt <- ggTrend_fk_reads_all_mean_stocha_all_filt +
-  geom_hline(yintercept = mean_stocha_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
-  geom_hline(yintercept = mean_stocha_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
-  geom_hline(yintercept = mean_stocha_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
-  facet_grid(cols = vars(chr), scales = "free_x")
-
-
-ggTrend_fk_Cs_all_fk_kappa_all <- trendPlot(dataFrame = con_fk_df_all,
-                                            mapping = aes(x = fk_Cs_all, y = fk_kappa_all),
-                                            xvar = fk_Cs_all,
-                                            yvar = fk_kappa_all,
-                                            xlab = bquote(.(featName)*" # cytosines (m"*.(context)*")"),
-                                            ylab = bquote(.(featName)*" agreement (m"*.(context)*")"),
-                                            xaxtrans = log10_trans(),
-                                            yaxtrans = log10_trans(),
-                                            xbreaks = trans_breaks("log10", function(x) 10^x),
-                                            ybreaks = trans_breaks("log10", function(x) 10^x),
-                                            xlabels = trans_format("log10", math_format(10^.x)),
-                                            ylabels = trans_format("log10", math_format(10^.x)))
-ggTrend_fk_Cs_all_fk_kappa_all <- ggTrend_fk_Cs_all_fk_kappa_all +
-  geom_hline(yintercept = fk_kappa_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
-  geom_hline(yintercept = fk_kappa_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
-  geom_hline(yintercept = fk_kappa_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
-  facet_grid(cols = vars(chr), scales = "free_x")
-
-ggTrend_fk_Cs_all_fk_kappa_all_filt <- trendPlot(dataFrame = con_fk_df_all_filt,
-                                                 mapping = aes(x = fk_Cs_all, y = fk_kappa_all),
-                                                 xvar = fk_Cs_all,
-                                                 yvar = fk_kappa_all,
-                                                 xlab = bquote(.(featName)*" # cytosines (m"*.(context)*")"),
-                                                 ylab = bquote(.(featName)*" agreement (m"*.(context)*")"),
-                                                 xaxtrans = log10_trans(),
-                                                 yaxtrans = log10_trans(),
-                                                 xbreaks = trans_breaks("log10", function(x) 10^x),
-                                                 ybreaks = trans_breaks("log10", function(x) 10^x),
-                                                 xlabels = trans_format("log10", math_format(10^.x)),
-                                                 ylabels = trans_format("log10", math_format(10^.x)))
-ggTrend_fk_Cs_all_fk_kappa_all_filt <- ggTrend_fk_Cs_all_fk_kappa_all_filt +
-  geom_hline(yintercept = fk_kappa_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
-  geom_hline(yintercept = fk_kappa_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
-  geom_hline(yintercept = fk_kappa_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
-  facet_grid(cols = vars(chr), scales = "free_x")
-
-
-ggTrend_fk_Cs_all_mean_stocha_all <- trendPlot(dataFrame = con_fk_df_all,
-                                               mapping = aes(x = fk_Cs_all, y = mean_stocha_all),
-                                               xvar = fk_Cs_all,
-                                               yvar = mean_stocha_all,
-                                               xlab = bquote(.(featName)*" # cytosines (m"*.(context)*")"),
-                                               ylab = bquote(.(featName)*" mean stochasticity (m"*.(context)*")"),
-                                               xaxtrans = log10_trans(),
-                                               yaxtrans = log10_trans(),
-                                               xbreaks = trans_breaks("log10", function(x) 10^x),
-                                               ybreaks = trans_breaks("log10", function(x) 10^x),
-                                               xlabels = trans_format("log10", math_format(10^.x)),
-                                               ylabels = trans_format("log10", math_format(10^.x)))
-ggTrend_fk_Cs_all_mean_stocha_all <- ggTrend_fk_Cs_all_mean_stocha_all +
-  geom_hline(yintercept = mean_stocha_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
-  geom_hline(yintercept = mean_stocha_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
-  geom_hline(yintercept = mean_stocha_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
-  facet_grid(cols = vars(chr), scales = "free_x")
-
-ggTrend_fk_Cs_all_mean_stocha_all_filt <- trendPlot(dataFrame = con_fk_df_all_filt,
-                                                    mapping = aes(x = fk_Cs_all, y = mean_stocha_all),
-                                                    xvar = fk_Cs_all,
-                                                    yvar = mean_stocha_all,
-                                                    xlab = bquote(.(featName)*" # cytosines (m"*.(context)*")"),
-                                                    ylab = bquote(.(featName)*" mean stochasticity (m"*.(context)*")"),
-                                                    xaxtrans = log10_trans(),
-                                                    yaxtrans = log10_trans(),
-                                                    xbreaks = trans_breaks("log10", function(x) 10^x),
-                                                    ybreaks = trans_breaks("log10", function(x) 10^x),
-                                                    xlabels = trans_format("log10", math_format(10^.x)),
-                                                    ylabels = trans_format("log10", math_format(10^.x)))
-ggTrend_fk_Cs_all_mean_stocha_all_filt <- ggTrend_fk_Cs_all_mean_stocha_all_filt +
-  geom_hline(yintercept = mean_stocha_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
-  geom_hline(yintercept = mean_stocha_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
-  geom_hline(yintercept = mean_stocha_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
-  facet_grid(cols = vars(chr), scales = "free_x")
-
-
-ggTrend_mean_stocha_all_fk_kappa_all <- trendPlot(dataFrame = con_fk_df_all,
-                                                  mapping = aes(x = mean_stocha_all, y = fk_kappa_all),
-                                                  xvar = mean_stocha_all,
-                                                  yvar = fk_kappa_all,
-                                                  xlab = bquote(.(featName)*" mean stochasticity (m"*.(context)*")"),
-                                                  ylab = bquote(.(featName)*" agreement (m"*.(context)*")"),
-                                                  xaxtrans = log10_trans(),
-                                                  yaxtrans = log10_trans(),
-                                                  xbreaks = trans_breaks("log10", function(x) 10^x),
-                                                  ybreaks = trans_breaks("log10", function(x) 10^x),
-                                                  xlabels = trans_format("log10", math_format(10^.x)),
-                                                  ylabels = trans_format("log10", math_format(10^.x)))
-ggTrend_mean_stocha_all_fk_kappa_all <- ggTrend_mean_stocha_all_fk_kappa_all +
-  geom_hline(yintercept = fk_kappa_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
-  geom_hline(yintercept = fk_kappa_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
-  geom_hline(yintercept = fk_kappa_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
-  geom_vline(xintercept = mean_stocha_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
-  geom_vline(xintercept = mean_stocha_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
-  geom_vline(xintercept = mean_stocha_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
   facet_grid(cols = vars(chr), scales = "free_x")
 
 ggTrend_mean_stocha_all_fk_kappa_all_filt <- trendPlot(dataFrame = con_fk_df_all_filt,
-                                                       mapping = aes(x = mean_stocha_all, y = fk_kappa_all),
+                                                       mapping = aes(x = mean_stocha_all, y = fk_kappa_all, colour = Agreement_cluster),
+                                                       paletteName = "Dark2",
                                                        xvar = mean_stocha_all,
                                                        yvar = fk_kappa_all,
+                                                       clusterlab = bquote(atop("Agreement &", "m"*.(context)~"cluster")),
                                                        xlab = bquote(.(featName)*" mean stochasticity (m"*.(context)*")"),
                                                        ylab = bquote(.(featName)*" agreement (m"*.(context)*")"),
                                                        xaxtrans = log10_trans(),
@@ -959,30 +644,30 @@ ggTrend_mean_stocha_all_fk_kappa_all_filt <- trendPlot(dataFrame = con_fk_df_all
                                                        xlabels = trans_format("log10", math_format(10^.x)),
                                                        ylabels = trans_format("log10", math_format(10^.x)))
 ggTrend_mean_stocha_all_fk_kappa_all_filt <- ggTrend_mean_stocha_all_fk_kappa_all_filt +
-  geom_hline(yintercept = fk_kappa_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
-  geom_hline(yintercept = fk_kappa_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
-  geom_hline(yintercept = fk_kappa_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
-  geom_vline(xintercept = mean_stocha_all_high, linetype = "dashed", size = 1, colour = "darkorange1") +
-  geom_vline(xintercept = mean_stocha_all_mid, linetype = "dashed", size = 1, colour = "magenta1") +
-  geom_vline(xintercept = mean_stocha_all_low, linetype = "dashed", size = 1, colour = "dodgerblue1") +
   facet_grid(cols = vars(chr), scales = "free_x")
 
+ggTrend_fk_kappa_all_mean_stocha_all_filt <- trendPlot(dataFrame = con_fk_df_all_filt,
+                                                       mapping = aes(x = mean_stocha_all, y = fk_kappa_all, colour = Stochasticity_cluster),
+                                                       paletteName = "Set1",
+                                                       xvar = mean_stocha_all,
+                                                       yvar = fk_kappa_all,
+                                                       clusterlab = bquote(atop("Stochasticity &", "m"*.(context)~"cluster")),
+                                                       xlab = bquote(.(featName)*" mean stochasticity (m"*.(context)*")"),
+                                                       ylab = bquote(.(featName)*" agreement (m"*.(context)*")"),
+                                                       xaxtrans = log10_trans(),
+                                                       yaxtrans = log10_trans(),
+                                                       xbreaks = trans_breaks("log10", function(x) 10^x),
+                                                       ybreaks = trans_breaks("log10", function(x) 10^x),
+                                                       xlabels = trans_format("log10", math_format(10^.x)),
+                                                       ylabels = trans_format("log10", math_format(10^.x)))
+ggTrend_fk_kappa_all_mean_stocha_all_filt <- ggTrend_fk_kappa_all_mean_stocha_all_filt +
+  facet_grid(cols = vars(chr), scales = "free_x")
 
 gg_cow_list1 <- list(
-                     ggTrend_mean_mC_all_fk_kappa_all,
                      ggTrend_mean_mC_all_fk_kappa_all_filt,
-                     ggTrend_mean_mC_all_mean_stocha_all,
                      ggTrend_mean_mC_all_mean_stocha_all_filt,
-                     ggTrend_fk_reads_all_fk_kappa_all,
-                     ggTrend_fk_reads_all_fk_kappa_all_filt,
-                     ggTrend_fk_reads_all_mean_stocha_all,
-                     ggTrend_fk_reads_all_mean_stocha_all_filt,
-                     ggTrend_fk_Cs_all_fk_kappa_all,
-                     ggTrend_fk_Cs_all_fk_kappa_all_filt,
-                     ggTrend_fk_Cs_all_mean_stocha_all,
-                     ggTrend_fk_Cs_all_mean_stocha_all_filt,
-                     ggTrend_mean_stocha_all_fk_kappa_all,
-                     ggTrend_mean_stocha_all_fk_kappa_all_filt
+                     ggTrend_mean_stocha_all_fk_kappa_all_filt,
+                     ggTrend_fk_kappa_all_mean_stocha_all_filt
                     )
 
 gg_cow1 <- plot_grid(plotlist = gg_cow_list1,
@@ -994,7 +679,7 @@ gg_cow1 <- plot_grid(plotlist = gg_cow_list1,
 ggsave(paste0(plotDir,
               featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase, "_", context,
               "_NAmax", NAmax, "_all_trendPlot_", paste0(chrName, collapse = "_"),
-              ".pdf"),
+              "_clara_clusters.pdf"),
        plot = gg_cow1,
        height = 5*length(gg_cow_list1), width = 5*length(chrName), limitsize = F)
 
