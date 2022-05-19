@@ -301,7 +301,7 @@ Stochasticity_mat_filt_pca_dim <- Stochasticity_mat_filt_pca$x[, seq_len(Stochas
 colnames(Stochasticity_mat_filt_pca_dim) <- c("PC1", "PC2")
 head(Stochasticity_mat_filt_pca_dim)
 
-stopifnot(nrow(Stochasticity_mat_filt_pca_dim) == length(con_fk_df_all_filt$Agreement_cluster))
+stopifnot(nrow(Stochasticity_mat_filt_pca_dim) == length(con_fk_df_all_filt$Stochasticity_cluster))
 Stochasticity_mat_filt_pca_dim <- cbind(as.data.frame(Stochasticity_mat_filt_pca_dim),
                                                       mat_filt,
                                                       chr = con_fk_df_all_filt$chr,
