@@ -150,7 +150,7 @@ gg_Agreement_cluster_Agreement_mat_filt_pca_dim <- ggplot(Agreement_mat_filt_pca
   geom_point(size = 0.7, alpha = 0.5) +
   scale_colour_brewer(palette = "Dark2") +
 #  scale_colour_manual(values = Agreement_mat_filt_pamk_cl_colours) +
-  labs(colour = bquote("Agreement & \nmCpG cluster"),
+  labs(colour = bquote(atop("Agreement &", "m"*.(context)~"cluster")),
        x = bquote("PC1 (" * .(Agreement_mat_filt_pca_PC1_varexp) * "%)"),
        y = bquote("PC2 (" * .(Agreement_mat_filt_pca_PC2_varexp) * "%)")) +
   theme_bw() +
@@ -162,7 +162,7 @@ gg_Stochasticity_cluster_Agreement_mat_filt_pca_dim <- ggplot(Agreement_mat_filt
   geom_point(size = 0.7, alpha = 0.5) +
   scale_colour_brewer(palette = "Set1") +
 #  scale_colour_manual(values = Agreement_mat_filt_pamk_cl_colours) +
-  labs(colour = bquote("Stochasticity & \nmCpG cluster"),
+  labs(colour = bquote(atop("Stochasticity &", "m"*.(context)~"cluster")),
        x = bquote("PC1 (" * .(Agreement_mat_filt_pca_PC1_varexp) * "%)"),
        y = bquote("PC2 (" * .(Agreement_mat_filt_pca_PC2_varexp) * "%)")) +
   theme_bw() +
@@ -325,7 +325,7 @@ gg_Agreement_cluster_Stochasticity_mat_filt_pca_dim <- ggplot(Stochasticity_mat_
   geom_point(size = 0.7, alpha = 0.5) +
   scale_colour_brewer(palette = "Dark2") +
 #  scale_colour_manual(values = Stochasticity_mat_filt_pamk_cl_colours) +
-  labs(colour = bquote("Agreement & \nmCpG cluster"),
+  labs(colour = bquote(atop("Agreement &", "m"*.(context)~"cluster")),
        x = bquote("PC1 (" * .(Stochasticity_mat_filt_pca_PC1_varexp) * "%)"),
        y = bquote("PC2 (" * .(Stochasticity_mat_filt_pca_PC2_varexp) * "%)")) +
   theme_bw() +
@@ -333,11 +333,11 @@ gg_Agreement_cluster_Stochasticity_mat_filt_pca_dim <- ggplot(Stochasticity_mat_
         legend.key.height = unit(4, "mm"))
 
 gg_Stochasticity_cluster_Stochasticity_mat_filt_pca_dim <- ggplot(Stochasticity_mat_filt_pca_dim,
-                                                              mapping = aes(x = PC1, y = PC2, colour = Stochasticity_cluster)) +
+                                                                   mapping = aes(x = PC1, y = PC2, colour = Stochasticity_cluster)) +
   geom_point(size = 0.7, alpha = 0.5) +
   scale_colour_brewer(palette = "Set1") +
 #  scale_colour_manual(values = Stochasticity_mat_filt_pamk_cl_colours) +
-  labs(colour = bquote("Stochasticity & \nmCpG cluster"),
+  labs(colour = bquote(atop("Stochasticity &", "m"*.(context)~"cluster")),
        x = bquote("PC1 (" * .(Stochasticity_mat_filt_pca_PC1_varexp) * "%)"),
        y = bquote("PC2 (" * .(Stochasticity_mat_filt_pca_PC2_varexp) * "%)")) +
   theme_bw() +
@@ -345,7 +345,7 @@ gg_Stochasticity_cluster_Stochasticity_mat_filt_pca_dim <- ggplot(Stochasticity_
         legend.key.height = unit(4, "mm"))
 
 gg_Agreement_Stochasticity_mat_filt_pca_dim <- ggplot(Stochasticity_mat_filt_pca_dim,
-                                                  mapping = aes(x = PC1, y = PC2, colour = Agreement)) +
+                                                      mapping = aes(x = PC1, y = PC2, colour = Agreement)) +
   geom_point(size = 0.7, alpha = 0.5) +
   scale_colour_viridis_c(option = "turbo") +
 #  scale_colour_gradient(low = "red", high = "yellow") +
@@ -358,7 +358,7 @@ gg_Agreement_Stochasticity_mat_filt_pca_dim <- ggplot(Stochasticity_mat_filt_pca
         legend.key.height = unit(4, "mm"))
 
 gg_Stochasticity_Stochasticity_mat_filt_pca_dim <- ggplot(Stochasticity_mat_filt_pca_dim,
-                                                      mapping = aes(x = PC1, y = PC2, colour = Stochasticity)) +
+                                                          mapping = aes(x = PC1, y = PC2, colour = Stochasticity)) +
   geom_point(size = 0.7, alpha = 0.5) +
   scale_colour_viridis_c(option = "plasma") +
   labs(colour = "Stochasticity",
@@ -369,7 +369,7 @@ gg_Stochasticity_Stochasticity_mat_filt_pca_dim <- ggplot(Stochasticity_mat_filt
         legend.key.height = unit(4, "mm"))
 
 gg_mC_Stochasticity_mat_filt_pca_dim <- ggplot(Stochasticity_mat_filt_pca_dim,
-                                           mapping = aes(x = PC1, y = PC2, colour = mCpG)) +
+                                               mapping = aes(x = PC1, y = PC2, colour = mCpG)) +
   geom_point(size = 0.7, alpha = 0.5) +
   scale_colour_viridis_c(option = "viridis") +
   labs(colour = bquote("m" * .(context) ~ "mean"),
