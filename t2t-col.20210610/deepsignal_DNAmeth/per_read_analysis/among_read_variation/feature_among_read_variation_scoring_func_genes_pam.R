@@ -81,7 +81,7 @@ colnames(mat_filt) <- c(paste0("m", context), "Agreement", "Stochasticity")
 
 set.seed(4849345)
 Agreement_mat_filt_pamk <- fpc::pamk(data = mat_filt[ , c(1,2), drop = F],
-                                     krange = 3:10,
+                                     krange = 2:10,
                                      criterion = "multiasw",
                                      usepam = F,
                                      scaling = T,
@@ -89,14 +89,33 @@ Agreement_mat_filt_pamk <- fpc::pamk(data = mat_filt[ , c(1,2), drop = F],
                                      diss = F,
                                      critout = T,
                                      ns = 10)
+Agreement_mat_filt_pamk <- cluster::pam(x = mat_filt[ , c(1,2), drop = F],
+                                       k = 4,
+                                       diss = F,
+                                       metric = "manhattan",
+                                       stand = T,
+                                       cluster.only = F,
+                                       do.swap = T,
+                                       pamonce = 0)
+
+#                             k = 10,
+#                             diss = F,
+#                             metric = "euclidean",
+#                             stand = F,
+#                             cluster.only = F,
+#                             do.swap = T,
+#                             pamonce = 5)
+
+
 
 Agreement_mat_filt_pamk_n_cl <- Agreement_mat_filt_pamk$nc
 print(Agreement_mat_filt_pamk_n_cl)
-con_fk_df_all_filt$Agreement_cluster <- Agreement_mat_filt_pamk$pamobject$clustering
-con_fk_df_all_filt$Agreement_cluster[which(con_fk_df_all_filt$Agreement_cluster == 3)] <- "Cluster 1"
-con_fk_df_all_filt$Agreement_cluster[which(con_fk_df_all_filt$Agreement_cluster == 1)] <- "Cluster 2"
-con_fk_df_all_filt$Agreement_cluster[which(con_fk_df_all_filt$Agreement_cluster == 2)] <- "Cluster 3"
-con_fk_df_all_filt$Agreement_cluster[which(con_fk_df_all_filt$Agreement_cluster == 4)] <- "Cluster 4"
+con_fk_df_all_filt$Agreement_cluster <- paste0("Cluster ", Agreement_mat_filt_pamk$pamobject$clustering)
+#con_fk_df_all_filt$Agreement_cluster <- Agreement_mat_filt_pamk$pamobject$clustering
+#con_fk_df_all_filt$Agreement_cluster[which(con_fk_df_all_filt$Agreement_cluster == 3)] <- "Cluster 1"
+#con_fk_df_all_filt$Agreement_cluster[which(con_fk_df_all_filt$Agreement_cluster == 1)] <- "Cluster 2"
+#con_fk_df_all_filt$Agreement_cluster[which(con_fk_df_all_filt$Agreement_cluster == 2)] <- "Cluster 3"
+#con_fk_df_all_filt$Agreement_cluster[which(con_fk_df_all_filt$Agreement_cluster == 4)] <- "Cluster 4"
 
 set.seed(4849345)
 Stochasticity_mat_filt_pamk <- fpc::pamk(data = mat_filt[ , c(1,3), drop = F],
@@ -111,11 +130,12 @@ Stochasticity_mat_filt_pamk <- fpc::pamk(data = mat_filt[ , c(1,3), drop = F],
 
 Stochasticity_mat_filt_pamk_n_cl <- Stochasticity_mat_filt_pamk$nc
 print(Stochasticity_mat_filt_pamk_n_cl)
-con_fk_df_all_filt$Stochasticity_cluster <- Stochasticity_mat_filt_pamk$pamobject$clustering
-con_fk_df_all_filt$Stochasticity_cluster[which(con_fk_df_all_filt$Stochasticity_cluster == 2)] <- "Cluster 1"
-con_fk_df_all_filt$Stochasticity_cluster[which(con_fk_df_all_filt$Stochasticity_cluster == 1)] <- "Cluster 2"
-con_fk_df_all_filt$Stochasticity_cluster[which(con_fk_df_all_filt$Stochasticity_cluster == 3)] <- "Cluster 3"
-con_fk_df_all_filt$Stochasticity_cluster[which(con_fk_df_all_filt$Stochasticity_cluster == 4)] <- "Cluster 4"
+con_fk_df_all_filt$Stochasticity_cluster <- paste0("Cluster ", Stochasticity_mat_filt_pamk$pamobject$clustering)
+#con_fk_df_all_filt$Stochasticity_cluster <- Stochasticity_mat_filt_pamk$pamobject$clustering
+#con_fk_df_all_filt$Stochasticity_cluster[which(con_fk_df_all_filt$Stochasticity_cluster == 2)] <- "Cluster 1"
+#con_fk_df_all_filt$Stochasticity_cluster[which(con_fk_df_all_filt$Stochasticity_cluster == 1)] <- "Cluster 2"
+#con_fk_df_all_filt$Stochasticity_cluster[which(con_fk_df_all_filt$Stochasticity_cluster == 3)] <- "Cluster 3"
+#con_fk_df_all_filt$Stochasticity_cluster[which(con_fk_df_all_filt$Stochasticity_cluster == 4)] <- "Cluster 4"
 
 # Dimension reduction:
 # PCA of Agreement and mean methylation for the given context
@@ -144,6 +164,32 @@ head(Agreement_mat_filt_pca_dim)
 
 Agreement_mat_filt_pca_loadings <- data.frame(variables = rownames(Agreement_mat_filt_pca$rotation),
                                               Agreement_mat_filt_pca$rotation)
+
+ap_Agreement_cluster_Agreement_mat_filt_pca_dim <- autoplot(Agreement_mat_filt_pamk,
+                                                            frame = T,
+                                                            frame.type = "norm",
+                                                            loadings = T,
+                                                            loadings.colour = "black",
+                                                            loadings.label = T,
+                                                            loadings.label.colour = "black",
+                                                            label = F)
+aps_Agreement_cluster_Agreement_mat_filt_pca_dim <- autoplot(silhouette(Agreement_mat_filt_pamk))
+ggsave(paste0(plotDir, "ap_Agreement_mat_filt_pca_dim.pdf"),
+       plot = ap_Agreement_cluster_Agreement_mat_filt_pca_dim,
+       height = 4, width = 6, limitsize = F)
+ggsave(paste0(plotDir, "aps_Agreement_mat_filt_pca_dim.pdf"),
+       plot = aps_Agreement_cluster_Agreement_mat_filt_pca_dim,
+       height = 4, width = 6, limitsize = F)
+
+                                                            
+                                                            Agreement_mat_filt_pca,
+                                                            data = Agreement_mat_filt_pca_dim,
+                                                            colour = "Agreement_cluster",
+                                                            loadings = T,
+                                                            loadings.colour = "grey20",
+                                                            loadings.label = T,
+                                                            loadings.label.colour = "grey20",
+                                                            label = T)
 
 gg_Agreement_cluster_Agreement_mat_filt_pca_dim <- ggplot(Agreement_mat_filt_pca_dim,
                                                           mapping = aes(x = PC1, y = PC2, colour = Agreement_cluster)) +
