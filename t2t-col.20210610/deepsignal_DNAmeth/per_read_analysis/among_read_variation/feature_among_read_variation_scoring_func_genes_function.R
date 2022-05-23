@@ -69,6 +69,10 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
 
     # Calculate mean methylation for region
     mean_mC_pwider_str_x <- mean(as.matrix(stocha_pwider_str_x), na.rm = T)
+    
+    # Calculate mean and standard deviation of per-read mean methylation
+    mean_read_mC_pwider_str_x <- mean(colMeans(stocha_pwider_str_x, na.rm = T), na.rm = T)
+    sd_read_mC_pwider_str_x <- sd(colMeans(stocha_pwider_str_x, na.rm = T), na.rm = T)
 
     # Calculate Fleiss' kappa
     if(nrow(pwider_str_x) >= min_Cs && nrow(pwider_str_x) <= max_Cs &&
@@ -115,12 +119,6 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
       kalpha_pwider_str_x_nmatchval <- kalpha_pwider_str_x$nmatchval
       kalpha_pwider_str_x_val <- kalpha_pwider_str_x$raters * kalpha_pwider_str_x$subjects
       kalpha_pwider_str_x_propmatchval <- kalpha_pwider_str_x$nmatchval / (kalpha_pwider_str_x$raters * kalpha_pwider_str_x$subjects)
-
-###
-      # Calculate per-read mean methylation and standard deviation of per-read mean methylation
-###
-
-
 
 
       # Calculate absolute differences between methylation statuses of neighbouring Cs within each read 
@@ -204,6 +202,8 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
                                   introns_count_per_kb = chr_featGR[featNum]$introns_count_per_kb,
 
                                   mean_mC_str = mean_mC_pwider_str_x,
+                                  mean_read_mC_str = mean_read_mC_pwider_str_x,
+                                  sd_read_mC_str = sd_read_mC_pwider_str_x,
 
                                   fk_kappa_str = fkappa_pwider_str_x_kappa,
                                   fk_pval_str = fkappa_pwider_str_x_pval,
@@ -245,6 +245,8 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
                                   introns_count_per_kb = chr_featGR[featNum]$introns_count_per_kb,
 
                                   mean_mC_str = NaN,
+                                  mean_read_mC_str = NaN,
+                                  sd_read_mC_str = NaN,
 
                                   fk_kappa_str = NaN,
                                   fk_pval_str = NaN,
@@ -252,6 +254,10 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
                                   fk_reads_str = NaN,
                                   fk_Cs_str = NaN,
 
+                                  ka_alpha_str = NaN,
+                                  ka_nmatchval_str = NaN,
+                                  ka_val_str = NaN,
+                                  ka_propmatchval_str = NaN,
                                   mean_stocha_str = NaN,
                                   median_stocha_str = NaN,
                                   sd_stocha_str = NaN,
