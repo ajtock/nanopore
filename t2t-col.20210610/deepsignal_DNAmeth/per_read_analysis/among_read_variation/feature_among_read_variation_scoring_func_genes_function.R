@@ -117,8 +117,6 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
 
       kalpha_pwider_str_x_alpha <- kalpha_pwider_str_x$value
       kalpha_pwider_str_x_nmatchval <- kalpha_pwider_str_x$nmatchval
-      kalpha_pwider_str_x_val <- kalpha_pwider_str_x$raters * kalpha_pwider_str_x$subjects
-      kalpha_pwider_str_x_propmatchval <- kalpha_pwider_str_x$nmatchval / (kalpha_pwider_str_x$raters * kalpha_pwider_str_x$subjects)
 
 
       # Calculate absolute differences between methylation statuses of neighbouring Cs within each read 
@@ -171,8 +169,6 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
 
       kalpha_pwider_str_x_alpha <- NaN
       kalpha_pwider_str_x_nmatchval <- NaN
-      kalpha_pwider_str_x_val <- NaN
-      kalpha_pwider_str_x_propmatchval <- NaN
       mean_stocha_pwider_str_x <- NaN
       median_stocha_pwider_str_x <- NaN
       sd_stocha_pwider_str_x <- NaN
@@ -213,8 +209,6 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
 
                                   ka_alpha_str = kalpha_pwider_str_x_alpha,
                                   ka_nmatchval_str = kalpha_pwider_str_x_nmatchval,
-                                  ka_val_str = kalpha_pwider_str_x_val,
-                                  ka_propmatchval_str = kalpha_pwider_str_x_propmatchval,
                                   mean_stocha_str = mean_stocha_pwider_str_x,
                                   median_stocha_str = median_stocha_pwider_str_x,
                                   sd_stocha_str = sd_stocha_pwider_str_x,
@@ -256,8 +250,6 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
 
                                   ka_alpha_str = NaN,
                                   ka_nmatchval_str = NaN,
-                                  ka_val_str = NaN,
-                                  ka_propmatchval_str = NaN,
                                   mean_stocha_str = NaN,
                                   median_stocha_str = NaN,
                                   sd_stocha_str = NaN,
