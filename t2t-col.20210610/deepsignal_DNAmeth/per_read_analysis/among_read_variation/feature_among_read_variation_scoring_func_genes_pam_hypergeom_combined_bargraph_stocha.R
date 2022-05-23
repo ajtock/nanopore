@@ -80,7 +80,7 @@ system(paste0("[ -d ", plotDir_kappa_mC, " ] || mkdir -p ", plotDir_kappa_mC))
 system(paste0("[ -d ", plotDir_stocha_mC, " ] || mkdir -p ", plotDir_stocha_mC))
 #system(paste0("[ -d ", plotDir_kappa_stocha, " ] || mkdir -p ", plotDir_kappa_stocha))
 
-
+# Load hypergeometric test/distribution results
 mD_hs <- read.table(paste0(outDir,
                            sampleName, "_filt_df_mean_stocha_all_mean_mC_all_",
                            featName, "_", featRegion,
