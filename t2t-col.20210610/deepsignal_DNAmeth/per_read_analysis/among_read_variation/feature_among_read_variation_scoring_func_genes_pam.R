@@ -63,52 +63,80 @@ if(!grepl("Chr", fai[,1][1])) {
 chrLens <- fai[,2][which(fai[,1] %in% chrName)]
 
 # Load among-read and within-read mC data for featName featRegion
-con_fk_df_all_filt <- read.table(paste0(outDir,
-                                        featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
-                                        "_", context,
-                                        "_NAmax", NAmax,
-                                        "_filt_df_fk_kappa_all_mean_mC_all_complete_",
-                                        paste0(chrName, collapse = "_"), ".tsv"),
-                                 header = T)
-con_fk_df_all_filt$kappa_C_density <- con_fk_df_all_filt$fk_Cs_all / ( (con_fk_df_all_filt$end - con_fk_df_all_filt$start + 1) / 1e3)
-con_fk_df_all_filt$stocha_C_density <- con_fk_df_all_filt$stocha_Cs_all / ( (con_fk_df_all_filt$end - con_fk_df_all_filt$start + 1) / 1e3)
-con_fk_df_all_filt$parent <- sub(pattern = "\\.\\d+", replacement = "", x = con_fk_df_all_filt$name) 
-con_fk_df_all_filt$parent <- sub(pattern = "_\\d+", replacement = "", x = con_fk_df_all_filt$parent) 
+featDF_filt <- read.table(paste0(outDir,
+                                 featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                                 "_", context,
+                                 "_NAmax", NAmax,
+                                 "_filt_df_fk_kappa_all_mean_mC_all_complete_",
+                                 paste0(chrName, collapse = "_"), ".tsv"),
+                          header = T)
+featDF_filt$kappa_C_density <- featDF_filt$fk_Cs_all / ( (featDF_filt$end - featDF_filt$start + 1) / 1e3)
+featDF_filt$stocha_C_density <- featDF_filt$stocha_Cs_all / ( (featDF_filt$end - featDF_filt$start + 1) / 1e3)
+featDF_filt$parent <- sub(pattern = "\\.\\d+", replacement = "", x = featDF_filt$name) 
+featDF_filt$parent <- sub(pattern = "_\\d+", replacement = "", x = featDF_filt$parent) 
 
-mat_filt <- con_fk_df_all_filt[,which(colnames(con_fk_df_all_filt) %in%
-                               c("mean_mC_all", "fk_kappa_all", "mean_stocha_all")), drop = F]
-colnames(mat_filt) <- c(paste0("m", context), "Agreement", "Stochasticity")
+mat_filt <- featDF_filt[,which(colnames(featDF_filt) %in%
+                               c("mean_mC_all", "fk_kappa_all", "ka_alpha_all", "mean_stocha_all")), drop = F]
+colnames(mat_filt) <- c(paste0("m", context), "fkAgreement", "kaAgreement", "Stochasticity")
 
 set.seed(4849345)
-Agreement_mat_filt_pamk <- fpc::pamk(data = mat_filt[ , c(1,2), drop = F],
-                                     krange = 3:10,
-                                     criterion = "multiasw",
-                                     usepam = F,
-                                     scaling = T,
-                                     alpha = 0.001,
-                                     diss = F,
-                                     critout = T,
-                                     ns = 10)
-Agreement_mat_filt_pamk_n_cl <- Agreement_mat_filt_pamk$nc
-print(Agreement_mat_filt_pamk_n_cl)
-Agreement_mat_filt_pam <- cluster::pam(x = mat_filt[ , c(1,2), drop = F],
-                                       k = Agreement_mat_filt_pamk_n_cl,
+fkAgreement_mat_filt_pamk <- fpc::pamk(data = mat_filt[ , c(1,2), drop = F],
+                                       krange = 3:10,
+                                       criterion = "multiasw",
+                                       usepam = F,
+                                       scaling = T,
+                                       alpha = 0.001,
                                        diss = F,
-                                       metric = "manhattan",
-                                       stand = T,
-                                       cluster.only = F,
-                                       do.swap = T,
-                                       pamonce = 0)
+                                       critout = T,
+                                       ns = 10)
+fkAgreement_mat_filt_pamk_n_cl <- fkAgreement_mat_filt_pamk$nc
+print(fkAgreement_mat_filt_pamk_n_cl)
+fkAgreement_mat_filt_pam <- cluster::pam(x = mat_filt[ , c(1,2), drop = F],
+                                         k = fkAgreement_mat_filt_pamk_n_cl,
+                                         diss = F,
+                                         metric = "manhattan",
+                                         stand = T,
+                                         cluster.only = F,
+                                         do.swap = T,
+                                         pamonce = 0)
  
-con_fk_df_all_filt$Agreement_cluster <- paste0("Cluster ", Agreement_mat_filt_pam$clustering)
-#con_fk_df_all_filt$Agreement_cluster <- Agreement_mat_filt_pam$clustering
-#con_fk_df_all_filt$Agreement_cluster[which(con_fk_df_all_filt$Agreement_cluster == 2)] <- "Cluster 1"
-#con_fk_df_all_filt$Agreement_cluster[which(con_fk_df_all_filt$Agreement_cluster == 1)] <- "Cluster 2"
-#con_fk_df_all_filt$Agreement_cluster[which(con_fk_df_all_filt$Agreement_cluster == 3)] <- "Cluster 3"
-#con_fk_df_all_filt$Agreement_cluster[which(con_fk_df_all_filt$Agreement_cluster == 4)] <- "Cluster 4"
+featDF_filt$fkAgreement_cluster <- paste0("Cluster ", fkAgreement_mat_filt_pam$clustering)
+#featDF_filt$fkAgreement_cluster <- fkAgreement_mat_filt_pam$clustering
+#featDF_filt$fkAgreement_cluster[which(featDF_filt$fkAgreement_cluster == 2)] <- "Cluster 1"
+#featDF_filt$fkAgreement_cluster[which(featDF_filt$fkAgreement_cluster == 1)] <- "Cluster 2"
+#featDF_filt$fkAgreement_cluster[which(featDF_filt$fkAgreement_cluster == 3)] <- "Cluster 3"
+#featDF_filt$fkAgreement_cluster[which(featDF_filt$fkAgreement_cluster == 4)] <- "Cluster 4"
 
 set.seed(4849345)
-Stochasticity_mat_filt_pamk <- fpc::pamk(data = mat_filt[ , c(1,3), drop = F],
+kaAgreement_mat_filt_pamk <- fpc::pamk(data = mat_filt[ , c(1,3), drop = F],
+                                       krange = 3:10,
+                                       criterion = "multiasw",
+                                       usepam = F,
+                                       scaling = T,
+                                       alpha = 0.001,
+                                       diss = F,
+                                       critout = T,
+                                       ns = 10)
+kaAgreement_mat_filt_pamk_n_cl <- kaAgreement_mat_filt_pamk$nc
+print(kaAgreement_mat_filt_pamk_n_cl)
+kaAgreement_mat_filt_pam <- cluster::pam(x = mat_filt[ , c(1,3), drop = F],
+                                         k = kaAgreement_mat_filt_pamk_n_cl,
+                                         diss = F,
+                                         metric = "manhattan",
+                                         stand = T,
+                                         cluster.only = F,
+                                         do.swap = T,
+                                         pamonce = 0)
+ 
+featDF_filt$kaAgreement_cluster <- paste0("Cluster ", kaAgreement_mat_filt_pam$clustering)
+#featDF_filt$kaAgreement_cluster <- kaAgreement_mat_filt_pam$clustering
+#featDF_filt$kaAgreement_cluster[which(featDF_filt$kaAgreement_cluster == 2)] <- "Cluster 1"
+#featDF_filt$kaAgreement_cluster[which(featDF_filt$kaAgreement_cluster == 1)] <- "Cluster 2"
+#featDF_filt$kaAgreement_cluster[which(featDF_filt$kaAgreement_cluster == 3)] <- "Cluster 3"
+#featDF_filt$kaAgreement_cluster[which(featDF_filt$kaAgreement_cluster == 4)] <- "Cluster 4"
+
+set.seed(4849345)
+Stochasticity_mat_filt_pamk <- fpc::pamk(data = mat_filt[ , c(1,4), drop = F],
                                          krange = 3:10,
                                          criterion = "multiasw",
                                          usepam = F,
@@ -119,7 +147,7 @@ Stochasticity_mat_filt_pamk <- fpc::pamk(data = mat_filt[ , c(1,3), drop = F],
                                          ns = 10)
 Stochasticity_mat_filt_pamk_n_cl <- Stochasticity_mat_filt_pamk$nc
 print(Stochasticity_mat_filt_pamk_n_cl)
-Stochasticity_mat_filt_pam <- cluster::pam(x = mat_filt[ , c(1,3), drop = F],
+Stochasticity_mat_filt_pam <- cluster::pam(x = mat_filt[ , c(1,4), drop = F],
                                            k = Stochasticity_mat_filt_pamk_n_cl,
                                            diss = F,
                                            metric = "manhattan",
@@ -128,43 +156,43 @@ Stochasticity_mat_filt_pam <- cluster::pam(x = mat_filt[ , c(1,3), drop = F],
                                            do.swap = T,
                                            pamonce = 0)
 
-con_fk_df_all_filt$Stochasticity_cluster <- paste0("Cluster ", Stochasticity_mat_filt_pam$clustering)
-#con_fk_df_all_filt$Stochasticity_cluster <- Stochasticity_mat_filt_pam$clustering
-#con_fk_df_all_filt$Stochasticity_cluster[which(con_fk_df_all_filt$Stochasticity_cluster == 3)] <- "Cluster 1"
-#con_fk_df_all_filt$Stochasticity_cluster[which(con_fk_df_all_filt$Stochasticity_cluster == 1)] <- "Cluster 2"
-#con_fk_df_all_filt$Stochasticity_cluster[which(con_fk_df_all_filt$Stochasticity_cluster == 2)] <- "Cluster 3"
-#con_fk_df_all_filt$Stochasticity_cluster[which(con_fk_df_all_filt$Stochasticity_cluster == 4)] <- "Cluster 4"
+featDF_filt$Stochasticity_cluster <- paste0("Cluster ", Stochasticity_mat_filt_pam$clustering)
+#featDF_filt$Stochasticity_cluster <- Stochasticity_mat_filt_pam$clustering
+#featDF_filt$Stochasticity_cluster[which(featDF_filt$Stochasticity_cluster == 3)] <- "Cluster 1"
+#featDF_filt$Stochasticity_cluster[which(featDF_filt$Stochasticity_cluster == 1)] <- "Cluster 2"
+#featDF_filt$Stochasticity_cluster[which(featDF_filt$Stochasticity_cluster == 2)] <- "Cluster 3"
+#featDF_filt$Stochasticity_cluster[which(featDF_filt$Stochasticity_cluster == 4)] <- "Cluster 4"
 
 # Dimension reduction:
-# PCA of Agreement and mean methylation for the given context
+# PCA of fkAgreement and mean methylation for the given context
 
-Agreement_mat_filt_pca_n_dim <- 2
+fkAgreement_mat_filt_pca_n_dim <- 2
 
-#Agreement_mat_filt_pca <- prcomp(mat_filt[ , c(1,2), drop = F], center = T, scale = T)
-Agreement_mat_filt_pca <- prcomp(Agreement_mat_filt_pam$data, center = F, scale = F)
-Agreement_mat_filt_pca_summ <- summary(Agreement_mat_filt_pca)
-Agreement_mat_filt_pca_PC1_varexp <- round(Agreement_mat_filt_pca_summ$importance[2,1] * 100, digits = 2)
-Agreement_mat_filt_pca_PC2_varexp <- round(Agreement_mat_filt_pca_summ$importance[2,2] * 100, digits = 2)
-Agreement_mat_filt_pca_dim <- Agreement_mat_filt_pca$x[, seq_len(Agreement_mat_filt_pca_n_dim)]
-colnames(Agreement_mat_filt_pca_dim) <- c("PC1", "PC2")
-head(Agreement_mat_filt_pca_dim)
+#fkAgreement_mat_filt_pca <- prcomp(mat_filt[ , c(1,2), drop = F], center = T, scale = T)
+fkAgreement_mat_filt_pca <- prcomp(fkAgreement_mat_filt_pam$data, center = F, scale = F)
+fkAgreement_mat_filt_pca_summ <- summary(fkAgreement_mat_filt_pca)
+fkAgreement_mat_filt_pca_PC1_varexp <- round(fkAgreement_mat_filt_pca_summ$importance[2,1] * 100, digits = 2)
+fkAgreement_mat_filt_pca_PC2_varexp <- round(fkAgreement_mat_filt_pca_summ$importance[2,2] * 100, digits = 2)
+fkAgreement_mat_filt_pca_dim <- fkAgreement_mat_filt_pca$x[, seq_len(fkAgreement_mat_filt_pca_n_dim)]
+colnames(fkAgreement_mat_filt_pca_dim) <- c("PC1", "PC2")
+head(fkAgreement_mat_filt_pca_dim)
 
-stopifnot(nrow(Agreement_mat_filt_pca_dim) == length(con_fk_df_all_filt$Agreement_cluster))
-Agreement_mat_filt_pca_dim <- cbind(as.data.frame(Agreement_mat_filt_pca_dim),
+stopifnot(nrow(fkAgreement_mat_filt_pca_dim) == length(featDF_filt$fkAgreement_cluster))
+fkAgreement_mat_filt_pca_dim <- cbind(as.data.frame(fkAgreement_mat_filt_pca_dim),
                                     mat_filt,
-                                    chr = con_fk_df_all_filt$chr,
-                                    Agreement_cluster = con_fk_df_all_filt$Agreement_cluster,
-                                    Stochasticity_cluster = con_fk_df_all_filt$Stochasticity_cluster,
+                                    chr = featDF_filt$chr,
+                                    fkAgreement_cluster = featDF_filt$fkAgreement_cluster,
+                                    Stochasticity_cluster = featDF_filt$Stochasticity_cluster,
                                     type = "PCA")
-head(Agreement_mat_filt_pca_dim)
+head(fkAgreement_mat_filt_pca_dim)
 
-#Agreement_mat_filt_pam_cl_colours <- rainbow(Agreement_mat_filt_pamk_n_cl) 
-#Agreement_mat_filt_pam_cl_colours <- brewer.pal(name = "Dark2", n = Agreement_mat_filt_pamk_n_cl)
+#fkAgreement_mat_filt_pam_cl_colours <- rainbow(fkAgreement_mat_filt_pamk_n_cl) 
+#fkAgreement_mat_filt_pam_cl_colours <- brewer.pal(name = "Dark2", n = fkAgreement_mat_filt_pamk_n_cl)
 
-Agreement_mat_filt_pca_loadings <- data.frame(variables = rownames(Agreement_mat_filt_pca$rotation),
-                                              Agreement_mat_filt_pca$rotation)
+fkAgreement_mat_filt_pca_loadings <- data.frame(variables = rownames(fkAgreement_mat_filt_pca$rotation),
+                                              fkAgreement_mat_filt_pca$rotation)
 
-ap_Agreement_cluster_Agreement_mat_filt_pca_dim <- autoplot(Agreement_mat_filt_pam,
+ap_fkAgreement_cluster_fkAgreement_mat_filt_pca_dim <- autoplot(fkAgreement_mat_filt_pam,
                                                             frame = T,
                                                             frame.type = "norm",
                                                             loadings = T,
@@ -172,160 +200,160 @@ ap_Agreement_cluster_Agreement_mat_filt_pca_dim <- autoplot(Agreement_mat_filt_p
                                                             loadings.label = T,
                                                             loadings.label.colour = "black",
                                                             label = F)
-aps_Agreement_cluster_Agreement_mat_filt_pca_dim <- autoplot(silhouette(Agreement_mat_filt_pam))
-ggsave(paste0(plotDir, "ap_Agreement_mat_filt_pca_dim.pdf"),
-       plot = ap_Agreement_cluster_Agreement_mat_filt_pca_dim,
+aps_fkAgreement_cluster_fkAgreement_mat_filt_pca_dim <- autoplot(silhouette(fkAgreement_mat_filt_pam))
+ggsave(paste0(plotDir, "ap_fkAgreement_mat_filt_pca_dim.pdf"),
+       plot = ap_fkAgreement_cluster_fkAgreement_mat_filt_pca_dim,
        height = 4, width = 5, limitsize = F)
-ggsave(paste0(plotDir, "aps_Agreement_mat_filt_pca_dim.pdf"),
-       plot = aps_Agreement_cluster_Agreement_mat_filt_pca_dim,
+ggsave(paste0(plotDir, "aps_fkAgreement_mat_filt_pca_dim.pdf"),
+       plot = aps_fkAgreement_cluster_fkAgreement_mat_filt_pca_dim,
        height = 4, width = 5, limitsize = F)
 
-gg_Agreement_cluster_Agreement_mat_filt_pca_dim <- ggplot(Agreement_mat_filt_pca_dim,
-                                                          mapping = aes(x = PC1, y = PC2, colour = Agreement_cluster)) +
+gg_fkAgreement_cluster_fkAgreement_mat_filt_pca_dim <- ggplot(fkAgreement_mat_filt_pca_dim,
+                                                          mapping = aes(x = PC1, y = PC2, colour = fkAgreement_cluster)) +
   geom_point(size = 0.7, alpha = 0.5) +
   scale_colour_brewer(palette = "Dark2") +
-#  scale_colour_manual(values = Agreement_mat_filt_pam_cl_colours) +
-  labs(colour = bquote(atop("Agreement &", "m"*.(context)~"cluster")),
-       x = bquote("PC1 (" * .(Agreement_mat_filt_pca_PC1_varexp) * "%)"),
-       y = bquote("PC2 (" * .(Agreement_mat_filt_pca_PC2_varexp) * "%)")) +
+#  scale_colour_manual(values = fkAgreement_mat_filt_pam_cl_colours) +
+  labs(colour = bquote(atop("fkAgreement &", "m"*.(context)~"cluster")),
+       x = bquote("PC1 (" * .(fkAgreement_mat_filt_pca_PC1_varexp) * "%)"),
+       y = bquote("PC2 (" * .(fkAgreement_mat_filt_pca_PC2_varexp) * "%)")) +
   theme_bw() +
   theme(aspect.ratio = 1,
         legend.key.height = unit(4, "mm"))
 
-gg_Stochasticity_cluster_Agreement_mat_filt_pca_dim <- ggplot(Agreement_mat_filt_pca_dim,
+gg_Stochasticity_cluster_fkAgreement_mat_filt_pca_dim <- ggplot(fkAgreement_mat_filt_pca_dim,
                                                               mapping = aes(x = PC1, y = PC2, colour = Stochasticity_cluster)) +
   geom_point(size = 0.7, alpha = 0.5) +
   scale_colour_brewer(palette = "Set1") +
-#  scale_colour_manual(values = Agreement_mat_filt_pam_cl_colours) +
+#  scale_colour_manual(values = fkAgreement_mat_filt_pam_cl_colours) +
   labs(colour = bquote(atop("Stochasticity &", "m"*.(context)~"cluster")),
-       x = bquote("PC1 (" * .(Agreement_mat_filt_pca_PC1_varexp) * "%)"),
-       y = bquote("PC2 (" * .(Agreement_mat_filt_pca_PC2_varexp) * "%)")) +
+       x = bquote("PC1 (" * .(fkAgreement_mat_filt_pca_PC1_varexp) * "%)"),
+       y = bquote("PC2 (" * .(fkAgreement_mat_filt_pca_PC2_varexp) * "%)")) +
   theme_bw() +
   theme(aspect.ratio = 1,
         legend.key.height = unit(4, "mm"))
 
-gg_Agreement_Agreement_mat_filt_pca_dim <- ggplot(Agreement_mat_filt_pca_dim,
-                                                  mapping = aes(x = PC1, y = PC2, colour = Agreement)) +
+gg_fkAgreement_fkAgreement_mat_filt_pca_dim <- ggplot(fkAgreement_mat_filt_pca_dim,
+                                                  mapping = aes(x = PC1, y = PC2, colour = fkAgreement)) +
   geom_point(size = 0.7, alpha = 0.5) +
   scale_colour_viridis_c(option = "turbo") +
 #  scale_colour_gradient(low = "red", high = "yellow") +
 #  scale_colour_gradient2(low = "blue", high = "red") +
-  labs(colour = "Agreement",
-       x = bquote("PC1 (" * .(Agreement_mat_filt_pca_PC1_varexp) * "%)"),
-       y = bquote("PC2 (" * .(Agreement_mat_filt_pca_PC2_varexp) * "%)")) +
+  labs(colour = "fkAgreement",
+       x = bquote("PC1 (" * .(fkAgreement_mat_filt_pca_PC1_varexp) * "%)"),
+       y = bquote("PC2 (" * .(fkAgreement_mat_filt_pca_PC2_varexp) * "%)")) +
   theme_bw() +
   theme(aspect.ratio = 1,
         legend.key.height = unit(4, "mm"))
 
-gg_Stochasticity_Agreement_mat_filt_pca_dim <- ggplot(Agreement_mat_filt_pca_dim,
+gg_Stochasticity_fkAgreement_mat_filt_pca_dim <- ggplot(fkAgreement_mat_filt_pca_dim,
                                                       mapping = aes(x = PC1, y = PC2, colour = Stochasticity)) +
   geom_point(size = 0.7, alpha = 0.5) +
   scale_colour_viridis_c(option = "plasma") +
   labs(colour = "Stochasticity",
-       x = bquote("PC1 (" * .(Agreement_mat_filt_pca_PC1_varexp) * "%)"),
-       y = bquote("PC2 (" * .(Agreement_mat_filt_pca_PC2_varexp) * "%)")) +
+       x = bquote("PC1 (" * .(fkAgreement_mat_filt_pca_PC1_varexp) * "%)"),
+       y = bquote("PC2 (" * .(fkAgreement_mat_filt_pca_PC2_varexp) * "%)")) +
   theme_bw() +
   theme(aspect.ratio = 1,
         legend.key.height = unit(4, "mm"))
 
-gg_mC_Agreement_mat_filt_pca_dim <- ggplot(Agreement_mat_filt_pca_dim,
+gg_mC_fkAgreement_mat_filt_pca_dim <- ggplot(fkAgreement_mat_filt_pca_dim,
                                            mapping = aes(x = PC1, y = PC2, colour = mCpG)) +
   geom_point(size = 0.7, alpha = 0.5) +
   scale_colour_viridis_c(option = "viridis") +
   labs(colour = bquote("m" * .(context) ~ "mean"),
-       x = bquote("PC1 (" * .(Agreement_mat_filt_pca_PC1_varexp) * "%)"),
-       y = bquote("PC2 (" * .(Agreement_mat_filt_pca_PC2_varexp) * "%)")) +
+       x = bquote("PC1 (" * .(fkAgreement_mat_filt_pca_PC1_varexp) * "%)"),
+       y = bquote("PC2 (" * .(fkAgreement_mat_filt_pca_PC2_varexp) * "%)")) +
   theme_bw() +
   theme(aspect.ratio = 1,
         legend.key.height = unit(4, "mm"))
 
 # Plot chr
-gg_Agreement_cluster_Agreement_mat_filt_pca_dim_chr <- gg_Agreement_cluster_Agreement_mat_filt_pca_dim +
+gg_fkAgreement_cluster_fkAgreement_mat_filt_pca_dim_chr <- gg_fkAgreement_cluster_fkAgreement_mat_filt_pca_dim +
   facet_grid(cols = vars(chr), scales = "free_x")
 
-gg_Stochasticity_cluster_Agreement_mat_filt_pca_dim_chr <- gg_Stochasticity_cluster_Agreement_mat_filt_pca_dim +
+gg_Stochasticity_cluster_fkAgreement_mat_filt_pca_dim_chr <- gg_Stochasticity_cluster_fkAgreement_mat_filt_pca_dim +
   facet_grid(cols = vars(chr), scales = "free_x")
 
-gg_Agreement_Agreement_mat_filt_pca_dim_chr <- gg_Agreement_Agreement_mat_filt_pca_dim +
+gg_fkAgreement_fkAgreement_mat_filt_pca_dim_chr <- gg_fkAgreement_fkAgreement_mat_filt_pca_dim +
   facet_grid(cols = vars(chr), scales = "free_x")
 
-gg_Stochasticity_Agreement_mat_filt_pca_dim_chr <- gg_Stochasticity_Agreement_mat_filt_pca_dim +
+gg_Stochasticity_fkAgreement_mat_filt_pca_dim_chr <- gg_Stochasticity_fkAgreement_mat_filt_pca_dim +
   facet_grid(cols = vars(chr), scales = "free_x")
 
-gg_mC_Agreement_mat_filt_pca_dim_chr <- gg_mC_Agreement_mat_filt_pca_dim +
+gg_mC_fkAgreement_mat_filt_pca_dim_chr <- gg_mC_fkAgreement_mat_filt_pca_dim +
   facet_grid(cols = vars(chr), scales = "free_x")
 
-gg_cow_list_Agreement_mat_filt_pca_dim_chr <- list(
-                                                   gg_Agreement_Agreement_mat_filt_pca_dim_chr,
-                                                   gg_Stochasticity_Agreement_mat_filt_pca_dim_chr,
-                                                   gg_mC_Agreement_mat_filt_pca_dim_chr,
-                                                   gg_Agreement_cluster_Agreement_mat_filt_pca_dim_chr,
-                                                   gg_Stochasticity_cluster_Agreement_mat_filt_pca_dim_chr
+gg_cow_list_fkAgreement_mat_filt_pca_dim_chr <- list(
+                                                   gg_fkAgreement_fkAgreement_mat_filt_pca_dim_chr,
+                                                   gg_Stochasticity_fkAgreement_mat_filt_pca_dim_chr,
+                                                   gg_mC_fkAgreement_mat_filt_pca_dim_chr,
+                                                   gg_fkAgreement_cluster_fkAgreement_mat_filt_pca_dim_chr,
+                                                   gg_Stochasticity_cluster_fkAgreement_mat_filt_pca_dim_chr
                                                   )
-gg_cow_Agreement_mat_filt_pca_dim_chr <- plot_grid(plotlist = gg_cow_list_Agreement_mat_filt_pca_dim_chr,
+gg_cow_fkAgreement_mat_filt_pca_dim_chr <- plot_grid(plotlist = gg_cow_list_fkAgreement_mat_filt_pca_dim_chr,
                                                    align = "hv",
                                                    axis = "l",
-                                                   nrow = length(gg_cow_list_Agreement_mat_filt_pca_dim_chr), ncol = 1)
-ggsave(paste0(plotDir, "gg_Agreement_mat_filt_pca_dim_chr.pdf"),
-       plot = gg_cow_Agreement_mat_filt_pca_dim_chr,
-       height = 4*length(gg_cow_list_Agreement_mat_filt_pca_dim_chr), width = 4*length(chrName), limitsize = F)
+                                                   nrow = length(gg_cow_list_fkAgreement_mat_filt_pca_dim_chr), ncol = 1)
+ggsave(paste0(plotDir, "gg_fkAgreement_mat_filt_pca_dim_chr.pdf"),
+       plot = gg_cow_fkAgreement_mat_filt_pca_dim_chr,
+       height = 4*length(gg_cow_list_fkAgreement_mat_filt_pca_dim_chr), width = 4*length(chrName), limitsize = F)
 
 
 # Overlay loadings
-gg_Agreement_cluster_Agreement_mat_filt_pca_dim_loadings <- gg_Agreement_cluster_Agreement_mat_filt_pca_dim +
-  geom_segment(data = Agreement_mat_filt_pca_loadings,
+gg_fkAgreement_cluster_fkAgreement_mat_filt_pca_dim_loadings <- gg_fkAgreement_cluster_fkAgreement_mat_filt_pca_dim +
+  geom_segment(data = fkAgreement_mat_filt_pca_loadings,
                mapping = aes(x = 0, y = 0, xend = (PC1*3), yend = (PC2*3)),
                arrow = arrow(length = unit(1/2, "picas")),
                colour = "grey0") +
-  annotate("text", x = (Agreement_mat_filt_pca_loadings$PC1*3.2), y = (Agreement_mat_filt_pca_loadings$PC2*3.2),
-           label = Agreement_mat_filt_pca_loadings$variables, colour = "grey0")
+  annotate("text", x = (fkAgreement_mat_filt_pca_loadings$PC1*3.2), y = (fkAgreement_mat_filt_pca_loadings$PC2*3.2),
+           label = fkAgreement_mat_filt_pca_loadings$variables, colour = "grey0")
 
-gg_Stochasticity_cluster_Agreement_mat_filt_pca_dim_loadings <- gg_Stochasticity_cluster_Agreement_mat_filt_pca_dim +
-  geom_segment(data = Agreement_mat_filt_pca_loadings,
+gg_Stochasticity_cluster_fkAgreement_mat_filt_pca_dim_loadings <- gg_Stochasticity_cluster_fkAgreement_mat_filt_pca_dim +
+  geom_segment(data = fkAgreement_mat_filt_pca_loadings,
                mapping = aes(x = 0, y = 0, xend = (PC1*3), yend = (PC2*3)),
                arrow = arrow(length = unit(1/2, "picas")),
                colour = "grey0") +
-  annotate("text", x = (Agreement_mat_filt_pca_loadings$PC1*3.2), y = (Agreement_mat_filt_pca_loadings$PC2*3.2),
-           label = Agreement_mat_filt_pca_loadings$variables, colour = "grey0")
+  annotate("text", x = (fkAgreement_mat_filt_pca_loadings$PC1*3.2), y = (fkAgreement_mat_filt_pca_loadings$PC2*3.2),
+           label = fkAgreement_mat_filt_pca_loadings$variables, colour = "grey0")
 
-gg_Agreement_Agreement_mat_filt_pca_dim_loadings <- gg_Agreement_Agreement_mat_filt_pca_dim +
-  geom_segment(data = Agreement_mat_filt_pca_loadings,
+gg_fkAgreement_fkAgreement_mat_filt_pca_dim_loadings <- gg_fkAgreement_fkAgreement_mat_filt_pca_dim +
+  geom_segment(data = fkAgreement_mat_filt_pca_loadings,
                mapping = aes(x = 0, y = 0, xend = (PC1*3), yend = (PC2*3)),
                arrow = arrow(length = unit(1/2, "picas")),
                colour = "grey0") +
-  annotate("text", x = (Agreement_mat_filt_pca_loadings$PC1*3.2), y = (Agreement_mat_filt_pca_loadings$PC2*3.2),
-           label = Agreement_mat_filt_pca_loadings$variables, colour = "grey0")
+  annotate("text", x = (fkAgreement_mat_filt_pca_loadings$PC1*3.2), y = (fkAgreement_mat_filt_pca_loadings$PC2*3.2),
+           label = fkAgreement_mat_filt_pca_loadings$variables, colour = "grey0")
 
-gg_Stochasticity_Agreement_mat_filt_pca_dim_loadings <- gg_Stochasticity_Agreement_mat_filt_pca_dim +
-  geom_segment(data = Agreement_mat_filt_pca_loadings,
+gg_Stochasticity_fkAgreement_mat_filt_pca_dim_loadings <- gg_Stochasticity_fkAgreement_mat_filt_pca_dim +
+  geom_segment(data = fkAgreement_mat_filt_pca_loadings,
                mapping = aes(x = 0, y = 0, xend = (PC1*3), yend = (PC2*3)),
                arrow = arrow(length = unit(1/2, "picas")),
                colour = "grey0") +
-  annotate("text", x = (Agreement_mat_filt_pca_loadings$PC1*3.2), y = (Agreement_mat_filt_pca_loadings$PC2*3.2),
-           label = Agreement_mat_filt_pca_loadings$variables, colour = "grey0")
+  annotate("text", x = (fkAgreement_mat_filt_pca_loadings$PC1*3.2), y = (fkAgreement_mat_filt_pca_loadings$PC2*3.2),
+           label = fkAgreement_mat_filt_pca_loadings$variables, colour = "grey0")
 
-gg_mC_Agreement_mat_filt_pca_dim_loadings <- gg_mC_Agreement_mat_filt_pca_dim +
-  geom_segment(data = Agreement_mat_filt_pca_loadings,
+gg_mC_fkAgreement_mat_filt_pca_dim_loadings <- gg_mC_fkAgreement_mat_filt_pca_dim +
+  geom_segment(data = fkAgreement_mat_filt_pca_loadings,
                mapping = aes(x = 0, y = 0, xend = (PC1*3), yend = (PC2*3)),
                arrow = arrow(length = unit(1/2, "picas")),
                colour = "grey0") +
-  annotate("text", x = (Agreement_mat_filt_pca_loadings$PC1*3.2), y = (Agreement_mat_filt_pca_loadings$PC2*3.2),
-           label = Agreement_mat_filt_pca_loadings$variables, colour = "grey0")
+  annotate("text", x = (fkAgreement_mat_filt_pca_loadings$PC1*3.2), y = (fkAgreement_mat_filt_pca_loadings$PC2*3.2),
+           label = fkAgreement_mat_filt_pca_loadings$variables, colour = "grey0")
 
-gg_cow_list_Agreement_mat_filt_pca_dim_loadings <- list(
-                                                        gg_Agreement_Agreement_mat_filt_pca_dim_loadings,
-                                                        gg_Stochasticity_Agreement_mat_filt_pca_dim_loadings,
-                                                        gg_mC_Agreement_mat_filt_pca_dim_loadings,
-                                                        gg_Agreement_cluster_Agreement_mat_filt_pca_dim_loadings,
-                                                        gg_Stochasticity_cluster_Agreement_mat_filt_pca_dim_loadings
+gg_cow_list_fkAgreement_mat_filt_pca_dim_loadings <- list(
+                                                        gg_fkAgreement_fkAgreement_mat_filt_pca_dim_loadings,
+                                                        gg_Stochasticity_fkAgreement_mat_filt_pca_dim_loadings,
+                                                        gg_mC_fkAgreement_mat_filt_pca_dim_loadings,
+                                                        gg_fkAgreement_cluster_fkAgreement_mat_filt_pca_dim_loadings,
+                                                        gg_Stochasticity_cluster_fkAgreement_mat_filt_pca_dim_loadings
                                                        )
-gg_cow_Agreement_mat_filt_pca_dim_loadings <- plot_grid(plotlist = gg_cow_list_Agreement_mat_filt_pca_dim_loadings,
+gg_cow_fkAgreement_mat_filt_pca_dim_loadings <- plot_grid(plotlist = gg_cow_list_fkAgreement_mat_filt_pca_dim_loadings,
                                                         align = "hv",
                                                         axis = "l",
-                                                        nrow = 1, ncol = length(gg_cow_list_Agreement_mat_filt_pca_dim_loadings))
-ggsave(paste0(plotDir, "gg_Agreement_mat_filt_pca_dim_loadings.pdf"),
-       plot = gg_cow_Agreement_mat_filt_pca_dim_loadings,
-       height = 4, width = 4*length(gg_cow_list_Agreement_mat_filt_pca_dim_loadings), limitsize = F)
+                                                        nrow = 1, ncol = length(gg_cow_list_fkAgreement_mat_filt_pca_dim_loadings))
+ggsave(paste0(plotDir, "gg_fkAgreement_mat_filt_pca_dim_loadings.pdf"),
+       plot = gg_cow_fkAgreement_mat_filt_pca_dim_loadings,
+       height = 4, width = 4*length(gg_cow_list_fkAgreement_mat_filt_pca_dim_loadings), limitsize = F)
 
 
 # PCA of Stochasticity and mean methylation for the given context
@@ -341,12 +369,12 @@ Stochasticity_mat_filt_pca_dim <- Stochasticity_mat_filt_pca$x[, seq_len(Stochas
 colnames(Stochasticity_mat_filt_pca_dim) <- c("PC1", "PC2")
 head(Stochasticity_mat_filt_pca_dim)
 
-stopifnot(nrow(Stochasticity_mat_filt_pca_dim) == length(con_fk_df_all_filt$Stochasticity_cluster))
+stopifnot(nrow(Stochasticity_mat_filt_pca_dim) == length(featDF_filt$Stochasticity_cluster))
 Stochasticity_mat_filt_pca_dim <- cbind(as.data.frame(Stochasticity_mat_filt_pca_dim),
                                                       mat_filt,
-                                                      chr = con_fk_df_all_filt$chr,
-                                                      Agreement_cluster = con_fk_df_all_filt$Agreement_cluster,
-                                                      Stochasticity_cluster = con_fk_df_all_filt$Stochasticity_cluster,
+                                                      chr = featDF_filt$chr,
+                                                      fkAgreement_cluster = featDF_filt$fkAgreement_cluster,
+                                                      Stochasticity_cluster = featDF_filt$Stochasticity_cluster,
                                                       type = "PCA")
 head(Stochasticity_mat_filt_pca_dim)
 
@@ -372,12 +400,12 @@ ggsave(paste0(plotDir, "aps_Stochasticity_mat_filt_pca_dim.pdf"),
        plot = aps_Stochasticity_cluster_Stochasticity_mat_filt_pca_dim,
        height = 4, width = 5, limitsize = F)
 
-gg_Agreement_cluster_Stochasticity_mat_filt_pca_dim <- ggplot(Stochasticity_mat_filt_pca_dim,
-                                                              mapping = aes(x = PC1, y = PC2, colour = Agreement_cluster)) +
+gg_fkAgreement_cluster_Stochasticity_mat_filt_pca_dim <- ggplot(Stochasticity_mat_filt_pca_dim,
+                                                              mapping = aes(x = PC1, y = PC2, colour = fkAgreement_cluster)) +
   geom_point(size = 0.7, alpha = 0.5) +
   scale_colour_brewer(palette = "Dark2") +
 #  scale_colour_manual(values = Stochasticity_mat_filt_pam_cl_colours) +
-  labs(colour = bquote(atop("Agreement &", "m"*.(context)~"cluster")),
+  labs(colour = bquote(atop("fkAgreement &", "m"*.(context)~"cluster")),
        x = bquote("PC1 (" * .(Stochasticity_mat_filt_pca_PC1_varexp) * "%)"),
        y = bquote("PC2 (" * .(Stochasticity_mat_filt_pca_PC2_varexp) * "%)")) +
   theme_bw() +
@@ -396,13 +424,13 @@ gg_Stochasticity_cluster_Stochasticity_mat_filt_pca_dim <- ggplot(Stochasticity_
   theme(aspect.ratio = 1,
         legend.key.height = unit(4, "mm"))
 
-gg_Agreement_Stochasticity_mat_filt_pca_dim <- ggplot(Stochasticity_mat_filt_pca_dim,
-                                                      mapping = aes(x = PC1, y = PC2, colour = Agreement)) +
+gg_fkAgreement_Stochasticity_mat_filt_pca_dim <- ggplot(Stochasticity_mat_filt_pca_dim,
+                                                      mapping = aes(x = PC1, y = PC2, colour = fkAgreement)) +
   geom_point(size = 0.7, alpha = 0.5) +
   scale_colour_viridis_c(option = "turbo") +
 #  scale_colour_gradient(low = "red", high = "yellow") +
 #  scale_colour_gradient2(low = "blue", high = "red") +
-  labs(colour = "Agreement",
+  labs(colour = "fkAgreement",
        x = bquote("PC1 (" * .(Stochasticity_mat_filt_pca_PC1_varexp) * "%)"),
        y = bquote("PC2 (" * .(Stochasticity_mat_filt_pca_PC2_varexp) * "%)")) +
   theme_bw() +
@@ -435,10 +463,10 @@ gg_mC_Stochasticity_mat_filt_pca_dim <- ggplot(Stochasticity_mat_filt_pca_dim,
 gg_Stochasticity_cluster_Stochasticity_mat_filt_pca_dim_chr <- gg_Stochasticity_cluster_Stochasticity_mat_filt_pca_dim +
   facet_grid(cols = vars(chr), scales = "free_x")
 
-gg_Agreement_cluster_Stochasticity_mat_filt_pca_dim_chr <- gg_Agreement_cluster_Stochasticity_mat_filt_pca_dim +
+gg_fkAgreement_cluster_Stochasticity_mat_filt_pca_dim_chr <- gg_fkAgreement_cluster_Stochasticity_mat_filt_pca_dim +
   facet_grid(cols = vars(chr), scales = "free_x")
 
-gg_Agreement_Stochasticity_mat_filt_pca_dim_chr <- gg_Agreement_Stochasticity_mat_filt_pca_dim +
+gg_fkAgreement_Stochasticity_mat_filt_pca_dim_chr <- gg_fkAgreement_Stochasticity_mat_filt_pca_dim +
   facet_grid(cols = vars(chr), scales = "free_x")
 
 gg_Stochasticity_Stochasticity_mat_filt_pca_dim_chr <- gg_Stochasticity_Stochasticity_mat_filt_pca_dim +
@@ -449,10 +477,10 @@ gg_mC_Stochasticity_mat_filt_pca_dim_chr <- gg_mC_Stochasticity_mat_filt_pca_dim
 
 gg_cow_list_Stochasticity_mat_filt_pca_dim_chr <- list(
                                                        gg_Stochasticity_Stochasticity_mat_filt_pca_dim_chr,
-                                                       gg_Agreement_Stochasticity_mat_filt_pca_dim_chr,
+                                                       gg_fkAgreement_Stochasticity_mat_filt_pca_dim_chr,
                                                        gg_mC_Stochasticity_mat_filt_pca_dim_chr,
                                                        gg_Stochasticity_cluster_Stochasticity_mat_filt_pca_dim_chr,
-                                                       gg_Agreement_cluster_Stochasticity_mat_filt_pca_dim_chr
+                                                       gg_fkAgreement_cluster_Stochasticity_mat_filt_pca_dim_chr
                                                       )
 gg_cow_Stochasticity_mat_filt_pca_dim_chr <- plot_grid(plotlist = gg_cow_list_Stochasticity_mat_filt_pca_dim_chr,
                                                        align = "hv",
@@ -464,7 +492,7 @@ ggsave(paste0(plotDir, "gg_Stochasticity_mat_filt_pca_dim_chr.pdf"),
 
 
 # Overlay loadings
-gg_Agreement_cluster_Stochasticity_mat_filt_pca_dim_loadings <- gg_Agreement_cluster_Stochasticity_mat_filt_pca_dim +
+gg_fkAgreement_cluster_Stochasticity_mat_filt_pca_dim_loadings <- gg_fkAgreement_cluster_Stochasticity_mat_filt_pca_dim +
   geom_segment(data = Stochasticity_mat_filt_pca_loadings,
                mapping = aes(x = 0, y = 0, xend = (PC1*3), yend = (PC2*3)),
                arrow = arrow(length = unit(1/2, "picas")),
@@ -480,7 +508,7 @@ gg_Stochasticity_cluster_Stochasticity_mat_filt_pca_dim_loadings <- gg_Stochasti
   annotate("text", x = (Stochasticity_mat_filt_pca_loadings$PC1*3.2), y = (Stochasticity_mat_filt_pca_loadings$PC2*3.2),
            label = Stochasticity_mat_filt_pca_loadings$variables, colour = "grey0")
 
-gg_Agreement_Stochasticity_mat_filt_pca_dim_loadings <- gg_Agreement_Stochasticity_mat_filt_pca_dim +
+gg_fkAgreement_Stochasticity_mat_filt_pca_dim_loadings <- gg_fkAgreement_Stochasticity_mat_filt_pca_dim +
   geom_segment(data = Stochasticity_mat_filt_pca_loadings,
                mapping = aes(x = 0, y = 0, xend = (PC1*3), yend = (PC2*3)),
                arrow = arrow(length = unit(1/2, "picas")),
@@ -506,10 +534,10 @@ gg_mC_Stochasticity_mat_filt_pca_dim_loadings <- gg_mC_Stochasticity_mat_filt_pc
 
 gg_cow_list_Stochasticity_mat_filt_pca_dim_loadings <- list(
                                                             gg_Stochasticity_Stochasticity_mat_filt_pca_dim_loadings,
-                                                            gg_Agreement_Stochasticity_mat_filt_pca_dim_loadings,
+                                                            gg_fkAgreement_Stochasticity_mat_filt_pca_dim_loadings,
                                                             gg_mC_Stochasticity_mat_filt_pca_dim_loadings,
                                                             gg_Stochasticity_cluster_Stochasticity_mat_filt_pca_dim_loadings,
-                                                            gg_Agreement_cluster_Stochasticity_mat_filt_pca_dim_loadings
+                                                            gg_fkAgreement_cluster_Stochasticity_mat_filt_pca_dim_loadings
                                                            )
 gg_cow_Stochasticity_mat_filt_pca_dim_loadings <- plot_grid(plotlist = gg_cow_list_Stochasticity_mat_filt_pca_dim_loadings,
                                                             align = "hv",
@@ -566,17 +594,17 @@ Col_Rep1_IRratio <- foreach(i = iter(parentIDs),
              IRratio_max = max(tmpDF$IRratio, na.rm = T))
 }
 
-con_fk_df_all_filt_tab <- base::merge(x = con_fk_df_all_filt, y = Col_Rep1_IRratio,
+featDF_filt_tab <- base::merge(x = featDF_filt, y = Col_Rep1_IRratio,
                                       by.x = "parent", by.y = "parent")
 
-print(cor.test(con_fk_df_all_filt_tab$fk_kappa_all, con_fk_df_all_filt_tab$IRratio_mean, method = "spearman"))
+print(cor.test(featDF_filt_tab$fk_kappa_all, featDF_filt_tab$IRratio_mean, method = "spearman"))
 #-0.1034838
-print(cor.test(con_fk_df_all_filt_tab$fk_kappa_all, con_fk_df_all_filt_tab$IRratio_median, method = "spearman"))
+print(cor.test(featDF_filt_tab$fk_kappa_all, featDF_filt_tab$IRratio_median, method = "spearman"))
 #-0.2840318
 
-print(cor.test(con_fk_df_all_filt_tab$mean_stocha_all, con_fk_df_all_filt_tab$IRratio_mean, method = "spearman"))
+print(cor.test(featDF_filt_tab$mean_stocha_all, featDF_filt_tab$IRratio_mean, method = "spearman"))
 #-0.1120429
-print(cor.test(con_fk_df_all_filt_tab$mean_stocha_all, con_fk_df_all_filt_tab$IRratio_median, method = "spearman"))
+print(cor.test(featDF_filt_tab$mean_stocha_all, featDF_filt_tab$IRratio_median, method = "spearman"))
 #-0.3074874
 
 
@@ -625,12 +653,12 @@ trendPlot <- function(dataFrame, mapping, paletteName, xvar, yvar, clusterlab, x
 }
 
 
-ggTrend_mean_mC_all_fk_kappa_all_filt <- trendPlot(dataFrame = con_fk_df_all_filt,
-                                                   mapping = aes(x = mean_mC_all, y = fk_kappa_all, colour = Agreement_cluster),
+ggTrend_mean_mC_all_fk_kappa_all_filt <- trendPlot(dataFrame = featDF_filt,
+                                                   mapping = aes(x = mean_mC_all, y = fk_kappa_all, colour = fkAgreement_cluster),
                                                    paletteName = "Dark2",
                                                    xvar = mean_mC_all,
                                                    yvar = fk_kappa_all,
-                                                   clusterlab = bquote(atop("Agreement &", "m"*.(context)~"cluster")),
+                                                   clusterlab = bquote(atop("fkAgreement &", "m"*.(context)~"cluster")),
                                                    xlab = bquote(.(featName)*" mean m"*.(context)),
                                                    ylab = bquote(.(featName)*" agreement (m"*.(context)*")"),
                                                    xaxtrans = log10_trans(),
@@ -642,7 +670,7 @@ ggTrend_mean_mC_all_fk_kappa_all_filt <- trendPlot(dataFrame = con_fk_df_all_fil
 ggTrend_mean_mC_all_fk_kappa_all_filt <- ggTrend_mean_mC_all_fk_kappa_all_filt +
   facet_grid(cols = vars(chr), scales = "free_x")
 
-ggTrend_mean_mC_all_mean_stocha_all_filt <- trendPlot(dataFrame = con_fk_df_all_filt,
+ggTrend_mean_mC_all_mean_stocha_all_filt <- trendPlot(dataFrame = featDF_filt,
                                                       mapping = aes(x = mean_mC_all, y = mean_stocha_all, colour = Stochasticity_cluster),
                                                       paletteName = "Set1",
                                                       xvar = mean_mC_all,
@@ -659,12 +687,12 @@ ggTrend_mean_mC_all_mean_stocha_all_filt <- trendPlot(dataFrame = con_fk_df_all_
 ggTrend_mean_mC_all_mean_stocha_all_filt <- ggTrend_mean_mC_all_mean_stocha_all_filt +
   facet_grid(cols = vars(chr), scales = "free_x")
 
-ggTrend_mean_stocha_all_fk_kappa_all_filt <- trendPlot(dataFrame = con_fk_df_all_filt,
-                                                       mapping = aes(x = mean_stocha_all, y = fk_kappa_all, colour = Agreement_cluster),
+ggTrend_mean_stocha_all_fk_kappa_all_filt <- trendPlot(dataFrame = featDF_filt,
+                                                       mapping = aes(x = mean_stocha_all, y = fk_kappa_all, colour = fkAgreement_cluster),
                                                        paletteName = "Dark2",
                                                        xvar = mean_stocha_all,
                                                        yvar = fk_kappa_all,
-                                                       clusterlab = bquote(atop("Agreement &", "m"*.(context)~"cluster")),
+                                                       clusterlab = bquote(atop("fkAgreement &", "m"*.(context)~"cluster")),
                                                        xlab = bquote(.(featName)*" mean stochasticity (m"*.(context)*")"),
                                                        ylab = bquote(.(featName)*" agreement (m"*.(context)*")"),
                                                        xaxtrans = log10_trans(),
@@ -676,7 +704,7 @@ ggTrend_mean_stocha_all_fk_kappa_all_filt <- trendPlot(dataFrame = con_fk_df_all
 ggTrend_mean_stocha_all_fk_kappa_all_filt <- ggTrend_mean_stocha_all_fk_kappa_all_filt +
   facet_grid(cols = vars(chr), scales = "free_x")
 
-ggTrend_fk_kappa_all_mean_stocha_all_filt <- trendPlot(dataFrame = con_fk_df_all_filt,
+ggTrend_fk_kappa_all_mean_stocha_all_filt <- trendPlot(dataFrame = featDF_filt,
                                                        mapping = aes(x = mean_stocha_all, y = fk_kappa_all, colour = Stochasticity_cluster),
                                                        paletteName = "Set1",
                                                        xvar = mean_stocha_all,
@@ -717,16 +745,16 @@ ggsave(paste0(plotDir,
 # Extract feature clusters to enable enrichment analysis
 
 # Filter by fk_kappa_all and mean_mC_all cluster
-con_fk_df_all_filt_kappa_mC_cluster1 <- con_fk_df_all_filt %>%
-  dplyr::filter(Agreement_cluster == "Cluster 1")
-con_fk_df_all_filt_kappa_mC_cluster2 <- con_fk_df_all_filt %>%
-  dplyr::filter(Agreement_cluster == "Cluster 2")
-con_fk_df_all_filt_kappa_mC_cluster3 <- con_fk_df_all_filt %>%
-  dplyr::filter(Agreement_cluster == "Cluster 3")
-con_fk_df_all_filt_kappa_mC_cluster4 <- con_fk_df_all_filt %>%
-  dplyr::filter(Agreement_cluster == "Cluster 4")
+featDF_filt_kappa_mC_cluster1 <- featDF_filt %>%
+  dplyr::filter(fkAgreement_cluster == "Cluster 1")
+featDF_filt_kappa_mC_cluster2 <- featDF_filt %>%
+  dplyr::filter(fkAgreement_cluster == "Cluster 2")
+featDF_filt_kappa_mC_cluster3 <- featDF_filt %>%
+  dplyr::filter(fkAgreement_cluster == "Cluster 3")
+featDF_filt_kappa_mC_cluster4 <- featDF_filt %>%
+  dplyr::filter(fkAgreement_cluster == "Cluster 4")
 
-write.table(con_fk_df_all_filt_kappa_mC_cluster1,
+write.table(featDF_filt_kappa_mC_cluster1,
             paste0(outDir,
                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                    "_", context,
@@ -734,7 +762,7 @@ write.table(con_fk_df_all_filt_kappa_mC_cluster1,
                    "_filt_df_fk_kappa_all_mean_mC_all_cluster1_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
-write.table(con_fk_df_all_filt_kappa_mC_cluster2,
+write.table(featDF_filt_kappa_mC_cluster2,
             paste0(outDir,
                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                    "_", context,
@@ -742,7 +770,7 @@ write.table(con_fk_df_all_filt_kappa_mC_cluster2,
                    "_filt_df_fk_kappa_all_mean_mC_all_cluster2_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
-write.table(con_fk_df_all_filt_kappa_mC_cluster3,
+write.table(featDF_filt_kappa_mC_cluster3,
             paste0(outDir,
                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                    "_", context,
@@ -750,7 +778,7 @@ write.table(con_fk_df_all_filt_kappa_mC_cluster3,
                    "_filt_df_fk_kappa_all_mean_mC_all_cluster3_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
-write.table(con_fk_df_all_filt_kappa_mC_cluster4,
+write.table(featDF_filt_kappa_mC_cluster4,
             paste0(outDir,
                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                    "_", context,
@@ -761,16 +789,16 @@ write.table(con_fk_df_all_filt_kappa_mC_cluster4,
 
 
 # Filter by mean_stocha_all and mean_mC_all cluster
-con_fk_df_all_filt_stocha_mC_cluster1 <- con_fk_df_all_filt %>%
+featDF_filt_stocha_mC_cluster1 <- featDF_filt %>%
   dplyr::filter(Stochasticity_cluster == "Cluster 1")
-con_fk_df_all_filt_stocha_mC_cluster2 <- con_fk_df_all_filt %>%
+featDF_filt_stocha_mC_cluster2 <- featDF_filt %>%
   dplyr::filter(Stochasticity_cluster == "Cluster 2")
-con_fk_df_all_filt_stocha_mC_cluster3 <- con_fk_df_all_filt %>%
+featDF_filt_stocha_mC_cluster3 <- featDF_filt %>%
   dplyr::filter(Stochasticity_cluster == "Cluster 3")
-con_fk_df_all_filt_stocha_mC_cluster4 <- con_fk_df_all_filt %>%
+featDF_filt_stocha_mC_cluster4 <- featDF_filt %>%
   dplyr::filter(Stochasticity_cluster == "Cluster 4")
 
-write.table(con_fk_df_all_filt_stocha_mC_cluster1,
+write.table(featDF_filt_stocha_mC_cluster1,
             paste0(outDir,
                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                    "_", context,
@@ -778,7 +806,7 @@ write.table(con_fk_df_all_filt_stocha_mC_cluster1,
                    "_filt_df_mean_stocha_all_mean_mC_all_cluster1_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
-write.table(con_fk_df_all_filt_stocha_mC_cluster2,
+write.table(featDF_filt_stocha_mC_cluster2,
             paste0(outDir,
                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                    "_", context,
@@ -786,7 +814,7 @@ write.table(con_fk_df_all_filt_stocha_mC_cluster2,
                    "_filt_df_mean_stocha_all_mean_mC_all_cluster2_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
-write.table(con_fk_df_all_filt_stocha_mC_cluster3,
+write.table(featDF_filt_stocha_mC_cluster3,
             paste0(outDir,
                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                    "_", context,
@@ -794,7 +822,7 @@ write.table(con_fk_df_all_filt_stocha_mC_cluster3,
                    "_filt_df_mean_stocha_all_mean_mC_all_cluster3_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
-write.table(con_fk_df_all_filt_stocha_mC_cluster4,
+write.table(featDF_filt_stocha_mC_cluster4,
             paste0(outDir,
                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                    "_", context,
