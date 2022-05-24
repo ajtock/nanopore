@@ -5,7 +5,7 @@
 
 # Usage:
 # conda activate R-4.0.0
-# ./feature_among_read_variation_scoring_func_genes_pam_hypergeom_combined_bargraph_kappa.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 'Chr1,Chr2,Chr3,Chr4,Chr5' 'gene' 'regions' 10000 1000
+# ./feature_among_read_variation_scoring_func_genes_pam_hypergeom_combined_bargraph_alpha.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 'Chr1,Chr2,Chr3,Chr4,Chr5' 'gene' 'regions' 10000 1000
 # conda deactivate
  
 # Divide each read into adjacent segments each consisting of a given number of consecutive cytosines,
@@ -72,17 +72,19 @@ if(floor(log10(genomeStepSize)) + 1 < 4) {
 
 outDir <- paste0(featName, "_", featRegion, "/", paste0(chrName, collapse = "_"), "/")
 plotDir <- paste0(outDir, "plots/")
-plotDir_kappa_mC <- paste0(outDir, "plots/hypergeom_combined_", context, "_kappa_mC/")
-plotDir_stocha_mC <- paste0(outDir, "plots/hypergeom_combined_", context, "_stocha_mC/")
-#plotDir_kappa_stocha <- paste0(outDir, "plots/hypergeom_combined_", context, "_kappa_stocha/")
+plotDir_kappa_mC <- paste0(outDir, "plots/hypergeom_Lloyd_2015_PlantCell_", context, "_kappa_mC/")
+plotDir_alpha_mC <- paste0(outDir, "plots/hypergeom_Lloyd_2015_PlantCell_", context, "_alpha_mC/")
+plotDir_stocha_mC <- paste0(outDir, "plots/hypergeom_Lloyd_2015_PlantCell_", context, "_stocha_mC/")
+#plotDir_kappa_stocha <- paste0(outDir, "plots/hypergeom_Lloyd_2015_PlantCell_", context, "_kappa_stocha/")
 system(paste0("[ -d ", plotDir, " ] || mkdir -p ", plotDir))
 system(paste0("[ -d ", plotDir_kappa_mC, " ] || mkdir -p ", plotDir_kappa_mC))
+system(paste0("[ -d ", plotDir_alpha_mC, " ] || mkdir -p ", plotDir_alpha_mC))
 system(paste0("[ -d ", plotDir_stocha_mC, " ] || mkdir -p ", plotDir_stocha_mC))
 #system(paste0("[ -d ", plotDir_kappa_stocha, " ] || mkdir -p ", plotDir_kappa_stocha))
 
 
 mD_hs <- read.table(paste0(outDir,
-                           sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
+                           sampleName, "_filt_df_ka_alpha_all_mean_mC_all_",
                            featName, "_", featRegion,
                            "_mD_at_dt62_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
                            "_MA1_2_MappedOn_", refbase, "_", paste0(chrName, collapse = "_"), "_", context,
@@ -92,7 +94,7 @@ mD_hs <- data.frame(Feature = rep("Epimutation hotspots", 4),
                     mD_hs)
 
 mD_cs <- read.table(paste0(outDir,
-                           sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
+                           sampleName, "_filt_df_ka_alpha_all_mean_mC_all_",
                            featName, "_", featRegion,
                            "_mD_at_dt62_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
                            "_MA1_2_MappedOn_", refbase, "_", paste0(chrName, collapse = "_"), "_", context,
@@ -102,7 +104,7 @@ mD_cs <- data.frame(Feature = rep("Epimutation coldspots", 4),
                     mD_cs)
 
 lethal <- read.table(paste0(outDir,
-                            sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
+                            sampleName, "_filt_df_ka_alpha_all_mean_mC_all_",
                             featName, "_", featRegion,
                             "_", paste0(chrName, collapse = "_"), "_", context,
                             "_lethal_genes_hypergeomTest_clusters.tsv"),
@@ -111,7 +113,7 @@ lethal <- data.frame(Feature = rep("Lethal", 4),
                      lethal)
 
 nonlethal <- read.table(paste0(outDir,
-                               sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
+                               sampleName, "_filt_df_ka_alpha_all_mean_mC_all_",
                                featName, "_", featRegion,
                                "_", paste0(chrName, collapse = "_"), "_", context,
                                "_nonlethal_genes_hypergeomTest_clusters.tsv"),
@@ -120,7 +122,7 @@ nonlethal <- data.frame(Feature = rep("Nonlethal", 4),
                         nonlethal)
 
 gbM <- read.table(paste0(outDir,
-                         sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
+                         sampleName, "_filt_df_ka_alpha_all_mean_mC_all_",
                          featName, "_", featRegion,
                          "_", paste0(chrName, collapse = "_"), "_", context,
                          "_gbM_genes_hypergeomTest_clusters.tsv"),
@@ -129,7 +131,7 @@ gbM <- data.frame(Feature = rep("gbM", 4),
                   gbM)
 
 broadly_expressed <- read.table(paste0(outDir,
-                                       sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
+                                       sampleName, "_filt_df_ka_alpha_all_mean_mC_all_",
                                        featName, "_", featRegion,
                                        "_", paste0(chrName, collapse = "_"), "_", context,
                                        "_broadly_expressed_genes_hypergeomTest_clusters.tsv"),
@@ -138,7 +140,7 @@ broadly_expressed <- data.frame(Feature = rep("Broadly expressed", 4),
                                 broadly_expressed)
 
 CEG <- read.table(paste0(outDir,
-                         sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
+                         sampleName, "_filt_df_ka_alpha_all_mean_mC_all_",
                          featName, "_", featRegion,
                          "_", paste0(chrName, collapse = "_"), "_", context,
                          "_CEG_genes_hypergeomTest_clusters.tsv"),
@@ -147,7 +149,7 @@ CEG <- data.frame(Feature = rep("Core eukaryotic", 4),
                   CEG)
 
 betagammaWGD <- read.table(paste0(outDir,
-                                  sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
+                                  sampleName, "_filt_df_ka_alpha_all_mean_mC_all_",
                                   featName, "_", featRegion,
                                   "_", paste0(chrName, collapse = "_"), "_", context,
                                   "_betagammaWGD_genes_hypergeomTest_clusters.tsv"),
@@ -156,7 +158,7 @@ betagammaWGD <- data.frame(Feature = rep("Beta gamma WGD", 4),
                            betagammaWGD)
 
 alphaWGD <- read.table(paste0(outDir,
-                              sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
+                              sampleName, "_filt_df_ka_alpha_all_mean_mC_all_",
                               featName, "_", featRegion,
                               "_", paste0(chrName, collapse = "_"), "_", context,
                               "_alphaWGD_genes_hypergeomTest_clusters.tsv"),
@@ -165,7 +167,7 @@ alphaWGD <- data.frame(Feature = rep("Alpha WGD", 4),
                        alphaWGD)
 
 tandemdup <- read.table(paste0(outDir,
-                               sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
+                               sampleName, "_filt_df_ka_alpha_all_mean_mC_all_",
                                featName, "_", featRegion,
                                "_", paste0(chrName, collapse = "_"), "_", context,
                                "_tandemdup_genes_hypergeomTest_clusters.tsv"),
@@ -224,7 +226,7 @@ bp <- ggplot(data = combined,
                colour = brewer.pal(name = "Dark2", n = 4)[4],
                inherit.aes = F, size = 2) +
 
-  xlab(bquote(atop("Among-read agreement (kappa) and mean m" * .(context), .(featName) ~ .(featRegion) ~ "cluster"))) +
+  xlab(bquote(atop("Among-read agreement (alpha) and mean m" * .(context), .(featName) ~ .(featRegion) ~ "cluster"))) +
   ylab(bquote("Log"[2] * "(observed/expected) genes in cluster")) +
 #  scale_y_continuous(limits = c(-4.0, 4.0)) +
   scale_x_discrete(position = "bottom") +
@@ -253,8 +255,8 @@ bp <- ggplot(data = combined,
                  .(prettyNum(1e5,
                              big.mark = ",",
                              trim = T)) ~ "samples from hypergeometric distribution"))
-ggsave(paste0(plotDir_kappa_mC,
-              sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
+ggsave(paste0(plotDir_alpha_mC,
+              sampleName, "_filt_df_ka_alpha_all_mean_mC_all_",
               featName, "_", featRegion,
               "_", paste0(chrName, collapse = "_"), "_", context,
               "_combined_bargraph_hypergeomTest_clusters.pdf"),

@@ -106,10 +106,12 @@ if(floor(log10(genomeStepSize)) + 1 < 4) {
 outDir <- paste0(featName, "_", featRegion, "/", paste0(chrName, collapse = "_"), "/")
 plotDir <- paste0(outDir, "plots/")
 plotDir_kappa_mC <- paste0(outDir, "plots/hypergeom_epimutation_hotspots_", context, "_kappa_mC/")
+plotDir_alpha_mC <- paste0(outDir, "plots/hypergeom_epimutation_hotspots_", context, "_alpha_mC/")
 plotDir_stocha_mC <- paste0(outDir, "plots/hypergeom_epimutation_hotspots_", context, "_stocha_mC/")
 #plotDir_kappa_stocha <- paste0(outDir, "plots/hypergeom_epimutation_hotspots_", context, "_kappa_stocha/")
 system(paste0("[ -d ", plotDir, " ] || mkdir -p ", plotDir))
 system(paste0("[ -d ", plotDir_kappa_mC, " ] || mkdir -p ", plotDir_kappa_mC))
+system(paste0("[ -d ", plotDir_alpha_mC, " ] || mkdir -p ", plotDir_alpha_mC))
 system(paste0("[ -d ", plotDir_stocha_mC, " ] || mkdir -p ", plotDir_stocha_mC))
 #system(paste0("[ -d ", plotDir_kappa_stocha, " ] || mkdir -p ", plotDir_kappa_stocha))
 
@@ -315,7 +317,6 @@ hgTest <- function(group, group_feat_list, genome_feat, genome_feat_mD_loci, sam
 }
 
 
-# fk_kappa_all
 # Get features that overlap epimutation hotspots and coldspots
 featDF <- read.table(paste0(outDir,
                             featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
@@ -352,6 +353,8 @@ featID_mD_cs <- unique(featGR_mD_cs$featID)
 #featID_mD_cs <- sub(pattern = "_\\d+", replacement = "", x = featID_mD_cs)
 #featID_mD_cs <- unique(featID_mD_cs)
  
+
+# fk_kappa_all
 
 # Load feature groups (defined based on Fleiss' kappa vs mean mC trend plots) to enable enrichment analysis
 
@@ -477,8 +480,133 @@ write.table(hgTest_kappa_mD_cs_DF,
             quote = F, sep = "\t", row.names = F, col.names = T)
 
 
+# ka_alpha_all
+
+# Load feature groups (defined based on Krippendorff's alpha vs mean mC trend plots) to enable enrichment analysis
+
+filt_alpha_mC_groups <- lapply(seq_along(1:4), function(x) {
+  tmp <- read.table(paste0(outDir,
+                           featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                           "_", context,
+                           "_NAmax", NAmax,
+                           "_filt_df_ka_alpha_all_mean_mC_all_cluster", x , "_",
+                           paste0(chrName, collapse = "_"), ".tsv"),
+                    header = T, sep = "\t")
+#  tmp$name <- sub(pattern = "\\.\\d+", replacement = "", x = tmp$name)
+#  tmp$name <- sub(pattern = "_\\d+", replacement = "", x = tmp$name)
+  tmp[ with(tmp, order(ka_alpha_all, decreasing = T)), ]
+})
+
+filt_alpha_mC_groups_featID <- lapply(seq_along(filt_alpha_mC_groups), function(x) {
+  tmp <- filt_alpha_mC_groups[[x]]$ka_alpha_all
+  names(tmp) <- filt_alpha_mC_groups[[x]]$name
+  names(tmp)
+#  na.omit(tmp)
+})
+
+filt_alpha_mC_groups_featID_universe <- unlist(filt_alpha_mC_groups_featID)
+stopifnot(length(filt_alpha_mC_groups_featID_universe) == length(featGR))
+
+
+# Run hypergeometric test on each group of genes to evaluate
+# representation of epimutation hotspots
+hgTest_alpha_mD_hs_list <- lapply(seq_along(filt_alpha_mC_groups_featID), function(x) {
+  hgTest(group = x,
+         group_feat_list = filt_alpha_mC_groups_featID,
+         genome_feat = filt_alpha_mC_groups_featID_universe,
+         genome_feat_mD_loci = featID_mD_hs,
+         samples_num = 1e5)
+})
+
+hgTest_alpha_mD_hs_DF <- dplyr::bind_rows(hgTest_alpha_mD_hs_list)
+hgTest_alpha_mD_hs_DF$group <- as.character(hgTest_alpha_mD_hs_DF$group)
+
+hgTest_alpha_mD_hs_DF$BHadj_pval <- p.adjust(hgTest_alpha_mD_hs_DF$pval, method = "BH")
+
+gg_hgTest_alpha_mD_hs <- ggplot(data = hgTest_alpha_mD_hs_DF,
+                                mapping = aes(x = group,
+                                              y = log2obsexp,
+                                              colour = pval,
+                                              size = observed)) +
+  geom_point() +
+  scale_colour_gradient(low = "red", high = "blue") +
+  guides(colour = guide_colourbar(reverse = T)) +
+  geom_hline(mapping = aes(yintercept = 0),
+             linetype = "solid", size = 1, colour = "black") +
+#  labs(size = "Count", colour = bquote("BH-adjusted" ~ italic(P))) +
+  labs(size = "Count", colour = bquote(italic(P)*"-value")) +
+  xlab(bquote(atop("Krippendorff's alpha and mean m" * .(context), .(featName) ~ .(featRegion) ~ "group"))) +
+  ylab(bquote(atop("Log"[2] * "(observed/expected)", "m" * .(context) ~ "divergence (" * italic(D) * ") hotspot overlap"))) +
+  ylim(-max(abs(hgTest_alpha_mD_hs_DF$log2obsexp)), max(abs(hgTest_alpha_mD_hs_DF$log2obsexp))) +
+  theme_bw()
+ggsave(paste0(plotDir_alpha_mC,
+              sampleName, "_filt_df_ka_alpha_all_mean_mC_all_",
+              featName, "_", featRegion,
+              "_mD_at_dt62_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
+              "_MA1_2_MappedOn_", refbase, "_", paste0(chrName, collapse = "_"), "_", context,
+              "_hotspot_hypergeomTest_clusters.pdf"),
+       plot = gg_hgTest_alpha_mD_hs,
+       height = 5, width = 6)
+write.table(hgTest_alpha_mD_hs_DF,
+            paste0(outDir,
+                   sampleName, "_filt_df_ka_alpha_all_mean_mC_all_",
+                   featName, "_", featRegion,
+                   "_mD_at_dt62_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
+                   "_MA1_2_MappedOn_", refbase, "_", paste0(chrName, collapse = "_"), "_", context,
+                   "_hotspot_hypergeomTest_clusters.tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+
+
+# Run hypergeometric test on each group of genes to evaluate
+# representation of epimutation coldspots
+hgTest_alpha_mD_cs_list <- lapply(seq_along(filt_alpha_mC_groups_featID), function(x) {
+  hgTest(group = x,
+         group_feat_list = filt_alpha_mC_groups_featID,
+         genome_feat = filt_alpha_mC_groups_featID_universe,
+         genome_feat_mD_loci = featID_mD_cs,
+         samples_num = 1e5)
+})
+
+hgTest_alpha_mD_cs_DF <- dplyr::bind_rows(hgTest_alpha_mD_cs_list)
+hgTest_alpha_mD_cs_DF$group <- as.character(hgTest_alpha_mD_cs_DF$group)
+
+hgTest_alpha_mD_cs_DF$BHadj_pval <- p.adjust(hgTest_alpha_mD_cs_DF$pval, method = "BH")
+
+gg_hgTest_alpha_mD_cs <- ggplot(data = hgTest_alpha_mD_cs_DF,
+                                mapping = aes(x = group,
+                                              y = log2obsexp,
+                                              colour = pval,
+                                              size = observed)) +
+  geom_point() +
+  scale_colour_gradient(low = "red", high = "blue") +
+  guides(colour = guide_colourbar(reverse = T)) +
+  geom_hline(mapping = aes(yintercept = 0),
+             linetype = "solid", size = 1, colour = "black") +
+#  labs(size = "Count", colour = bquote("BH-adjusted" ~ italic(P))) +
+  labs(size = "Count", colour = bquote(italic(P)*"-value")) +
+  xlab(bquote(atop("Krippendorff's alpha and mean m" * .(context), .(featName) ~ .(featRegion) ~ "group"))) +
+  ylab(bquote(atop("Log"[2] * "(observed/expected)", "m" * .(context) ~ "divergence (" * italic(D) * ") coldspot overlap"))) +
+  ylim(-max(abs(hgTest_alpha_mD_cs_DF$log2obsexp)), max(abs(hgTest_alpha_mD_cs_DF$log2obsexp))) +
+  theme_bw()
+ggsave(paste0(plotDir_alpha_mC,
+              sampleName, "_filt_df_ka_alpha_all_mean_mC_all_",
+              featName, "_", featRegion,
+              "_mD_at_dt62_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
+              "_MA1_2_MappedOn_", refbase, "_", paste0(chrName, collapse = "_"), "_", context,
+              "_coldspot_hypergeomTest_clusters.pdf"),
+       plot = gg_hgTest_alpha_mD_cs,
+       height = 5, width = 6)
+write.table(hgTest_alpha_mD_cs_DF,
+            paste0(outDir,
+                   sampleName, "_filt_df_ka_alpha_all_mean_mC_all_",
+                   featName, "_", featRegion,
+                   "_mD_at_dt62_genomeBinSize", genomeBinName, "_genomeStepSize", genomeStepName,
+                   "_MA1_2_MappedOn_", refbase, "_", paste0(chrName, collapse = "_"), "_", context,
+                   "_coldspot_hypergeomTest_clusters.tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+
+
 # mean_stocha_all
-# Get features that overlap epimutation hotspots and coldspots
 
 # Load feature groups (defined based on stochasticity vs mean mC trend plots) to enable enrichment analysis
 
