@@ -70,8 +70,8 @@ con_fk_df_all_filt <- read.table(paste0(outDir,
                                         "_filt_df_fk_kappa_all_mean_mC_all_complete_",
                                         paste0(chrName, collapse = "_"), ".tsv"),
                                  header = T)
-con_fk_df_all_filt$Kappa_C_density <- con_fk_df_all_filt$fk_Cs_all / ( (con_fk_df_all_filt$end - con_fk_df_all_filt$start + 1) / 1e3)
-con_fk_df_all_filt$Stocha_C_density <- con_fk_df_all_filt$stocha_Cs_all / ( (con_fk_df_all_filt$end - con_fk_df_all_filt$start + 1) / 1e3)
+con_fk_df_all_filt$kappa_C_density <- con_fk_df_all_filt$fk_Cs_all / ( (con_fk_df_all_filt$end - con_fk_df_all_filt$start + 1) / 1e3)
+con_fk_df_all_filt$stocha_C_density <- con_fk_df_all_filt$stocha_Cs_all / ( (con_fk_df_all_filt$end - con_fk_df_all_filt$start + 1) / 1e3)
 con_fk_df_all_filt$parent <- sub(pattern = "\\.\\d+", replacement = "", x = con_fk_df_all_filt$name) 
 con_fk_df_all_filt$parent <- sub(pattern = "_\\d+", replacement = "", x = con_fk_df_all_filt$parent) 
 

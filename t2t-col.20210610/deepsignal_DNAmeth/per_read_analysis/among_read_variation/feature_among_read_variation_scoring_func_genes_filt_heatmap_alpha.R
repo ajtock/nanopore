@@ -6,7 +6,7 @@
 
 # Usage:
 # conda activate R-4.0.3
-# ./feature_among_read_variation_scoring_func_genes_filt_heatmap.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 'Chr1,Chr2,Chr3,Chr4,Chr5' 'gene' 'regions'
+# ./feature_among_read_variation_scoring_func_genes_filt_heatmap_alpha.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 'Chr1,Chr2,Chr3,Chr4,Chr5' 'gene' 'regions'
 # conda deactivate
 
 #sampleName <- "Col_0_deepsignalDNAmeth_30kb_90pc"
@@ -379,41 +379,41 @@ featureHeatmap <- function(mat,
           #use_raster = TRUE, raster_device = "png", raster_quality = 4)
 }
 
-kappa_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "kappa")])
-alpha_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "alpha")])
-stocha_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "stocha")])
-kappa_C_density_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "kappa_C_density")])
-stocha_C_density_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "stocha_C_density")])
-mean_mC_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == paste0("mean_m", context))])
-gbM_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "gbM")])
-Expression_breadth_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Expression_breadth")])
-Expression_variation_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Expression_variation")])
-Median_expression_mat <- log2(as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Median_expression")])+1)
-Coexpression_module_size_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Coexpression_module_size")])
-feature_width_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "feature_width")])
-Amino_acids_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Amino_acids")])
-Protein_domains_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Protein_domains")])
-exons_count_per_kb_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "exons_count_per_kb")])
-exons_width_prop_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "exons_width_prop")])
-introns_count_per_kb_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "introns_count_per_kb")])
-introns_width_prop_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "introns_width_prop")])
-IRratio_median_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "IRratio_median")])
-Lethal_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Lethal")])
-Core_eukaryotic_gene_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Core_eukaryotic_gene")])
-Tandem_duplicate_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Tandem_duplicate")])
-OrthoMCL_paralog_cluster_size_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "OrthoMCL_paralog_cluster_size")])
-Sequence_conservation_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Sequence_conservation")])
-Nucleotide_diversity_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Nucleotide_diversity")])
-Ks_with_paralog_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Ks_with_paralog")])
-KaKs_with_paralog_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "KaKs_with_paralog")])
-mD_hotspot_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "mD_hotspot")])
-mD_coldspot_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "mD_coldspot")])
+kappa_mat <- as.matrix(featDF_alpha[,which(colnames(featDF_alpha) == "kappa")])
+alpha_mat <- as.matrix(featDF_alpha[,which(colnames(featDF_alpha) == "alpha")])
+stocha_mat <- as.matrix(featDF_alpha[,which(colnames(featDF_alpha) == "stocha")])
+kappa_C_density_mat <- as.matrix(featDF_alpha[,which(colnames(featDF_alpha) == "kappa_C_density")])
+stocha_C_density_mat <- as.matrix(featDF_alpha[,which(colnames(featDF_alpha) == "stocha_C_density")])
+mean_mC_mat <- as.matrix(featDF_alpha[,which(colnames(featDF_alpha) == paste0("mean_m", context))])
+gbM_mat <- as.matrix(featDF_alpha[,which(colnames(featDF_alpha) == "gbM")])
+Expression_breadth_mat <- as.matrix(featDF_alpha[,which(colnames(featDF_alpha) == "Expression_breadth")])
+Expression_variation_mat <- as.matrix(featDF_alpha[,which(colnames(featDF_alpha) == "Expression_variation")])
+Median_expression_mat <- log2(as.matrix(featDF_alpha[,which(colnames(featDF_alpha) == "Median_expression")])+1)
+Coexpression_module_size_mat <- as.matrix(featDF_alpha[,which(colnames(featDF_alpha) == "Coexpression_module_size")])
+feature_width_mat <- as.matrix(featDF_alpha[,which(colnames(featDF_alpha) == "feature_width")])
+Amino_acids_mat <- as.matrix(featDF_alpha[,which(colnames(featDF_alpha) == "Amino_acids")])
+Protein_domains_mat <- as.matrix(featDF_alpha[,which(colnames(featDF_alpha) == "Protein_domains")])
+exons_count_per_kb_mat <- as.matrix(featDF_alpha[,which(colnames(featDF_alpha) == "exons_count_per_kb")])
+exons_width_prop_mat <- as.matrix(featDF_alpha[,which(colnames(featDF_alpha) == "exons_width_prop")])
+introns_count_per_kb_mat <- as.matrix(featDF_alpha[,which(colnames(featDF_alpha) == "introns_count_per_kb")])
+introns_width_prop_mat <- as.matrix(featDF_alpha[,which(colnames(featDF_alpha) == "introns_width_prop")])
+IRratio_median_mat <- as.matrix(featDF_alpha[,which(colnames(featDF_alpha) == "IRratio_median")])
+Lethal_mat <- as.matrix(featDF_alpha[,which(colnames(featDF_alpha) == "Lethal")])
+Core_eukaryotic_gene_mat <- as.matrix(featDF_alpha[,which(colnames(featDF_alpha) == "Core_eukaryotic_gene")])
+Tandem_duplicate_mat <- as.matrix(featDF_alpha[,which(colnames(featDF_alpha) == "Tandem_duplicate")])
+OrthoMCL_paralog_cluster_size_mat <- as.matrix(featDF_alpha[,which(colnames(featDF_alpha) == "OrthoMCL_paralog_cluster_size")])
+Sequence_conservation_mat <- as.matrix(featDF_alpha[,which(colnames(featDF_alpha) == "Sequence_conservation")])
+Nucleotide_diversity_mat <- as.matrix(featDF_alpha[,which(colnames(featDF_alpha) == "Nucleotide_diversity")])
+Ks_with_paralog_mat <- as.matrix(featDF_alpha[,which(colnames(featDF_alpha) == "Ks_with_paralog")])
+KaKs_with_paralog_mat <- as.matrix(featDF_alpha[,which(colnames(featDF_alpha) == "KaKs_with_paralog")])
+mD_hotspot_mat <- as.matrix(featDF_alpha[,which(colnames(featDF_alpha) == "mD_hotspot")])
+mD_coldspot_mat <- as.matrix(featDF_alpha[,which(colnames(featDF_alpha) == "mD_coldspot")])
 
-#min_ACF_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "min_ACF")])
-#AraNet_edges_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "AraNet_edges")])
-#PPIs_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "PPIs")])
-#Expression_correlation_Ks_lt2_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Expression_correlation_Ks_lt2")])
-#Expression_correlation_mat <- as.matrix(featDF_kappa[,which(colnames(featDF_kappa) == "Expression_correlation")])
+#min_ACF_mat <- as.matrix(featDF_alpha[,which(colnames(featDF_alpha) == "min_ACF")])
+#AraNet_edges_mat <- as.matrix(featDF_alpha[,which(colnames(featDF_alpha) == "AraNet_edges")])
+#PPIs_mat <- as.matrix(featDF_alpha[,which(colnames(featDF_alpha) == "PPIs")])
+#Expression_correlation_Ks_lt2_mat <- as.matrix(featDF_alpha[,which(colnames(featDF_alpha) == "Expression_correlation_Ks_lt2")])
+#Expression_correlation_mat <- as.matrix(featDF_alpha[,which(colnames(featDF_alpha) == "Expression_correlation")])
 
 kappa_colFun <- colorRamp2(quantile(
     kappa_mat,
@@ -708,7 +708,7 @@ mD_coldspot_htmp <- featureHeatmap(mat = mD_coldspot_mat,
 #  rowOrder = c(1:nrow(Expression_correlation_mat)))
 
 
-htmps <- kappa_htmp + alpha_htmp + stocha_htmp +
+htmps <- alpha_htmp + kappa_htmp + stocha_htmp +
          kappa_C_density_htmp + stocha_C_density_htmp +
          mean_mC_htmp + gbM_htmp +
          mD_hotspot_htmp + mD_coldspot_htmp +
@@ -718,13 +718,13 @@ htmps <- kappa_htmp + alpha_htmp + stocha_htmp +
 
 legendGap <- unit(15, "mm")
 
-pdf(paste0(plotDir_kappa,
+pdf(paste0(plotDir_alpha,
            featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase, "_", context,
-           "_NAmax", NAmax, "_all_filt_heatmap_kappa_", paste0(chrName, collapse = "_"), ".pdf"),
+           "_NAmax", NAmax, "_all_filt_heatmap_alpha_", paste0(chrName, collapse = "_"), ".pdf"),
     width = 1.5*length(htmps), height = 10)
 draw(htmps,
      gap = unit(1, "mm"),
-     column_title = paste0("Genes ordered by decreasing among-read agreement (kappa; m", context, ") in gene ", featRegion), 
+     column_title = paste0("Genes ordered by decreasing among-read agreement (alpha; m", context, ") in gene ", featRegion), 
      column_title_gp = gpar(font = 2, fontsize = 16),
      heatmap_legend_side = "bottom",
      legend_gap = legendGap)
