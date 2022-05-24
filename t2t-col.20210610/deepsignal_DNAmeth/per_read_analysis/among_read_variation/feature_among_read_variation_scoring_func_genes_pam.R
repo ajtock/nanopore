@@ -1234,6 +1234,50 @@ write.table(featDF_filt_kappa_mC_cluster4,
             quote = F, sep = "\t", row.names = F, col.names = T)
 
 
+# Filter by ka_alpha_all and mean_mC_all cluster
+featDF_filt_alpha_mC_cluster1 <- featDF_filt %>%
+  dplyr::filter(kaAgreement_cluster == "Cluster 1")
+featDF_filt_alpha_mC_cluster2 <- featDF_filt %>%
+  dplyr::filter(kaAgreement_cluster == "Cluster 2")
+featDF_filt_alpha_mC_cluster3 <- featDF_filt %>%
+  dplyr::filter(kaAgreement_cluster == "Cluster 3")
+featDF_filt_alpha_mC_cluster4 <- featDF_filt %>%
+  dplyr::filter(kaAgreement_cluster == "Cluster 4")
+
+write.table(featDF_filt_alpha_mC_cluster1,
+            paste0(outDir,
+                   featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                   "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_ka_alpha_all_mean_mC_all_cluster1_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+write.table(featDF_filt_alpha_mC_cluster2,
+            paste0(outDir,
+                   featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                   "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_ka_alpha_all_mean_mC_all_cluster2_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+write.table(featDF_filt_alpha_mC_cluster3,
+            paste0(outDir,
+                   featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                   "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_ka_alpha_all_mean_mC_all_cluster3_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+write.table(featDF_filt_alpha_mC_cluster4,
+            paste0(outDir,
+                   featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                   "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_ka_alpha_all_mean_mC_all_cluster4_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+
+
 # Filter by mean_stocha_all and mean_mC_all cluster
 featDF_filt_stocha_mC_cluster1 <- featDF_filt %>%
   dplyr::filter(Stochasticity_cluster == "Cluster 1")
