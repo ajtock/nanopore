@@ -69,13 +69,17 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
 
     # Calculate mean methylation for region
     mean_mC_pwider_str_x <- mean(as.matrix(stocha_pwider_str_x), na.rm = T)
+    
+    # Calculate mean and standard deviation of per-read mean methylation
+    mean_read_mC_pwider_str_x <- mean(colMeans(stocha_pwider_str_x, na.rm = T), na.rm = T)
+    sd_read_mC_pwider_str_x <- sd(colMeans(stocha_pwider_str_x, na.rm = T), na.rm = T)
 
     # Calculate Fleiss' kappa
     if(nrow(pwider_str_x) >= min_Cs && nrow(pwider_str_x) <= max_Cs &&
        ncol(pwider_str_x) >= min_reads && ncol(pwider_str_x) <= max_reads) {
 
       # Calculate Fleiss' kappa
-      fkappa_pwider_str_x <- kappam.fleiss(pwider_str_x, detail = F)
+      fkappa_pwider_str_x <- irr::kappam.fleiss(pwider_str_x, detail = F)
 
       # Sanity checks
       stopifnot(fkappa_pwider_str_x$raters == num_reads_retained_str_x)
@@ -97,8 +101,23 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
 
     }
 
+    # Calculate Krippendorff's alpha, an inter-rater reliability or agreement metric that can handle incomplete data,
+    # and for which "computed reliabilities are comparable across any numbers of coders [raters], values, ... and unequal sample sizes.";
+    # https://en.wikipedia.org/wiki/Krippendorff%27s_alpha
+    # Also calculate site-to-site stochasticity
     if(nrow(stocha_pwider_str_x) >= min_Cs && nrow(stocha_pwider_str_x) <= max_Cs &&
        ncol(stocha_pwider_str_x) >= min_reads && ncol(stocha_pwider_str_x) <= max_reads) {
+
+      # Calculate Krippendorff's alpha
+      kalpha_pwider_str_x <- irr::kripp.alpha(t(stocha_pwider_str_x), method = "nominal")
+
+      # Sanity checks
+      stopifnot(kalpha_pwider_str_x$raters == num_reads_retained_str_x)
+      stopifnot(kalpha_pwider_str_x$subjects == stocha_num_Cs_retained_str_x)
+
+      kalpha_pwider_str_x_alpha <- kalpha_pwider_str_x$value
+      kalpha_pwider_str_x_nmatchval <- kalpha_pwider_str_x$nmatchval
+
 
       # Calculate absolute differences between methylation statuses of neighbouring Cs within each read 
       absdiff_pwider_str_x <- abs(diff(as.matrix(stocha_pwider_str_x)))
@@ -112,6 +131,7 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
 
       # Report number of rows (cytosines) retained for other calculations
       stocha_pwider_str_x_Cs <- nrow(stocha_pwider_str_x)
+
 
       # Calculate autocorrelations between methylation statuses of neighbouring Cs within each read
       acf_pwider_str_x_list <- apply(stocha_pwider_str_x, MARGIN = 2,
@@ -147,6 +167,8 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
 
     } else {
 
+      kalpha_pwider_str_x_alpha <- NaN
+      kalpha_pwider_str_x_nmatchval <- NaN
       mean_stocha_pwider_str_x <- NaN
       median_stocha_pwider_str_x <- NaN
       sd_stocha_pwider_str_x <- NaN
@@ -170,6 +192,8 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
                                   feature_width = chr_featGR[featNum]$feature_width,
 
                                   mean_mC_str = mean_mC_pwider_str_x,
+                                  mean_read_mC_str = mean_read_mC_pwider_str_x,
+                                  sd_read_mC_str = sd_read_mC_pwider_str_x,
 
                                   fk_kappa_str = fkappa_pwider_str_x_kappa,
                                   fk_pval_str = fkappa_pwider_str_x_pval,
@@ -177,6 +201,8 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
                                   fk_reads_str = fkappa_pwider_str_x_reads,
                                   fk_Cs_str = fkappa_pwider_str_x_Cs,
 
+                                  ka_alpha_str = kalpha_pwider_str_x_alpha,
+                                  ka_nmatchval_str = kalpha_pwider_str_x_nmatchval,
                                   mean_stocha_str = mean_stocha_pwider_str_x,
                                   median_stocha_str = median_stocha_pwider_str_x,
                                   sd_stocha_str = sd_stocha_pwider_str_x,
@@ -201,6 +227,8 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
                                   feature_width = chr_featGR[featNum]$feature_width,
 
                                   mean_mC_str = NaN,
+                                  mean_read_mC_str = NaN,
+                                  sd_read_mC_str = NaN,
 
                                   fk_kappa_str = NaN,
                                   fk_pval_str = NaN,
@@ -208,6 +236,8 @@ makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
                                   fk_reads_str = NaN,
                                   fk_Cs_str = NaN,
 
+                                  ka_alpha_str = NaN,
+                                  ka_nmatchval_str = NaN,
                                   mean_stocha_str = NaN,
                                   median_stocha_str = NaN,
                                   sd_stocha_str = NaN,
