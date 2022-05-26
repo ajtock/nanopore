@@ -48,6 +48,7 @@ library(umap)
 library(RColorBrewer)
 library(colorspace)
 library(viridis)
+library(pals)
 
 outDir <- paste0(featName, "_", featRegion, "/", paste0(chrName, collapse = "_"), "/")
 plotDir <- paste0(outDir, "plots/")
@@ -72,6 +73,7 @@ featDF_filt <- read.table(paste0(outDir,
                           header = T)
 featDF_filt$kappa_C_density <- featDF_filt$fk_Cs_all / ( (featDF_filt$end - featDF_filt$start + 1) / 1e3)
 featDF_filt$stocha_C_density <- featDF_filt$stocha_Cs_all / ( (featDF_filt$end - featDF_filt$start + 1) / 1e3)
+colnames(featDF_filt)[which(colnames(featDF_filt) == "score")] <- "Superfamily"
 
 mat_filt <- featDF_filt[,which(colnames(featDF_filt) %in%
                                c("mean_mC_all", "fk_kappa_all", "ka_alpha_all", "mean_stocha_all")), drop = F]
@@ -184,7 +186,7 @@ featDF_filt$Stochasticity_cluster <- paste0("Cluster ", Stochasticity_mat_filt_p
 #                                      fkAgreement_cluster = featDF_filt$fkAgreement_cluster,
 #                                      kaAgreement_cluster = featDF_filt$kaAgreement_cluster,
 #                                      Stochasticity_cluster = featDF_filt$Stochasticity_cluster,
-#                                      Superfamily = featDF_filt$score,
+#                                      Superfamily = featDF_filt$Superfamily,
 #                                      type = "PCA")
 #head(fkAgreement_mat_filt_pca_dim)
 #
@@ -428,7 +430,7 @@ kaAgreement_mat_filt_pca_dim <- cbind(as.data.frame(kaAgreement_mat_filt_pca_dim
                                       fkAgreement_cluster = featDF_filt$fkAgreement_cluster,
                                       kaAgreement_cluster = featDF_filt$kaAgreement_cluster,
                                       Stochasticity_cluster = featDF_filt$Stochasticity_cluster,
-                                      Superfamily = featDF_filt$score,
+                                      Superfamily = featDF_filt$Superfamily,
                                       type = "PCA")
 head(kaAgreement_mat_filt_pca_dim)
 
@@ -699,7 +701,7 @@ Stochasticity_mat_filt_pca_dim <- cbind(as.data.frame(Stochasticity_mat_filt_pca
                                                       fkAgreement_cluster = featDF_filt$fkAgreement_cluster,
                                                       kaAgreement_cluster = featDF_filt$kaAgreement_cluster,
                                                       Stochasticity_cluster = featDF_filt$Stochasticity_cluster,
-                                                      Superfamily = featDF_filt$score,
+                                                      Superfamily = featDF_filt$Superfamily,
                                                       type = "PCA")
 head(Stochasticity_mat_filt_pca_dim)
 
@@ -949,7 +951,7 @@ ggsave(paste0(plotDir, "gg_Stochasticity_mat_filt_pca_dim_loadings.pdf"),
        height = 4, width = 4*length(gg_cow_list_Stochasticity_mat_filt_pca_dim_loadings), limitsize = F)
 
 
-# Plot relationships and define groups
+# Plot relationships and show groups
 trendPlot <- function(dataFrame, mapping, paletteName, xvar, yvar, clusterlab, xlab, ylab, xaxtrans, yaxtrans, xbreaks, ybreaks, xlabels, ylabels) {
   xvar <- enquo(xvar)
   yvar <- enquo(yvar)
@@ -993,6 +995,63 @@ trendPlot <- function(dataFrame, mapping, paletteName, xvar, yvar, clusterlab, x
                          digits = 5))))
 }
 
+trendPlot2 <- function(dataFrame, mapping, paletteName, xvar, yvar, clusterlab, xlab, ylab, xaxtrans, yaxtrans, xbreaks, ybreaks, xlabels, ylabels) {
+  xvar <- enquo(xvar)
+  yvar <- enquo(yvar)
+  ggplot(data = dataFrame,
+         mapping = mapping) +
+  geom_point(size = 0.7, alpha = 0.5) +
+  scale_x_continuous(trans = xaxtrans,
+                     breaks = xbreaks,
+                     labels = xlabels) +
+  scale_y_continuous(trans = yaxtrans,
+                     breaks = ybreaks,
+                     labels = ylabels) +
+  scale_colour_manual(values = paletteName) +
+  geom_smooth(colour = "black", fill = "grey70", alpha = 0.9,
+              method = "gam", formula = y ~ s(x, bs = "cs")) +
+  labs(colour = clusterlab,
+       x = xlab,
+       y = ylab) +
+  theme_bw() +
+  theme(
+        axis.ticks = element_line(size = 0.5, colour = "black"),
+        axis.ticks.length = unit(0.25, "cm"),
+        axis.text.x = element_text(size = 16, colour = "black"),
+        axis.text.y = element_text(size = 16, colour = "black"),
+        axis.title = element_text(size = 18, colour = "black"),
+        axis.line = element_line(size = 0.5, colour = "black"),
+        panel.background = element_blank(),
+        panel.border = element_blank(),
+#        panel.border = element_rect(size = 1.0, colour = "black"),
+#        panel.grid = element_blank(),
+        legend.key.height = unit(4, "mm"),
+        strip.text.x = element_text(size = 20, colour = "white"),
+        strip.background = element_rect(fill = "black", colour = "black"),
+        plot.margin = unit(c(0.3,1.2,0.3,0.3), "cm"),
+        plot.title = element_text(hjust = 0.5, size = 18)) +
+  ggtitle(bquote(italic(r[s]) ~ "=" ~
+                 .(round(cor.test(select(dataFrame, !!enquo(xvar))[,1], select(dataFrame, !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
+                         digits = 2)) *
+                 ";" ~ italic(P) ~ "=" ~
+                 .(round(min(0.5, cor.test(select(dataFrame, !!enquo(xvar))[,1], select(dataFrame, !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame)[1]/100) )),
+                         digits = 5))))
+}
+
+superfamNames <- sort(unique(featDF_filt$Superfamily))
+superfamNames <- c(superfamNames[3], superfamNames[1], superfamNames[14],
+                   superfamNames[10], superfamNames[7], superfamNames[13],
+                   superfamNames[6], superfamNames[2], superfamNames[4],
+                   superfamNames[5], superfamNames[8], superfamNames[9],
+                   superfamNames[12], superfamNames[11])
+superfamNames <- superfamNames[-grep("Unclassified", superfamNames)]
+superfamNamesPlot <- gsub("Pogo_Tc1_Mariner", "Pogo/Tc1/Mar", superfamNames)
+superfamNamesPlot <- gsub("_", " ", superfamNamesPlot)
+superfamNamesPlot <- gsub("classified", ".", superfamNamesPlot)
+
+Superfamily_colFun <- cols25(n = 25)[-c(7:16, 25)][1:length(superfamNames)]
+stopifnot(length(Superfamily_colFun) == length(superfamNames))
+names(Superfamily_colFun) <- superfamNames
 
 ggTrend_mean_mC_all_fk_kappa_all_filt <- trendPlot(dataFrame = featDF_filt,
                                                    mapping = aes(x = mean_mC_all, y = fk_kappa_all, colour = fkAgreement_cluster),
@@ -1026,6 +1085,40 @@ ggTrend_mean_mC_all_ka_alpha_all_filt <- trendPlot(dataFrame = featDF_filt,
                                                    xlabels = trans_format("log10", math_format(10^.x)),
                                                    ylabels = trans_format("log10", math_format(10^.x)))
 ggTrend_mean_mC_all_ka_alpha_all_filt <- ggTrend_mean_mC_all_ka_alpha_all_filt +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+ggTrend_mean_mC_all_ka_alpha_all_filt_Superfamily <- trendPlot2(dataFrame = featDF_filt,
+                                                                mapping = aes(x = mean_mC_all, y = ka_alpha_all, colour = Superfamily),
+                                                                paletteName = Superfamily_colFun,
+                                                                xvar = mean_mC_all,
+                                                                yvar = ka_alpha_all,
+                                                                clusterlab = "Superfamily",
+                                                                xlab = bquote(.(featName)*" mean m"*.(context)),
+                                                                ylab = bquote(.(featName)*" kaAgreement (m"*.(context)*")"),
+                                                                xaxtrans = log10_trans(),
+                                                                yaxtrans = log10_trans(),
+                                                                xbreaks = trans_breaks("log10", function(x) 10^x),
+                                                                ybreaks = trans_breaks("log10", function(x) 10^x),
+                                                                xlabels = trans_format("log10", math_format(10^.x)),
+                                                                ylabels = trans_format("log10", math_format(10^.x)))
+ggTrend_mean_mC_all_ka_alpha_all_filt_Superfamily <- ggTrend_mean_mC_all_ka_alpha_all_filt_Superfamily +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+ggTrend_feature_width_ka_alpha_all_filt_Superfamily <- trendPlot2(dataFrame = featDF_filt,
+                                                                  mapping = aes(x = feature_width, y = ka_alpha_all, colour = Superfamily),
+                                                                  paletteName = Superfamily_colFun,
+                                                                  xvar = feature_width,
+                                                                  yvar = ka_alpha_all,
+                                                                  clusterlab = "Superfamily",
+                                                                  xlab = bquote(.(featName)*" length (bp)"),
+                                                                  ylab = bquote(.(featName)*" kaAgreement (m"*.(context)*")"),
+                                                                  xaxtrans = log10_trans(),
+                                                                  yaxtrans = log10_trans(),
+                                                                  xbreaks = trans_breaks("log10", function(x) 10^x),
+                                                                  ybreaks = trans_breaks("log10", function(x) 10^x),
+                                                                  xlabels = trans_format("log10", math_format(10^.x)),
+                                                                  ylabels = trans_format("log10", math_format(10^.x)))
+ggTrend_feature_width_ka_alpha_all_filt_Superfamily <- ggTrend_feature_width_ka_alpha_all_filt_Superfamily +
   facet_grid(cols = vars(chr), scales = "free_x")
 
 ggTrend_mean_mC_all_mean_stocha_all_filt <- trendPlot(dataFrame = featDF_filt,
@@ -1150,6 +1243,8 @@ ggTrend_ka_alpha_all_mean_stocha_all_filt <- ggTrend_ka_alpha_all_mean_stocha_al
 gg_cow_list1 <- list(
                      ggTrend_mean_mC_all_fk_kappa_all_filt,
                      ggTrend_mean_mC_all_ka_alpha_all_filt,
+                     ggTrend_mean_mC_all_ka_alpha_all_filt_Superfamily,
+                     ggTrend_feature_width_ka_alpha_all_filt_Superfamily,
                      ggTrend_mean_mC_all_mean_stocha_all_filt,
                      ggTrend_ka_alpha_all_fk_kappa_all_filt,
                      ggTrend_fk_kappa_all_ka_alpha_all_filt,
