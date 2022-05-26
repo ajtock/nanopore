@@ -90,7 +90,7 @@ fkAgreement_mat_filt_pamk <- fpc::pamk(data = mat_filt[ , c(1,2), drop = F],
 fkAgreement_mat_filt_pamk_n_cl <- fkAgreement_mat_filt_pamk$nc
 print(fkAgreement_mat_filt_pamk_n_cl)
 fkAgreement_mat_filt_pam <- cluster::pam(x = mat_filt[ , c(1,2), drop = F],
-                                         k = fkAgreement_mat_filt_pamk_n_cl,
+                                         k = 4,
                                          diss = F,
                                          metric = "manhattan",
                                          stand = T,
@@ -146,7 +146,7 @@ Stochasticity_mat_filt_pamk <- fpc::pamk(data = mat_filt[ , c(1,4), drop = F],
 Stochasticity_mat_filt_pamk_n_cl <- Stochasticity_mat_filt_pamk$nc
 print(Stochasticity_mat_filt_pamk_n_cl)
 Stochasticity_mat_filt_pam <- cluster::pam(x = mat_filt[ , c(1,4), drop = F],
-                                           k = Stochasticity_mat_filt_pamk_n_cl,
+                                           k = 4,
                                            diss = F,
                                            metric = "manhattan",
                                            stand = T,
