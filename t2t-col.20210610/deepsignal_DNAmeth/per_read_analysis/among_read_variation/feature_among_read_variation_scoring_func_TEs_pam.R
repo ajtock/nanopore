@@ -1,13 +1,13 @@
 #!/usr/bin/env Rscript
 
 # Analysis:
-# Group genes into clusters using partitioning around medoids (PAM),
+# Group TEs into clusters using partitioning around medoids (PAM),
 # based on among-read agreement or site-to-site variability in DNA methylation patterns,
 # and mean DNA methylation
 
 # Usage:
 # conda activate R-4.0.0
-# ./feature_among_read_variation_scoring_func_genes_pam.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'gene' 'regions'
+# ./feature_among_read_variation_scoring_func_TEs_pam.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CHG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'TE' 'bodies'
 # conda deactivate
 
 # Divide each read into adjacent segments each consisting of a given number of consecutive cytosines,
@@ -15,12 +15,12 @@
 
 #sampleName <- "Col_0_deepsignalDNAmeth_30kb_90pc"
 #refbase <- "t2t-col.20210610"
-#context <- "CpG"
+#context <- "CHG"
 #NAmax <- 0.50
 #CPUpc <- 1.00
 #chrName <- unlist(strsplit("Chr1,Chr2,Chr3,Chr4,Chr5", split = ","))
-#featName <- "gene"
-#featRegion <- "regions"
+#featName <- "TE"
+#featRegion <- "bodies"
 
 args <- commandArgs(trailingOnly = T)
 sampleName <- args[1]
@@ -72,8 +72,6 @@ featDF_filt <- read.table(paste0(outDir,
                           header = T)
 featDF_filt$kappa_C_density <- featDF_filt$fk_Cs_all / ( (featDF_filt$end - featDF_filt$start + 1) / 1e3)
 featDF_filt$stocha_C_density <- featDF_filt$stocha_Cs_all / ( (featDF_filt$end - featDF_filt$start + 1) / 1e3)
-featDF_filt$parent <- sub(pattern = "\\.\\d+", replacement = "", x = featDF_filt$name) 
-featDF_filt$parent <- sub(pattern = "_\\d+", replacement = "", x = featDF_filt$parent) 
 
 mat_filt <- featDF_filt[,which(colnames(featDF_filt) %in%
                                c("mean_mC_all", "fk_kappa_all", "ka_alpha_all", "mean_stocha_all")), drop = F]
