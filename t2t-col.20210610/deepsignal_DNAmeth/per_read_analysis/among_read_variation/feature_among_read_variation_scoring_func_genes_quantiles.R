@@ -7,7 +7,7 @@
 
 # Usage:
 # conda activate R-4.0.0
-# ./feature_among_read_variation_scoring_func_genes_quantiles.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'gene' 'regions' 4
+# ./feature_among_read_variation_scoring_func_genes_quantiles.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'gene' 'regions' 0.975 0.25
 # conda deactivate
 
 # Divide each read into adjacent segments each consisting of a given number of consecutive cytosines,
@@ -21,7 +21,8 @@
 #chrName <- unlist(strsplit("Chr1,Chr2,Chr3,Chr4,Chr5", split = ","))
 #featName <- "gene"
 #featRegion <- "regions"
-#quantiles <- 4
+#topQthresh <- 0.975
+#botQthresh <- 0.25
 
 args <- commandArgs(trailingOnly = T)
 sampleName <- args[1]
@@ -32,7 +33,8 @@ CPUpc <- as.numeric(args[5])
 chrName <- unlist(strsplit(args[6], split = ","))
 featName <- args[7]
 featRegion <- args[8]
-quantiles <- as.numeric(args[9])
+topQthresh <- as.numeric(args[9])
+botQthresh <- as.numeric(args[10])
 
 print(paste0("Proportion of CPUs:", CPUpc))
 options(stringsAsFactors = F)
@@ -93,11 +95,11 @@ featDF_filt[ which(!is.na(featDF_filt[,which(colnames(featDF_filt) == "mC")]) &
                    1 &
                    rank(featDF_filt[,which(colnames(featDF_filt) == "mC")]) /
                    length(featDF_filt[,which(colnames(featDF_filt) == "mC")]) >
-                   0.95), ]$mC_quantile <- "Quantile 4"
+                   topQthresh), ]$mC_quantile <- "Quantile 4"
 featDF_filt[ which(!is.na(featDF_filt[,which(colnames(featDF_filt) == "mC")]) &
                    rank(featDF_filt[,which(colnames(featDF_filt) == "mC")]) /
                    length(featDF_filt[,which(colnames(featDF_filt) == "mC")]) <=
-                   0.95 &
+                   topQthresh &
                    rank(featDF_filt[,which(colnames(featDF_filt) == "mC")]) /
                    length(featDF_filt[,which(colnames(featDF_filt) == "mC")]) >
                    0.50), ]$mC_quantile <- "Quantile 3"
@@ -107,11 +109,11 @@ featDF_filt[ which(!is.na(featDF_filt[,which(colnames(featDF_filt) == "mC")]) &
                    0.50 &
                    rank(featDF_filt[,which(colnames(featDF_filt) == "mC")]) /
                    length(featDF_filt[,which(colnames(featDF_filt) == "mC")]) >
-                   0.25), ]$mC_quantile <- "Quantile 2"
+                   botQthresh), ]$mC_quantile <- "Quantile 2"
 featDF_filt[ which(!is.na(featDF_filt[,which(colnames(featDF_filt) == "mC")]) &
                    rank(featDF_filt[,which(colnames(featDF_filt) == "mC")]) /
                    length(featDF_filt[,which(colnames(featDF_filt) == "mC")]) <=
-                   0.25 &
+                   botQthresh &
                    rank(featDF_filt[,which(colnames(featDF_filt) == "mC")]) /
                    length(featDF_filt[,which(colnames(featDF_filt) == "mC")]) >=
                    0.0), ]$mC_quantile <- "Quantile 1"
@@ -1139,135 +1141,264 @@ ggsave(paste0(plotDir,
        height = 5*length(gg_cow_list1), width = 5*length(chrName), limitsize = F)
 
 
+
 # Extract feature quantiles to enable enrichment analysis
 
-# Filter by fk_kappa_all and mean_mC_all quantile
-featDF_filt_kappa_mC_quantile1 <- featDF_filt %>%
-  dplyr::filter(fkAgreement_quantile == "Cluster 1")
-featDF_filt_kappa_mC_quantile2 <- featDF_filt %>%
-  dplyr::filter(fkAgreement_quantile == "Cluster 2")
-featDF_filt_kappa_mC_quantile3 <- featDF_filt %>%
-  dplyr::filter(fkAgreement_quantile == "Cluster 3")
-featDF_filt_kappa_mC_quantile4 <- featDF_filt %>%
-  dplyr::filter(fkAgreement_quantile == "Cluster 4")
 
-write.table(featDF_filt_kappa_mC_quantile1,
+# Filter by fk_kappa_all and mean_mC_all quantile
+featDF_filt_kappa_mC_quantile1_upper <- featDF_filt_mC_quantiles %>%
+  dplyr::filter(fkAgreement_quantile == "Quantile 1 upper")
+featDF_filt_kappa_mC_quantile2_upper <- featDF_filt_mC_quantiles %>%
+  dplyr::filter(fkAgreement_quantile == "Quantile 2 upper")
+featDF_filt_kappa_mC_quantile3_upper <- featDF_filt_mC_quantiles %>%
+  dplyr::filter(fkAgreement_quantile == "Quantile 3 upper")
+featDF_filt_kappa_mC_quantile4_upper <- featDF_filt_mC_quantiles %>%
+  dplyr::filter(fkAgreement_quantile == "Quantile 4 upper")
+
+write.table(featDF_filt_kappa_mC_quantile1_upper,
             paste0(outDir,
                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                    "_", context,
                    "_NAmax", NAmax,
-                   "_filt_df_fk_kappa_all_mean_mC_all_quantile1_",
+                   "_filt_df_fk_kappa_all_mean_mC_all_quantile1_upper_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
-write.table(featDF_filt_kappa_mC_quantile2,
+write.table(featDF_filt_kappa_mC_quantile2_upper,
             paste0(outDir,
                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                    "_", context,
                    "_NAmax", NAmax,
-                   "_filt_df_fk_kappa_all_mean_mC_all_quantile2_",
+                   "_filt_df_fk_kappa_all_mean_mC_all_quantile2_upper_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
-write.table(featDF_filt_kappa_mC_quantile3,
+write.table(featDF_filt_kappa_mC_quantile3_upper,
             paste0(outDir,
                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                    "_", context,
                    "_NAmax", NAmax,
-                   "_filt_df_fk_kappa_all_mean_mC_all_quantile3_",
+                   "_filt_df_fk_kappa_all_mean_mC_all_quantile3_upper_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
-write.table(featDF_filt_kappa_mC_quantile4,
+write.table(featDF_filt_kappa_mC_quantile4_upper,
             paste0(outDir,
                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                    "_", context,
                    "_NAmax", NAmax,
-                   "_filt_df_fk_kappa_all_mean_mC_all_quantile4_",
+                   "_filt_df_fk_kappa_all_mean_mC_all_quantile4_upper_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+
+featDF_filt_kappa_mC_quantile1_lower <- featDF_filt_mC_quantiles %>%
+  dplyr::filter(fkAgreement_quantile == "Quantile 1 lower")
+featDF_filt_kappa_mC_quantile2_lower <- featDF_filt_mC_quantiles %>%
+  dplyr::filter(fkAgreement_quantile == "Quantile 2 lower")
+featDF_filt_kappa_mC_quantile3_lower <- featDF_filt_mC_quantiles %>%
+  dplyr::filter(fkAgreement_quantile == "Quantile 3 lower")
+featDF_filt_kappa_mC_quantile4_lower <- featDF_filt_mC_quantiles %>%
+  dplyr::filter(fkAgreement_quantile == "Quantile 4 lower")
+
+write.table(featDF_filt_kappa_mC_quantile1_lower,
+            paste0(outDir,
+                   featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                   "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_fk_kappa_all_mean_mC_all_quantile1_lower_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+write.table(featDF_filt_kappa_mC_quantile2_lower,
+            paste0(outDir,
+                   featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                   "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_fk_kappa_all_mean_mC_all_quantile2_lower_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+write.table(featDF_filt_kappa_mC_quantile3_lower,
+            paste0(outDir,
+                   featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                   "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_fk_kappa_all_mean_mC_all_quantile3_lower_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+write.table(featDF_filt_kappa_mC_quantile4_lower,
+            paste0(outDir,
+                   featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                   "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_fk_kappa_all_mean_mC_all_quantile4_lower_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
 
 
 # Filter by ka_alpha_all and mean_mC_all quantile
-featDF_filt_alpha_mC_quantile1 <- featDF_filt %>%
-  dplyr::filter(kaAgreement_quantile == "Cluster 1")
-featDF_filt_alpha_mC_quantile2 <- featDF_filt %>%
-  dplyr::filter(kaAgreement_quantile == "Cluster 2")
-featDF_filt_alpha_mC_quantile3 <- featDF_filt %>%
-  dplyr::filter(kaAgreement_quantile == "Cluster 3")
-featDF_filt_alpha_mC_quantile4 <- featDF_filt %>%
-  dplyr::filter(kaAgreement_quantile == "Cluster 4")
+featDF_filt_alpha_mC_quantile1_upper <- featDF_filt_mC_quantiles %>%
+  dplyr::filter(kaAgreement_quantile == "Quantile 1 upper")
+featDF_filt_alpha_mC_quantile2_upper <- featDF_filt_mC_quantiles %>%
+  dplyr::filter(kaAgreement_quantile == "Quantile 2 upper")
+featDF_filt_alpha_mC_quantile3_upper <- featDF_filt_mC_quantiles %>%
+  dplyr::filter(kaAgreement_quantile == "Quantile 3 upper")
+featDF_filt_alpha_mC_quantile4_upper <- featDF_filt_mC_quantiles %>%
+  dplyr::filter(kaAgreement_quantile == "Quantile 4 upper")
 
-write.table(featDF_filt_alpha_mC_quantile1,
+write.table(featDF_filt_alpha_mC_quantile1_upper,
             paste0(outDir,
                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                    "_", context,
                    "_NAmax", NAmax,
-                   "_filt_df_ka_alpha_all_mean_mC_all_quantile1_",
+                   "_filt_df_ka_alpha_all_mean_mC_all_quantile1_upper_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
-write.table(featDF_filt_alpha_mC_quantile2,
+write.table(featDF_filt_alpha_mC_quantile2_upper,
             paste0(outDir,
                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                    "_", context,
                    "_NAmax", NAmax,
-                   "_filt_df_ka_alpha_all_mean_mC_all_quantile2_",
+                   "_filt_df_ka_alpha_all_mean_mC_all_quantile2_upper_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
-write.table(featDF_filt_alpha_mC_quantile3,
+write.table(featDF_filt_alpha_mC_quantile3_upper,
             paste0(outDir,
                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                    "_", context,
                    "_NAmax", NAmax,
-                   "_filt_df_ka_alpha_all_mean_mC_all_quantile3_",
+                   "_filt_df_ka_alpha_all_mean_mC_all_quantile3_upper_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
-write.table(featDF_filt_alpha_mC_quantile4,
+write.table(featDF_filt_alpha_mC_quantile4_upper,
             paste0(outDir,
                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                    "_", context,
                    "_NAmax", NAmax,
-                   "_filt_df_ka_alpha_all_mean_mC_all_quantile4_",
+                   "_filt_df_ka_alpha_all_mean_mC_all_quantile4_upper_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+
+featDF_filt_alpha_mC_quantile1_lower <- featDF_filt_mC_quantiles %>%
+  dplyr::filter(kaAgreement_quantile == "Quantile 1 lower")
+featDF_filt_alpha_mC_quantile2_lower <- featDF_filt_mC_quantiles %>%
+  dplyr::filter(kaAgreement_quantile == "Quantile 2 lower")
+featDF_filt_alpha_mC_quantile3_lower <- featDF_filt_mC_quantiles %>%
+  dplyr::filter(kaAgreement_quantile == "Quantile 3 lower")
+featDF_filt_alpha_mC_quantile4_lower <- featDF_filt_mC_quantiles %>%
+  dplyr::filter(kaAgreement_quantile == "Quantile 4 lower")
+
+write.table(featDF_filt_alpha_mC_quantile1_lower,
+            paste0(outDir,
+                   featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                   "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_ka_alpha_all_mean_mC_all_quantile1_lower_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+write.table(featDF_filt_alpha_mC_quantile2_lower,
+            paste0(outDir,
+                   featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                   "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_ka_alpha_all_mean_mC_all_quantile2_lower_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+write.table(featDF_filt_alpha_mC_quantile3_lower,
+            paste0(outDir,
+                   featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                   "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_ka_alpha_all_mean_mC_all_quantile3_lower_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+write.table(featDF_filt_alpha_mC_quantile4_lower,
+            paste0(outDir,
+                   featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                   "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_ka_alpha_all_mean_mC_all_quantile4_lower_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
 
 
 # Filter by mean_stocha_all and mean_mC_all quantile
-featDF_filt_stocha_mC_quantile1 <- featDF_filt %>%
-  dplyr::filter(Stochasticity_quantile == "Cluster 1")
-featDF_filt_stocha_mC_quantile2 <- featDF_filt %>%
-  dplyr::filter(Stochasticity_quantile == "Cluster 2")
-featDF_filt_stocha_mC_quantile3 <- featDF_filt %>%
-  dplyr::filter(Stochasticity_quantile == "Cluster 3")
-featDF_filt_stocha_mC_quantile4 <- featDF_filt %>%
-  dplyr::filter(Stochasticity_quantile == "Cluster 4")
+featDF_filt_stocha_mC_quantile1_upper <- featDF_filt_mC_quantiles %>%
+  dplyr::filter(Stochasticity_quantile == "Quantile 1 upper")
+featDF_filt_stocha_mC_quantile2_upper <- featDF_filt_mC_quantiles %>%
+  dplyr::filter(Stochasticity_quantile == "Quantile 2 upper")
+featDF_filt_stocha_mC_quantile3_upper <- featDF_filt_mC_quantiles %>%
+  dplyr::filter(Stochasticity_quantile == "Quantile 3 upper")
+featDF_filt_stocha_mC_quantile4_upper <- featDF_filt_mC_quantiles %>%
+  dplyr::filter(Stochasticity_quantile == "Quantile 4 upper")
 
-write.table(featDF_filt_stocha_mC_quantile1,
+write.table(featDF_filt_stocha_mC_quantile1_upper,
             paste0(outDir,
                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                    "_", context,
                    "_NAmax", NAmax,
-                   "_filt_df_mean_stocha_all_mean_mC_all_quantile1_",
+                   "_filt_df_mean_stocha_all_mean_mC_all_quantile1_upper_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
-write.table(featDF_filt_stocha_mC_quantile2,
+write.table(featDF_filt_stocha_mC_quantile2_upper,
             paste0(outDir,
                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                    "_", context,
                    "_NAmax", NAmax,
-                   "_filt_df_mean_stocha_all_mean_mC_all_quantile2_",
+                   "_filt_df_mean_stocha_all_mean_mC_all_quantile2_upper_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
-write.table(featDF_filt_stocha_mC_quantile3,
+write.table(featDF_filt_stocha_mC_quantile3_upper,
             paste0(outDir,
                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                    "_", context,
                    "_NAmax", NAmax,
-                   "_filt_df_mean_stocha_all_mean_mC_all_quantile3_",
+                   "_filt_df_mean_stocha_all_mean_mC_all_quantile3_upper_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
-write.table(featDF_filt_stocha_mC_quantile4,
+write.table(featDF_filt_stocha_mC_quantile4_upper,
             paste0(outDir,
                    featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                    "_", context,
                    "_NAmax", NAmax,
-                   "_filt_df_mean_stocha_all_mean_mC_all_quantile4_",
+                   "_filt_df_mean_stocha_all_mean_mC_all_quantile4_upper_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
+
+featDF_filt_stocha_mC_quantile1_lower <- featDF_filt_mC_quantiles %>%
+  dplyr::filter(Stochasticity_quantile == "Quantile 1 lower")
+featDF_filt_stocha_mC_quantile2_lower <- featDF_filt_mC_quantiles %>%
+  dplyr::filter(Stochasticity_quantile == "Quantile 2 lower")
+featDF_filt_stocha_mC_quantile3_lower <- featDF_filt_mC_quantiles %>%
+  dplyr::filter(Stochasticity_quantile == "Quantile 3 lower")
+featDF_filt_stocha_mC_quantile4_lower <- featDF_filt_mC_quantiles %>%
+  dplyr::filter(Stochasticity_quantile == "Quantile 4 lower")
+
+write.table(featDF_filt_stocha_mC_quantile1_lower,
+            paste0(outDir,
+                   featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                   "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_mean_stocha_all_mean_mC_all_quantile1_lower_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+write.table(featDF_filt_stocha_mC_quantile2_lower,
+            paste0(outDir,
+                   featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                   "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_mean_stocha_all_mean_mC_all_quantile2_lower_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+write.table(featDF_filt_stocha_mC_quantile3_lower,
+            paste0(outDir,
+                   featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                   "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_mean_stocha_all_mean_mC_all_quantile3_lower_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+write.table(featDF_filt_stocha_mC_quantile4_lower,
+            paste0(outDir,
+                   featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                   "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_mean_stocha_all_mean_mC_all_quantile4_lower_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+
