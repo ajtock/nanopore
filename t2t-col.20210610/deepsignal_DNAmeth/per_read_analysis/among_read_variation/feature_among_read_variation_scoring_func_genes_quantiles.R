@@ -7,7 +7,7 @@
 
 # Usage:
 # conda activate R-4.0.0
-# ./feature_among_read_variation_scoring_func_genes_quantiles.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'gene' 'regions' 0.975 0.25
+# ./feature_among_read_variation_scoring_func_genes_quantiles.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'gene' 'regions' 0.975 0.33
 # conda deactivate
 
 # Divide each read into adjacent segments each consisting of a given number of consecutive cytosines,
@@ -22,7 +22,7 @@
 #featName <- "gene"
 #featRegion <- "regions"
 #topQthresh <- 0.975
-#botQthresh <- 0.25
+#botQthresh <- 0.33
 
 args <- commandArgs(trailingOnly = T)
 sampleName <- args[1]
@@ -102,11 +102,11 @@ featDF_filt[ which(!is.na(featDF_filt[,which(colnames(featDF_filt) == "mC")]) &
                    topQthresh &
                    rank(featDF_filt[,which(colnames(featDF_filt) == "mC")]) /
                    length(featDF_filt[,which(colnames(featDF_filt) == "mC")]) >
-                   0.50), ]$mC_quantile <- "Quantile 3"
+                   (botQthresh * 2)), ]$mC_quantile <- "Quantile 3"
 featDF_filt[ which(!is.na(featDF_filt[,which(colnames(featDF_filt) == "mC")]) &
                    rank(featDF_filt[,which(colnames(featDF_filt) == "mC")]) /
                    length(featDF_filt[,which(colnames(featDF_filt) == "mC")]) <=
-                   0.50 &
+                   (botQthresh * 2) &
                    rank(featDF_filt[,which(colnames(featDF_filt) == "mC")]) /
                    length(featDF_filt[,which(colnames(featDF_filt) == "mC")]) >
                    botQthresh), ]$mC_quantile <- "Quantile 2"
@@ -204,7 +204,7 @@ gg_fkAgreement_quantile_fkAgreement_mat_filt_pca_dim <- ggplot(fkAgreement_mat_f
   geom_point(size = 0.7, alpha = 0.5) +
   scale_colour_brewer(palette = "Dark2") +
 #  scale_colour_manual(values = fkAgreement_mat_filt_pam_cl_colours) +
-  labs(colour = bquote(atop("fkAgreement &", "m"*.(context)~"quantile")),
+  labs(colour = bquote(atop("fkAgreement &", "m"*.(context)~"group")),
        x = bquote("PC1 (" * .(fkAgreement_mat_filt_pca_PC1_varexp) * "%)"),
        y = bquote("PC2 (" * .(fkAgreement_mat_filt_pca_PC2_varexp) * "%)")) +
   theme_bw() +
@@ -216,7 +216,7 @@ gg_kaAgreement_quantile_fkAgreement_mat_filt_pca_dim <- ggplot(fkAgreement_mat_f
   geom_point(size = 0.7, alpha = 0.5) +
   scale_colour_brewer(palette = "Dark2") +
 #  scale_colour_manual(values = fkAgreement_mat_filt_pam_cl_colours) +
-  labs(colour = bquote(atop("kaAgreement &", "m"*.(context)~"quantile")),
+  labs(colour = bquote(atop("kaAgreement &", "m"*.(context)~"group")),
        x = bquote("PC1 (" * .(fkAgreement_mat_filt_pca_PC1_varexp) * "%)"),
        y = bquote("PC2 (" * .(fkAgreement_mat_filt_pca_PC2_varexp) * "%)")) +
   theme_bw() +
@@ -228,7 +228,7 @@ gg_Stochasticity_quantile_fkAgreement_mat_filt_pca_dim <- ggplot(fkAgreement_mat
   geom_point(size = 0.7, alpha = 0.5) +
   scale_colour_brewer(palette = "Set1") +
 #  scale_colour_manual(values = fkAgreement_mat_filt_pam_cl_colours) +
-  labs(colour = bquote(atop("Stochasticity &", "m"*.(context)~"quantile")),
+  labs(colour = bquote(atop("Stochasticity &", "m"*.(context)~"group")),
        x = bquote("PC1 (" * .(fkAgreement_mat_filt_pca_PC1_varexp) * "%)"),
        y = bquote("PC2 (" * .(fkAgreement_mat_filt_pca_PC2_varexp) * "%)")) +
   theme_bw() +
@@ -426,7 +426,7 @@ gg_fkAgreement_quantile_kaAgreement_mat_filt_pca_dim <- ggplot(kaAgreement_mat_f
   geom_point(size = 0.7, alpha = 0.5) +
   scale_colour_brewer(palette = "Dark2") +
 #  scale_colour_manual(values = kaAgreement_mat_filt_pam_cl_colours) +
-  labs(colour = bquote(atop("fkAgreement &", "m"*.(context)~"quantile")),
+  labs(colour = bquote(atop("fkAgreement &", "m"*.(context)~"group")),
        x = bquote("PC1 (" * .(kaAgreement_mat_filt_pca_PC1_varexp) * "%)"),
        y = bquote("PC2 (" * .(kaAgreement_mat_filt_pca_PC2_varexp) * "%)")) +
   theme_bw() +
@@ -438,7 +438,7 @@ gg_kaAgreement_quantile_kaAgreement_mat_filt_pca_dim <- ggplot(kaAgreement_mat_f
   geom_point(size = 0.7, alpha = 0.5) +
   scale_colour_brewer(palette = "Dark2") +
 #  scale_colour_manual(values = kaAgreement_mat_filt_pam_cl_colours) +
-  labs(colour = bquote(atop("kaAgreement &", "m"*.(context)~"quantile")),
+  labs(colour = bquote(atop("kaAgreement &", "m"*.(context)~"group")),
        x = bquote("PC1 (" * .(kaAgreement_mat_filt_pca_PC1_varexp) * "%)"),
        y = bquote("PC2 (" * .(kaAgreement_mat_filt_pca_PC2_varexp) * "%)")) +
   theme_bw() +
@@ -450,7 +450,7 @@ gg_Stochasticity_quantile_kaAgreement_mat_filt_pca_dim <- ggplot(kaAgreement_mat
   geom_point(size = 0.7, alpha = 0.5) +
   scale_colour_brewer(palette = "Set1") +
 #  scale_colour_manual(values = kaAgreement_mat_filt_pam_cl_colours) +
-  labs(colour = bquote(atop("Stochasticity &", "m"*.(context)~"quantile")),
+  labs(colour = bquote(atop("Stochasticity &", "m"*.(context)~"group")),
        x = bquote("PC1 (" * .(kaAgreement_mat_filt_pca_PC1_varexp) * "%)"),
        y = bquote("PC2 (" * .(kaAgreement_mat_filt_pca_PC2_varexp) * "%)")) +
   theme_bw() +
@@ -650,7 +650,7 @@ gg_fkAgreement_quantile_Stochasticity_mat_filt_pca_dim <- ggplot(Stochasticity_m
   geom_point(size = 0.7, alpha = 0.5) +
   scale_colour_brewer(palette = "Dark2") +
 #  scale_colour_manual(values = Stochasticity_mat_filt_pam_cl_colours) +
-  labs(colour = bquote(atop("fkAgreement &", "m"*.(context)~"quantile")),
+  labs(colour = bquote(atop("fkAgreement &", "m"*.(context)~"group")),
        x = bquote("PC1 (" * .(Stochasticity_mat_filt_pca_PC1_varexp) * "%)"),
        y = bquote("PC2 (" * .(Stochasticity_mat_filt_pca_PC2_varexp) * "%)")) +
   theme_bw() +
@@ -662,7 +662,7 @@ gg_kaAgreement_quantile_Stochasticity_mat_filt_pca_dim <- ggplot(Stochasticity_m
   geom_point(size = 0.7, alpha = 0.5) +
   scale_colour_brewer(palette = "Dark2") +
 #  scale_colour_manual(values = Stochasticity_mat_filt_pam_cl_colours) +
-  labs(colour = bquote(atop("kaAgreement &", "m"*.(context)~"quantile")),
+  labs(colour = bquote(atop("kaAgreement &", "m"*.(context)~"group")),
        x = bquote("PC1 (" * .(Stochasticity_mat_filt_pca_PC1_varexp) * "%)"),
        y = bquote("PC2 (" * .(Stochasticity_mat_filt_pca_PC2_varexp) * "%)")) +
   theme_bw() +
@@ -674,7 +674,7 @@ gg_Stochasticity_quantile_Stochasticity_mat_filt_pca_dim <- ggplot(Stochasticity
   geom_point(size = 0.7, alpha = 0.5) +
   scale_colour_brewer(palette = "Set1") +
 #  scale_colour_manual(values = Stochasticity_mat_filt_pam_cl_colours) +
-  labs(colour = bquote(atop("Stochasticity &", "m"*.(context)~"quantile")),
+  labs(colour = bquote(atop("Stochasticity &", "m"*.(context)~"group")),
        x = bquote("PC1 (" * .(Stochasticity_mat_filt_pca_PC1_varexp) * "%)"),
        y = bquote("PC2 (" * .(Stochasticity_mat_filt_pca_PC2_varexp) * "%)")) +
   theme_bw() +
@@ -967,7 +967,7 @@ ggTrend_mean_mC_all_fk_kappa_all_filt <- trendPlot(dataFrame = featDF_filt_mC_qu
                                                    paletteName = "Dark2",
                                                    xvar = mean_mC_all,
                                                    yvar = fk_kappa_all,
-                                                   quantilelab = bquote(atop("fkAgreement &", "m"*.(context)~"quantile")),
+                                                   quantilelab = bquote(atop("fkAgreement &", "m"*.(context)~"group")),
                                                    xlab = bquote(.(featName)*" mean m"*.(context)),
                                                    ylab = bquote(.(featName)*" fkAgreement (m"*.(context)*")"),
                                                    xaxtrans = log10_trans(),
@@ -984,7 +984,7 @@ ggTrend_mean_mC_all_ka_alpha_all_filt <- trendPlot(dataFrame = featDF_filt_mC_qu
                                                    paletteName = "Dark2",
                                                    xvar = mean_mC_all,
                                                    yvar = ka_alpha_all,
-                                                   quantilelab = bquote(atop("kaAgreement &", "m"*.(context)~"quantile")),
+                                                   quantilelab = bquote(atop("kaAgreement &", "m"*.(context)~"group")),
                                                    xlab = bquote(.(featName)*" mean m"*.(context)),
                                                    ylab = bquote(.(featName)*" kaAgreement (m"*.(context)*")"),
                                                    xaxtrans = log10_trans(),
@@ -1001,7 +1001,7 @@ ggTrend_mean_mC_all_mean_stocha_all_filt <- trendPlot(dataFrame = featDF_filt_mC
                                                       paletteName = "Set1",
                                                       xvar = mean_mC_all,
                                                       yvar = mean_stocha_all,
-                                                      quantilelab = bquote(atop("Stochasticity &", "m"*.(context)~"quantile")),
+                                                      quantilelab = bquote(atop("Stochasticity &", "m"*.(context)~"group")),
                                                       xlab = bquote(.(featName)*" mean m"*.(context)),
                                                       ylab = bquote(.(featName)*" mean stochasticity (m"*.(context)*")"),
                                                       xaxtrans = log10_trans(),
@@ -1018,7 +1018,7 @@ ggTrend_ka_alpha_all_fk_kappa_all_filt <- trendPlot(dataFrame = featDF_filt_mC_q
                                                     paletteName = "Dark2",
                                                     xvar = ka_alpha_all,
                                                     yvar = fk_kappa_all,
-                                                    quantilelab = bquote(atop("fkAgreement &", "m"*.(context)~"quantile")),
+                                                    quantilelab = bquote(atop("fkAgreement &", "m"*.(context)~"group")),
                                                     xlab = bquote(.(featName)*" kaAgreement (m"*.(context)*")"),
                                                     ylab = bquote(.(featName)*" fkAgreement (m"*.(context)*")"),
                                                     xaxtrans = log10_trans(),
@@ -1035,7 +1035,7 @@ ggTrend_fk_kappa_all_ka_alpha_all_filt <- trendPlot(dataFrame = featDF_filt_mC_q
                                                     paletteName = "Dark2",
                                                     xvar = ka_alpha_all,
                                                     yvar = fk_kappa_all,
-                                                    quantilelab = bquote(atop("kaAgreement &", "m"*.(context)~"quantile")),
+                                                    quantilelab = bquote(atop("kaAgreement &", "m"*.(context)~"group")),
                                                     xlab = bquote(.(featName)*" kaAgreement (m"*.(context)*")"),
                                                     ylab = bquote(.(featName)*" fkAgreement (m"*.(context)*")"),
                                                     xaxtrans = log10_trans(),
@@ -1052,7 +1052,7 @@ ggTrend_mean_stocha_all_fk_kappa_all_filt <- trendPlot(dataFrame = featDF_filt_m
                                                        paletteName = "Dark2",
                                                        xvar = mean_stocha_all,
                                                        yvar = fk_kappa_all,
-                                                       quantilelab = bquote(atop("fkAgreement &", "m"*.(context)~"quantile")),
+                                                       quantilelab = bquote(atop("fkAgreement &", "m"*.(context)~"group")),
                                                        xlab = bquote(.(featName)*" mean stochasticity (m"*.(context)*")"),
                                                        ylab = bquote(.(featName)*" fkAgreement (m"*.(context)*")"),
                                                        xaxtrans = log10_trans(),
@@ -1069,7 +1069,7 @@ ggTrend_fk_kappa_all_mean_stocha_all_filt <- trendPlot(dataFrame = featDF_filt_m
                                                        paletteName = "Set1",
                                                        xvar = mean_stocha_all,
                                                        yvar = fk_kappa_all,
-                                                       quantilelab = bquote(atop("Stochasticity &", "m"*.(context)~"quantile")),
+                                                       quantilelab = bquote(atop("Stochasticity &", "m"*.(context)~"group")),
                                                        xlab = bquote(.(featName)*" mean stochasticity (m"*.(context)*")"),
                                                        ylab = bquote(.(featName)*" fkAgreement (m"*.(context)*")"),
                                                        xaxtrans = log10_trans(),
@@ -1086,7 +1086,7 @@ ggTrend_mean_stocha_all_ka_alpha_all_filt <- trendPlot(dataFrame = featDF_filt_m
                                                        paletteName = "Dark2",
                                                        xvar = mean_stocha_all,
                                                        yvar = ka_alpha_all,
-                                                       quantilelab = bquote(atop("kaAgreement &", "m"*.(context)~"quantile")),
+                                                       quantilelab = bquote(atop("kaAgreement &", "m"*.(context)~"group")),
                                                        xlab = bquote(.(featName)*" mean stochasticity (m"*.(context)*")"),
                                                        ylab = bquote(.(featName)*" kaAgreement (m"*.(context)*")"),
                                                        xaxtrans = log10_trans(),
@@ -1103,7 +1103,7 @@ ggTrend_ka_alpha_all_mean_stocha_all_filt <- trendPlot(dataFrame = featDF_filt_m
                                                        paletteName = "Set1",
                                                        xvar = mean_stocha_all,
                                                        yvar = ka_alpha_all,
-                                                       quantilelab = bquote(atop("Stochasticity &", "m"*.(context)~"quantile")),
+                                                       quantilelab = bquote(atop("Stochasticity &", "m"*.(context)~"group")),
                                                        xlab = bquote(.(featName)*" mean stochasticity (m"*.(context)*")"),
                                                        ylab = bquote(.(featName)*" kaAgreement (m"*.(context)*")"),
                                                        xaxtrans = log10_trans(),
