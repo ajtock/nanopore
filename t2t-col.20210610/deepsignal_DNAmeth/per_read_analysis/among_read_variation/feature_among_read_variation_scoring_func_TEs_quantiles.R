@@ -1,13 +1,13 @@
 #!/usr/bin/env Rscript
 
 # Analysis:
-# Group genes into quantiles
+# Group TEs into quantiles using partitioning around medoids (PAM),
 # based on among-read agreement or site-to-site variability in DNA methylation patterns,
 # and mean DNA methylation
 
 # Usage:
 # conda activate R-4.0.0
-# ./feature_among_read_variation_scoring_func_genes_quantiles.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'gene' 'regions' 0.975 0.33
+# ./feature_among_read_variation_scoring_func_TEs_pam.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CHG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'TE' 'bodies'
 # conda deactivate
 
 # Divide each read into adjacent segments each consisting of a given number of consecutive cytosines,
@@ -15,12 +15,12 @@
 
 #sampleName <- "Col_0_deepsignalDNAmeth_30kb_90pc"
 #refbase <- "t2t-col.20210610"
-#context <- "CpG"
+#context <- "CHG"
 #NAmax <- 0.50
 #CPUpc <- 1.00
 #chrName <- unlist(strsplit("Chr1,Chr2,Chr3,Chr4,Chr5", split = ","))
-#featName <- "gene"
-#featRegion <- "regions"
+#featName <- "TE"
+#featRegion <- "bodies"
 #topQthresh <- 0.975
 #botQthresh <- 0.33
 
@@ -52,6 +52,7 @@ library(umap)
 library(RColorBrewer)
 library(colorspace)
 library(viridis)
+library(pals)
 
 outDir <- paste0(featName, "_", featRegion, "/", paste0(chrName, collapse = "_"), "/")
 plotDir <- paste0(outDir, "plots/")
@@ -76,8 +77,7 @@ featDF_filt <- read.table(paste0(outDir,
                           header = T)
 featDF_filt$kappa_C_density <- featDF_filt$fk_Cs_all / ( (featDF_filt$end - featDF_filt$start + 1) / 1e3)
 featDF_filt$stocha_C_density <- featDF_filt$stocha_Cs_all / ( (featDF_filt$end - featDF_filt$start + 1) / 1e3)
-featDF_filt$parent <- sub(pattern = "\\.\\d+", replacement = "", x = featDF_filt$name) 
-featDF_filt$parent <- sub(pattern = "_\\d+", replacement = "", x = featDF_filt$parent) 
+colnames(featDF_filt)[which(colnames(featDF_filt) == "score")] <- "Superfamily"
 
 colnames(featDF_filt)[ which(colnames(featDF_filt) %in%
   c("mean_mC_all", "fk_kappa_all", "ka_alpha_all", "mean_stocha_all")
@@ -120,7 +120,7 @@ featDF_filt[ which(!is.na(featDF_filt[,which(colnames(featDF_filt) == "mC")]) &
 
 mC_quantiles <- sort(unique(featDF_filt$mC_quantile))
 
-featDF_filt_mC_quantiles <- data.frame() 
+featDF_filt_mC_quantiles <- data.frame()
 for(i in mC_quantiles) {
   featDF_filt_mC_quantile_i <- featDF_filt[ which(featDF_filt$mC_quantile == i), ]
 
@@ -175,225 +175,246 @@ for(i in mC_quantiles) {
 
 # Dimension reduction:
 
-# PCA of fkAgreement and mean methylation for the given context
-
-fkAgreement_mat_filt_pca_n_dim <- 2
-
-fkAgreement_mat_filt_pca <- prcomp(featDF_filt_mC_quantiles[, which(colnames(featDF_filt_mC_quantiles) %in% c("mC", "fkAgreement")), drop = F], center = T, scale = T)
-fkAgreement_mat_filt_pca_summ <- summary(fkAgreement_mat_filt_pca)
-fkAgreement_mat_filt_pca_PC1_varexp <- round(fkAgreement_mat_filt_pca_summ$importance[2,1] * 100, digits = 2)
-fkAgreement_mat_filt_pca_PC2_varexp <- round(fkAgreement_mat_filt_pca_summ$importance[2,2] * 100, digits = 2)
-fkAgreement_mat_filt_pca_dim <- fkAgreement_mat_filt_pca$x[, seq_len(fkAgreement_mat_filt_pca_n_dim)]
-colnames(fkAgreement_mat_filt_pca_dim) <- c("PC1", "PC2")
-head(fkAgreement_mat_filt_pca_dim)
-
-stopifnot(nrow(fkAgreement_mat_filt_pca_dim) == length(featDF_filt_mC_quantiles$fkAgreement_quantile))
-fkAgreement_mat_filt_pca_dim <- cbind(as.data.frame(fkAgreement_mat_filt_pca_dim),
-                                      featDF_filt_mC_quantiles,
-                                      type = "PCA")
-head(fkAgreement_mat_filt_pca_dim)
-
-#fkAgreement_mat_filt_pam_cl_colours <- rainbow(fkAgreement_mat_filt_pamk_n_cl) 
-#fkAgreement_mat_filt_pam_cl_colours <- brewer.pal(name = "Dark2", n = fkAgreement_mat_filt_pamk_n_cl)
-
-fkAgreement_mat_filt_pca_loadings <- data.frame(variables = rownames(fkAgreement_mat_filt_pca$rotation),
-                                                fkAgreement_mat_filt_pca$rotation)
-
-gg_fkAgreement_quantile_fkAgreement_mat_filt_pca_dim <- ggplot(fkAgreement_mat_filt_pca_dim,
-                                                               mapping = aes(x = PC1, y = PC2, colour = fkAgreement_quantile)) +
-  geom_point(size = 0.7, alpha = 0.5) +
-  scale_colour_brewer(palette = "Dark2") +
-#  scale_colour_manual(values = fkAgreement_mat_filt_pam_cl_colours) +
-  labs(colour = bquote(atop("fkAgreement &", "m"*.(context)~"group")),
-       x = bquote("PC1 (" * .(fkAgreement_mat_filt_pca_PC1_varexp) * "%)"),
-       y = bquote("PC2 (" * .(fkAgreement_mat_filt_pca_PC2_varexp) * "%)")) +
-  theme_bw() +
-  theme(aspect.ratio = 1,
-        legend.key.height = unit(4, "mm"))
-
-gg_kaAgreement_quantile_fkAgreement_mat_filt_pca_dim <- ggplot(fkAgreement_mat_filt_pca_dim,
-                                                               mapping = aes(x = PC1, y = PC2, colour = kaAgreement_quantile)) +
-  geom_point(size = 0.7, alpha = 0.5) +
-  scale_colour_brewer(palette = "Dark2") +
-#  scale_colour_manual(values = fkAgreement_mat_filt_pam_cl_colours) +
-  labs(colour = bquote(atop("kaAgreement &", "m"*.(context)~"group")),
-       x = bquote("PC1 (" * .(fkAgreement_mat_filt_pca_PC1_varexp) * "%)"),
-       y = bquote("PC2 (" * .(fkAgreement_mat_filt_pca_PC2_varexp) * "%)")) +
-  theme_bw() +
-  theme(aspect.ratio = 1,
-        legend.key.height = unit(4, "mm"))
-
-gg_Stochasticity_quantile_fkAgreement_mat_filt_pca_dim <- ggplot(fkAgreement_mat_filt_pca_dim,
-                                                                 mapping = aes(x = PC1, y = PC2, colour = Stochasticity_quantile)) +
-  geom_point(size = 0.7, alpha = 0.5) +
-  scale_colour_brewer(palette = "Set1") +
-#  scale_colour_manual(values = fkAgreement_mat_filt_pam_cl_colours) +
-  labs(colour = bquote(atop("Stochasticity &", "m"*.(context)~"group")),
-       x = bquote("PC1 (" * .(fkAgreement_mat_filt_pca_PC1_varexp) * "%)"),
-       y = bquote("PC2 (" * .(fkAgreement_mat_filt_pca_PC2_varexp) * "%)")) +
-  theme_bw() +
-  theme(aspect.ratio = 1,
-        legend.key.height = unit(4, "mm"))
-
-gg_fkAgreement_fkAgreement_mat_filt_pca_dim <- ggplot(fkAgreement_mat_filt_pca_dim,
-                                                      mapping = aes(x = PC1, y = PC2, colour = fkAgreement)) +
-  geom_point(size = 0.7, alpha = 0.5) +
-  scale_colour_viridis_c(option = "turbo") +
-#  scale_colour_gradient(low = "red", high = "yellow") +
-#  scale_colour_gradient2(low = "blue", high = "red") +
-  labs(colour = "fkAgreement",
-       x = bquote("PC1 (" * .(fkAgreement_mat_filt_pca_PC1_varexp) * "%)"),
-       y = bquote("PC2 (" * .(fkAgreement_mat_filt_pca_PC2_varexp) * "%)")) +
-  theme_bw() +
-  theme(aspect.ratio = 1,
-        legend.key.height = unit(4, "mm"))
-
-gg_kaAgreement_fkAgreement_mat_filt_pca_dim <- ggplot(fkAgreement_mat_filt_pca_dim,
-                                                      mapping = aes(x = PC1, y = PC2, colour = kaAgreement)) +
-  geom_point(size = 0.7, alpha = 0.5) +
-  scale_colour_viridis_c(option = "turbo") +
-  labs(colour = "kaAgreement",
-       x = bquote("PC1 (" * .(fkAgreement_mat_filt_pca_PC1_varexp) * "%)"),
-       y = bquote("PC2 (" * .(fkAgreement_mat_filt_pca_PC2_varexp) * "%)")) +
-  theme_bw() +
-  theme(aspect.ratio = 1,
-        legend.key.height = unit(4, "mm"))
-
-gg_Stochasticity_fkAgreement_mat_filt_pca_dim <- ggplot(fkAgreement_mat_filt_pca_dim,
-                                                        mapping = aes(x = PC1, y = PC2, colour = Stochasticity)) +
-  geom_point(size = 0.7, alpha = 0.5) +
-  scale_colour_viridis_c(option = "plasma") +
-  labs(colour = "Stochasticity",
-       x = bquote("PC1 (" * .(fkAgreement_mat_filt_pca_PC1_varexp) * "%)"),
-       y = bquote("PC2 (" * .(fkAgreement_mat_filt_pca_PC2_varexp) * "%)")) +
-  theme_bw() +
-  theme(aspect.ratio = 1,
-        legend.key.height = unit(4, "mm"))
-
-gg_mC_fkAgreement_mat_filt_pca_dim <- ggplot(fkAgreement_mat_filt_pca_dim,
-                                             mapping = aes(x = PC1, y = PC2, colour = mC)) +
-  geom_point(size = 0.7, alpha = 0.5) +
-  scale_colour_viridis_c(option = "viridis") +
-  labs(colour = bquote("m" * .(context) ~ "mean"),
-       x = bquote("PC1 (" * .(fkAgreement_mat_filt_pca_PC1_varexp) * "%)"),
-       y = bquote("PC2 (" * .(fkAgreement_mat_filt_pca_PC2_varexp) * "%)")) +
-  theme_bw() +
-  theme(aspect.ratio = 1,
-        legend.key.height = unit(4, "mm"))
-
-# Plot chr
-gg_fkAgreement_quantile_fkAgreement_mat_filt_pca_dim_chr <- gg_fkAgreement_quantile_fkAgreement_mat_filt_pca_dim +
-  facet_grid(cols = vars(chr), scales = "free_x")
-
-gg_kaAgreement_quantile_fkAgreement_mat_filt_pca_dim_chr <- gg_kaAgreement_quantile_fkAgreement_mat_filt_pca_dim +
-  facet_grid(cols = vars(chr), scales = "free_x")
-
-gg_Stochasticity_quantile_fkAgreement_mat_filt_pca_dim_chr <- gg_Stochasticity_quantile_fkAgreement_mat_filt_pca_dim +
-  facet_grid(cols = vars(chr), scales = "free_x")
-
-gg_fkAgreement_fkAgreement_mat_filt_pca_dim_chr <- gg_fkAgreement_fkAgreement_mat_filt_pca_dim +
-  facet_grid(cols = vars(chr), scales = "free_x")
-
-gg_kaAgreement_fkAgreement_mat_filt_pca_dim_chr <- gg_kaAgreement_fkAgreement_mat_filt_pca_dim +
-  facet_grid(cols = vars(chr), scales = "free_x")
-
-gg_Stochasticity_fkAgreement_mat_filt_pca_dim_chr <- gg_Stochasticity_fkAgreement_mat_filt_pca_dim +
-  facet_grid(cols = vars(chr), scales = "free_x")
-
-gg_mC_fkAgreement_mat_filt_pca_dim_chr <- gg_mC_fkAgreement_mat_filt_pca_dim +
-  facet_grid(cols = vars(chr), scales = "free_x")
-
-gg_cow_list_fkAgreement_mat_filt_pca_dim_chr <- list(
-                                                     gg_fkAgreement_fkAgreement_mat_filt_pca_dim_chr,
-                                                     gg_kaAgreement_fkAgreement_mat_filt_pca_dim_chr,
-                                                     gg_Stochasticity_fkAgreement_mat_filt_pca_dim_chr,
-                                                     gg_mC_fkAgreement_mat_filt_pca_dim_chr,
-                                                     gg_fkAgreement_quantile_fkAgreement_mat_filt_pca_dim_chr,
-                                                     gg_kaAgreement_quantile_fkAgreement_mat_filt_pca_dim_chr,
-                                                     gg_Stochasticity_quantile_fkAgreement_mat_filt_pca_dim_chr
-                                                    )
-gg_cow_fkAgreement_mat_filt_pca_dim_chr <- plot_grid(plotlist = gg_cow_list_fkAgreement_mat_filt_pca_dim_chr,
-                                                   align = "hv",
-                                                   axis = "l",
-                                                   nrow = length(gg_cow_list_fkAgreement_mat_filt_pca_dim_chr), ncol = 1)
-ggsave(paste0(plotDir, "gg_fkAgreement_mat_filt_pca_dim_chr_quantiles.pdf"),
-       plot = gg_cow_fkAgreement_mat_filt_pca_dim_chr,
-       height = 4*length(gg_cow_list_fkAgreement_mat_filt_pca_dim_chr), width = 4*length(chrName), limitsize = F)
-
-
-# Overlay loadings
-gg_fkAgreement_quantile_fkAgreement_mat_filt_pca_dim_loadings <- gg_fkAgreement_quantile_fkAgreement_mat_filt_pca_dim +
-  geom_segment(data = fkAgreement_mat_filt_pca_loadings,
-               mapping = aes(x = 0, y = 0, xend = (PC1*3), yend = (PC2*3)),
-               arrow = arrow(length = unit(1/2, "picas")),
-               colour = "grey0") +
-  annotate("text", x = (fkAgreement_mat_filt_pca_loadings$PC1*3.2), y = (fkAgreement_mat_filt_pca_loadings$PC2*3.2),
-           label = fkAgreement_mat_filt_pca_loadings$variables, colour = "grey0")
-
-gg_kaAgreement_quantile_fkAgreement_mat_filt_pca_dim_loadings <- gg_kaAgreement_quantile_fkAgreement_mat_filt_pca_dim +
-  geom_segment(data = fkAgreement_mat_filt_pca_loadings,
-               mapping = aes(x = 0, y = 0, xend = (PC1*3), yend = (PC2*3)),
-               arrow = arrow(length = unit(1/2, "picas")),
-               colour = "grey0") +
-  annotate("text", x = (fkAgreement_mat_filt_pca_loadings$PC1*3.2), y = (fkAgreement_mat_filt_pca_loadings$PC2*3.2),
-           label = fkAgreement_mat_filt_pca_loadings$variables, colour = "grey0")
-
-gg_Stochasticity_quantile_fkAgreement_mat_filt_pca_dim_loadings <- gg_Stochasticity_quantile_fkAgreement_mat_filt_pca_dim +
-  geom_segment(data = fkAgreement_mat_filt_pca_loadings,
-               mapping = aes(x = 0, y = 0, xend = (PC1*3), yend = (PC2*3)),
-               arrow = arrow(length = unit(1/2, "picas")),
-               colour = "grey0") +
-  annotate("text", x = (fkAgreement_mat_filt_pca_loadings$PC1*3.2), y = (fkAgreement_mat_filt_pca_loadings$PC2*3.2),
-           label = fkAgreement_mat_filt_pca_loadings$variables, colour = "grey0")
-
-gg_fkAgreement_fkAgreement_mat_filt_pca_dim_loadings <- gg_fkAgreement_fkAgreement_mat_filt_pca_dim +
-  geom_segment(data = fkAgreement_mat_filt_pca_loadings,
-               mapping = aes(x = 0, y = 0, xend = (PC1*3), yend = (PC2*3)),
-               arrow = arrow(length = unit(1/2, "picas")),
-               colour = "grey0") +
-  annotate("text", x = (fkAgreement_mat_filt_pca_loadings$PC1*3.2), y = (fkAgreement_mat_filt_pca_loadings$PC2*3.2),
-           label = fkAgreement_mat_filt_pca_loadings$variables, colour = "grey0")
-
-gg_kaAgreement_fkAgreement_mat_filt_pca_dim_loadings <- gg_kaAgreement_fkAgreement_mat_filt_pca_dim +
-  geom_segment(data = fkAgreement_mat_filt_pca_loadings,
-               mapping = aes(x = 0, y = 0, xend = (PC1*3), yend = (PC2*3)),
-               arrow = arrow(length = unit(1/2, "picas")),
-               colour = "grey0") +
-  annotate("text", x = (fkAgreement_mat_filt_pca_loadings$PC1*3.2), y = (fkAgreement_mat_filt_pca_loadings$PC2*3.2),
-           label = fkAgreement_mat_filt_pca_loadings$variables, colour = "grey0")
-
-gg_Stochasticity_fkAgreement_mat_filt_pca_dim_loadings <- gg_Stochasticity_fkAgreement_mat_filt_pca_dim +
-  geom_segment(data = fkAgreement_mat_filt_pca_loadings,
-               mapping = aes(x = 0, y = 0, xend = (PC1*3), yend = (PC2*3)),
-               arrow = arrow(length = unit(1/2, "picas")),
-               colour = "grey0") +
-  annotate("text", x = (fkAgreement_mat_filt_pca_loadings$PC1*3.2), y = (fkAgreement_mat_filt_pca_loadings$PC2*3.2),
-           label = fkAgreement_mat_filt_pca_loadings$variables, colour = "grey0")
-
-gg_mC_fkAgreement_mat_filt_pca_dim_loadings <- gg_mC_fkAgreement_mat_filt_pca_dim +
-  geom_segment(data = fkAgreement_mat_filt_pca_loadings,
-               mapping = aes(x = 0, y = 0, xend = (PC1*3), yend = (PC2*3)),
-               arrow = arrow(length = unit(1/2, "picas")),
-               colour = "grey0") +
-  annotate("text", x = (fkAgreement_mat_filt_pca_loadings$PC1*3.2), y = (fkAgreement_mat_filt_pca_loadings$PC2*3.2),
-           label = fkAgreement_mat_filt_pca_loadings$variables, colour = "grey0")
-
-gg_cow_list_fkAgreement_mat_filt_pca_dim_loadings <- list(
-                                                          gg_fkAgreement_fkAgreement_mat_filt_pca_dim_loadings,
-                                                          gg_kaAgreement_fkAgreement_mat_filt_pca_dim_loadings,
-                                                          gg_Stochasticity_fkAgreement_mat_filt_pca_dim_loadings,
-                                                          gg_mC_fkAgreement_mat_filt_pca_dim_loadings,
-                                                          gg_fkAgreement_quantile_fkAgreement_mat_filt_pca_dim_loadings,
-                                                          gg_kaAgreement_quantile_fkAgreement_mat_filt_pca_dim_loadings,
-                                                          gg_Stochasticity_quantile_fkAgreement_mat_filt_pca_dim_loadings
-                                                         )
-gg_cow_fkAgreement_mat_filt_pca_dim_loadings <- plot_grid(plotlist = gg_cow_list_fkAgreement_mat_filt_pca_dim_loadings,
-                                                          align = "hv",
-                                                          axis = "l",
-                                                          nrow = 1, ncol = length(gg_cow_list_fkAgreement_mat_filt_pca_dim_loadings))
-ggsave(paste0(plotDir, "gg_fkAgreement_mat_filt_pca_dim_loadings_quantiles.pdf"),
-       plot = gg_cow_fkAgreement_mat_filt_pca_dim_loadings,
-       height = 4, width = 4*length(gg_cow_list_fkAgreement_mat_filt_pca_dim_loadings), limitsize = F)
+## PCA of fkAgreement and mean methylation for the given context
+#
+#fkAgreement_mat_filt_pca_n_dim <- 2
+#
+#fkAgreement_mat_filt_pca <- prcomp(featDF_filt_mC_quantiles[, which(colnames(featDF_filt_mC_quantiles) %in% c("mC", "fkAgreement")), drop = F], center = T, scale = T)
+#fkAgreement_mat_filt_pca_summ <- summary(fkAgreement_mat_filt_pca)
+#fkAgreement_mat_filt_pca_PC1_varexp <- round(fkAgreement_mat_filt_pca_summ$importance[2,1] * 100, digits = 2)
+#fkAgreement_mat_filt_pca_PC2_varexp <- round(fkAgreement_mat_filt_pca_summ$importance[2,2] * 100, digits = 2)
+#fkAgreement_mat_filt_pca_dim <- fkAgreement_mat_filt_pca$x[, seq_len(fkAgreement_mat_filt_pca_n_dim)]
+#colnames(fkAgreement_mat_filt_pca_dim) <- c("PC1", "PC2")
+#head(fkAgreement_mat_filt_pca_dim)
+#
+#stopifnot(nrow(fkAgreement_mat_filt_pca_dim) == length(featDF_filt$fkAgreement_quantile))
+#fkAgreement_mat_filt_pca_dim <- cbind(as.data.frame(fkAgreement_mat_filt_pca_dim),
+#                                      mat_filt,
+#                                      chr = featDF_filt$chr,
+#                                      fkAgreement_quantile = featDF_filt$fkAgreement_quantile,
+#                                      kaAgreement_quantile = featDF_filt$kaAgreement_quantile,
+#                                      Stochasticity_quantile = featDF_filt$Stochasticity_quantile,
+#                                      Superfamily = featDF_filt$Superfamily,
+#                                      type = "PCA")
+#head(fkAgreement_mat_filt_pca_dim)
+#
+##fkAgreement_mat_filt_pam_cl_colours <- rainbow(fkAgreement_mat_filt_pamk_n_cl) 
+##fkAgreement_mat_filt_pam_cl_colours <- brewer.pal(name = "Dark2", n = fkAgreement_mat_filt_pamk_n_cl)
+#
+#fkAgreement_mat_filt_pca_loadings <- data.frame(variables = rownames(fkAgreement_mat_filt_pca$rotation),
+#                                                fkAgreement_mat_filt_pca$rotation)
+#
+#ap_fkAgreement_quantile_fkAgreement_mat_filt_pca_dim <- autoplot(fkAgreement_mat_filt_pam,
+#                                                                frame = T,
+#                                                                frame.type = "norm",
+#                                                                loadings = T,
+#                                                                loadings.colour = "black",
+#                                                                loadings.label = T,
+#                                                                loadings.label.colour = "black",
+#                                                                label = F)
+#aps_fkAgreement_quantile_fkAgreement_mat_filt_pca_dim <- autoplot(silhouette(fkAgreement_mat_filt_pam))
+#ggsave(paste0(plotDir, "ap_fkAgreement_mat_filt_pca_dim_quantiles.pdf"),
+#       plot = ap_fkAgreement_quantile_fkAgreement_mat_filt_pca_dim,
+#       height = 4, width = 5, limitsize = F)
+#ggsave(paste0(plotDir, "aps_fkAgreement_mat_filt_pca_dim_quantiles.pdf"),
+#       plot = aps_fkAgreement_quantile_fkAgreement_mat_filt_pca_dim,
+#       height = 4, width = 5, limitsize = F)
+#
+#gg_fkAgreement_quantile_fkAgreement_mat_filt_pca_dim <- ggplot(fkAgreement_mat_filt_pca_dim,
+#                                                              mapping = aes(x = PC1, y = PC2, colour = fkAgreement_quantile)) +
+#  geom_point(size = 0.7, alpha = 0.5) +
+#  scale_colour_brewer(palette = "Dark2") +
+##  scale_colour_manual(values = fkAgreement_mat_filt_pam_cl_colours) +
+#  labs(colour = bquote(atop("fkAgreement &", "m"*.(context)~"group")),
+#       x = bquote("PC1 (" * .(fkAgreement_mat_filt_pca_PC1_varexp) * "%)"),
+#       y = bquote("PC2 (" * .(fkAgreement_mat_filt_pca_PC2_varexp) * "%)")) +
+#  theme_bw() +
+#  theme(aspect.ratio = 1,
+#        legend.key.height = unit(4, "mm"))
+#
+#gg_kaAgreement_quantile_fkAgreement_mat_filt_pca_dim <- ggplot(fkAgreement_mat_filt_pca_dim,
+#                                                              mapping = aes(x = PC1, y = PC2, colour = kaAgreement_quantile)) +
+#  geom_point(size = 0.7, alpha = 0.5) +
+#  scale_colour_brewer(palette = "Dark2") +
+##  scale_colour_manual(values = fkAgreement_mat_filt_pam_cl_colours) +
+#  labs(colour = bquote(atop("kaAgreement &", "m"*.(context)~"group")),
+#       x = bquote("PC1 (" * .(fkAgreement_mat_filt_pca_PC1_varexp) * "%)"),
+#       y = bquote("PC2 (" * .(fkAgreement_mat_filt_pca_PC2_varexp) * "%)")) +
+#  theme_bw() +
+#  theme(aspect.ratio = 1,
+#        legend.key.height = unit(4, "mm"))
+#
+#gg_Stochasticity_quantile_fkAgreement_mat_filt_pca_dim <- ggplot(fkAgreement_mat_filt_pca_dim,
+#                                                                mapping = aes(x = PC1, y = PC2, colour = Stochasticity_quantile)) +
+#  geom_point(size = 0.7, alpha = 0.5) +
+#  scale_colour_brewer(palette = "Set1") +
+##  scale_colour_manual(values = fkAgreement_mat_filt_pam_cl_colours) +
+#  labs(colour = bquote(atop("Stochasticity &", "m"*.(context)~"group")),
+#       x = bquote("PC1 (" * .(fkAgreement_mat_filt_pca_PC1_varexp) * "%)"),
+#       y = bquote("PC2 (" * .(fkAgreement_mat_filt_pca_PC2_varexp) * "%)")) +
+#  theme_bw() +
+#  theme(aspect.ratio = 1,
+#        legend.key.height = unit(4, "mm"))
+#
+#gg_fkAgreement_fkAgreement_mat_filt_pca_dim <- ggplot(fkAgreement_mat_filt_pca_dim,
+#                                                      mapping = aes(x = PC1, y = PC2, colour = fkAgreement)) +
+#  geom_point(size = 0.7, alpha = 0.5) +
+#  scale_colour_viridis_c(option = "turbo") +
+##  scale_colour_gradient(low = "red", high = "yellow") +
+##  scale_colour_gradient2(low = "blue", high = "red") +
+#  labs(colour = "fkAgreement",
+#       x = bquote("PC1 (" * .(fkAgreement_mat_filt_pca_PC1_varexp) * "%)"),
+#       y = bquote("PC2 (" * .(fkAgreement_mat_filt_pca_PC2_varexp) * "%)")) +
+#  theme_bw() +
+#  theme(aspect.ratio = 1,
+#        legend.key.height = unit(4, "mm"))
+#
+#gg_kaAgreement_fkAgreement_mat_filt_pca_dim <- ggplot(fkAgreement_mat_filt_pca_dim,
+#                                                      mapping = aes(x = PC1, y = PC2, colour = kaAgreement)) +
+#  geom_point(size = 0.7, alpha = 0.5) +
+#  scale_colour_viridis_c(option = "turbo") +
+#  labs(colour = "kaAgreement",
+#       x = bquote("PC1 (" * .(fkAgreement_mat_filt_pca_PC1_varexp) * "%)"),
+#       y = bquote("PC2 (" * .(fkAgreement_mat_filt_pca_PC2_varexp) * "%)")) +
+#  theme_bw() +
+#  theme(aspect.ratio = 1,
+#        legend.key.height = unit(4, "mm"))
+#
+#gg_Stochasticity_fkAgreement_mat_filt_pca_dim <- ggplot(fkAgreement_mat_filt_pca_dim,
+#                                                        mapping = aes(x = PC1, y = PC2, colour = Stochasticity)) +
+#  geom_point(size = 0.7, alpha = 0.5) +
+#  scale_colour_viridis_c(option = "plasma") +
+#  labs(colour = "Stochasticity",
+#       x = bquote("PC1 (" * .(fkAgreement_mat_filt_pca_PC1_varexp) * "%)"),
+#       y = bquote("PC2 (" * .(fkAgreement_mat_filt_pca_PC2_varexp) * "%)")) +
+#  theme_bw() +
+#  theme(aspect.ratio = 1,
+#        legend.key.height = unit(4, "mm"))
+#
+#gg_mC_fkAgreement_mat_filt_pca_dim <- ggplot(fkAgreement_mat_filt_pca_dim,
+#                                             mapping = aes(x = PC1, y = PC2, colour = mC)) +
+#  geom_point(size = 0.7, alpha = 0.5) +
+#  scale_colour_viridis_c(option = "viridis") +
+#  labs(colour = bquote("m" * .(context) ~ "mean"),
+#       x = bquote("PC1 (" * .(fkAgreement_mat_filt_pca_PC1_varexp) * "%)"),
+#       y = bquote("PC2 (" * .(fkAgreement_mat_filt_pca_PC2_varexp) * "%)")) +
+#  theme_bw() +
+#  theme(aspect.ratio = 1,
+#        legend.key.height = unit(4, "mm"))
+#
+## Plot chr
+#gg_fkAgreement_quantile_fkAgreement_mat_filt_pca_dim_chr <- gg_fkAgreement_quantile_fkAgreement_mat_filt_pca_dim +
+#  facet_grid(cols = vars(chr), scales = "free_x")
+#
+#gg_kaAgreement_quantile_fkAgreement_mat_filt_pca_dim_chr <- gg_kaAgreement_quantile_fkAgreement_mat_filt_pca_dim +
+#  facet_grid(cols = vars(chr), scales = "free_x")
+#
+#gg_Stochasticity_quantile_fkAgreement_mat_filt_pca_dim_chr <- gg_Stochasticity_quantile_fkAgreement_mat_filt_pca_dim +
+#  facet_grid(cols = vars(chr), scales = "free_x")
+#
+#gg_fkAgreement_fkAgreement_mat_filt_pca_dim_chr <- gg_fkAgreement_fkAgreement_mat_filt_pca_dim +
+#  facet_grid(cols = vars(chr), scales = "free_x")
+#
+#gg_kaAgreement_fkAgreement_mat_filt_pca_dim_chr <- gg_kaAgreement_fkAgreement_mat_filt_pca_dim +
+#  facet_grid(cols = vars(chr), scales = "free_x")
+#
+#gg_Stochasticity_fkAgreement_mat_filt_pca_dim_chr <- gg_Stochasticity_fkAgreement_mat_filt_pca_dim +
+#  facet_grid(cols = vars(chr), scales = "free_x")
+#
+#gg_mC_fkAgreement_mat_filt_pca_dim_chr <- gg_mC_fkAgreement_mat_filt_pca_dim +
+#  facet_grid(cols = vars(chr), scales = "free_x")
+#
+#gg_cow_list_fkAgreement_mat_filt_pca_dim_chr <- list(
+#                                                     gg_fkAgreement_fkAgreement_mat_filt_pca_dim_chr,
+#                                                     gg_kaAgreement_fkAgreement_mat_filt_pca_dim_chr,
+#                                                     gg_Stochasticity_fkAgreement_mat_filt_pca_dim_chr,
+#                                                     gg_mC_fkAgreement_mat_filt_pca_dim_chr,
+#                                                     gg_fkAgreement_quantile_fkAgreement_mat_filt_pca_dim_chr,
+#                                                     gg_kaAgreement_quantile_fkAgreement_mat_filt_pca_dim_chr,
+#                                                     gg_Stochasticity_quantile_fkAgreement_mat_filt_pca_dim_chr
+#                                                    )
+#gg_cow_fkAgreement_mat_filt_pca_dim_chr <- plot_grid(plotlist = gg_cow_list_fkAgreement_mat_filt_pca_dim_chr,
+#                                                   align = "hv",
+#                                                   axis = "l",
+#                                                   nrow = length(gg_cow_list_fkAgreement_mat_filt_pca_dim_chr), ncol = 1)
+#ggsave(paste0(plotDir, "gg_fkAgreement_mat_filt_pca_dim_chr_quantiles.pdf"),
+#       plot = gg_cow_fkAgreement_mat_filt_pca_dim_chr,
+#       height = 4*length(gg_cow_list_fkAgreement_mat_filt_pca_dim_chr), width = 4*length(chrName), limitsize = F)
+#
+#
+## Overlay loadings
+#gg_fkAgreement_quantile_fkAgreement_mat_filt_pca_dim_loadings <- gg_fkAgreement_quantile_fkAgreement_mat_filt_pca_dim +
+#  geom_segment(data = fkAgreement_mat_filt_pca_loadings,
+#               mapping = aes(x = 0, y = 0, xend = (PC1*3), yend = (PC2*3)),
+#               arrow = arrow(length = unit(1/2, "picas")),
+#               colour = "grey0") +
+#  annotate("text", x = (fkAgreement_mat_filt_pca_loadings$PC1*3.2), y = (fkAgreement_mat_filt_pca_loadings$PC2*3.2),
+#           label = fkAgreement_mat_filt_pca_loadings$variables, colour = "grey0")
+#
+#gg_kaAgreement_quantile_fkAgreement_mat_filt_pca_dim_loadings <- gg_kaAgreement_quantile_fkAgreement_mat_filt_pca_dim +
+#  geom_segment(data = fkAgreement_mat_filt_pca_loadings,
+#               mapping = aes(x = 0, y = 0, xend = (PC1*3), yend = (PC2*3)),
+#               arrow = arrow(length = unit(1/2, "picas")),
+#               colour = "grey0") +
+#  annotate("text", x = (fkAgreement_mat_filt_pca_loadings$PC1*3.2), y = (fkAgreement_mat_filt_pca_loadings$PC2*3.2),
+#           label = fkAgreement_mat_filt_pca_loadings$variables, colour = "grey0")
+#
+#gg_Stochasticity_quantile_fkAgreement_mat_filt_pca_dim_loadings <- gg_Stochasticity_quantile_fkAgreement_mat_filt_pca_dim +
+#  geom_segment(data = fkAgreement_mat_filt_pca_loadings,
+#               mapping = aes(x = 0, y = 0, xend = (PC1*3), yend = (PC2*3)),
+#               arrow = arrow(length = unit(1/2, "picas")),
+#               colour = "grey0") +
+#  annotate("text", x = (fkAgreement_mat_filt_pca_loadings$PC1*3.2), y = (fkAgreement_mat_filt_pca_loadings$PC2*3.2),
+#           label = fkAgreement_mat_filt_pca_loadings$variables, colour = "grey0")
+#
+#gg_fkAgreement_fkAgreement_mat_filt_pca_dim_loadings <- gg_fkAgreement_fkAgreement_mat_filt_pca_dim +
+#  geom_segment(data = fkAgreement_mat_filt_pca_loadings,
+#               mapping = aes(x = 0, y = 0, xend = (PC1*3), yend = (PC2*3)),
+#               arrow = arrow(length = unit(1/2, "picas")),
+#               colour = "grey0") +
+#  annotate("text", x = (fkAgreement_mat_filt_pca_loadings$PC1*3.2), y = (fkAgreement_mat_filt_pca_loadings$PC2*3.2),
+#           label = fkAgreement_mat_filt_pca_loadings$variables, colour = "grey0")
+#
+#gg_kaAgreement_fkAgreement_mat_filt_pca_dim_loadings <- gg_kaAgreement_fkAgreement_mat_filt_pca_dim +
+#  geom_segment(data = fkAgreement_mat_filt_pca_loadings,
+#               mapping = aes(x = 0, y = 0, xend = (PC1*3), yend = (PC2*3)),
+#               arrow = arrow(length = unit(1/2, "picas")),
+#               colour = "grey0") +
+#  annotate("text", x = (fkAgreement_mat_filt_pca_loadings$PC1*3.2), y = (fkAgreement_mat_filt_pca_loadings$PC2*3.2),
+#           label = fkAgreement_mat_filt_pca_loadings$variables, colour = "grey0")
+#
+#gg_Stochasticity_fkAgreement_mat_filt_pca_dim_loadings <- gg_Stochasticity_fkAgreement_mat_filt_pca_dim +
+#  geom_segment(data = fkAgreement_mat_filt_pca_loadings,
+#               mapping = aes(x = 0, y = 0, xend = (PC1*3), yend = (PC2*3)),
+#               arrow = arrow(length = unit(1/2, "picas")),
+#               colour = "grey0") +
+#  annotate("text", x = (fkAgreement_mat_filt_pca_loadings$PC1*3.2), y = (fkAgreement_mat_filt_pca_loadings$PC2*3.2),
+#           label = fkAgreement_mat_filt_pca_loadings$variables, colour = "grey0")
+#
+#gg_mC_fkAgreement_mat_filt_pca_dim_loadings <- gg_mC_fkAgreement_mat_filt_pca_dim +
+#  geom_segment(data = fkAgreement_mat_filt_pca_loadings,
+#               mapping = aes(x = 0, y = 0, xend = (PC1*3), yend = (PC2*3)),
+#               arrow = arrow(length = unit(1/2, "picas")),
+#               colour = "grey0") +
+#  annotate("text", x = (fkAgreement_mat_filt_pca_loadings$PC1*3.2), y = (fkAgreement_mat_filt_pca_loadings$PC2*3.2),
+#           label = fkAgreement_mat_filt_pca_loadings$variables, colour = "grey0")
+#
+#gg_cow_list_fkAgreement_mat_filt_pca_dim_loadings <- list(
+#                                                        gg_fkAgreement_fkAgreement_mat_filt_pca_dim_loadings,
+#                                                        gg_kaAgreement_fkAgreement_mat_filt_pca_dim_loadings,
+#                                                        gg_Stochasticity_fkAgreement_mat_filt_pca_dim_loadings,
+#                                                        gg_mC_fkAgreement_mat_filt_pca_dim_loadings,
+#                                                        gg_fkAgreement_quantile_fkAgreement_mat_filt_pca_dim_loadings,
+#                                                        gg_kaAgreement_quantile_fkAgreement_mat_filt_pca_dim_loadings,
+#                                                        gg_Stochasticity_quantile_fkAgreement_mat_filt_pca_dim_loadings
+#                                                       )
+#gg_cow_fkAgreement_mat_filt_pca_dim_loadings <- plot_grid(plotlist = gg_cow_list_fkAgreement_mat_filt_pca_dim_loadings,
+#                                                        align = "hv",
+#                                                        axis = "l",
+#                                                        nrow = 1, ncol = length(gg_cow_list_fkAgreement_mat_filt_pca_dim_loadings))
+#ggsave(paste0(plotDir, "gg_fkAgreement_mat_filt_pca_dim_loadings_quantiles.pdf"),
+#       plot = gg_cow_fkAgreement_mat_filt_pca_dim_loadings,
+#       height = 4, width = 4*length(gg_cow_list_fkAgreement_mat_filt_pca_dim_loadings), limitsize = F)
 
 
 
@@ -409,7 +430,7 @@ kaAgreement_mat_filt_pca_dim <- kaAgreement_mat_filt_pca$x[, seq_len(kaAgreement
 colnames(kaAgreement_mat_filt_pca_dim) <- c("PC1", "PC2")
 head(kaAgreement_mat_filt_pca_dim)
 
-stopifnot(nrow(kaAgreement_mat_filt_pca_dim) == length(featDF_filt_mC_quantiles$kaAgreement_quantile))
+stopifnot(nrow(kaAgreement_mat_filt_pca_dim) == length(featDF_filt$kaAgreement_quantile))
 kaAgreement_mat_filt_pca_dim <- cbind(as.data.frame(kaAgreement_mat_filt_pca_dim),
                                       featDF_filt_mC_quantiles,
                                       type = "PCA")
@@ -446,7 +467,7 @@ gg_kaAgreement_quantile_kaAgreement_mat_filt_pca_dim <- ggplot(kaAgreement_mat_f
         legend.key.height = unit(4, "mm"))
 
 gg_Stochasticity_quantile_kaAgreement_mat_filt_pca_dim <- ggplot(kaAgreement_mat_filt_pca_dim,
-                                                                 mapping = aes(x = PC1, y = PC2, colour = Stochasticity_quantile)) +
+                                                                mapping = aes(x = PC1, y = PC2, colour = Stochasticity_quantile)) +
   geom_point(size = 0.7, alpha = 0.5) +
   scale_colour_brewer(palette = "Set1") +
 #  scale_colour_manual(values = kaAgreement_mat_filt_pam_cl_colours) +
@@ -505,6 +526,18 @@ gg_mC_kaAgreement_mat_filt_pca_dim <- ggplot(kaAgreement_mat_filt_pca_dim,
   theme(aspect.ratio = 1,
         legend.key.height = unit(4, "mm"))
 
+gg_Superfamily_kaAgreement_mat_filt_pca_dim <- ggplot(kaAgreement_mat_filt_pca_dim,
+                                                      mapping = aes(x = PC1, y = PC2, colour = Superfamily)) +
+  geom_point(size = 0.7, alpha = 0.5) +
+#  scale_colour_brewer(palette = "Dark2") +
+#  scale_colour_manual(values = kaAgreement_mat_filt_pam_cl_colours) +
+  labs(colour = bquote(atop("kaAgreement &", "m"*.(context)~"group")),
+       x = bquote("PC1 (" * .(kaAgreement_mat_filt_pca_PC1_varexp) * "%)"),
+       y = bquote("PC2 (" * .(kaAgreement_mat_filt_pca_PC2_varexp) * "%)")) +
+  theme_bw() +
+  theme(aspect.ratio = 1,
+        legend.key.height = unit(4, "mm"))
+
 # Plot chr
 gg_kaAgreement_quantile_kaAgreement_mat_filt_pca_dim_chr <- gg_kaAgreement_quantile_kaAgreement_mat_filt_pca_dim +
   facet_grid(cols = vars(chr), scales = "free_x")
@@ -527,6 +560,9 @@ gg_Stochasticity_kaAgreement_mat_filt_pca_dim_chr <- gg_Stochasticity_kaAgreemen
 gg_mC_kaAgreement_mat_filt_pca_dim_chr <- gg_mC_kaAgreement_mat_filt_pca_dim +
   facet_grid(cols = vars(chr), scales = "free_x")
 
+gg_Superfamily_kaAgreement_mat_filt_pca_dim_chr <- gg_Superfamily_kaAgreement_mat_filt_pca_dim +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
 gg_cow_list_kaAgreement_mat_filt_pca_dim_chr <- list(
                                                      gg_kaAgreement_kaAgreement_mat_filt_pca_dim_chr,
                                                      gg_fkAgreement_kaAgreement_mat_filt_pca_dim_chr,
@@ -534,7 +570,8 @@ gg_cow_list_kaAgreement_mat_filt_pca_dim_chr <- list(
                                                      gg_mC_kaAgreement_mat_filt_pca_dim_chr,
                                                      gg_kaAgreement_quantile_kaAgreement_mat_filt_pca_dim_chr,
                                                      gg_fkAgreement_quantile_kaAgreement_mat_filt_pca_dim_chr,
-                                                     gg_Stochasticity_quantile_kaAgreement_mat_filt_pca_dim_chr
+                                                     gg_Stochasticity_quantile_kaAgreement_mat_filt_pca_dim_chr,
+                                                     gg_Superfamily_kaAgreement_mat_filt_pca_dim_chr
                                                     )
 gg_cow_kaAgreement_mat_filt_pca_dim_chr <- plot_grid(plotlist = gg_cow_list_kaAgreement_mat_filt_pca_dim_chr,
                                                      align = "hv",
@@ -602,6 +639,14 @@ gg_mC_kaAgreement_mat_filt_pca_dim_loadings <- gg_mC_kaAgreement_mat_filt_pca_di
   annotate("text", x = (kaAgreement_mat_filt_pca_loadings$PC1*3.2), y = (kaAgreement_mat_filt_pca_loadings$PC2*3.2),
            label = kaAgreement_mat_filt_pca_loadings$variables, colour = "grey0")
 
+gg_Superfamily_kaAgreement_mat_filt_pca_dim_loadings <- gg_Superfamily_kaAgreement_mat_filt_pca_dim +
+  geom_segment(data = kaAgreement_mat_filt_pca_loadings,
+               mapping = aes(x = 0, y = 0, xend = (PC1*3), yend = (PC2*3)),
+               arrow = arrow(length = unit(1/2, "picas")),
+               colour = "grey0") +
+  annotate("text", x = (kaAgreement_mat_filt_pca_loadings$PC1*3.2), y = (kaAgreement_mat_filt_pca_loadings$PC2*3.2),
+           label = kaAgreement_mat_filt_pca_loadings$variables, colour = "grey0")
+
 gg_cow_list_kaAgreement_mat_filt_pca_dim_loadings <- list(
                                                           gg_kaAgreement_kaAgreement_mat_filt_pca_dim_loadings,
                                                           gg_fkAgreement_kaAgreement_mat_filt_pca_dim_loadings,
@@ -609,7 +654,8 @@ gg_cow_list_kaAgreement_mat_filt_pca_dim_loadings <- list(
                                                           gg_mC_kaAgreement_mat_filt_pca_dim_loadings,
                                                           gg_kaAgreement_quantile_kaAgreement_mat_filt_pca_dim_loadings,
                                                           gg_fkAgreement_quantile_kaAgreement_mat_filt_pca_dim_loadings,
-                                                          gg_Stochasticity_quantile_kaAgreement_mat_filt_pca_dim_loadings
+                                                          gg_Stochasticity_quantile_kaAgreement_mat_filt_pca_dim_loadings,
+                                                          gg_Superfamily_kaAgreement_mat_filt_pca_dim_loadings
                                                          )
 gg_cow_kaAgreement_mat_filt_pca_dim_loadings <- plot_grid(plotlist = gg_cow_list_kaAgreement_mat_filt_pca_dim_loadings,
                                                           align = "hv",
@@ -646,7 +692,7 @@ Stochasticity_mat_filt_pca_loadings <- data.frame(variables = rownames(Stochasti
                                                   Stochasticity_mat_filt_pca$rotation)
 
 gg_fkAgreement_quantile_Stochasticity_mat_filt_pca_dim <- ggplot(Stochasticity_mat_filt_pca_dim,
-                                                                mapping = aes(x = PC1, y = PC2, colour = fkAgreement_quantile)) +
+                                                                 mapping = aes(x = PC1, y = PC2, colour = fkAgreement_quantile)) +
   geom_point(size = 0.7, alpha = 0.5) +
   scale_colour_brewer(palette = "Dark2") +
 #  scale_colour_manual(values = Stochasticity_mat_filt_pam_cl_colours) +
@@ -658,7 +704,7 @@ gg_fkAgreement_quantile_Stochasticity_mat_filt_pca_dim <- ggplot(Stochasticity_m
         legend.key.height = unit(4, "mm"))
 
 gg_kaAgreement_quantile_Stochasticity_mat_filt_pca_dim <- ggplot(Stochasticity_mat_filt_pca_dim,
-                                                                mapping = aes(x = PC1, y = PC2, colour = kaAgreement_quantile)) +
+                                                                 mapping = aes(x = PC1, y = PC2, colour = kaAgreement_quantile)) +
   geom_point(size = 0.7, alpha = 0.5) +
   scale_colour_brewer(palette = "Dark2") +
 #  scale_colour_manual(values = Stochasticity_mat_filt_pam_cl_colours) +
@@ -729,6 +775,18 @@ gg_mC_Stochasticity_mat_filt_pca_dim <- ggplot(Stochasticity_mat_filt_pca_dim,
   theme(aspect.ratio = 1,
         legend.key.height = unit(4, "mm"))
 
+gg_Superfamily_Stochasticity_mat_filt_pca_dim <- ggplot(Stochasticity_mat_filt_pca_dim,
+                                                        mapping = aes(x = PC1, y = PC2, colour = Superfamily)) +
+  geom_point(size = 0.7, alpha = 0.5) +
+#  scale_colour_brewer(palette = "Dark2") +
+#  scale_colour_manual(values = Stochasticity_mat_filt_pam_cl_colours) +
+  labs(colour = bquote(atop("fkAgreement &", "m"*.(context)~"group")),
+       x = bquote("PC1 (" * .(Stochasticity_mat_filt_pca_PC1_varexp) * "%)"),
+       y = bquote("PC2 (" * .(Stochasticity_mat_filt_pca_PC2_varexp) * "%)")) +
+  theme_bw() +
+  theme(aspect.ratio = 1,
+        legend.key.height = unit(4, "mm"))
+
 # Plot chr
 gg_Stochasticity_quantile_Stochasticity_mat_filt_pca_dim_chr <- gg_Stochasticity_quantile_Stochasticity_mat_filt_pca_dim +
   facet_grid(cols = vars(chr), scales = "free_x")
@@ -751,6 +809,9 @@ gg_kaAgreement_Stochasticity_mat_filt_pca_dim_chr <- gg_kaAgreement_Stochasticit
 gg_mC_Stochasticity_mat_filt_pca_dim_chr <- gg_mC_Stochasticity_mat_filt_pca_dim +
   facet_grid(cols = vars(chr), scales = "free_x")
 
+gg_Superfamily_Stochasticity_mat_filt_pca_dim_chr <- gg_Superfamily_Stochasticity_mat_filt_pca_dim +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
 gg_cow_list_Stochasticity_mat_filt_pca_dim_chr <- list(
                                                        gg_Stochasticity_Stochasticity_mat_filt_pca_dim_chr,
                                                        gg_fkAgreement_Stochasticity_mat_filt_pca_dim_chr,
@@ -758,7 +819,8 @@ gg_cow_list_Stochasticity_mat_filt_pca_dim_chr <- list(
                                                        gg_mC_Stochasticity_mat_filt_pca_dim_chr,
                                                        gg_Stochasticity_quantile_Stochasticity_mat_filt_pca_dim_chr,
                                                        gg_fkAgreement_quantile_Stochasticity_mat_filt_pca_dim_chr,
-                                                       gg_kaAgreement_quantile_Stochasticity_mat_filt_pca_dim_chr
+                                                       gg_kaAgreement_quantile_Stochasticity_mat_filt_pca_dim_chr,
+                                                       gg_Superfamily_Stochasticity_mat_filt_pca_dim_chr
                                                       )
 gg_cow_Stochasticity_mat_filt_pca_dim_chr <- plot_grid(plotlist = gg_cow_list_Stochasticity_mat_filt_pca_dim_chr,
                                                        align = "hv",
@@ -826,6 +888,14 @@ gg_mC_Stochasticity_mat_filt_pca_dim_loadings <- gg_mC_Stochasticity_mat_filt_pc
   annotate("text", x = (Stochasticity_mat_filt_pca_loadings$PC1*3.2), y = (Stochasticity_mat_filt_pca_loadings$PC2*3.2),
            label = Stochasticity_mat_filt_pca_loadings$variables, colour = "grey0")
 
+gg_Superfamily_Stochasticity_mat_filt_pca_dim_loadings <- gg_Superfamily_Stochasticity_mat_filt_pca_dim +
+  geom_segment(data = Stochasticity_mat_filt_pca_loadings,
+               mapping = aes(x = 0, y = 0, xend = (PC1*3), yend = (PC2*3)),
+               arrow = arrow(length = unit(1/2, "picas")),
+               colour = "grey0") +
+  annotate("text", x = (Stochasticity_mat_filt_pca_loadings$PC1*3.2), y = (Stochasticity_mat_filt_pca_loadings$PC2*3.2),
+           label = Stochasticity_mat_filt_pca_loadings$variables, colour = "grey0")
+
 gg_cow_list_Stochasticity_mat_filt_pca_dim_loadings <- list(
                                                             gg_Stochasticity_Stochasticity_mat_filt_pca_dim_loadings,
                                                             gg_fkAgreement_Stochasticity_mat_filt_pca_dim_loadings,
@@ -833,7 +903,8 @@ gg_cow_list_Stochasticity_mat_filt_pca_dim_loadings <- list(
                                                             gg_mC_Stochasticity_mat_filt_pca_dim_loadings,
                                                             gg_Stochasticity_quantile_Stochasticity_mat_filt_pca_dim_loadings,
                                                             gg_fkAgreement_quantile_Stochasticity_mat_filt_pca_dim_loadings,
-                                                            gg_kaAgreement_quantile_Stochasticity_mat_filt_pca_dim_loadings
+                                                            gg_kaAgreement_quantile_Stochasticity_mat_filt_pca_dim_loadings,
+                                                            gg_Superfamily_Stochasticity_mat_filt_pca_dim_loadings
                                                            )
 gg_cow_Stochasticity_mat_filt_pca_dim_loadings <- plot_grid(plotlist = gg_cow_list_Stochasticity_mat_filt_pca_dim_loadings,
                                                             align = "hv",
@@ -844,80 +915,10 @@ ggsave(paste0(plotDir, "gg_Stochasticity_mat_filt_pca_dim_loadings_quantiles.pdf
        height = 4, width = 4*length(gg_cow_list_Stochasticity_mat_filt_pca_dim_loadings), limitsize = F)
 
 
-
-# Append intron retention ratio (calculated with IRFinder)
-Col_Rep1_IRFinder <- fread(paste0("/home/ajt200/analysis/RNAseq_leaf_Rigal_Mathieu_2016_PNAS/snakemake_RNAseq_IRFinder_TAIR10_chr_all/REF/TAIR10_chr_all/",
-                                  "Col_0_RNAseq_pooled_ERR96615/IRFinder-IR-dir.txt"),
-                           sep = "\t", data.table = F)
-Col_Rep1_IRFinder <- Col_Rep1_IRFinder[grep("clean", Col_Rep1_IRFinder$Name),]
-Col_Rep1_IRFinder <- Col_Rep1_IRFinder[-which(Col_Rep1_IRFinder$Warnings %in% c("LowCover")),]
-#nrow(Col_Rep1_IRFinder[which(Col_Rep1_IRFinder$Warnings == "-"),])
-#[1] 45907
-#[1] 22136
-Col_Rep1_IRFinder$Name <- str_extract(Col_Rep1_IRFinder$Name, "AT\\wG\\d+")
-Col_Rep1_IRFinder <- Col_Rep1_IRFinder[-which(is.na(Col_Rep1_IRFinder$Name)),]
-
-library(doParallel)
-library(doFuture)
-registerDoFuture()
-plan(multicore)
-print("Currently registered parallel backend name, version and cores")
-print(getDoParName())
-print(getDoParVersion())
-print(getDoParWorkers())
-
-parentIDs <- unique(Col_Rep1_IRFinder$Name)
-
-Col_Rep1_IRratio <- foreach(i = iter(parentIDs),
-                            .combine = "rbind",
-                            .multicombine = T,
-                            .maxcombine = length(parentIDs)+1e1,
-                            .inorder = F,
-                            .errorhandling = "pass") %dopar% {
-  tmpDF <- Col_Rep1_IRFinder[which(Col_Rep1_IRFinder$Name == i),]
-  data.frame(chr = paste0("Chr", tmpDF$Chr[1]),
-             start = min(tmpDF$Start, na.rm = T),
-             end = max(tmpDF$End, na.rm = T),
-             parent = i,
-             strand = tmpDF$Strand[1],
-             intronWidth_sum = sum(tmpDF$End - tmpDF$Start + 1, na.rm = T),
-             excludedBases_sum = sum(tmpDF$ExcludedBases, na.rm = T),
-             coverage_sum = sum(tmpDF$Coverage, na.rm = T),
-             intronDepth_sum = sum(tmpDF$IntronDepth, na.rm = T),
-             IRratio_mean = mean(tmpDF$IRratio, na.rm = T),
-             IRratio_median = median(tmpDF$IRratio, na.rm = T),
-             IRratio_sd = sd(tmpDF$IRratio, na.rm = T),
-             IRratio_min = min(tmpDF$IRratio, na.rm = T),
-             IRratio_max = max(tmpDF$IRratio, na.rm = T))
-}
-
-featDF_filt_tab <- base::merge(x = featDF_filt_mC_quantiles, y = Col_Rep1_IRratio,
-                               by.x = "parent", by.y = "parent")
-
-colnames(featDF_filt_tab)[which(colnames(featDF_filt_tab) %in%
-  c("mC", "fkAgreement", "kaAgreement", "Stochasticity"))] <- c("mean_mC_all", "fk_kappa_all", "ka_alpha_all", "mean_stocha_all")
-
 colnames(featDF_filt_mC_quantiles)[which(colnames(featDF_filt_mC_quantiles) %in%
   c("mC", "fkAgreement", "kaAgreement", "Stochasticity"))] <- c("mean_mC_all", "fk_kappa_all", "ka_alpha_all", "mean_stocha_all")
 
-
-print(cor.test(featDF_filt_tab$fk_kappa_all, featDF_filt_tab$IRratio_mean, method = "spearman"))
-#-0.1034838
-print(cor.test(featDF_filt_tab$fk_kappa_all, featDF_filt_tab$IRratio_median, method = "spearman"))
-#-0.2840318
-
-print(cor.test(featDF_filt_tab$ka_alpha_all, featDF_filt_tab$IRratio_mean, method = "spearman"))
-#-0.1052147
-print(cor.test(featDF_filt_tab$ka_alpha_all, featDF_filt_tab$IRratio_median, method = "spearman"))
-#-0.2763196
-
-print(cor.test(featDF_filt_tab$mean_stocha_all, featDF_filt_tab$IRratio_mean, method = "spearman"))
-#-0.1120429
-print(cor.test(featDF_filt_tab$mean_stocha_all, featDF_filt_tab$IRratio_median, method = "spearman"))
-#-0.3074874
-
-
-# Plot relationships and define groups
+# Plot relationships and show groups
 trendPlot <- function(dataFrame, mapping, paletteName, xvar, yvar, quantilelab, xlab, ylab, xaxtrans, yaxtrans, xbreaks, ybreaks, xlabels, ylabels) {
   xvar <- enquo(xvar)
   yvar <- enquo(yvar)
@@ -961,6 +962,63 @@ trendPlot <- function(dataFrame, mapping, paletteName, xvar, yvar, quantilelab, 
                          digits = 5))))
 }
 
+trendPlot2 <- function(dataFrame, mapping, paletteName, xvar, yvar, quantilelab, xlab, ylab, xaxtrans, yaxtrans, xbreaks, ybreaks, xlabels, ylabels) {
+  xvar <- enquo(xvar)
+  yvar <- enquo(yvar)
+  ggplot(data = dataFrame,
+         mapping = mapping) +
+  geom_point(size = 0.7, alpha = 0.5) +
+  scale_x_continuous(trans = xaxtrans,
+                     breaks = xbreaks,
+                     labels = xlabels) +
+  scale_y_continuous(trans = yaxtrans,
+                     breaks = ybreaks,
+                     labels = ylabels) +
+  scale_colour_manual(values = paletteName) +
+  geom_smooth(colour = "black", fill = "grey70", alpha = 0.9,
+              method = "gam", formula = y ~ s(x, bs = "cs")) +
+  labs(colour = quantilelab,
+       x = xlab,
+       y = ylab) +
+  theme_bw() +
+  theme(
+        axis.ticks = element_line(size = 0.5, colour = "black"),
+        axis.ticks.length = unit(0.25, "cm"),
+        axis.text.x = element_text(size = 16, colour = "black"),
+        axis.text.y = element_text(size = 16, colour = "black"),
+        axis.title = element_text(size = 18, colour = "black"),
+        axis.line = element_line(size = 0.5, colour = "black"),
+        panel.background = element_blank(),
+        panel.border = element_blank(),
+#        panel.border = element_rect(size = 1.0, colour = "black"),
+#        panel.grid = element_blank(),
+        legend.key.height = unit(4, "mm"),
+        strip.text.x = element_text(size = 20, colour = "white"),
+        strip.background = element_rect(fill = "black", colour = "black"),
+        plot.margin = unit(c(0.3,1.2,0.3,0.3), "cm"),
+        plot.title = element_text(hjust = 0.5, size = 18)) +
+  ggtitle(bquote(italic(r[s]) ~ "=" ~
+                 .(round(cor.test(select(dataFrame, !!enquo(xvar))[,1], select(dataFrame, !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$estimate[[1]],
+                         digits = 2)) *
+                 ";" ~ italic(P) ~ "=" ~
+                 .(round(min(0.5, cor.test(select(dataFrame, !!enquo(xvar))[,1], select(dataFrame, !!enquo(yvar))[,1], method = "spearman", use = "pairwise.complete.obs")$p.value * sqrt( (dim(dataFrame)[1]/100) )),
+                         digits = 5))))
+}
+
+superfamNames <- sort(unique(featDF_filt$Superfamily))
+superfamNames <- c(superfamNames[3], superfamNames[1], superfamNames[14],
+                   superfamNames[10], superfamNames[7], superfamNames[13],
+                   superfamNames[6], superfamNames[2], superfamNames[4],
+                   superfamNames[5], superfamNames[8], superfamNames[9],
+                   superfamNames[12], superfamNames[11])
+superfamNames <- superfamNames[-grep("Unclassified", superfamNames)]
+superfamNamesPlot <- gsub("Pogo_Tc1_Mariner", "Pogo/Tc1/Mar", superfamNames)
+superfamNamesPlot <- gsub("_", " ", superfamNamesPlot)
+superfamNamesPlot <- gsub("classified", ".", superfamNamesPlot)
+
+Superfamily_colFun <- cols25(n = 25)[-c(7:16, 25)][1:length(superfamNames)]
+stopifnot(length(Superfamily_colFun) == length(superfamNames))
+names(Superfamily_colFun) <- superfamNames
 
 ggTrend_mean_mC_all_fk_kappa_all_filt <- trendPlot(dataFrame = featDF_filt_mC_quantiles,
                                                    mapping = aes(x = mean_mC_all, y = fk_kappa_all, colour = fkAgreement_quantile),
@@ -994,6 +1052,40 @@ ggTrend_mean_mC_all_ka_alpha_all_filt <- trendPlot(dataFrame = featDF_filt_mC_qu
                                                    xlabels = trans_format("log10", math_format(10^.x)),
                                                    ylabels = trans_format("log10", math_format(10^.x)))
 ggTrend_mean_mC_all_ka_alpha_all_filt <- ggTrend_mean_mC_all_ka_alpha_all_filt +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+ggTrend_mean_mC_all_ka_alpha_all_filt_Superfamily <- trendPlot2(dataFrame = featDF_filt_mC_quantiles,
+                                                                mapping = aes(x = mean_mC_all, y = ka_alpha_all, colour = Superfamily),
+                                                                paletteName = Superfamily_colFun,
+                                                                xvar = mean_mC_all,
+                                                                yvar = ka_alpha_all,
+                                                                quantilelab = "Superfamily",
+                                                                xlab = bquote(.(featName)*" mean m"*.(context)),
+                                                                ylab = bquote(.(featName)*" kaAgreement (m"*.(context)*")"),
+                                                                xaxtrans = log10_trans(),
+                                                                yaxtrans = log10_trans(),
+                                                                xbreaks = trans_breaks("log10", function(x) 10^x),
+                                                                ybreaks = trans_breaks("log10", function(x) 10^x),
+                                                                xlabels = trans_format("log10", math_format(10^.x)),
+                                                                ylabels = trans_format("log10", math_format(10^.x)))
+ggTrend_mean_mC_all_ka_alpha_all_filt_Superfamily <- ggTrend_mean_mC_all_ka_alpha_all_filt_Superfamily +
+  facet_grid(cols = vars(chr), scales = "free_x")
+
+ggTrend_feature_width_ka_alpha_all_filt_Superfamily <- trendPlot2(dataFrame = featDF_filt_mC_quantiles,
+                                                                  mapping = aes(x = feature_width, y = ka_alpha_all, colour = Superfamily),
+                                                                  paletteName = Superfamily_colFun,
+                                                                  xvar = feature_width,
+                                                                  yvar = ka_alpha_all,
+                                                                  quantilelab = "Superfamily",
+                                                                  xlab = bquote(.(featName)*" length (bp)"),
+                                                                  ylab = bquote(.(featName)*" kaAgreement (m"*.(context)*")"),
+                                                                  xaxtrans = log10_trans(),
+                                                                  yaxtrans = log10_trans(),
+                                                                  xbreaks = trans_breaks("log10", function(x) 10^x),
+                                                                  ybreaks = trans_breaks("log10", function(x) 10^x),
+                                                                  xlabels = trans_format("log10", math_format(10^.x)),
+                                                                  ylabels = trans_format("log10", math_format(10^.x)))
+ggTrend_feature_width_ka_alpha_all_filt_Superfamily <- ggTrend_feature_width_ka_alpha_all_filt_Superfamily +
   facet_grid(cols = vars(chr), scales = "free_x")
 
 ggTrend_mean_mC_all_mean_stocha_all_filt <- trendPlot(dataFrame = featDF_filt_mC_quantiles,
@@ -1118,6 +1210,8 @@ ggTrend_ka_alpha_all_mean_stocha_all_filt <- ggTrend_ka_alpha_all_mean_stocha_al
 gg_cow_list1 <- list(
                      ggTrend_mean_mC_all_fk_kappa_all_filt,
                      ggTrend_mean_mC_all_ka_alpha_all_filt,
+                     ggTrend_mean_mC_all_ka_alpha_all_filt_Superfamily,
+                     ggTrend_feature_width_ka_alpha_all_filt_Superfamily,
                      ggTrend_mean_mC_all_mean_stocha_all_filt,
                      ggTrend_ka_alpha_all_fk_kappa_all_filt,
                      ggTrend_fk_kappa_all_ka_alpha_all_filt,
@@ -1139,7 +1233,6 @@ ggsave(paste0(plotDir,
               "_quantiles.pdf"),
        plot = gg_cow1,
        height = 5*length(gg_cow_list1), width = 5*length(chrName), limitsize = F)
-
 
 
 # Extract feature quantiles to enable enrichment analysis
@@ -1400,4 +1493,3 @@ write.table(featDF_filt_stocha_mC_quantile4_lower,
                    "_filt_df_mean_stocha_all_mean_mC_all_quantile4_lower_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
-
