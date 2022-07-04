@@ -22,8 +22,6 @@
 #genomeBinSize <- 10000
 #genomeStepSize <- 1000
 
-groupNames <- sort(c(paste0("quantile", 1:4, "_lower"), paste0("quantile", 1:4, "_upper")))
-
 args <- commandArgs(trailingOnly = T)
 sampleName <- args[1]
 refbase <- args[2]
@@ -34,6 +32,8 @@ featName <- args[6]
 featRegion <- args[7]
 genomeBinSize <- as.numeric(args[8])
 genomeStepSize <- as.numeric(args[9])
+
+groupNames <- sort(c(paste0("quantile", 1:4, "_lower"), paste0("quantile", 1:4, "_upper")))
 
 options(stringsAsFactors = F)
 library(parallel)
@@ -360,7 +360,7 @@ featID_mD_cs <- unique(featGR_mD_cs$featID)
 
 # Load feature groups (defined based on Fleiss' kappa vs mean mC trend plots) to enable enrichment analysis
 
-filt_kappa_mC_groups <- lapply(seq_along(1:4), function(x) {
+filt_kappa_mC_groups <- lapply(groupNames, function(x) {
   tmp <- read.table(paste0(outDir,
                            featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                            "_", context,
@@ -486,7 +486,7 @@ write.table(hgTest_kappa_mD_cs_DF,
 
 # Load feature groups (defined based on Krippendorff's alpha vs mean mC trend plots) to enable enrichment analysis
 
-filt_alpha_mC_groups <- lapply(seq_along(1:4), function(x) {
+filt_alpha_mC_groups <- lapply(groupNames, function(x) {
   tmp <- read.table(paste0(outDir,
                            featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                            "_", context,
@@ -612,7 +612,7 @@ write.table(hgTest_alpha_mD_cs_DF,
 
 # Load feature groups (defined based on stochasticity vs mean mC trend plots) to enable enrichment analysis
 
-filt_stocha_mC_groups <- lapply(seq_along(1:4), function(x) {
+filt_stocha_mC_groups <- lapply(groupNames, function(x) {
   tmp <- read.table(paste0(outDir,
                            featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                            "_", context,
