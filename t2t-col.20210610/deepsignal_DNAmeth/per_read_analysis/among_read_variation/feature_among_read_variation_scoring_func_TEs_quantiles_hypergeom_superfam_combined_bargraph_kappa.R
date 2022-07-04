@@ -113,7 +113,7 @@ superfamList <- lapply(1:length(superfamNames), function(y) {
                                  sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
                                  featName, "_", featRegion,
                                  "_", paste0(chrName, collapse = "_"), "_", context,
-                                 "_", superfamNames[y], "_TEs_hypergeomTest.tsv"),
+                                 "_", superfamNames[y], "_TEs_hypergeomTest_quantiles.tsv"),
                           header = T)
   superfam <- data.frame(Feature = rep(superfamNamesPlot[y], 8),
                          superfam)
@@ -122,7 +122,15 @@ superfamList <- lapply(1:length(superfamNames), function(y) {
 
 combined <- dplyr::bind_rows(superfamList)
 
-combined$group <- paste0("Group ", combined$group)
+combined$group <- gsub("1", "Q1 lower", combined$group)
+combined$group <- gsub("2", "Q1 upper", combined$group)
+combined$group <- gsub("3", "Q2 lower", combined$group)
+combined$group <- gsub("4", "Q2 upper", combined$group)
+combined$group <- gsub("5", "Q3 lower", combined$group)
+combined$group <- gsub("6", "Q3 upper", combined$group)
+combined$group <- gsub("7", "Q4 lower", combined$group)
+combined$group <- gsub("8", "Q4 upper", combined$group)
+
 colnames(combined)[which(colnames(combined) == "group")] <- "Group"
 combined$Group <- factor(combined$Group,
                          levels = sort(unique(combined$Group)))
@@ -143,40 +151,40 @@ bp <- ggplot(data = combined,
                            y = log2alpha),
              position = position_dodge(0.9),
              shape = "-", colour  = "grey70", size = 6) +
-  geom_segment(mapping = aes(x = 0.55, y = min(c(combined$log2obsexp, combined$log2alpha))-0.50,
-                             xend = 1.45, yend = min(c(combined$log2obsexp, combined$log2alpha))-0.50),
-               colour = "dodgerblue1",
+  geom_segment(mapping = aes(x = 0.55, y = min(c(log2obsexp, log2alpha))-0.50,
+                             xend = 1.45, yend = min(c(log2obsexp, log2alpha))-0.50),
+               colour = brewer.pal(name = "Dark2", n = 8)[1],
                inherit.aes = F, size = 2) +
-  geom_segment(mapping = aes(x = 1.55, y = min(c(combined$log2obsexp, combined$log2alpha))-0.50,
-                             xend = 2.45, yend = min(c(combined$log2obsexp, combined$log2alpha))-0.50),
-               colour = "dodgerblue3",
+  geom_segment(mapping = aes(x = 1.55, y = min(c(log2obsexp, log2alpha))-0.50,
+                             xend = 2.45, yend = min(c(log2obsexp, log2alpha))-0.50),
+               colour = brewer.pal(name = "Dark2", n = 8)[2],
                inherit.aes = F, size = 2) +
-  geom_segment(mapping = aes(x = 2.55, y = min(c(combined$log2obsexp, combined$log2alpha))-0.50,
-                             xend = 3.45, yend = min(c(combined$log2obsexp, combined$log2alpha))-0.50),
-               colour = "magenta1",
+  geom_segment(mapping = aes(x = 2.55, y = min(c(log2obsexp, log2alpha))-0.50,
+                             xend = 3.45, yend = min(c(log2obsexp, log2alpha))-0.50),
+               colour = brewer.pal(name = "Dark2", n = 8)[3],
                inherit.aes = F, size = 2) +
-  geom_segment(mapping = aes(x = 3.55, y = min(c(combined$log2obsexp, combined$log2alpha))-0.50,
-                             xend = 4.45, yend = min(c(combined$log2obsexp, combined$log2alpha))-0.50),
-               colour = "magenta3",
+  geom_segment(mapping = aes(x = 3.55, y = min(c(log2obsexp, log2alpha))-0.50,
+                             xend = 4.45, yend = min(c(log2obsexp, log2alpha))-0.50),
+               colour = brewer.pal(name = "Dark2", n = 8)[4],
                inherit.aes = F, size = 2) +
-  geom_segment(mapping = aes(x = 4.55, y = min(c(combined$log2obsexp, combined$log2alpha))-0.50,
-                             xend = 5.45, yend = min(c(combined$log2obsexp, combined$log2alpha))-0.50),
-               colour = "darkorange1",
+  geom_segment(mapping = aes(x = 4.55, y = min(c(log2obsexp, log2alpha))-0.50,
+                             xend = 5.45, yend = min(c(log2obsexp, log2alpha))-0.50),
+               colour = brewer.pal(name = "Dark2", n = 8)[5],
                inherit.aes = F, size = 2) +
-  geom_segment(mapping = aes(x = 5.55, y = min(c(combined$log2obsexp, combined$log2alpha))-0.50,
-                             xend = 6.45, yend = min(c(combined$log2obsexp, combined$log2alpha))-0.50),
-               colour = "darkorange3",
+  geom_segment(mapping = aes(x = 5.55, y = min(c(log2obsexp, log2alpha))-0.50,
+                             xend = 6.45, yend = min(c(log2obsexp, log2alpha))-0.50),
+               colour = brewer.pal(name = "Dark2", n = 8)[6],
                inherit.aes = F, size = 2) +
-  geom_segment(mapping = aes(x = 6.55, y = min(c(combined$log2obsexp, combined$log2alpha))-0.50,
-                             xend = 7.45, yend = min(c(combined$log2obsexp, combined$log2alpha))-0.50),
-               colour = "firebrick1",
+  geom_segment(mapping = aes(x = 6.55, y = min(c(log2obsexp, log2alpha))-0.50,
+                             xend = 7.45, yend = min(c(log2obsexp, log2alpha))-0.50),
+               colour = brewer.pal(name = "Dark2", n = 8)[7],
                inherit.aes = F, size = 2) +
-  geom_segment(mapping = aes(x = 7.55, y = min(c(combined$log2obsexp, combined$log2alpha))-0.50,
-                             xend = 8.45, yend = min(c(combined$log2obsexp, combined$log2alpha))-0.50),
-               colour = "firebrick3",
+  geom_segment(mapping = aes(x = 7.55, y = min(c(log2obsexp, log2alpha))-0.50,
+                             xend = 8.45, yend = min(c(log2obsexp, log2alpha))-0.50),
+               colour = brewer.pal(name = "Dark2", n = 8)[8],
                inherit.aes = F, size = 2) +
 
-  xlab(bquote(atop("Among-read agreement and mean m" * .(context), .(featName) ~ .(featRegion) ~ "group"))) +
+  xlab(bquote(atop("Among-read agreement (kappa) and mean m" * .(context), .(featName) ~ .(featRegion) ~ "group"))) +
   ylab(bquote("Log"[2] * "(observed/expected) TEs in group")) +
 #  scale_y_continuous(limits = c(-4.0, 4.0)) +
   scale_x_discrete(position = "bottom") +
@@ -209,6 +217,6 @@ ggsave(paste0(plotDir_kappa_mC,
               sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
               featName, "_", featRegion,
               "_", paste0(chrName, collapse = "_"), "_", context,
-              "_TE_superfam_combined_bargraph_hypergeomTest.pdf"),
+              "_TE_superfam_combined_bargraph_hypergeomTest_quantiles.pdf"),
        plot = bp,
        height = 8, width = 20)
