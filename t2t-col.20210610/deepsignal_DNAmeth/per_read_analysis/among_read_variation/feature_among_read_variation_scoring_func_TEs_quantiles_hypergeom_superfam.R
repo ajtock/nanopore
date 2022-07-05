@@ -27,6 +27,7 @@ featName <- args[6]
 featRegion <- args[7]
 
 groupNames <- sort(c(paste0("quantile", 1:4, "_lower"), paste0("quantile", 1:4, "_upper")))
+groupNames_alpha <- sort(c(paste0("quantile", 1:4, "_lower"), "quantile1_middle", paste0("quantile", 1:4, "_upper")))
 
 options(stringsAsFactors = F)
 library(parallel)
@@ -307,7 +308,7 @@ featDF <- read.table(paste0(outDir,
                             featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                             "_", context,
                             "_NAmax", NAmax,
-                            "_filt_df_ka_alpha_all_mean_mC_all_complete_",
+                            "_filt_df_fk_kappa_all_mean_mC_all_complete_",
                             paste0(chrName, collapse = "_"), ".tsv"),
                      header = T)
 
@@ -323,7 +324,7 @@ superfamNamesPlot <- gsub("classified", ".", superfamNamesPlot)
 
 # Load feature groups (defined based on Krippendorf's alpha vs mean mC trend plots) to enable enrichment analysis
 
-filt_alpha_mC_groups <- lapply(groupNames, function(x) {
+filt_alpha_mC_groups <- lapply(groupNames_alpha, function(x) {
   tmp <- read.table(paste0(outDir,
                            featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
                            "_", context,

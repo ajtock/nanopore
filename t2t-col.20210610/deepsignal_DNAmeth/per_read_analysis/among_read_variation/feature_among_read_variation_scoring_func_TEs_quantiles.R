@@ -164,8 +164,8 @@ for(i in mC_quantiles) {
     }
 
     featDF_filt_mC_quantile_i[ which(featDF_filt_mC_quantile_i$kaAgreement_percentile <= 1.0 &
-                                     featDF_filt_mC_quantile_i$kaAgreement_percentile >  0.95), ]$kaAgreement_quantile <- paste0(i, " upper")
-    featDF_filt_mC_quantile_i[ which(featDF_filt_mC_quantile_i$kaAgreement_percentile <= 0.95 &
+                                     featDF_filt_mC_quantile_i$kaAgreement_percentile >  0.925), ]$kaAgreement_quantile <- paste0(i, " upper")
+    featDF_filt_mC_quantile_i[ which(featDF_filt_mC_quantile_i$kaAgreement_percentile <= 0.925 &
                                      featDF_filt_mC_quantile_i$kaAgreement_percentile >  0.5), ]$kaAgreement_quantile <- paste0(i, " middle")
     featDF_filt_mC_quantile_i[ which(featDF_filt_mC_quantile_i$kaAgreement_percentile <= 0.5 &
                                      featDF_filt_mC_quantile_i$kaAgreement_percentile >  0.0), ]$kaAgreement_quantile <- paste0(i, " lower")
@@ -202,7 +202,7 @@ for(i in mC_quantiles) {
 #colnames(fkAgreement_mat_filt_pca_dim) <- c("PC1", "PC2")
 #head(fkAgreement_mat_filt_pca_dim)
 #
-#stopifnot(nrow(fkAgreement_mat_filt_pca_dim) == length(featDF_filt$fkAgreement_quantile))
+#stopifnot(nrow(fkAgreement_mat_filt_pca_dim) == length(featDF_filt_quantiles$fkAgreement_quantile))
 #fkAgreement_mat_filt_pca_dim <- cbind(as.data.frame(fkAgreement_mat_filt_pca_dim),
 #                                      mat_filt,
 #                                      chr = featDF_filt$chr,
@@ -445,7 +445,7 @@ kaAgreement_mat_filt_pca_dim <- kaAgreement_mat_filt_pca$x[, seq_len(kaAgreement
 colnames(kaAgreement_mat_filt_pca_dim) <- c("PC1", "PC2")
 head(kaAgreement_mat_filt_pca_dim)
 
-stopifnot(nrow(kaAgreement_mat_filt_pca_dim) == length(featDF_filt$kaAgreement_quantile))
+stopifnot(nrow(kaAgreement_mat_filt_pca_dim) == length(featDF_filt_quantiles$kaAgreement_quantile))
 kaAgreement_mat_filt_pca_dim <- cbind(as.data.frame(kaAgreement_mat_filt_pca_dim),
                                       featDF_filt_quantiles,
                                       type = "PCA")
@@ -1378,6 +1378,18 @@ write.table(featDF_filt_alpha_mC_quantile4_upper,
                    "_", context,
                    "_NAmax", NAmax,
                    "_filt_df_ka_alpha_all_mean_mC_all_quantile4_upper_",
+                   paste0(chrName, collapse = "_"), ".tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+
+featDF_filt_alpha_mC_quantile1_middle <- featDF_filt_quantiles %>%
+  dplyr::filter(kaAgreement_quantile == "Quantile 1 middle")
+
+write.table(featDF_filt_alpha_mC_quantile1_middle,
+            paste0(outDir,
+                   featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
+                   "_", context,
+                   "_NAmax", NAmax,
+                   "_filt_df_ka_alpha_all_mean_mC_all_quantile1_middle_",
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
 
