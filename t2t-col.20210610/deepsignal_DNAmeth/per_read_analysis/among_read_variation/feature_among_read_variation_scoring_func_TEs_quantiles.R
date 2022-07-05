@@ -182,61 +182,9 @@ for(i in mC_quantiles) {
     }
 
   }
-}
-
-  featDF_filt_mC_quantile_i <- featDF_filt_mC_quantile_i %>%
-    dplyr::filter(
-  con_fk_df_all_filt_kappa_mC_group1 <- con_fk_df_all_filt %>%
-    dplyr::filter(fk_kappa_all <= fk_kappa_all_low) %>%
-    dplyr::filter(mean_mC_all  <= mean_mC_all_low)
-
-
-  featDF_filt_mC_quantile_i[ which(!is.na(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "fkAgreement")]) &
-                                   rank(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "fkAgreement")]) /
-                                   length(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "fkAgreement")]) <=
-                                   1 &
-                                   rank(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "fkAgreement")]) /
-                                   length(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "fkAgreement")]) >
-                                   0.50), ]$fkAgreement_quantile <- paste0(i, " upper")
-  featDF_filt_mC_quantile_i[ which(!is.na(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "fkAgreement")]) &
-                                   rank(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "fkAgreement")]) /
-                                   length(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "fkAgreement")]) <=
-                                   0.50 &
-                                   rank(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "fkAgreement")]) /
-                                   length(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "fkAgreement")]) >=
-                                   0), ]$fkAgreement_quantile <- paste0(i, " lower")
-
-  featDF_filt_mC_quantile_i[ which(!is.na(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "kaAgreement")]) &
-                                   rank(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "kaAgreement")]) /
-                                   length(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "kaAgreement")]) <=
-                                   1 &
-                                   rank(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "kaAgreement")]) /
-                                   length(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "kaAgreement")]) >
-                                   0.50), ]$kaAgreement_quantile <- paste0(i, " upper")
-  featDF_filt_mC_quantile_i[ which(!is.na(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "kaAgreement")]) &
-                                   rank(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "kaAgreement")]) /
-                                   length(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "kaAgreement")]) <=
-                                   0.50 &
-                                   rank(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "kaAgreement")]) /
-                                   length(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "kaAgreement")]) >=
-                                   0), ]$kaAgreement_quantile <- paste0(i, " lower")
-
-  featDF_filt_mC_quantile_i[ which(!is.na(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "Stochasticity")]) &
-                                   rank(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "Stochasticity")]) /
-                                   length(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "Stochasticity")]) <=
-                                   1 &
-                                   rank(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "Stochasticity")]) /
-                                   length(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "Stochasticity")]) >
-                                   0.50), ]$Stochasticity_quantile <- paste0(i, " upper")
-  featDF_filt_mC_quantile_i[ which(!is.na(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "Stochasticity")]) &
-                                   rank(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "Stochasticity")]) /
-                                   length(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "Stochasticity")]) <=
-                                   0.50 &
-                                   rank(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "Stochasticity")]) /
-                                   length(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "Stochasticity")]) >=
-                                   0), ]$Stochasticity_quantile <- paste0(i, " lower")
 
   featDF_filt_quantiles <- rbind(featDF_filt_quantiles, featDF_filt_mC_quantile_i)
+
 }
 
 
@@ -302,7 +250,7 @@ for(i in mC_quantiles) {
 #gg_kaAgreement_quantile_fkAgreement_mat_filt_pca_dim <- ggplot(fkAgreement_mat_filt_pca_dim,
 #                                                              mapping = aes(x = PC1, y = PC2, colour = kaAgreement_quantile)) +
 #  geom_point(size = 0.7, alpha = 0.5) +
-#  scale_colour_brewer(palette = "Dark2") +
+#  scale_colour_brewer(palette = "Set1") +
 ##  scale_colour_manual(values = fkAgreement_mat_filt_pam_cl_colours) +
 #  labs(colour = bquote(atop("kaAgreement &", "m"*.(context)~"group")),
 #       x = bquote("PC1 (" * .(fkAgreement_mat_filt_pca_PC1_varexp) * "%)"),
@@ -524,7 +472,7 @@ gg_fkAgreement_quantile_kaAgreement_mat_filt_pca_dim <- ggplot(kaAgreement_mat_f
 gg_kaAgreement_quantile_kaAgreement_mat_filt_pca_dim <- ggplot(kaAgreement_mat_filt_pca_dim,
                                                                mapping = aes(x = PC1, y = PC2, colour = kaAgreement_quantile)) +
   geom_point(size = 0.7, alpha = 0.5) +
-  scale_colour_brewer(palette = "Dark2") +
+  scale_colour_brewer(palette = "Set1") +
 #  scale_colour_manual(values = kaAgreement_mat_filt_pam_cl_colours) +
   labs(colour = bquote(atop("kaAgreement &", "m"*.(context)~"group")),
        x = bquote("PC1 (" * .(kaAgreement_mat_filt_pca_PC1_varexp) * "%)"),
@@ -773,7 +721,7 @@ gg_fkAgreement_quantile_Stochasticity_mat_filt_pca_dim <- ggplot(Stochasticity_m
 gg_kaAgreement_quantile_Stochasticity_mat_filt_pca_dim <- ggplot(Stochasticity_mat_filt_pca_dim,
                                                                  mapping = aes(x = PC1, y = PC2, colour = kaAgreement_quantile)) +
   geom_point(size = 0.7, alpha = 0.5) +
-  scale_colour_brewer(palette = "Dark2") +
+  scale_colour_brewer(palette = "Set1") +
 #  scale_colour_manual(values = Stochasticity_mat_filt_pam_cl_colours) +
   labs(colour = bquote(atop("kaAgreement &", "m"*.(context)~"group")),
        x = bquote("PC1 (" * .(Stochasticity_mat_filt_pca_PC1_varexp) * "%)"),
@@ -1106,7 +1054,7 @@ ggTrend_mean_mC_all_fk_kappa_all_filt <- ggTrend_mean_mC_all_fk_kappa_all_filt +
 
 ggTrend_mean_mC_all_ka_alpha_all_filt <- trendPlot(dataFrame = featDF_filt_quantiles,
                                                    mapping = aes(x = mean_mC_all, y = ka_alpha_all, colour = kaAgreement_quantile),
-                                                   paletteName = "Dark2",
+                                                   paletteName = "Set1",
                                                    xvar = mean_mC_all,
                                                    yvar = ka_alpha_all,
                                                    quantilelab = bquote(atop("kaAgreement &", "m"*.(context)~"group")),
@@ -1191,7 +1139,7 @@ ggTrend_ka_alpha_all_fk_kappa_all_filt <- ggTrend_ka_alpha_all_fk_kappa_all_filt
 
 ggTrend_fk_kappa_all_ka_alpha_all_filt <- trendPlot(dataFrame = featDF_filt_quantiles,
                                                     mapping = aes(x = ka_alpha_all, y = fk_kappa_all, colour = kaAgreement_quantile),
-                                                    paletteName = "Dark2",
+                                                    paletteName = "Set1",
                                                     xvar = ka_alpha_all,
                                                     yvar = fk_kappa_all,
                                                     quantilelab = bquote(atop("kaAgreement &", "m"*.(context)~"group")),
