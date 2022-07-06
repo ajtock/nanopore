@@ -7,7 +7,7 @@
 
 # Usage:
 # conda activate R-4.0.0
-# ./feature_among_read_variation_scoring_func_TEs_quantiles.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CHG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'TE' 'bodies' 0.85 0.25
+# ./feature_among_read_variation_scoring_func_TEs_quantiles.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CHG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'TE' 'bodies' 0.25 0.75
 # conda deactivate
 
 # Divide each read into adjacent segments each consisting of a given number of consecutive cytosines,
@@ -21,8 +21,8 @@
 #chrName <- unlist(strsplit("Chr1,Chr2,Chr3,Chr4,Chr5", split = ","))
 #featName <- "TE"
 #featRegion <- "bodies"
-#topQthresh <- 0.85
 #botQthresh <- 0.25
+#topQthresh <- 0.75
 
 args <- commandArgs(trailingOnly = T)
 sampleName <- args[1]
@@ -33,8 +33,8 @@ CPUpc <- as.numeric(args[5])
 chrName <- unlist(strsplit(args[6], split = ","))
 featName <- args[7]
 featRegion <- args[8]
-topQthresh <- as.numeric(args[9])
-botQthresh <- as.numeric(args[10])
+botQthresh <- as.numeric(args[9])
+topQthresh <- as.numeric(args[10])
 
 print(paste0("Proportion of CPUs:", CPUpc))
 options(stringsAsFactors = F)
@@ -262,7 +262,7 @@ for(i in mC_quantiles) {
 #gg_Stochasticity_quantile_fkAgreement_mat_filt_pca_dim <- ggplot(fkAgreement_mat_filt_pca_dim,
 #                                                                mapping = aes(x = PC1, y = PC2, colour = Stochasticity_quantile)) +
 #  geom_point(size = 0.7, alpha = 0.5) +
-#  scale_colour_brewer(palette = "Set1") +
+#  scale_colour_brewer(palette = "Dark2") +
 ##  scale_colour_manual(values = fkAgreement_mat_filt_pam_cl_colours) +
 #  labs(colour = bquote(atop("Stochasticity &", "m"*.(context)~"group")),
 #       x = bquote("PC1 (" * .(fkAgreement_mat_filt_pca_PC1_varexp) * "%)"),
@@ -484,7 +484,7 @@ gg_kaAgreement_quantile_kaAgreement_mat_filt_pca_dim <- ggplot(kaAgreement_mat_f
 gg_Stochasticity_quantile_kaAgreement_mat_filt_pca_dim <- ggplot(kaAgreement_mat_filt_pca_dim,
                                                                 mapping = aes(x = PC1, y = PC2, colour = Stochasticity_quantile)) +
   geom_point(size = 0.7, alpha = 0.5) +
-  scale_colour_brewer(palette = "Set1") +
+  scale_colour_brewer(palette = "Dark2") +
 #  scale_colour_manual(values = kaAgreement_mat_filt_pam_cl_colours) +
   labs(colour = bquote(atop("Stochasticity &", "m"*.(context)~"group")),
        x = bquote("PC1 (" * .(kaAgreement_mat_filt_pca_PC1_varexp) * "%)"),
@@ -733,7 +733,7 @@ gg_kaAgreement_quantile_Stochasticity_mat_filt_pca_dim <- ggplot(Stochasticity_m
 gg_Stochasticity_quantile_Stochasticity_mat_filt_pca_dim <- ggplot(Stochasticity_mat_filt_pca_dim,
                                                                    mapping = aes(x = PC1, y = PC2, colour = Stochasticity_quantile)) +
   geom_point(size = 0.7, alpha = 0.5) +
-  scale_colour_brewer(palette = "Set1") +
+  scale_colour_brewer(palette = "Dark2") +
 #  scale_colour_manual(values = Stochasticity_mat_filt_pam_cl_colours) +
   labs(colour = bquote(atop("Stochasticity &", "m"*.(context)~"group")),
        x = bquote("PC1 (" * .(Stochasticity_mat_filt_pca_PC1_varexp) * "%)"),
@@ -1105,7 +1105,7 @@ ggTrend_feature_width_ka_alpha_all_filt_Superfamily <- ggTrend_feature_width_ka_
 
 ggTrend_mean_mC_all_mean_stocha_all_filt <- trendPlot(dataFrame = featDF_filt_quantiles,
                                                       mapping = aes(x = mean_mC_all, y = mean_stocha_all, colour = Stochasticity_quantile),
-                                                      paletteName = "Set1",
+                                                      paletteName = "Dark2",
                                                       xvar = mean_mC_all,
                                                       yvar = mean_stocha_all,
                                                       quantilelab = bquote(atop("Stochasticity &", "m"*.(context)~"group")),
@@ -1173,7 +1173,7 @@ ggTrend_mean_stocha_all_fk_kappa_all_filt <- ggTrend_mean_stocha_all_fk_kappa_al
 
 ggTrend_fk_kappa_all_mean_stocha_all_filt <- trendPlot(dataFrame = featDF_filt_quantiles,
                                                        mapping = aes(x = mean_stocha_all, y = fk_kappa_all, colour = Stochasticity_quantile),
-                                                       paletteName = "Set1",
+                                                       paletteName = "Dark2",
                                                        xvar = mean_stocha_all,
                                                        yvar = fk_kappa_all,
                                                        quantilelab = bquote(atop("Stochasticity &", "m"*.(context)~"group")),
@@ -1207,7 +1207,7 @@ ggTrend_mean_stocha_all_ka_alpha_all_filt <- ggTrend_mean_stocha_all_ka_alpha_al
 
 ggTrend_ka_alpha_all_mean_stocha_all_filt <- trendPlot(dataFrame = featDF_filt_quantiles,
                                                        mapping = aes(x = mean_stocha_all, y = ka_alpha_all, colour = Stochasticity_quantile),
-                                                       paletteName = "Set1",
+                                                       paletteName = "Dark2",
                                                        xvar = mean_stocha_all,
                                                        yvar = ka_alpha_all,
                                                        quantilelab = bquote(atop("Stochasticity &", "m"*.(context)~"group")),
