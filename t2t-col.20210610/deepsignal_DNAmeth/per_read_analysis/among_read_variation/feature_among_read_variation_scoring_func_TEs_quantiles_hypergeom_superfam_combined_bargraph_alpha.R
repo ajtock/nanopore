@@ -224,4 +224,4 @@ ggsave(paste0(plotDir_alpha_mC,
               "_", paste0(chrName, collapse = "_"), "_", context,
               "_TE_superfam_combined_bargraph_hypergeomTest_quantiles.pdf"),
        plot = bp,
-       height = 8, width = 21)
+       height = 8, width = 22.5)

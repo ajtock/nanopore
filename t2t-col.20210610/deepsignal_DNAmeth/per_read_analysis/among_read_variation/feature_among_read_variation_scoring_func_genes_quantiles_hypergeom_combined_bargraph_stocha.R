@@ -221,35 +221,35 @@ bp <- ggplot(data = combined,
              shape = "-", colour  = "grey30", size = 7) +
   geom_segment(mapping = aes(x = 0.55, y = min(c(log2obsexp, log2alpha))-0.50,
                              xend = 1.45, yend = min(c(log2obsexp, log2alpha))-0.50),
-               colour = brewer.pal(name = "Set1", n = 8)[1],
+               colour = brewer.pal(name = "Dark2", n = 8)[1],
                inherit.aes = F, size = 2) +
   geom_segment(mapping = aes(x = 1.55, y = min(c(log2obsexp, log2alpha))-0.50,
                              xend = 2.45, yend = min(c(log2obsexp, log2alpha))-0.50),
-               colour = brewer.pal(name = "Set1", n = 8)[2],
+               colour = brewer.pal(name = "Dark2", n = 8)[2],
                inherit.aes = F, size = 2) +
   geom_segment(mapping = aes(x = 2.55, y = min(c(log2obsexp, log2alpha))-0.50,
                              xend = 3.45, yend = min(c(log2obsexp, log2alpha))-0.50),
-               colour = brewer.pal(name = "Set1", n = 8)[3],
+               colour = brewer.pal(name = "Dark2", n = 8)[3],
                inherit.aes = F, size = 2) +
   geom_segment(mapping = aes(x = 3.55, y = min(c(log2obsexp, log2alpha))-0.50,
                              xend = 4.45, yend = min(c(log2obsexp, log2alpha))-0.50),
-               colour = brewer.pal(name = "Set1", n = 8)[4],
+               colour = brewer.pal(name = "Dark2", n = 8)[4],
                inherit.aes = F, size = 2) +
   geom_segment(mapping = aes(x = 4.55, y = min(c(log2obsexp, log2alpha))-0.50,
                              xend = 5.45, yend = min(c(log2obsexp, log2alpha))-0.50),
-               colour = brewer.pal(name = "Set1", n = 8)[5],
+               colour = brewer.pal(name = "Dark2", n = 8)[5],
                inherit.aes = F, size = 2) +
   geom_segment(mapping = aes(x = 5.55, y = min(c(log2obsexp, log2alpha))-0.50,
                              xend = 6.45, yend = min(c(log2obsexp, log2alpha))-0.50),
-               colour = brewer.pal(name = "Set1", n = 8)[6],
+               colour = brewer.pal(name = "Dark2", n = 8)[6],
                inherit.aes = F, size = 2) +
   geom_segment(mapping = aes(x = 6.55, y = min(c(log2obsexp, log2alpha))-0.50,
                              xend = 7.45, yend = min(c(log2obsexp, log2alpha))-0.50),
-               colour = brewer.pal(name = "Set1", n = 8)[7],
+               colour = brewer.pal(name = "Dark2", n = 8)[7],
                inherit.aes = F, size = 2) +
   geom_segment(mapping = aes(x = 7.55, y = min(c(log2obsexp, log2alpha))-0.50,
                              xend = 8.45, yend = min(c(log2obsexp, log2alpha))-0.50),
-               colour = brewer.pal(name = "Set1", n = 8)[8],
+               colour = brewer.pal(name = "Dark2", n = 8)[8],
                inherit.aes = F, size = 2) +
 
   xlab(bquote(atop("Stochasticity and mean m" * .(context), .(featName) ~ .(featRegion) ~ "group"))) +

@@ -1,11 +1,12 @@
 #!/usr/bin/env Rscript
 
 # Analysis:
-# Plot combined results of TE superfamily over- and under-representation analysis of TEs grouped by both among-read agreement and mean methylation proportion
+# Plot combined results of DMR-overlapping TE over- and under-representation analysis of TEs grouped by both among-read agreement and mean methylation proportion
 
 # Usage:
 # conda activate R-4.0.0
-# ./feature_among_read_variation_scoring_func_TEs_quantiles_hypergeom_superfam_combined_bargraph_stocha.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CHG 0.50 'Chr1,Chr2,Chr3,Chr4,Chr5' 'TE' 'bodies' 10000 1000
+# ./feature_among_read_variation_scoring_func_TEs_quantiles_hypergeom_DMRs_combined_bargraph_alpha.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CHG 0.50 'Chr1,Chr2,Chr3,Chr4,Chr5' 'TE' 'bodies' 'met1_BSseq_Rep1_hypoCHG,met1het_BSseq_Rep1_hypoCHG,met1_cmt3_BSseq_Rep1_hypoCHG,ddm1_BSseq_Rep1_hypoCHG,cmt3_BSseq_Rep1_hypoCHG,kss_BSseq_Rep1_hypoCHG,suvh4_BSseq_Rep1_hypoCHG,suvh5_BSseq_Rep1_hypoCHG,suvh6_BSseq_Rep1_hypoCHG,drd1_BSseq_Rep1_hypoCHG,drm1_drm2_BSseq_Rep1_hypoCHG,cmt2_BSseq_Rep1_hypoCHG'
+# ./feature_among_read_variation_scoring_func_TEs_quantiles_hypergeom_DMRs_combined_bargraph_alpha.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CHG 0.50 'Chr1,Chr2,Chr3,Chr4,Chr5' 'TE' 'bodies' 'met1_BSseq_Rep1_hypoCHH,met1het_BSseq_Rep1_hypoCHH,met1_cmt3_BSseq_Rep1_hypoCHH,ddm1_BSseq_Rep1_hypoCHH,cmt3_BSseq_Rep1_hypoCHH,kss_BSseq_Rep1_hypoCHH,suvh4_BSseq_Rep1_hypoCHH,suvh5_BSseq_Rep1_hypoCHH,suvh6_BSseq_Rep1_hypoCHH,drd1_BSseq_Rep1_hypoCHH,drm1_drm2_BSseq_Rep1_hypoCHH,cmt2_BSseq_Rep1_hypoCHH'
 # conda deactivate
  
 # Divide each read into adjacent segments each consisting of a given number of consecutive cytosines,
@@ -18,8 +19,11 @@
 #chrName <- unlist(strsplit("Chr1,Chr2,Chr3,Chr4,Chr5", split = ","))
 #featName <- "TE"
 #featRegion <- "bodies"
-#genomeBinSize <- 10000
-#genomeStepSize <- 1000
+#DMRsNames <- unlist(strsplit("kss_BSseq_Rep1_hypoCHG,cmt3_BSseq_Rep1_hypoCHG,kss_BSseq_Rep1_hypoCHH,cmt3_BSseq_Rep1_hypoCHH",
+#                              split = ",")) 
+#DMRsNamesPlot <- sub("_BSseq_Rep1_", " ", DMRsNames)
+#DMRsNamesPlot <- sub("_", " ", DMRsNamesPlot)
+#DMRsType <- gsub("^.+ ", "", DMRsNamesPlot[1])
 
 args <- commandArgs(trailingOnly = T)
 sampleName <- args[1]
@@ -29,8 +33,10 @@ NAmax <- as.numeric(args[4])
 chrName <- unlist(strsplit(args[5], split = ","))
 featName <- args[6]
 featRegion <- args[7]
-genomeBinSize <- as.numeric(args[8])
-genomeStepSize <- as.numeric(args[9])
+DMRsNames <- unlist(strsplit(args[8], split = ","))
+DMRsNamesPlot <- sub("_BSseq_Rep1_", " ", DMRsNames)
+DMRsNamesPlot <- sub("_", " ", DMRsNamesPlot)
+DMRsType <- gsub("^.+ ", "", DMRsNamesPlot[1])
 
 options(stringsAsFactors = F)
 options(scipen = 999)
@@ -47,96 +53,52 @@ library(extrafont)
 library(RColorBrewer)
 library(pals)
 
-if(floor(log10(genomeBinSize)) + 1 < 4) {
-  genomeBinName <- paste0(genomeBinSize, "bp")
-  genomeBinNamePlot <- paste0(genomeBinSize, "-bp")
-} else if(floor(log10(genomeBinSize)) + 1 >= 4 &
-          floor(log10(genomeBinSize)) + 1 <= 6) {
-  genomeBinName <- paste0(genomeBinSize/1e3, "kb")
-  genomeBinNamePlot <- paste0(genomeBinSize/1e3, "-kb")
-} else if(floor(log10(genomeBinSize)) + 1 >= 7) {
-  genomeBinName <- paste0(genomeBinSize/1e6, "Mb")
-  genomeBinNamePlot <- paste0(genomeBinSize/1e6, "-Mb")
-}
-
-if(floor(log10(genomeStepSize)) + 1 < 4) {
-  genomeStepName <- paste0(genomeStepSize, "bp")
-  genomeStepNamePlot <- paste0(genomeStepSize, "-bp")
-} else if(floor(log10(genomeStepSize)) + 1 >= 4 &
-          floor(log10(genomeStepSize)) + 1 <= 6) {
-  genomeStepName <- paste0(genomeStepSize/1e3, "kb")
-  genomeStepNamePlot <- paste0(genomeStepSize/1e3, "-kb")
-} else if(floor(log10(genomeStepSize)) + 1 >= 7) {
-  genomeStepName <- paste0(genomeStepSize/1e6, "Mb")
-  genomeStepNamePlot <- paste0(genomeStepSize/1e6, "-Mb")
-}
-
 outDir <- paste0(featName, "_", featRegion, "/", paste0(chrName, collapse = "_"), "/")
 plotDir <- paste0(outDir, "plots/")
 plotDir_kappa_mC <- paste0(outDir, "plots/hypergeom_combined_", context, "_kappa_mC/")
 plotDir_alpha_mC <- paste0(outDir, "plots/hypergeom_combined_", context, "_alpha_mC/")
 plotDir_stocha_mC <- paste0(outDir, "plots/hypergeom_combined_", context, "_stocha_mC/")
-#plotDir_kappa_stocha <- paste0(outDir, "plots/hypergeom_combined_", context, "_kappa_stocha/")
+#plotDir_alpha_stocha <- paste0(outDir, "plots/hypergeom_combined_", context, "_alpha_stocha/")
 system(paste0("[ -d ", plotDir, " ] || mkdir -p ", plotDir))
 system(paste0("[ -d ", plotDir_kappa_mC, " ] || mkdir -p ", plotDir_kappa_mC))
 system(paste0("[ -d ", plotDir_alpha_mC, " ] || mkdir -p ", plotDir_alpha_mC))
 system(paste0("[ -d ", plotDir_stocha_mC, " ] || mkdir -p ", plotDir_stocha_mC))
-#system(paste0("[ -d ", plotDir_kappa_stocha, " ] || mkdir -p ", plotDir_kappa_stocha))
+#system(paste0("[ -d ", plotDir_alpha_stocha, " ] || mkdir -p ", plotDir_alpha_stocha))
 
-featDF <- read.table(paste0(outDir,
-                            featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
-                            "_", context,
-                            "_NAmax", NAmax,
-                            "_filt_df_fk_kappa_all_mean_mC_all_complete_",
-                            paste0(chrName, collapse = "_"), ".tsv"),
-                     header = T)
+score_colFun <- cols25(n = 25)[-c(7:16, 25)][1:length(DMRsNamesPlot)]
+stopifnot(length(score_colFun) == length(DMRsNamesPlot))
+#names(score_colFun) <- DMRsNamesPlot
 
-superfamNames <- sort(unique(featDF$score))
-superfamNames <- c(superfamNames[3], superfamNames[1], superfamNames[14],
-                   superfamNames[10], superfamNames[7], superfamNames[13],
-                   superfamNames[6], superfamNames[2], superfamNames[4],
-                   superfamNames[5], superfamNames[8], superfamNames[9],
-                   superfamNames[12], superfamNames[11])
-superfamNames <- superfamNames[-grep("Unclassified", superfamNames)]
-superfamNamesPlot <- gsub("Pogo_Tc1_Mariner", "Pogo/Tc1/Mar", superfamNames)
-superfamNamesPlot <- gsub("_", " ", superfamNamesPlot)
-superfamNamesPlot <- gsub("classified", ".", superfamNamesPlot)
-
-score_colFun <- cols25(n = 25)[-c(7:16, 25)][1:length(superfamNamesPlot)]
-stopifnot(length(score_colFun) == length(superfamNamesPlot))
-#names(score_colFun) <- superfamNamesPlot
-
-rm(featDF); gc()
-
-superfamList <- lapply(1:length(superfamNames), function(y) {
-  superfam <-  read.table(paste0(outDir,
-                                 sampleName, "_filt_df_mean_stocha_all_mean_mC_all_",
-                                 featName, "_", featRegion,
-                                 "_", paste0(chrName, collapse = "_"), "_", context,
-                                 "_", superfamNames[y], "_TEs_hypergeomTest_quantiles.tsv"),
-                          header = T)
-  superfam <- data.frame(Feature = rep(superfamNamesPlot[y], 8),
-                         superfam)
-  superfam
+DMRsList <- lapply(1:length(DMRsNames), function(y) {
+  DMRs <-  read.table(paste0(outDir,
+                             sampleName, "_filt_df_ka_alpha_all_mean_mC_all_",
+                             featName, "_", featRegion,
+                             "_", paste0(chrName, collapse = "_"), "_", context,
+                             "_", DMRsNames[y], "_TEs_hypergeomTest_quantiles.tsv"),
+                      header = T)
+  DMRs <- data.frame(Feature = rep(DMRsNamesPlot[y], 9),
+                     DMRs)
+  DMRs
 })
 
-combined <- dplyr::bind_rows(superfamList)
+combined <- dplyr::bind_rows(DMRsList)
 
 combined$group <- gsub("1", "Q1 lower", combined$group)
-combined$group <- gsub("2", "Q1 upper", combined$group)
-combined$group <- gsub("3", "Q2 lower", combined$group)
-combined$group <- gsub("4", "Q2 upper", combined$group)
-combined$group <- gsub("5", "Q3 lower", combined$group)
-combined$group <- gsub("6", "Q3 upper", combined$group)
-combined$group <- gsub("7", "Q4 lower", combined$group)
-combined$group <- gsub("8", "Q4 upper", combined$group)
+combined$group <- gsub("2", "Q1 middle", combined$group)
+combined$group <- gsub("3", "Q1 upper", combined$group)
+combined$group <- gsub("4", "Q2 lower", combined$group)
+combined$group <- gsub("5", "Q2 upper", combined$group)
+combined$group <- gsub("6", "Q3 lower", combined$group)
+combined$group <- gsub("7", "Q3 upper", combined$group)
+combined$group <- gsub("8", "Q4 lower", combined$group)
+combined$group <- gsub("9", "Q4 upper", combined$group)
 
 colnames(combined)[which(colnames(combined) == "group")] <- "Group"
 combined$Group <- factor(combined$Group,
                          levels = sort(unique(combined$Group)))
 combined$Feature <- factor(combined$Feature,
                            levels = c(
-                                      superfamNamesPlot
+                                      DMRsNamesPlot
                                      ))
 
 bp <- ggplot(data = combined,
@@ -153,38 +115,42 @@ bp <- ggplot(data = combined,
              shape = "-", colour  = "grey70", size = 6) +
   geom_segment(mapping = aes(x = 0.55, y = min(c(log2obsexp, log2alpha))-0.50,
                              xend = 1.45, yend = min(c(log2obsexp, log2alpha))-0.50),
-               colour = brewer.pal(name = "Dark2", n = 8)[1],
+               colour = brewer.pal(name = "Set1", n = 9)[1],
                inherit.aes = F, size = 2) +
   geom_segment(mapping = aes(x = 1.55, y = min(c(log2obsexp, log2alpha))-0.50,
                              xend = 2.45, yend = min(c(log2obsexp, log2alpha))-0.50),
-               colour = brewer.pal(name = "Dark2", n = 8)[2],
+               colour = brewer.pal(name = "Set1", n = 9)[2],
                inherit.aes = F, size = 2) +
   geom_segment(mapping = aes(x = 2.55, y = min(c(log2obsexp, log2alpha))-0.50,
                              xend = 3.45, yend = min(c(log2obsexp, log2alpha))-0.50),
-               colour = brewer.pal(name = "Dark2", n = 8)[3],
+               colour = brewer.pal(name = "Set1", n = 9)[3],
                inherit.aes = F, size = 2) +
   geom_segment(mapping = aes(x = 3.55, y = min(c(log2obsexp, log2alpha))-0.50,
                              xend = 4.45, yend = min(c(log2obsexp, log2alpha))-0.50),
-               colour = brewer.pal(name = "Dark2", n = 8)[4],
+               colour = brewer.pal(name = "Set1", n = 9)[4],
                inherit.aes = F, size = 2) +
   geom_segment(mapping = aes(x = 4.55, y = min(c(log2obsexp, log2alpha))-0.50,
                              xend = 5.45, yend = min(c(log2obsexp, log2alpha))-0.50),
-               colour = brewer.pal(name = "Dark2", n = 8)[5],
+               colour = brewer.pal(name = "Set1", n = 9)[5],
                inherit.aes = F, size = 2) +
   geom_segment(mapping = aes(x = 5.55, y = min(c(log2obsexp, log2alpha))-0.50,
                              xend = 6.45, yend = min(c(log2obsexp, log2alpha))-0.50),
-               colour = brewer.pal(name = "Dark2", n = 8)[6],
+               colour = brewer.pal(name = "Set1", n = 9)[6],
                inherit.aes = F, size = 2) +
   geom_segment(mapping = aes(x = 6.55, y = min(c(log2obsexp, log2alpha))-0.50,
                              xend = 7.45, yend = min(c(log2obsexp, log2alpha))-0.50),
-               colour = brewer.pal(name = "Dark2", n = 8)[7],
+               colour = brewer.pal(name = "Set1", n = 9)[7],
                inherit.aes = F, size = 2) +
   geom_segment(mapping = aes(x = 7.55, y = min(c(log2obsexp, log2alpha))-0.50,
                              xend = 8.45, yend = min(c(log2obsexp, log2alpha))-0.50),
-               colour = brewer.pal(name = "Dark2", n = 8)[8],
+               colour = brewer.pal(name = "Set1", n = 9)[8],
+               inherit.aes = F, size = 2) +
+  geom_segment(mapping = aes(x = 8.55, y = min(c(log2obsexp, log2alpha))-0.50,
+                             xend = 9.45, yend = min(c(log2obsexp, log2alpha))-0.50),
+               colour = brewer.pal(name = "Set1", n = 9)[9],
                inherit.aes = F, size = 2) +
 
-  xlab(bquote(atop("Stochasticity and mean m" * .(context), .(featName) ~ .(featRegion) ~ "group"))) +
+  xlab(bquote(atop("Among-read agreement (alpha) and mean m" * .(context), .(featName) ~ .(featRegion) ~ "group"))) +
   ylab(bquote("Log"[2] * "(observed/expected) TEs in group")) +
 #  scale_y_continuous(limits = c(-4.0, 4.0)) +
   scale_x_discrete(position = "bottom") +
@@ -213,10 +179,10 @@ bp <- ggplot(data = combined,
                  .(prettyNum(1e5,
                              big.mark = ",",
                              trim = T)) ~ "samples from hypergeometric distribution"))
-ggsave(paste0(plotDir_stocha_mC,
-              sampleName, "_filt_df_mean_stocha_all_mean_mC_all_",
+ggsave(paste0(plotDir_alpha_mC,
+              sampleName, "_filt_df_ka_alpha_all_mean_mC_all_",
               featName, "_", featRegion,
               "_", paste0(chrName, collapse = "_"), "_", context,
-              "_TE_superfam_combined_bargraph_hypergeomTest_quantiles.pdf"),
+              "_TE_", DMRsType, "_DMRs_combined_bargraph_hypergeomTest_quantiles.pdf"),
        plot = bp,
-       height = 8, width = 20)
+       height = 8, width = 22.5)

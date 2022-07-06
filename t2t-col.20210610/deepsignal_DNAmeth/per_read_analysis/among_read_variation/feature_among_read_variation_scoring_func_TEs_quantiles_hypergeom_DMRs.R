@@ -1,14 +1,14 @@
 #!/usr/bin/env Rscript
 
 # Analysis:
-# 1. TE superfamily over- and under-representation analysis of TEs grouped by both among-read agreement and mean methylation proportion
-# 2. TE superfamily over- and under-representation analysis of TEs grouped by both mean within-read stochasticity and mean methylation proportion
+# 1. DMR-overlapping TE over- and under-representation analysis of TEs grouped by both among-read agreement and mean methylation proportion
+# 2. DMR-overlapping TE over- and under-representation analysis of TEs grouped by both mean within-read stochasticity and mean methylation proportion
 
 # Usage:
 # conda activate R-4.0.0
-# ./feature_among_read_variation_scoring_func_TEs_quantiles_hypergeom_superfam.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CHG 0.50 'Chr1,Chr2,Chr3,Chr4,Chr5' 'TE' 'bodies'
+# ./feature_among_read_variation_scoring_func_TEs_quantiles_hypergeom_DMRs.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CHG 0.50 'Chr1,Chr2,Chr3,Chr4,Chr5' 'TE' 'bodies' 'met1_BSseq_Rep1_hypoCHG'
 # conda deactivate
- 
+
 #sampleName <- "Col_0_deepsignalDNAmeth_30kb_90pc"
 #refbase <- "t2t-col.20210610"
 #context <- "CHG"
@@ -16,6 +16,8 @@
 #chrName <- unlist(strsplit("Chr1,Chr2,Chr3,Chr4,Chr5", split = ","))
 #featName <- "TE"
 #featRegion <- "bodies"
+#DMRsName <- "met1_BSseq_Rep1_hypoCHG"
+#DMRsNamePlot <- sub("_BSseq_Rep1_", " ", DMRsName)
 
 args <- commandArgs(trailingOnly = T)
 sampleName <- args[1]
@@ -25,6 +27,8 @@ NAmax <- as.numeric(args[4])
 chrName <- unlist(strsplit(args[5], split = ","))
 featName <- args[6]
 featRegion <- args[7]
+DMRsName <- args[8]
+DMRsNamePlot <- sub("_BSseq_Rep1_", " ", DMRsName)
 
 groupNames <- sort(c(paste0("quantile", 1:4, "_lower"), paste0("quantile", 1:4, "_upper")))
 groupNames_alpha <- sort(c(paste0("quantile", 1:4, "_lower"), "quantile1_middle", paste0("quantile", 1:4, "_upper")))
@@ -77,10 +81,10 @@ library(extrafont)
 
 outDir <- paste0(featName, "_", featRegion, "/", paste0(chrName, collapse = "_"), "/")
 plotDir <- paste0(outDir, "plots/")
-plotDir_kappa_mC <- paste0(outDir, "plots/hypergeom_TE_superfam_", context, "_kappa_mC/")
-plotDir_alpha_mC <- paste0(outDir, "plots/hypergeom_TE_superfam_", context, "_alpha_mC/")
-plotDir_stocha_mC <- paste0(outDir, "plots/hypergeom_TE_superfam_", context, "_stocha_mC/")
-#plotDir_kappa_stocha <- paste0(outDir, "plots/hypergeom_TE_superfam_", context, "_kappa_stocha/")
+plotDir_kappa_mC <- paste0(outDir, "plots/hypergeom_TE_DMRs_", context, "_kappa_mC/")
+plotDir_alpha_mC <- paste0(outDir, "plots/hypergeom_TE_DMRs_", context, "_alpha_mC/")
+plotDir_stocha_mC <- paste0(outDir, "plots/hypergeom_TE_DMRs_", context, "_stocha_mC/")
+#plotDir_kappa_stocha <- paste0(outDir, "plots/hypergeom_TE_DMRs_", context, "_kappa_stocha/")
 system(paste0("[ -d ", plotDir, " ] || mkdir -p ", plotDir))
 system(paste0("[ -d ", plotDir_kappa_mC, " ] || mkdir -p ", plotDir_kappa_mC))
 system(paste0("[ -d ", plotDir_alpha_mC, " ] || mkdir -p ", plotDir_alpha_mC))
@@ -196,6 +200,21 @@ hgTest <- function(group, group_feat_list, genome_feat, genome_feat_query, sampl
 }
 
 
+# DMRs in different DNA methylation mutants
+DMRs <- read.table(paste0("/home/ajt200/analysis/BSseq_leaf_Stroud_Jacobsen_2013_Cell_2014_NSMB/",
+                          "hpc_snakemake_BSseq_", refbase, "/coverage/report/DMRs/hypoDMRs/",
+                          paste0(chrName, collapse = "_"),
+                          "/features_6quantiles_by_change_in_", DMRsName, "_DMRs_vs3reps_",
+                          "mbins_bS100_tfisher_pVT0.01_mCC4_mRPC4_mPD_0.4_0.2_0.1_mG200_in_",
+                          refbase, "_", paste0(chrName, collapse = "_"), "_genomewide.bed"),
+                   header = F)
+DMRs_GR <- GRanges(seqnames = DMRs[,1],
+                   ranges = IRanges(start = DMRs[,2]+1,
+                                    end = DMRs[,3]),
+                   strand = "*",
+                   l2fc = DMRs[,5])
+
+
 # fk_kappa_all
 
 # Get features that are within query feature set 
@@ -206,16 +225,6 @@ featDF <- read.table(paste0(outDir,
                             "_filt_df_fk_kappa_all_mean_mC_all_complete_",
                             paste0(chrName, collapse = "_"), ".tsv"),
                      header = T)
-
-superfamNames <- sort(unique(featDF$score))
-superfamNames <- c(superfamNames[3], superfamNames[1], superfamNames[14],
-                   superfamNames[10], superfamNames[7], superfamNames[13],
-                   superfamNames[6], superfamNames[2], superfamNames[4],
-                   superfamNames[5], superfamNames[8], superfamNames[9],
-                   superfamNames[12], superfamNames[11])
-superfamNamesPlot <- gsub("Pogo_Tc1_Mariner", "Pogo/Tc1/Mar", superfamNames)
-superfamNamesPlot <- gsub("_", " ", superfamNamesPlot)
-superfamNamesPlot <- gsub("classified", ".", superfamNamesPlot)
 
 # Load feature groups (defined based on Fleiss' kappa vs mean mC trend plots) to enable enrichment analysis
 
@@ -243,62 +252,64 @@ featDF <- featDF[which(featDF$name %in% filt_kappa_mC_groups_featID_universe),]
 #
 stopifnot(length(filt_kappa_mC_groups_featID_universe) == nrow(featDF))
 
-featID_superfamList <- lapply(superfamNames, function(y) {
-  featDF[which(featDF$score == y),]$name
-})
+featGR <- GRanges(seqnames = featDF$chr,
+                  ranges = IRanges(start = featDF$start, end = featDF$end),
+                  strand = "*",
+                  featID = featDF$name)
+
+fOverlaps_feat_DMRs <- findOverlaps(query = featGR,
+                                    subject = DMRs_GR,
+                                    type = "any",
+                                    select = "all",
+                                    ignore.strand = T)
+featGR_DMRs <- featGR[unique(queryHits(fOverlaps_feat_DMRs))]
+featID_DMRs <- unique(featGR_DMRs$featID)
 
 
 # Run hypergeometric test on each group of genes to evaluate
 # representation of query genes
-hgTest_kappa_superfamList_list <- lapply(1:length(superfamNames), function(y) {
-  lapply(seq_along(filt_kappa_mC_groups_featID), function(x) {
-    hgTest(group = x,
-           group_feat_list = filt_kappa_mC_groups_featID,
-           genome_feat = filt_kappa_mC_groups_featID_universe,
-           genome_feat_query = featID_superfamList[[y]],
-           samples_num = 1e5)
-  })
+hgTest_kappa_DMRs_list <- lapply(seq_along(filt_kappa_mC_groups_featID), function(x) {
+  hgTest(group = x,
+         group_feat_list = filt_kappa_mC_groups_featID,
+         genome_feat = filt_kappa_mC_groups_featID_universe,
+         genome_feat_query = featID_DMRs,
+         samples_num = 1e5)
 })
 
-hgTest_kappa_superfam_DF_list <- lapply(1:length(superfamNames), function(y) {
-  hgTest_kappa_superfam_DF <- dplyr::bind_rows(hgTest_kappa_superfamList_list[[y]])
-  hgTest_kappa_superfam_DF$group <- as.character(hgTest_kappa_superfam_DF$group)
-  hgTest_kappa_superfam_DF$BHadj_pval <- p.adjust(hgTest_kappa_superfam_DF$pval, method = "BH")
-  hgTest_kappa_superfam_DF
-})
+hgTest_kappa_DMRs_DF <- dplyr::bind_rows(hgTest_kappa_DMRs_list)
+hgTest_kappa_DMRs_DF$group <- as.character(hgTest_kappa_DMRs_DF$group)
+hgTest_kappa_DMRs_DF$BHadj_pval <- p.adjust(hgTest_kappa_DMRs_DF$pval, method = "BH")
 
-for(y in 1:length(superfamNames)) {
-  gg_hgTest_kappa_superfam <- ggplot(data = hgTest_kappa_superfam_DF_list[[y]],
-                                     mapping = aes(x = group,
-                                                   y = log2obsexp,
-                                                   colour = pval,
-                                                   size = observed)) +
-    geom_point() +
-    scale_colour_gradient(low = "red", high = "blue") +
-    guides(colour = guide_colourbar(reverse = T)) +
-    geom_hline(mapping = aes(yintercept = 0),
-               linetype = "solid", size = 1, colour = "black") +
-  #  labs(size = "Count", colour = bquote("BH-adjusted" ~ italic(P))) +
-    labs(size = "Count", colour = bquote(italic(P)*"-value")) +
-    xlab(bquote(atop("Fleiss' kappa and mean m" * .(context), .(featName) ~ .(featRegion) ~ "group"))) +
-    ylab(bquote(atop("Log"[2] * "(observed/expected)" ~ .(superfamNamesPlot[y]) ~ "TEs"))) +
-    ylim(-max(abs(hgTest_kappa_superfam_DF_list[[y]]$log2obsexp)), max(abs(hgTest_kappa_superfam_DF_list[[y]]$log2obsexp))) +
-    theme_bw()
-  ggsave(paste0(plotDir_kappa_mC,
-                sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
-                featName, "_", featRegion,
-                "_", paste0(chrName, collapse = "_"), "_", context,
-                "_", superfamNames[y], "_TEs_hypergeomTest_quantiles.pdf"),
-         plot = gg_hgTest_kappa_superfam,
-         height = 5, width = 6)
-  write.table(hgTest_kappa_superfam_DF_list[[y]],
-              paste0(outDir,
-                     sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
-                     featName, "_", featRegion,
-                     "_", paste0(chrName, collapse = "_"), "_", context,
-                     "_", superfamNames[y], "_TEs_hypergeomTest_quantiles.tsv"),
-              quote = F, sep = "\t", row.names = F, col.names = T)
-}
+gg_hgTest_kappa_DMRs <- ggplot(data = hgTest_kappa_DMRs_DF,
+                               mapping = aes(x = group,
+                                             y = log2obsexp,
+                                             colour = pval,
+                                             size = observed)) +
+  geom_point() +
+  scale_colour_gradient(low = "red", high = "blue") +
+  guides(colour = guide_colourbar(reverse = T)) +
+  geom_hline(mapping = aes(yintercept = 0),
+             linetype = "solid", size = 1, colour = "black") +
+#  labs(size = "Count", colour = bquote("BH-adjusted" ~ italic(P))) +
+  labs(size = "Count", colour = bquote(italic(P)*"-value")) +
+  xlab(bquote(atop("Fleiss' kappa and mean m" * .(context), .(featName) ~ .(featRegion) ~ "group"))) +
+  ylab(bquote(atop("Log"[2] * "(observed/expected)" ~ .(DMRsNamePlot) ~ "TEs"))) +
+  ylim(-max(abs(hgTest_kappa_DMRs_DF$log2obsexp)), max(abs(hgTest_kappa_DMRs_DF$log2obsexp))) +
+  theme_bw()
+ggsave(paste0(plotDir_kappa_mC,
+              sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
+              featName, "_", featRegion,
+              "_", paste0(chrName, collapse = "_"), "_", context,
+              "_", DMRsName, "_TEs_hypergeomTest_quantiles.pdf"),
+       plot = gg_hgTest_kappa_DMRs,
+       height = 5, width = 6)
+write.table(hgTest_kappa_DMRs_DF,
+            paste0(outDir,
+                   sampleName, "_filt_df_fk_kappa_all_mean_mC_all_",
+                   featName, "_", featRegion,
+                   "_", paste0(chrName, collapse = "_"), "_", context,
+                   "_", DMRsName, "_TEs_hypergeomTest_quantiles.tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
 
 
 # ka_alpha_all
@@ -311,16 +322,6 @@ featDF <- read.table(paste0(outDir,
                             "_filt_df_fk_kappa_all_mean_mC_all_complete_",
                             paste0(chrName, collapse = "_"), ".tsv"),
                      header = T)
-
-superfamNames <- sort(unique(featDF$score))
-superfamNames <- c(superfamNames[3], superfamNames[1], superfamNames[14],
-                   superfamNames[10], superfamNames[7], superfamNames[13],
-                   superfamNames[6], superfamNames[2], superfamNames[4],
-                   superfamNames[5], superfamNames[8], superfamNames[9],
-                   superfamNames[12], superfamNames[11])
-superfamNamesPlot <- gsub("Pogo_Tc1_Mariner", "Pogo/Tc1/Mar", superfamNames)
-superfamNamesPlot <- gsub("_", " ", superfamNamesPlot)
-superfamNamesPlot <- gsub("classified", ".", superfamNamesPlot)
 
 # Load feature groups (defined based on Krippendorff's alpha vs mean mC trend plots) to enable enrichment analysis
 
@@ -348,62 +349,64 @@ featDF <- featDF[which(featDF$name %in% filt_alpha_mC_groups_featID_universe),]
 #
 stopifnot(length(filt_alpha_mC_groups_featID_universe) == nrow(featDF))
 
-featID_superfamList <- lapply(superfamNames, function(y) {
-  featDF[which(featDF$score == y),]$name
-})
+featGR <- GRanges(seqnames = featDF$chr,
+                  ranges = IRanges(start = featDF$start, end = featDF$end),
+                  strand = "*",
+                  featID = featDF$name)
+
+fOverlaps_feat_DMRs <- findOverlaps(query = featGR,
+                                    subject = DMRs_GR,
+                                    type = "any",
+                                    select = "all",
+                                    ignore.strand = T)
+featGR_DMRs <- featGR[unique(queryHits(fOverlaps_feat_DMRs))]
+featID_DMRs <- unique(featGR_DMRs$featID)
 
 
 # Run hypergeometric test on each group of genes to evaluate
 # representation of query genes
-hgTest_alpha_superfamList_list <- lapply(1:length(superfamNames), function(y) {
-  lapply(seq_along(filt_alpha_mC_groups_featID), function(x) {
-    hgTest(group = x,
-           group_feat_list = filt_alpha_mC_groups_featID,
-           genome_feat = filt_alpha_mC_groups_featID_universe,
-           genome_feat_query = featID_superfamList[[y]],
-           samples_num = 1e5)
-  })
+hgTest_alpha_DMRs_list <- lapply(seq_along(filt_alpha_mC_groups_featID), function(x) {
+  hgTest(group = x,
+         group_feat_list = filt_alpha_mC_groups_featID,
+         genome_feat = filt_alpha_mC_groups_featID_universe,
+         genome_feat_query = featID_DMRs,
+         samples_num = 1e5)
 })
 
-hgTest_alpha_superfam_DF_list <- lapply(1:length(superfamNames), function(y) {
-  hgTest_alpha_superfam_DF <- dplyr::bind_rows(hgTest_alpha_superfamList_list[[y]])
-  hgTest_alpha_superfam_DF$group <- as.character(hgTest_alpha_superfam_DF$group)
-  hgTest_alpha_superfam_DF$BHadj_pval <- p.adjust(hgTest_alpha_superfam_DF$pval, method = "BH")
-  hgTest_alpha_superfam_DF
-})
+hgTest_alpha_DMRs_DF <- dplyr::bind_rows(hgTest_alpha_DMRs_list)
+hgTest_alpha_DMRs_DF$group <- as.character(hgTest_alpha_DMRs_DF$group)
+hgTest_alpha_DMRs_DF$BHadj_pval <- p.adjust(hgTest_alpha_DMRs_DF$pval, method = "BH")
 
-for(y in 1:length(superfamNames)) {
-  gg_hgTest_alpha_superfam <- ggplot(data = hgTest_alpha_superfam_DF_list[[y]],
-                                     mapping = aes(x = group,
-                                                   y = log2obsexp,
-                                                   colour = pval,
-                                                   size = observed)) +
-    geom_point() +
-    scale_colour_gradient(low = "red", high = "blue") +
-    guides(colour = guide_colourbar(reverse = T)) +
-    geom_hline(mapping = aes(yintercept = 0),
-               linetype = "solid", size = 1, colour = "black") +
-  #  labs(size = "Count", colour = bquote("BH-adjusted" ~ italic(P))) +
-    labs(size = "Count", colour = bquote(italic(P)*"-value")) +
-    xlab(bquote(atop("Krippendorff's alpha and mean m" * .(context), .(featName) ~ .(featRegion) ~ "group"))) +
-    ylab(bquote(atop("Log"[2] * "(observed/expected)" ~ .(superfamNamesPlot[y]) ~ "TEs"))) +
-    ylim(-max(abs(hgTest_alpha_superfam_DF_list[[y]]$log2obsexp)), max(abs(hgTest_alpha_superfam_DF_list[[y]]$log2obsexp))) +
-    theme_bw()
-  ggsave(paste0(plotDir_alpha_mC,
-                sampleName, "_filt_df_ka_alpha_all_mean_mC_all_",
-                featName, "_", featRegion,
-                "_", paste0(chrName, collapse = "_"), "_", context,
-                "_", superfamNames[y], "_TEs_hypergeomTest_quantiles.pdf"),
-         plot = gg_hgTest_alpha_superfam,
-         height = 5, width = 6)
-  write.table(hgTest_alpha_superfam_DF_list[[y]],
-              paste0(outDir,
-                     sampleName, "_filt_df_ka_alpha_all_mean_mC_all_",
-                     featName, "_", featRegion,
-                     "_", paste0(chrName, collapse = "_"), "_", context,
-                     "_", superfamNames[y], "_TEs_hypergeomTest_quantiles.tsv"),
-              quote = F, sep = "\t", row.names = F, col.names = T)
-}
+gg_hgTest_alpha_DMRs <- ggplot(data = hgTest_alpha_DMRs_DF,
+                               mapping = aes(x = group,
+                                             y = log2obsexp,
+                                             colour = pval,
+                                             size = observed)) +
+  geom_point() +
+  scale_colour_gradient(low = "red", high = "blue") +
+  guides(colour = guide_colourbar(reverse = T)) +
+  geom_hline(mapping = aes(yintercept = 0),
+             linetype = "solid", size = 1, colour = "black") +
+#  labs(size = "Count", colour = bquote("BH-adjusted" ~ italic(P))) +
+  labs(size = "Count", colour = bquote(italic(P)*"-value")) +
+  xlab(bquote(atop("Krippendorff's alpha and mean m" * .(context), .(featName) ~ .(featRegion) ~ "group"))) +
+  ylab(bquote(atop("Log"[2] * "(observed/expected)" ~ .(DMRsNamePlot) ~ "TEs"))) +
+  ylim(-max(abs(hgTest_alpha_DMRs_DF$log2obsexp)), max(abs(hgTest_alpha_DMRs_DF$log2obsexp))) +
+  theme_bw()
+ggsave(paste0(plotDir_alpha_mC,
+              sampleName, "_filt_df_ka_alpha_all_mean_mC_all_",
+              featName, "_", featRegion,
+              "_", paste0(chrName, collapse = "_"), "_", context,
+              "_", DMRsName, "_TEs_hypergeomTest_quantiles.pdf"),
+       plot = gg_hgTest_alpha_DMRs,
+       height = 5, width = 6)
+write.table(hgTest_alpha_DMRs_DF,
+            paste0(outDir,
+                   sampleName, "_filt_df_ka_alpha_all_mean_mC_all_",
+                   featName, "_", featRegion,
+                   "_", paste0(chrName, collapse = "_"), "_", context,
+                   "_", DMRsName, "_TEs_hypergeomTest_quantiles.tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
 
 
 # mean_stocha_all
@@ -416,16 +419,6 @@ featDF <- read.table(paste0(outDir,
                             "_filt_df_fk_kappa_all_mean_mC_all_complete_",
                             paste0(chrName, collapse = "_"), ".tsv"),
                      header = T)
-
-superfamNames <- sort(unique(featDF$score))
-superfamNames <- c(superfamNames[3], superfamNames[1], superfamNames[14],
-                   superfamNames[10], superfamNames[7], superfamNames[13],
-                   superfamNames[6], superfamNames[2], superfamNames[4],
-                   superfamNames[5], superfamNames[8], superfamNames[9],
-                   superfamNames[12], superfamNames[11])
-superfamNamesPlot <- gsub("PogoTc1Mariner", "Pogo/Tc1/Mar", superfamNames)
-superfamNamesPlot <- gsub("_", " ", superfamNamesPlot)
-superfamNamesPlot <- gsub("classified", ".", superfamNamesPlot)
 
 # Load feature groups (defined based on stochasticity vs mean mC trend plots) to enable enrichment analysis
 
@@ -448,64 +441,66 @@ filt_stocha_mC_groups_featID <- lapply(seq_along(filt_stocha_mC_groups), functio
 })
 
 filt_stocha_mC_groups_featID_universe <- unlist(filt_stocha_mC_groups_featID)
-## Not required for stocha
+## For kappa only
 #featDF <- featDF[which(featDF$name %in% filt_stocha_mC_groups_featID_universe),]
 ##
 stopifnot(length(filt_stocha_mC_groups_featID_universe) == nrow(featDF))
 
-featID_superfamList <- lapply(superfamNames, function(y) {
-  featDF[which(featDF$score == y),]$name
-})
+featGR <- GRanges(seqnames = featDF$chr,
+                  ranges = IRanges(start = featDF$start, end = featDF$end),
+                  strand = "*",
+                  featID = featDF$name)
+
+fOverlaps_feat_DMRs <- findOverlaps(query = featGR,
+                                    subject = DMRs_GR,
+                                    type = "any",
+                                    select = "all",
+                                    ignore.strand = T)
+featGR_DMRs <- featGR[unique(queryHits(fOverlaps_feat_DMRs))]
+featID_DMRs <- unique(featGR_DMRs$featID)
 
 
 # Run hypergeometric test on each group of genes to evaluate
 # representation of query genes
-hgTest_stocha_superfamList_list <- lapply(1:length(superfamNames), function(y) {
-  lapply(seq_along(filt_stocha_mC_groups_featID), function(x) {
-    hgTest(group = x,
-           group_feat_list = filt_stocha_mC_groups_featID,
-           genome_feat = filt_stocha_mC_groups_featID_universe,
-           genome_feat_query = featID_superfamList[[y]],
-           samples_num = 1e5)
-  })
+hgTest_stocha_DMRs_list <- lapply(seq_along(filt_stocha_mC_groups_featID), function(x) {
+  hgTest(group = x,
+         group_feat_list = filt_stocha_mC_groups_featID,
+         genome_feat = filt_stocha_mC_groups_featID_universe,
+         genome_feat_query = featID_DMRs,
+         samples_num = 1e5)
 })
 
-hgTest_stocha_superfam_DF_list <- lapply(1:length(superfamNames), function(y) {
-  hgTest_stocha_superfam_DF <- dplyr::bind_rows(hgTest_stocha_superfamList_list[[y]])
-  hgTest_stocha_superfam_DF$group <- as.character(hgTest_stocha_superfam_DF$group)
-  hgTest_stocha_superfam_DF$BHadj_pval <- p.adjust(hgTest_stocha_superfam_DF$pval, method = "BH")
-  hgTest_stocha_superfam_DF
-})
+hgTest_stocha_DMRs_DF <- dplyr::bind_rows(hgTest_stocha_DMRs_list)
+hgTest_stocha_DMRs_DF$group <- as.character(hgTest_stocha_DMRs_DF$group)
+hgTest_stocha_DMRs_DF$BHadj_pval <- p.adjust(hgTest_stocha_DMRs_DF$pval, method = "BH")
 
-for(y in 1:length(superfamNames)) {
-  gg_hgTest_stocha_superfam <- ggplot(data = hgTest_stocha_superfam_DF_list[[y]],
-                                     mapping = aes(x = group,
-                                                   y = log2obsexp,
-                                                   colour = pval,
-                                                   size = observed)) +
-    geom_point() +
-    scale_colour_gradient(low = "red", high = "blue") +
-    guides(colour = guide_colourbar(reverse = T)) +
-    geom_hline(mapping = aes(yintercept = 0),
-               linetype = "solid", size = 1, colour = "black") +
-  #  labs(size = "Count", colour = bquote("BH-adjusted" ~ italic(P))) +
-    labs(size = "Count", colour = bquote(italic(P)*"-value")) +
-    xlab(bquote(atop("Stochasticity and mean m" * .(context), .(featName) ~ .(featRegion) ~ "group"))) +
-    ylab(bquote(atop("Log"[2] * "(observed/expected)" ~ .(superfamNamesPlot[y]) ~ "TEs"))) +
-    ylim(-max(abs(hgTest_stocha_superfam_DF_list[[y]]$log2obsexp)), max(abs(hgTest_stocha_superfam_DF_list[[y]]$log2obsexp))) +
-    theme_bw()
-  ggsave(paste0(plotDir_stocha_mC,
-                sampleName, "_filt_df_mean_stocha_all_mean_mC_all_",
-                featName, "_", featRegion,
-                "_", paste0(chrName, collapse = "_"), "_", context,
-                "_", superfamNames[y], "_TEs_hypergeomTest_quantiles.pdf"),
-         plot = gg_hgTest_stocha_superfam,
-         height = 5, width = 6)
-  write.table(hgTest_stocha_superfam_DF_list[[y]],
-              paste0(outDir,
-                     sampleName, "_filt_df_mean_stocha_all_mean_mC_all_",
-                     featName, "_", featRegion,
-                     "_", paste0(chrName, collapse = "_"), "_", context,
-                     "_", superfamNames[y], "_TEs_hypergeomTest_quantiles.tsv"),
-              quote = F, sep = "\t", row.names = F, col.names = T)
-}
+gg_hgTest_stocha_DMRs <- ggplot(data = hgTest_stocha_DMRs_DF,
+                               mapping = aes(x = group,
+                                             y = log2obsexp,
+                                             colour = pval,
+                                             size = observed)) +
+  geom_point() +
+  scale_colour_gradient(low = "red", high = "blue") +
+  guides(colour = guide_colourbar(reverse = T)) +
+  geom_hline(mapping = aes(yintercept = 0),
+             linetype = "solid", size = 1, colour = "black") +
+#  labs(size = "Count", colour = bquote("BH-adjusted" ~ italic(P))) +
+  labs(size = "Count", colour = bquote(italic(P)*"-value")) +
+  xlab(bquote(atop("Stochasticity and mean m" * .(context), .(featName) ~ .(featRegion) ~ "group"))) +
+  ylab(bquote(atop("Log"[2] * "(observed/expected)" ~ .(DMRsNamePlot) ~ "TEs"))) +
+  ylim(-max(abs(hgTest_stocha_DMRs_DF$log2obsexp)), max(abs(hgTest_stocha_DMRs_DF$log2obsexp))) +
+  theme_bw()
+ggsave(paste0(plotDir_stocha_mC,
+              sampleName, "_filt_df_mean_stocha_all_mean_mC_all_",
+              featName, "_", featRegion,
+              "_", paste0(chrName, collapse = "_"), "_", context,
+              "_", DMRsName, "_TEs_hypergeomTest_quantiles.pdf"),
+       plot = gg_hgTest_stocha_DMRs,
+       height = 5, width = 6)
+write.table(hgTest_stocha_DMRs_DF,
+            paste0(outDir,
+                   sampleName, "_filt_df_mean_stocha_all_mean_mC_all_",
+                   featName, "_", featRegion,
+                   "_", paste0(chrName, collapse = "_"), "_", context,
+                   "_", DMRsName, "_TEs_hypergeomTest_quantiles.tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)

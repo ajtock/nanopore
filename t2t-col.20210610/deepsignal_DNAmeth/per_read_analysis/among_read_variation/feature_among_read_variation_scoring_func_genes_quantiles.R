@@ -7,7 +7,7 @@
 
 # Usage:
 # conda activate R-4.0.0
-# ./feature_among_read_variation_scoring_func_genes_quantiles.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'gene' 'regions' 0.975 0.33
+# ./feature_among_read_variation_scoring_func_genes_quantiles.R Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610 CpG 0.50 1.00 'Chr1,Chr2,Chr3,Chr4,Chr5' 'gene' 'regions' 0.33 0.975
 # conda deactivate
 
 # Divide each read into adjacent segments each consisting of a given number of consecutive cytosines,
@@ -21,8 +21,8 @@
 #chrName <- unlist(strsplit("Chr1,Chr2,Chr3,Chr4,Chr5", split = ","))
 #featName <- "gene"
 #featRegion <- "regions"
-#topQthresh <- 0.975
 #botQthresh <- 0.33
+#topQthresh <- 0.975
 
 args <- commandArgs(trailingOnly = T)
 sampleName <- args[1]
@@ -33,8 +33,8 @@ CPUpc <- as.numeric(args[5])
 chrName <- unlist(strsplit(args[6], split = ","))
 featName <- args[7]
 featRegion <- args[8]
-topQthresh <- as.numeric(args[9])
-botQthresh <- as.numeric(args[10])
+botQthresh <- as.numeric(args[9])
+topQthresh <- as.numeric(args[10])
 
 print(paste0("Proportion of CPUs:", CPUpc))
 options(stringsAsFactors = F)
@@ -83,94 +83,154 @@ colnames(featDF_filt)[ which(colnames(featDF_filt) %in%
   c("mean_mC_all", "fk_kappa_all", "ka_alpha_all", "mean_stocha_all")
 ) ] <- c("mC", "fkAgreement", "kaAgreement", "Stochasticity")
 
-featDF_filt <- data.frame(featDF_filt,
-                          mC_quantile = "",
-                          fkAgreement_quantile = "",
-                          kaAgreement_quantile = "",
-                          Stochasticity_quantile = "")
+featDF_filt <- featDF_filt %>%
+  mutate(mC_percentile = rank(mC, na.last = "keep") / length(mC))
 
-featDF_filt[ which(!is.na(featDF_filt[,which(colnames(featDF_filt) == "mC")]) &
-                   rank(featDF_filt[,which(colnames(featDF_filt) == "mC")]) /
-                   length(featDF_filt[,which(colnames(featDF_filt) == "mC")]) <=
-                   1 &
-                   rank(featDF_filt[,which(colnames(featDF_filt) == "mC")]) /
-                   length(featDF_filt[,which(colnames(featDF_filt) == "mC")]) >
-                   topQthresh), ]$mC_quantile <- "Quantile 4"
-featDF_filt[ which(!is.na(featDF_filt[,which(colnames(featDF_filt) == "mC")]) &
-                   rank(featDF_filt[,which(colnames(featDF_filt) == "mC")]) /
-                   length(featDF_filt[,which(colnames(featDF_filt) == "mC")]) <=
-                   topQthresh &
-                   rank(featDF_filt[,which(colnames(featDF_filt) == "mC")]) /
-                   length(featDF_filt[,which(colnames(featDF_filt) == "mC")]) >
-                   (botQthresh * 2)), ]$mC_quantile <- "Quantile 3"
-featDF_filt[ which(!is.na(featDF_filt[,which(colnames(featDF_filt) == "mC")]) &
-                   rank(featDF_filt[,which(colnames(featDF_filt) == "mC")]) /
-                   length(featDF_filt[,which(colnames(featDF_filt) == "mC")]) <=
-                   (botQthresh * 2) &
-                   rank(featDF_filt[,which(colnames(featDF_filt) == "mC")]) /
-                   length(featDF_filt[,which(colnames(featDF_filt) == "mC")]) >
-                   botQthresh), ]$mC_quantile <- "Quantile 2"
-featDF_filt[ which(!is.na(featDF_filt[,which(colnames(featDF_filt) == "mC")]) &
-                   rank(featDF_filt[,which(colnames(featDF_filt) == "mC")]) /
-                   length(featDF_filt[,which(colnames(featDF_filt) == "mC")]) <=
-                   botQthresh &
-                   rank(featDF_filt[,which(colnames(featDF_filt) == "mC")]) /
-                   length(featDF_filt[,which(colnames(featDF_filt) == "mC")]) >=
-                   0.0), ]$mC_quantile <- "Quantile 1"
+featDF_filt <- data.frame(featDF_filt,
+                          mC_quantile = "")
+
+featDF_filt[ which(featDF_filt$mC_percentile <=  1.0 &
+                   featDF_filt$mC_percentile >   topQthresh), ]$mC_quantile <- "Quantile 4"
+featDF_filt[ which(featDF_filt$mC_percentile <=  topQthresh &
+                   featDF_filt$mC_percentile >  (botQthresh * 2)), ]$mC_quantile <- "Quantile 3"
+featDF_filt[ which(featDF_filt$mC_percentile <= (botQthresh * 2) &
+                   featDF_filt$mC_percentile >   botQthresh), ]$mC_quantile <- "Quantile 2"
+featDF_filt[ which(featDF_filt$mC_percentile <=  botQthresh  &
+                   featDF_filt$mC_percentile >=  0.0), ]$mC_quantile <- "Quantile 1"
 
 mC_quantiles <- sort(unique(featDF_filt$mC_quantile))
 
-featDF_filt_mC_quantiles <- data.frame() 
+featDF_filt_quantiles <- data.frame()
 for(i in mC_quantiles) {
+
   featDF_filt_mC_quantile_i <- featDF_filt[ which(featDF_filt$mC_quantile == i), ]
 
-  featDF_filt_mC_quantile_i[ which(!is.na(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "fkAgreement")]) &
-                                   rank(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "fkAgreement")]) /
-                                   length(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "fkAgreement")]) <=
-                                   1 &
-                                   rank(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "fkAgreement")]) /
-                                   length(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "fkAgreement")]) >
-                                   0.50), ]$fkAgreement_quantile <- paste0(i, " upper")
-  featDF_filt_mC_quantile_i[ which(!is.na(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "fkAgreement")]) &
-                                   rank(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "fkAgreement")]) /
-                                   length(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "fkAgreement")]) <=
-                                   0.50 &
-                                   rank(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "fkAgreement")]) /
-                                   length(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "fkAgreement")]) >=
-                                   0), ]$fkAgreement_quantile <- paste0(i, " lower")
+  featDF_filt_mC_quantile_i <- featDF_filt_mC_quantile_i %>%
+    mutate(fkAgreement_percentile = rank(fkAgreement, na.last = "keep") / length(fkAgreement),
+           kaAgreement_percentile = rank(kaAgreement, na.last = "keep") / length(kaAgreement),
+           Stochasticity_percentile = rank(Stochasticity, na.last = "keep") / length(Stochasticity))
 
-  featDF_filt_mC_quantile_i[ which(!is.na(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "kaAgreement")]) &
-                                   rank(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "kaAgreement")]) /
-                                   length(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "kaAgreement")]) <=
-                                   1 &
-                                   rank(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "kaAgreement")]) /
-                                   length(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "kaAgreement")]) >
-                                   0.50), ]$kaAgreement_quantile <- paste0(i, " upper")
-  featDF_filt_mC_quantile_i[ which(!is.na(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "kaAgreement")]) &
-                                   rank(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "kaAgreement")]) /
-                                   length(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "kaAgreement")]) <=
-                                   0.50 &
-                                   rank(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "kaAgreement")]) /
-                                   length(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "kaAgreement")]) >=
-                                   0), ]$kaAgreement_quantile <- paste0(i, " lower")
+  featDF_filt_mC_quantile_i <- data.frame(featDF_filt_mC_quantile_i,
+                                          fkAgreement_quantile = "",
+                                          kaAgreement_quantile = "",
+                                          Stochasticity_quantile = "")
 
-  featDF_filt_mC_quantile_i[ which(!is.na(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "Stochasticity")]) &
-                                   rank(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "Stochasticity")]) /
-                                   length(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "Stochasticity")]) <=
-                                   1 &
-                                   rank(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "Stochasticity")]) /
-                                   length(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "Stochasticity")]) >
-                                   0.50), ]$Stochasticity_quantile <- paste0(i, " upper")
-  featDF_filt_mC_quantile_i[ which(!is.na(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "Stochasticity")]) &
-                                   rank(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "Stochasticity")]) /
-                                   length(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "Stochasticity")]) <=
-                                   0.50 &
-                                   rank(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "Stochasticity")]) /
-                                   length(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "Stochasticity")]) >=
-                                   0), ]$Stochasticity_quantile <- paste0(i, " lower")
+  featDF_filt_mC_quantile_i[ which(featDF_filt_mC_quantile_i$fkAgreement_percentile <= 1.0 &
+                                   featDF_filt_mC_quantile_i$fkAgreement_percentile >  0.5), ]$fkAgreement_quantile <- paste0(i, " upper")
+  featDF_filt_mC_quantile_i[ which(featDF_filt_mC_quantile_i$fkAgreement_percentile <= 0.5 &
+                                   featDF_filt_mC_quantile_i$fkAgreement_percentile >= 0.0), ]$fkAgreement_quantile <- paste0(i, " lower")
+  if( length( which(featDF_filt_mC_quantile_i$fkAgreement_quantile == "") ) > 0 ) {
+    featDF_filt_mC_quantile_i[ which(featDF_filt_mC_quantile_i$fkAgreement_quantile == ""), ]$fkAgreement_quantile <- NA
+  }
 
-  featDF_filt_mC_quantiles <- rbind(featDF_filt_mC_quantiles, featDF_filt_mC_quantile_i)
+  featDF_filt_mC_quantile_i[ which(featDF_filt_mC_quantile_i$kaAgreement_percentile <= 1.0 &
+                                   featDF_filt_mC_quantile_i$kaAgreement_percentile >  0.5), ]$kaAgreement_quantile <- paste0(i, " upper")
+  featDF_filt_mC_quantile_i[ which(featDF_filt_mC_quantile_i$kaAgreement_percentile <= 0.5 &
+                                   featDF_filt_mC_quantile_i$kaAgreement_percentile >= 0.0), ]$kaAgreement_quantile <- paste0(i, " lower")
+  if( length( which(featDF_filt_mC_quantile_i$kaAgreement_quantile == "") ) > 0 ) {
+    featDF_filt_mC_quantile_i[ which(featDF_filt_mC_quantile_i$kaAgreement_quantile == ""), ]$kaAgreement_quantile <- NA
+  }
+
+  featDF_filt_mC_quantile_i[ which(featDF_filt_mC_quantile_i$Stochasticity_percentile <= 1.0 &
+                                   featDF_filt_mC_quantile_i$Stochasticity_percentile >  0.5), ]$Stochasticity_quantile <- paste0(i, " upper")
+  featDF_filt_mC_quantile_i[ which(featDF_filt_mC_quantile_i$Stochasticity_percentile <= 0.5 &
+                                   featDF_filt_mC_quantile_i$Stochasticity_percentile >= 0.0), ]$Stochasticity_quantile <- paste0(i, " lower")
+  if( length( which(featDF_filt_mC_quantile_i$Stochasticity_quantile == "") ) > 0 ) {
+    featDF_filt_mC_quantile_i[ which(featDF_filt_mC_quantile_i$Stochasticity_quantile == ""), ]$Stochasticity_quantile <- NA
+  }
+
+  featDF_filt_quantiles <- rbind(featDF_filt_quantiles, featDF_filt_mC_quantile_i)
+
 }
+
+#featDF_filt <- data.frame(featDF_filt,
+#                          mC_quantile = "",
+#                          fkAgreement_quantile = "",
+#                          kaAgreement_quantile = "",
+#                          Stochasticity_quantile = "")
+#
+#featDF_filt[ which(!is.na(featDF_filt[,which(colnames(featDF_filt) == "mC")]) &
+#                   rank(featDF_filt[,which(colnames(featDF_filt) == "mC")]) /
+#                   length(featDF_filt[,which(colnames(featDF_filt) == "mC")]) <=
+#                   1 &
+#                   rank(featDF_filt[,which(colnames(featDF_filt) == "mC")]) /
+#                   length(featDF_filt[,which(colnames(featDF_filt) == "mC")]) >
+#                   topQthresh), ]$mC_quantile <- "Quantile 4"
+#featDF_filt[ which(!is.na(featDF_filt[,which(colnames(featDF_filt) == "mC")]) &
+#                   rank(featDF_filt[,which(colnames(featDF_filt) == "mC")]) /
+#                   length(featDF_filt[,which(colnames(featDF_filt) == "mC")]) <=
+#                   topQthresh &
+#                   rank(featDF_filt[,which(colnames(featDF_filt) == "mC")]) /
+#                   length(featDF_filt[,which(colnames(featDF_filt) == "mC")]) >
+#                   (botQthresh * 2)), ]$mC_quantile <- "Quantile 3"
+#featDF_filt[ which(!is.na(featDF_filt[,which(colnames(featDF_filt) == "mC")]) &
+#                   rank(featDF_filt[,which(colnames(featDF_filt) == "mC")]) /
+#                   length(featDF_filt[,which(colnames(featDF_filt) == "mC")]) <=
+#                   (botQthresh * 2) &
+#                   rank(featDF_filt[,which(colnames(featDF_filt) == "mC")]) /
+#                   length(featDF_filt[,which(colnames(featDF_filt) == "mC")]) >
+#                   botQthresh), ]$mC_quantile <- "Quantile 2"
+#featDF_filt[ which(!is.na(featDF_filt[,which(colnames(featDF_filt) == "mC")]) &
+#                   rank(featDF_filt[,which(colnames(featDF_filt) == "mC")]) /
+#                   length(featDF_filt[,which(colnames(featDF_filt) == "mC")]) <=
+#                   botQthresh &
+#                   rank(featDF_filt[,which(colnames(featDF_filt) == "mC")]) /
+#                   length(featDF_filt[,which(colnames(featDF_filt) == "mC")]) >=
+#                   0.0), ]$mC_quantile <- "Quantile 1"
+#
+#mC_quantiles <- sort(unique(featDF_filt$mC_quantile))
+#
+#featDF_filt_quantiles <- data.frame() 
+#for(i in mC_quantiles) {
+#  featDF_filt_mC_quantile_i <- featDF_filt[ which(featDF_filt$mC_quantile == i), ]
+#
+#  featDF_filt_mC_quantile_i[ which(!is.na(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "fkAgreement")]) &
+#                                   rank(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "fkAgreement")]) /
+#                                   length(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "fkAgreement")]) <=
+#                                   1 &
+#                                   rank(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "fkAgreement")]) /
+#                                   length(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "fkAgreement")]) >
+#                                   0.50), ]$fkAgreement_quantile <- paste0(i, " upper")
+#  featDF_filt_mC_quantile_i[ which(!is.na(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "fkAgreement")]) &
+#                                   rank(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "fkAgreement")]) /
+#                                   length(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "fkAgreement")]) <=
+#                                   0.50 &
+#                                   rank(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "fkAgreement")]) /
+#                                   length(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "fkAgreement")]) >=
+#                                   0), ]$fkAgreement_quantile <- paste0(i, " lower")
+#
+#  featDF_filt_mC_quantile_i[ which(!is.na(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "kaAgreement")]) &
+#                                   rank(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "kaAgreement")]) /
+#                                   length(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "kaAgreement")]) <=
+#                                   1 &
+#                                   rank(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "kaAgreement")]) /
+#                                   length(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "kaAgreement")]) >
+#                                   0.50), ]$kaAgreement_quantile <- paste0(i, " upper")
+#  featDF_filt_mC_quantile_i[ which(!is.na(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "kaAgreement")]) &
+#                                   rank(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "kaAgreement")]) /
+#                                   length(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "kaAgreement")]) <=
+#                                   0.50 &
+#                                   rank(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "kaAgreement")]) /
+#                                   length(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "kaAgreement")]) >=
+#                                   0), ]$kaAgreement_quantile <- paste0(i, " lower")
+#
+#  featDF_filt_mC_quantile_i[ which(!is.na(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "Stochasticity")]) &
+#                                   rank(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "Stochasticity")]) /
+#                                   length(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "Stochasticity")]) <=
+#                                   1 &
+#                                   rank(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "Stochasticity")]) /
+#                                   length(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "Stochasticity")]) >
+#                                   0.50), ]$Stochasticity_quantile <- paste0(i, " upper")
+#  featDF_filt_mC_quantile_i[ which(!is.na(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "Stochasticity")]) &
+#                                   rank(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "Stochasticity")]) /
+#                                   length(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "Stochasticity")]) <=
+#                                   0.50 &
+#                                   rank(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "Stochasticity")]) /
+#                                   length(featDF_filt_mC_quantile_i[,which(colnames(featDF_filt_mC_quantile_i) == "Stochasticity")]) >=
+#                                   0), ]$Stochasticity_quantile <- paste0(i, " lower")
+#
+#  featDF_filt_quantiles <- rbind(featDF_filt_quantiles, featDF_filt_mC_quantile_i)
+#}
 
 
 # Dimension reduction:
@@ -179,7 +239,7 @@ for(i in mC_quantiles) {
 
 fkAgreement_mat_filt_pca_n_dim <- 2
 
-fkAgreement_mat_filt_pca <- prcomp(featDF_filt_mC_quantiles[, which(colnames(featDF_filt_mC_quantiles) %in% c("mC", "fkAgreement")), drop = F], center = T, scale = T)
+fkAgreement_mat_filt_pca <- prcomp(featDF_filt_quantiles[, which(colnames(featDF_filt_quantiles) %in% c("mC", "fkAgreement")), drop = F], center = T, scale = T)
 fkAgreement_mat_filt_pca_summ <- summary(fkAgreement_mat_filt_pca)
 fkAgreement_mat_filt_pca_PC1_varexp <- round(fkAgreement_mat_filt_pca_summ$importance[2,1] * 100, digits = 2)
 fkAgreement_mat_filt_pca_PC2_varexp <- round(fkAgreement_mat_filt_pca_summ$importance[2,2] * 100, digits = 2)
@@ -187,9 +247,9 @@ fkAgreement_mat_filt_pca_dim <- fkAgreement_mat_filt_pca$x[, seq_len(fkAgreement
 colnames(fkAgreement_mat_filt_pca_dim) <- c("PC1", "PC2")
 head(fkAgreement_mat_filt_pca_dim)
 
-stopifnot(nrow(fkAgreement_mat_filt_pca_dim) == length(featDF_filt_mC_quantiles$fkAgreement_quantile))
+stopifnot(nrow(fkAgreement_mat_filt_pca_dim) == length(featDF_filt_quantiles$fkAgreement_quantile))
 fkAgreement_mat_filt_pca_dim <- cbind(as.data.frame(fkAgreement_mat_filt_pca_dim),
-                                      featDF_filt_mC_quantiles,
+                                      featDF_filt_quantiles,
                                       type = "PCA")
 head(fkAgreement_mat_filt_pca_dim)
 
@@ -226,7 +286,7 @@ gg_kaAgreement_quantile_fkAgreement_mat_filt_pca_dim <- ggplot(fkAgreement_mat_f
 gg_Stochasticity_quantile_fkAgreement_mat_filt_pca_dim <- ggplot(fkAgreement_mat_filt_pca_dim,
                                                                  mapping = aes(x = PC1, y = PC2, colour = Stochasticity_quantile)) +
   geom_point(size = 0.7, alpha = 0.5) +
-  scale_colour_brewer(palette = "Set1") +
+  scale_colour_brewer(palette = "Dark2") +
 #  scale_colour_manual(values = fkAgreement_mat_filt_pam_cl_colours) +
   labs(colour = bquote(atop("Stochasticity &", "m"*.(context)~"group")),
        x = bquote("PC1 (" * .(fkAgreement_mat_filt_pca_PC1_varexp) * "%)"),
@@ -401,7 +461,7 @@ ggsave(paste0(plotDir, "gg_fkAgreement_mat_filt_pca_dim_loadings_quantiles.pdf")
 
 kaAgreement_mat_filt_pca_n_dim <- 2
 
-kaAgreement_mat_filt_pca <- prcomp(featDF_filt_mC_quantiles[, which(colnames(featDF_filt_mC_quantiles) %in% c("mC", "kaAgreement")), drop = F], center = T, scale = T)
+kaAgreement_mat_filt_pca <- prcomp(featDF_filt_quantiles[, which(colnames(featDF_filt_quantiles) %in% c("mC", "kaAgreement")), drop = F], center = T, scale = T)
 kaAgreement_mat_filt_pca_summ <- summary(kaAgreement_mat_filt_pca)
 kaAgreement_mat_filt_pca_PC1_varexp <- round(kaAgreement_mat_filt_pca_summ$importance[2,1] * 100, digits = 2)
 kaAgreement_mat_filt_pca_PC2_varexp <- round(kaAgreement_mat_filt_pca_summ$importance[2,2] * 100, digits = 2)
@@ -409,9 +469,9 @@ kaAgreement_mat_filt_pca_dim <- kaAgreement_mat_filt_pca$x[, seq_len(kaAgreement
 colnames(kaAgreement_mat_filt_pca_dim) <- c("PC1", "PC2")
 head(kaAgreement_mat_filt_pca_dim)
 
-stopifnot(nrow(kaAgreement_mat_filt_pca_dim) == length(featDF_filt_mC_quantiles$kaAgreement_quantile))
+stopifnot(nrow(kaAgreement_mat_filt_pca_dim) == length(featDF_filt_quantiles$kaAgreement_quantile))
 kaAgreement_mat_filt_pca_dim <- cbind(as.data.frame(kaAgreement_mat_filt_pca_dim),
-                                      featDF_filt_mC_quantiles,
+                                      featDF_filt_quantiles,
                                       type = "PCA")
 head(kaAgreement_mat_filt_pca_dim)
 
@@ -448,7 +508,7 @@ gg_kaAgreement_quantile_kaAgreement_mat_filt_pca_dim <- ggplot(kaAgreement_mat_f
 gg_Stochasticity_quantile_kaAgreement_mat_filt_pca_dim <- ggplot(kaAgreement_mat_filt_pca_dim,
                                                                  mapping = aes(x = PC1, y = PC2, colour = Stochasticity_quantile)) +
   geom_point(size = 0.7, alpha = 0.5) +
-  scale_colour_brewer(palette = "Set1") +
+  scale_colour_brewer(palette = "Dark2") +
 #  scale_colour_manual(values = kaAgreement_mat_filt_pam_cl_colours) +
   labs(colour = bquote(atop("Stochasticity &", "m"*.(context)~"group")),
        x = bquote("PC1 (" * .(kaAgreement_mat_filt_pca_PC1_varexp) * "%)"),
@@ -625,7 +685,7 @@ ggsave(paste0(plotDir, "gg_kaAgreement_mat_filt_pca_dim_loadings_quantiles.pdf")
 
 Stochasticity_mat_filt_pca_n_dim <- 2
 
-Stochasticity_mat_filt_pca <- prcomp(featDF_filt_mC_quantiles[, which(colnames(featDF_filt_mC_quantiles) %in% c("mC", "Stochasticity")), drop = F], center = T, scale = T)
+Stochasticity_mat_filt_pca <- prcomp(featDF_filt_quantiles[, which(colnames(featDF_filt_quantiles) %in% c("mC", "Stochasticity")), drop = F], center = T, scale = T)
 Stochasticity_mat_filt_pca_summ <- summary(Stochasticity_mat_filt_pca)
 Stochasticity_mat_filt_pca_PC1_varexp <- round(Stochasticity_mat_filt_pca_summ$importance[2,1] * 100, digits = 2)
 Stochasticity_mat_filt_pca_PC2_varexp <- round(Stochasticity_mat_filt_pca_summ$importance[2,2] * 100, digits = 2)
@@ -633,9 +693,9 @@ Stochasticity_mat_filt_pca_dim <- Stochasticity_mat_filt_pca$x[, seq_len(Stochas
 colnames(Stochasticity_mat_filt_pca_dim) <- c("PC1", "PC2")
 head(Stochasticity_mat_filt_pca_dim)
 
-stopifnot(nrow(Stochasticity_mat_filt_pca_dim) == length(featDF_filt_mC_quantiles$Stochasticity_quantile))
+stopifnot(nrow(Stochasticity_mat_filt_pca_dim) == length(featDF_filt_quantiles$Stochasticity_quantile))
 Stochasticity_mat_filt_pca_dim <- cbind(as.data.frame(Stochasticity_mat_filt_pca_dim),
-                                        featDF_filt_mC_quantiles,
+                                        featDF_filt_quantiles,
                                         type = "PCA")
 head(Stochasticity_mat_filt_pca_dim)
 
@@ -672,7 +732,7 @@ gg_kaAgreement_quantile_Stochasticity_mat_filt_pca_dim <- ggplot(Stochasticity_m
 gg_Stochasticity_quantile_Stochasticity_mat_filt_pca_dim <- ggplot(Stochasticity_mat_filt_pca_dim,
                                                                    mapping = aes(x = PC1, y = PC2, colour = Stochasticity_quantile)) +
   geom_point(size = 0.7, alpha = 0.5) +
-  scale_colour_brewer(palette = "Set1") +
+  scale_colour_brewer(palette = "Dark2") +
 #  scale_colour_manual(values = Stochasticity_mat_filt_pam_cl_colours) +
   labs(colour = bquote(atop("Stochasticity &", "m"*.(context)~"group")),
        x = bquote("PC1 (" * .(Stochasticity_mat_filt_pca_PC1_varexp) * "%)"),
@@ -891,13 +951,13 @@ Col_Rep1_IRratio <- foreach(i = iter(parentIDs),
              IRratio_max = max(tmpDF$IRratio, na.rm = T))
 }
 
-featDF_filt_tab <- base::merge(x = featDF_filt_mC_quantiles, y = Col_Rep1_IRratio,
+featDF_filt_tab <- base::merge(x = featDF_filt_quantiles, y = Col_Rep1_IRratio,
                                by.x = "parent", by.y = "parent")
 
 colnames(featDF_filt_tab)[which(colnames(featDF_filt_tab) %in%
   c("mC", "fkAgreement", "kaAgreement", "Stochasticity"))] <- c("mean_mC_all", "fk_kappa_all", "ka_alpha_all", "mean_stocha_all")
 
-colnames(featDF_filt_mC_quantiles)[which(colnames(featDF_filt_mC_quantiles) %in%
+colnames(featDF_filt_quantiles)[which(colnames(featDF_filt_quantiles) %in%
   c("mC", "fkAgreement", "kaAgreement", "Stochasticity"))] <- c("mean_mC_all", "fk_kappa_all", "ka_alpha_all", "mean_stocha_all")
 
 
@@ -962,7 +1022,7 @@ trendPlot <- function(dataFrame, mapping, paletteName, xvar, yvar, quantilelab, 
 }
 
 
-ggTrend_mean_mC_all_fk_kappa_all_filt <- trendPlot(dataFrame = featDF_filt_mC_quantiles,
+ggTrend_mean_mC_all_fk_kappa_all_filt <- trendPlot(dataFrame = featDF_filt_quantiles,
                                                    mapping = aes(x = mean_mC_all, y = fk_kappa_all, colour = fkAgreement_quantile),
                                                    paletteName = "Dark2",
                                                    xvar = mean_mC_all,
@@ -979,7 +1039,7 @@ ggTrend_mean_mC_all_fk_kappa_all_filt <- trendPlot(dataFrame = featDF_filt_mC_qu
 ggTrend_mean_mC_all_fk_kappa_all_filt <- ggTrend_mean_mC_all_fk_kappa_all_filt +
   facet_grid(cols = vars(chr), scales = "free_x")
 
-ggTrend_mean_mC_all_ka_alpha_all_filt <- trendPlot(dataFrame = featDF_filt_mC_quantiles,
+ggTrend_mean_mC_all_ka_alpha_all_filt <- trendPlot(dataFrame = featDF_filt_quantiles,
                                                    mapping = aes(x = mean_mC_all, y = ka_alpha_all, colour = kaAgreement_quantile),
                                                    paletteName = "Dark2",
                                                    xvar = mean_mC_all,
@@ -996,9 +1056,9 @@ ggTrend_mean_mC_all_ka_alpha_all_filt <- trendPlot(dataFrame = featDF_filt_mC_qu
 ggTrend_mean_mC_all_ka_alpha_all_filt <- ggTrend_mean_mC_all_ka_alpha_all_filt +
   facet_grid(cols = vars(chr), scales = "free_x")
 
-ggTrend_mean_mC_all_mean_stocha_all_filt <- trendPlot(dataFrame = featDF_filt_mC_quantiles,
+ggTrend_mean_mC_all_mean_stocha_all_filt <- trendPlot(dataFrame = featDF_filt_quantiles,
                                                       mapping = aes(x = mean_mC_all, y = mean_stocha_all, colour = Stochasticity_quantile),
-                                                      paletteName = "Set1",
+                                                      paletteName = "Dark2",
                                                       xvar = mean_mC_all,
                                                       yvar = mean_stocha_all,
                                                       quantilelab = bquote(atop("Stochasticity &", "m"*.(context)~"group")),
@@ -1013,7 +1073,7 @@ ggTrend_mean_mC_all_mean_stocha_all_filt <- trendPlot(dataFrame = featDF_filt_mC
 ggTrend_mean_mC_all_mean_stocha_all_filt <- ggTrend_mean_mC_all_mean_stocha_all_filt +
   facet_grid(cols = vars(chr), scales = "free_x")
 
-ggTrend_ka_alpha_all_fk_kappa_all_filt <- trendPlot(dataFrame = featDF_filt_mC_quantiles,
+ggTrend_ka_alpha_all_fk_kappa_all_filt <- trendPlot(dataFrame = featDF_filt_quantiles,
                                                     mapping = aes(x = ka_alpha_all, y = fk_kappa_all, colour = fkAgreement_quantile),
                                                     paletteName = "Dark2",
                                                     xvar = ka_alpha_all,
@@ -1030,7 +1090,7 @@ ggTrend_ka_alpha_all_fk_kappa_all_filt <- trendPlot(dataFrame = featDF_filt_mC_q
 ggTrend_ka_alpha_all_fk_kappa_all_filt <- ggTrend_ka_alpha_all_fk_kappa_all_filt +
   facet_grid(cols = vars(chr), scales = "free_x")
 
-ggTrend_fk_kappa_all_ka_alpha_all_filt <- trendPlot(dataFrame = featDF_filt_mC_quantiles,
+ggTrend_fk_kappa_all_ka_alpha_all_filt <- trendPlot(dataFrame = featDF_filt_quantiles,
                                                     mapping = aes(x = ka_alpha_all, y = fk_kappa_all, colour = kaAgreement_quantile),
                                                     paletteName = "Dark2",
                                                     xvar = ka_alpha_all,
@@ -1047,7 +1107,7 @@ ggTrend_fk_kappa_all_ka_alpha_all_filt <- trendPlot(dataFrame = featDF_filt_mC_q
 ggTrend_fk_kappa_all_ka_alpha_all_filt <- ggTrend_fk_kappa_all_ka_alpha_all_filt +
   facet_grid(cols = vars(chr), scales = "free_x")
 
-ggTrend_mean_stocha_all_fk_kappa_all_filt <- trendPlot(dataFrame = featDF_filt_mC_quantiles,
+ggTrend_mean_stocha_all_fk_kappa_all_filt <- trendPlot(dataFrame = featDF_filt_quantiles,
                                                        mapping = aes(x = mean_stocha_all, y = fk_kappa_all, colour = fkAgreement_quantile),
                                                        paletteName = "Dark2",
                                                        xvar = mean_stocha_all,
@@ -1064,9 +1124,9 @@ ggTrend_mean_stocha_all_fk_kappa_all_filt <- trendPlot(dataFrame = featDF_filt_m
 ggTrend_mean_stocha_all_fk_kappa_all_filt <- ggTrend_mean_stocha_all_fk_kappa_all_filt +
   facet_grid(cols = vars(chr), scales = "free_x")
 
-ggTrend_fk_kappa_all_mean_stocha_all_filt <- trendPlot(dataFrame = featDF_filt_mC_quantiles,
+ggTrend_fk_kappa_all_mean_stocha_all_filt <- trendPlot(dataFrame = featDF_filt_quantiles,
                                                        mapping = aes(x = mean_stocha_all, y = fk_kappa_all, colour = Stochasticity_quantile),
-                                                       paletteName = "Set1",
+                                                       paletteName = "Dark2",
                                                        xvar = mean_stocha_all,
                                                        yvar = fk_kappa_all,
                                                        quantilelab = bquote(atop("Stochasticity &", "m"*.(context)~"group")),
@@ -1081,7 +1141,7 @@ ggTrend_fk_kappa_all_mean_stocha_all_filt <- trendPlot(dataFrame = featDF_filt_m
 ggTrend_fk_kappa_all_mean_stocha_all_filt <- ggTrend_fk_kappa_all_mean_stocha_all_filt +
   facet_grid(cols = vars(chr), scales = "free_x")
 
-ggTrend_mean_stocha_all_ka_alpha_all_filt <- trendPlot(dataFrame = featDF_filt_mC_quantiles,
+ggTrend_mean_stocha_all_ka_alpha_all_filt <- trendPlot(dataFrame = featDF_filt_quantiles,
                                                        mapping = aes(x = mean_stocha_all, y = ka_alpha_all, colour = fkAgreement_quantile),
                                                        paletteName = "Dark2",
                                                        xvar = mean_stocha_all,
@@ -1098,9 +1158,9 @@ ggTrend_mean_stocha_all_ka_alpha_all_filt <- trendPlot(dataFrame = featDF_filt_m
 ggTrend_mean_stocha_all_ka_alpha_all_filt <- ggTrend_mean_stocha_all_ka_alpha_all_filt +
   facet_grid(cols = vars(chr), scales = "free_x")
 
-ggTrend_ka_alpha_all_mean_stocha_all_filt <- trendPlot(dataFrame = featDF_filt_mC_quantiles,
+ggTrend_ka_alpha_all_mean_stocha_all_filt <- trendPlot(dataFrame = featDF_filt_quantiles,
                                                        mapping = aes(x = mean_stocha_all, y = ka_alpha_all, colour = Stochasticity_quantile),
-                                                       paletteName = "Set1",
+                                                       paletteName = "Dark2",
                                                        xvar = mean_stocha_all,
                                                        yvar = ka_alpha_all,
                                                        quantilelab = bquote(atop("Stochasticity &", "m"*.(context)~"group")),
@@ -1145,13 +1205,13 @@ ggsave(paste0(plotDir,
 # Extract feature quantiles to enable enrichment analysis
 
 # Filter by fk_kappa_all and mean_mC_all quantile
-featDF_filt_kappa_mC_quantile1_upper <- featDF_filt_mC_quantiles %>%
+featDF_filt_kappa_mC_quantile1_upper <- featDF_filt_quantiles %>%
   dplyr::filter(fkAgreement_quantile == "Quantile 1 upper")
-featDF_filt_kappa_mC_quantile2_upper <- featDF_filt_mC_quantiles %>%
+featDF_filt_kappa_mC_quantile2_upper <- featDF_filt_quantiles %>%
   dplyr::filter(fkAgreement_quantile == "Quantile 2 upper")
-featDF_filt_kappa_mC_quantile3_upper <- featDF_filt_mC_quantiles %>%
+featDF_filt_kappa_mC_quantile3_upper <- featDF_filt_quantiles %>%
   dplyr::filter(fkAgreement_quantile == "Quantile 3 upper")
-featDF_filt_kappa_mC_quantile4_upper <- featDF_filt_mC_quantiles %>%
+featDF_filt_kappa_mC_quantile4_upper <- featDF_filt_quantiles %>%
   dplyr::filter(fkAgreement_quantile == "Quantile 4 upper")
 
 write.table(featDF_filt_kappa_mC_quantile1_upper,
@@ -1187,13 +1247,13 @@ write.table(featDF_filt_kappa_mC_quantile4_upper,
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
 
-featDF_filt_kappa_mC_quantile1_lower <- featDF_filt_mC_quantiles %>%
+featDF_filt_kappa_mC_quantile1_lower <- featDF_filt_quantiles %>%
   dplyr::filter(fkAgreement_quantile == "Quantile 1 lower")
-featDF_filt_kappa_mC_quantile2_lower <- featDF_filt_mC_quantiles %>%
+featDF_filt_kappa_mC_quantile2_lower <- featDF_filt_quantiles %>%
   dplyr::filter(fkAgreement_quantile == "Quantile 2 lower")
-featDF_filt_kappa_mC_quantile3_lower <- featDF_filt_mC_quantiles %>%
+featDF_filt_kappa_mC_quantile3_lower <- featDF_filt_quantiles %>%
   dplyr::filter(fkAgreement_quantile == "Quantile 3 lower")
-featDF_filt_kappa_mC_quantile4_lower <- featDF_filt_mC_quantiles %>%
+featDF_filt_kappa_mC_quantile4_lower <- featDF_filt_quantiles %>%
   dplyr::filter(fkAgreement_quantile == "Quantile 4 lower")
 
 write.table(featDF_filt_kappa_mC_quantile1_lower,
@@ -1231,13 +1291,13 @@ write.table(featDF_filt_kappa_mC_quantile4_lower,
 
 
 # Filter by ka_alpha_all and mean_mC_all quantile
-featDF_filt_alpha_mC_quantile1_upper <- featDF_filt_mC_quantiles %>%
+featDF_filt_alpha_mC_quantile1_upper <- featDF_filt_quantiles %>%
   dplyr::filter(kaAgreement_quantile == "Quantile 1 upper")
-featDF_filt_alpha_mC_quantile2_upper <- featDF_filt_mC_quantiles %>%
+featDF_filt_alpha_mC_quantile2_upper <- featDF_filt_quantiles %>%
   dplyr::filter(kaAgreement_quantile == "Quantile 2 upper")
-featDF_filt_alpha_mC_quantile3_upper <- featDF_filt_mC_quantiles %>%
+featDF_filt_alpha_mC_quantile3_upper <- featDF_filt_quantiles %>%
   dplyr::filter(kaAgreement_quantile == "Quantile 3 upper")
-featDF_filt_alpha_mC_quantile4_upper <- featDF_filt_mC_quantiles %>%
+featDF_filt_alpha_mC_quantile4_upper <- featDF_filt_quantiles %>%
   dplyr::filter(kaAgreement_quantile == "Quantile 4 upper")
 
 write.table(featDF_filt_alpha_mC_quantile1_upper,
@@ -1273,13 +1333,13 @@ write.table(featDF_filt_alpha_mC_quantile4_upper,
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
 
-featDF_filt_alpha_mC_quantile1_lower <- featDF_filt_mC_quantiles %>%
+featDF_filt_alpha_mC_quantile1_lower <- featDF_filt_quantiles %>%
   dplyr::filter(kaAgreement_quantile == "Quantile 1 lower")
-featDF_filt_alpha_mC_quantile2_lower <- featDF_filt_mC_quantiles %>%
+featDF_filt_alpha_mC_quantile2_lower <- featDF_filt_quantiles %>%
   dplyr::filter(kaAgreement_quantile == "Quantile 2 lower")
-featDF_filt_alpha_mC_quantile3_lower <- featDF_filt_mC_quantiles %>%
+featDF_filt_alpha_mC_quantile3_lower <- featDF_filt_quantiles %>%
   dplyr::filter(kaAgreement_quantile == "Quantile 3 lower")
-featDF_filt_alpha_mC_quantile4_lower <- featDF_filt_mC_quantiles %>%
+featDF_filt_alpha_mC_quantile4_lower <- featDF_filt_quantiles %>%
   dplyr::filter(kaAgreement_quantile == "Quantile 4 lower")
 
 write.table(featDF_filt_alpha_mC_quantile1_lower,
@@ -1317,13 +1377,13 @@ write.table(featDF_filt_alpha_mC_quantile4_lower,
 
 
 # Filter by mean_stocha_all and mean_mC_all quantile
-featDF_filt_stocha_mC_quantile1_upper <- featDF_filt_mC_quantiles %>%
+featDF_filt_stocha_mC_quantile1_upper <- featDF_filt_quantiles %>%
   dplyr::filter(Stochasticity_quantile == "Quantile 1 upper")
-featDF_filt_stocha_mC_quantile2_upper <- featDF_filt_mC_quantiles %>%
+featDF_filt_stocha_mC_quantile2_upper <- featDF_filt_quantiles %>%
   dplyr::filter(Stochasticity_quantile == "Quantile 2 upper")
-featDF_filt_stocha_mC_quantile3_upper <- featDF_filt_mC_quantiles %>%
+featDF_filt_stocha_mC_quantile3_upper <- featDF_filt_quantiles %>%
   dplyr::filter(Stochasticity_quantile == "Quantile 3 upper")
-featDF_filt_stocha_mC_quantile4_upper <- featDF_filt_mC_quantiles %>%
+featDF_filt_stocha_mC_quantile4_upper <- featDF_filt_quantiles %>%
   dplyr::filter(Stochasticity_quantile == "Quantile 4 upper")
 
 write.table(featDF_filt_stocha_mC_quantile1_upper,
@@ -1359,13 +1419,13 @@ write.table(featDF_filt_stocha_mC_quantile4_upper,
                    paste0(chrName, collapse = "_"), ".tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
 
-featDF_filt_stocha_mC_quantile1_lower <- featDF_filt_mC_quantiles %>%
+featDF_filt_stocha_mC_quantile1_lower <- featDF_filt_quantiles %>%
   dplyr::filter(Stochasticity_quantile == "Quantile 1 lower")
-featDF_filt_stocha_mC_quantile2_lower <- featDF_filt_mC_quantiles %>%
+featDF_filt_stocha_mC_quantile2_lower <- featDF_filt_quantiles %>%
   dplyr::filter(Stochasticity_quantile == "Quantile 2 lower")
-featDF_filt_stocha_mC_quantile3_lower <- featDF_filt_mC_quantiles %>%
+featDF_filt_stocha_mC_quantile3_lower <- featDF_filt_quantiles %>%
   dplyr::filter(Stochasticity_quantile == "Quantile 3 lower")
-featDF_filt_stocha_mC_quantile4_lower <- featDF_filt_mC_quantiles %>%
+featDF_filt_stocha_mC_quantile4_lower <- featDF_filt_quantiles %>%
   dplyr::filter(Stochasticity_quantile == "Quantile 4 lower")
 
 write.table(featDF_filt_stocha_mC_quantile1_lower,
