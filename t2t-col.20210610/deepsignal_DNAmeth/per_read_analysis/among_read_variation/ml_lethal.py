@@ -79,7 +79,8 @@ except OSError as error:
 def load_target_DF():
     try:
         target = pd.read_csv("Lloyd_2015_Plant_Cell_SupplData/plcell_v27_8_2133_s1/plcell_v27_8_2133_s1/" +
-                             "TPC2015-00051-LSBR3_Supplemental_Data_set_1_Sheet1.csv")
+                             "TPC2015-00051-LSBR3_Supplemental_Data_set_1_Sheet1.csv",
+                             na_values
         return target
     except OSError as error:
         print(error)
@@ -92,7 +93,8 @@ ds1_DF.columns = ["gene", "phenotype", "predicted_lethal"]
 def load_features_DF():
     try:
         features = pd.read_csv("Lloyd_2015_Plant_Cell_SupplData/plcell_v27_8_2133_s1/plcell_v27_8_2133_s1/" +
-                              "TPC2015-00051-LSBR3_Supplemental_Data_set_3_Sheet1.csv")
+                               "TPC2015-00051-LSBR3_Supplemental_Data_set_3_Sheet1.csv",
+                               na_values = "?")
         return features
     except OSError as error:
         print(error)
@@ -101,7 +103,6 @@ ds3_DF = load_features_DF()
 ds3_DF.rename(columns = {"Locus number":"gene"}, inplace = True)
 
 df = pd.merge(ds1_DF, ds3_DF, how = "inner", on = "gene")
-df.replace(to_replace = "?", value = NA, inplace = True)
 df = df[df["phenotype"].isin(["Lethal", "Non-Lethal"])]
 df.phenotype.replace(["Non-Lethal", "Lethal"], [0, 1], inplace = True)
 # Drop rows containing missing values across ANY of the features (predictors) ??
