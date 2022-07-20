@@ -11,15 +11,17 @@
 
 # ==== Import libraries ====
 import argparse
-import pandas as pd
+import unittest
 import sys 
 import os
+import pandas as pd
 
 from sklearn.neighbors import KNeighborsClassifier
 
 
-# ==== Capture user input as command-line arguments ====
-def parse_args(args):
+# ==== Capture user input as command-line arguments using factory method ====
+# https://stackoverflow.com/questions/18160078/how-do-you-write-tests-for-the-argparse-portion-of-a-python-module
+def create_parser():
     parser = argparse.ArgumentParser(description = 'DeepSignal-derived filename variables.')
     #### Define command-line arguments
     parser.add_argument('-s', '--sampleName', type=str, default='Col_0_deepsignalDNAmeth_30kb_90pc',
@@ -37,17 +39,42 @@ def parse_args(args):
 #    parser.add_argument('-lR', '--locusRegion', type=str, default='regions',
 #                        help='The region type of the genomic loci to be analysed. Default: regions (i.e., 1 kb upstream of TSS to 1 kb downstream of TTS)')
     #### Create parser
-    return parser.parse_args(args)
+    return parser
  
-parser = parse_args(sys.argv[1:])
+#parser = create_parser().parse_args()
 #parser = parse_args([])
 
-class Parser_test:
+class TestParser(unittest.TestCase):
+    def setUp(self):
+        self.parser = create_parser()
+    def parser_test(self):
+        parsed = self.parser.parse_args(['sampleName', 'Col_0_deepsignalDNAmeth_30kb_90pc'])
+        self.assetEqual(parsed.sampleName, 'Col_0_deepsignalDNAmeth_30kb_90pc')
+
+if __name__ == '__main__':
+    unittest.main()
+
+parsed = create_parser().parse_args(['--sampleName ', 'Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610'])
+, ['--refbase', 't2t-col.20210610'])
+                                   )
+                                 ['--context', 'CpG'],
+                                 ['--NAmax', 0.50],
+                                 ['--chrName', 'Chr1 Chr2 Chr3 Chr4 Chr5'.split()]
+                               )
+        self.assertEqual(parsed.
+    def test_parser(self):
+        self.assertEqual('foo'.upper(), 'FOO')
+
+if __name__ == '__main__':
+    unittest.main()
+
+
     def __init__(self):
         print("in init")
-    def test_parser(self):
-        parser = parse_args(['-s Col_0_deepsignalDNAmeth_30kb_90pc', '-r t2t-col.20210610', '-c CpG', '-n 0.50', '-cN Chr1 Chr2 Chr3 Chr4 Chr5'])
-        self.assertTrue(parser.long)
+
+def test_parser(self):
+    parser = parse_args(['-s Col_0_deepsignalDNAmeth_30kb_90pc', '-r t2t-col.20210610', '-c CpG', '-n 0.50', '-cN Chr1 Chr2 Chr3 Chr4 Chr5'])
+    self.assertTrue(parser.sampleName)
 
 t = Parser_test()        
 t.test_parser()
