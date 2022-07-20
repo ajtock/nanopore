@@ -19,7 +19,7 @@ import pandas as pd
 from sklearn.neighbors import KNeighborsClassifier
 
 
-# ==== Capture user input as command-line arguments using factory method ====
+# ==== Capture user input as command-line arguments ====
 # https://stackoverflow.com/questions/18160078/how-do-you-write-tests-for-the-argparse-portion-of-a-python-module
 def create_parser():
     parser = argparse.ArgumentParser(description = 'DeepSignal-derived filename variables.')
@@ -34,50 +34,32 @@ def create_parser():
                         help='The maximum number of missing mC values across all sites in a read (set by prior filtering and included in filename). Default: 0.50')
     parser.add_argument('-cN', '--chrName', type=str, default='Chr1 Chr2 Chr3 Chr4 Chr5'.split(),
                         help='The chromosomes to be analysed. Default: Chr1 Chr2 Chr3 Chr4 Chr5')
-#    parser.add_argument('-lT', '--locusType', type=str, default='gene',
-#                        help='The genomic locus type to be analysed. Default: gene')
-#    parser.add_argument('-lR', '--locusRegion', type=str, default='regions',
-#                        help='The region type of the genomic loci to be analysed. Default: regions (i.e., 1 kb upstream of TSS to 1 kb downstream of TTS)')
+    parser.add_argument('-lT', '--locusType', type=str, default='gene',
+                        help='The genomic locus type to be analysed. Default: gene')
+    parser.add_argument('-lR', '--locusRegion', type=str, default='regions',
+                        help='The region type of the genomic loci to be analysed. Default: regions (i.e., 1 kb upstream of TSS to 1 kb downstream of TTS)')
     #### Create parser
     return parser
  
-#parser = create_parser().parse_args()
+parser = create_parser().parse_args()
 #parser = parse_args([])
 
-class TestParser(unittest.TestCase):
-    def setUp(self):
-        self.parser = create_parser()
-    def parser_test(self):
-        parsed = self.parser.parse_args(['sampleName', 'Col_0_deepsignalDNAmeth_30kb_90pc'])
-        self.assetEqual(parsed.sampleName, 'Col_0_deepsignalDNAmeth_30kb_90pc')
+#class TestParser(unittest.TestCase):
+#    def setUp(self):
+#        self.parser = create_parser()
+#    def parser_test(self):
+#        parsed = self.parser.parse_args(['sampleName', 'Col_0_deepsignalDNAmeth_30kb_90pc'])
+#        self.assertEqual(parsed.sampleName, 'Col_0_deepsignalDNAmeth_30kb_90pc')
+#
+#if __name__ == '__main__':
+#    unittest.main()
 
-if __name__ == '__main__':
-    unittest.main()
-
-parsed = create_parser().parse_args(['--sampleName ', 'Col_0_deepsignalDNAmeth_30kb_90pc t2t-col.20210610'])
-, ['--refbase', 't2t-col.20210610'])
-                                   )
-                                 ['--context', 'CpG'],
-                                 ['--NAmax', 0.50],
-                                 ['--chrName', 'Chr1 Chr2 Chr3 Chr4 Chr5'.split()]
-                               )
-        self.assertEqual(parsed.
-    def test_parser(self):
-        self.assertEqual('foo'.upper(), 'FOO')
-
-if __name__ == '__main__':
-    unittest.main()
-
-
-    def __init__(self):
-        print("in init")
-
-def test_parser(self):
-    parser = parse_args(['-s Col_0_deepsignalDNAmeth_30kb_90pc', '-r t2t-col.20210610', '-c CpG', '-n 0.50', '-cN Chr1 Chr2 Chr3 Chr4 Chr5'])
-    self.assertTrue(parser.sampleName)
-
-t = Parser_test()        
-t.test_parser()
+#def test_parser(self):
+#    parser = parse_args(['-s Col_0_deepsignalDNAmeth_30kb_90pc', '-r t2t-col.20210610', '-c CpG', '-n 0.50', '-cN Chr1 Chr2 Chr3 Chr4 Chr5'])
+#    self.assertTrue(parser.sampleName)
+#
+#t = Parser_test()        
+#t.test_parser()
 
 outDir = str(parser.locusType) + "_" + str(parser.locusRegion) + "/" + str('_'.join(parser.chrName)) + "/"
 plotDir = str(outDir + "plots/")
@@ -92,29 +74,72 @@ try:
 except OSError as error:
     print(error)
 
+
+# ==== Read in Lloyd et al. (2015) Plant Cell lethal-phenotype status for each gene (target, a.k.a. response variable) ====
 def load_target_DF():
+    try:
+        target = pd.read_csv("Lloyd_2015_Plant_Cell_SupplData/plcell_v27_8_2133_s1/plcell_v27_8_2133_s1/" +
+                             "TPC2015-00051-LSBR3_Supplemental_Data_set_1_Sheet1.csv")
+        return target
+    except OSError as error:
+        print(error)
+
+ds1_DF = load_target_DF()
+ds1_DF.columns = ["gene", "phenotype", "predicted_lethal"]
 
 
+# ==== Read in Lloyd et al. (2015) Plant Cell gene features, a.k.a predictor variables ====
+def load_features_DF():
+    try:
+        features = pd.read_csv("Lloyd_2015_Plant_Cell_SupplData/plcell_v27_8_2133_s1/plcell_v27_8_2133_s1/" +
+                              "TPC2015-00051-LSBR3_Supplemental_Data_set_3_Sheet1.csv")
+        return features
+    except OSError as error:
+        print(error)
 
+ds3_DF = load_features_DF()
+ds3_DF.rename(columns = {"Locus number":"gene"}, inplace = True)
+
+df = pd.merge(ds1_DF, ds3_DF, how = "inner", on = "gene")
+df.replace(to_replace = "?", value = NA, inplace = True)
+df = df[df["phenotype"].isin(["Lethal", "Non-Lethal"])]
+df.phenotype.replace(["Non-Lethal", "Lethal"], [0, 1], inplace = True)
+# Drop rows containing missing values across ANY of the features (predictors) ??
+df.dropna(axis = 0, inplace = True)
+
+df_features = df.loc[:, ~df.columns.isin(["gene", "phenotype", "predicted_lethal"])]
+df_target = df["phenotype"]
+
+X = df_features.values
+y = df_target.values
+
+#print(X.shape, y.shape)
+## With NaNs
+## (3443, 57) (3443,)
+
+print(X.shape, y.shape)
+# Without NaNs
+# (3443, 57) (3443,)
+
+
+knn = KNeighborsClassifier(n_neighbors = 15)
+knn.fit(X, y)
+
+
+# ==== ###### ====
 def main():
 
 
 
-outDir <- paste0(featName, "_", featRegion, "/", paste0(chrName, collapse = "_"), "/")
-plotDir <- paste0(outDir, "plots/")
-system(paste0("[ -d ", plotDir, " ] || mkdir -p ", plotDir))
-
-
 # Read in Lloyd et al. (2015) Plant Cell lethal-phenotype status for each gene (target, a.k.a. response variable)
 ds1_DF = pd.read_csv("Lloyd_2015_Plant_Cell_SupplData/plcell_v27_8_2133_s1/plcell_v27_8_2133_s1/TPC2015-00051-LSBR3_Supplemental_Data_set_1_Sheet1.csv")
-ds1_DF.columns = ["gene", "phenotype", "predicted_lethal"]
 
 # Read in Lloyd et al. (2015) Plant Cell gene features, a.k.a predictor variables
 ds3_DF = pd.read_csv("Lloyd_2015_Plant_Cell_SupplData/plcell_v27_8_2133_s1/plcell_v27_8_2133_s1/TPC2015-00051-LSBR3_Supplemental_Data_set_3_Sheet1.csv")
 ds3_DF.rename(columns = {"Locus number":"gene"}, inplace = True)
 
 # Read in gene DNA methylation features 
-mC_DF <- pd.read_csv("
+mC_DF <- pd.read_csv("")
 
 # Load among-read and within-read mC data for featName featRegion
 featDF <- read.table(paste0(outDir,
