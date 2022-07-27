@@ -17,10 +17,13 @@ import os
 from time import time, sleep
 import pandas as pd
 import numpy as np
+import re
 
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import RepeatedStratifiedKFold
 from sklearn.pipeline import make_pipeline
 from sklearn.compose import make_column_transformer
 from sklearn.compose import make_column_selector
@@ -116,6 +119,45 @@ def load_features_DF():
 ds3_DF = load_features_DF()
 ds3_DF.rename(columns={"Locus number":"gene"}, inplace=True)
 
+# ==== Read in gene DNA methylation features 
+def load_mC_DF():
+    try:
+        mC = pd.read_csv(outDir +
+                         parser.locusType +
+                         "_" + parser.locusRegion +
+                         "_" + parser.sampleName +
+                         "_MappedOn_" + parser.refbase +
+                         "_" + parser.context +
+                         "_NAmax" + str(parser.NAmax) +
+                         "_filt_df_fk_kappa_all_mean_mC_all_complete_" +
+                         str("_".join(parser.chrName)) + ".tsv",
+                         sep="\t")
+        return mC
+    except OSError as error:
+        print(error)
+
+mC_DF = load_mC_DF()
+mC_DF.rename(columns={
+                      "fk_kappa_all":"kappa",
+                      "ka_alpha_all":"alpha",
+                      "mean_stocha_all":"stocha",
+                      "mean_min_acf_all":"min_ACF",
+                      "mean_mean_acf_all":"mean_ACF",
+                      "mean_mC_all":str("".join("mean_m" + parser.context))
+                     },
+             inplace=True)
+
+
+colnames(featDF)[which(colnames(featDF) == "fk_kappa_all")] <- "kappa"
+colnames(featDF)[which(colnames(featDF) == "ka_alpha_all")] <- "alpha"
+colnames(featDF)[which(colnames(featDF) == "mean_stocha_all")] <- "stocha"
+colnames(featDF)[which(colnames(featDF) == "mean_min_acf_all")] <- "min_ACF"
+colnames(featDF)[which(colnames(featDF) == "mean_mean_acf_all")] <- "mean_ACF"
+colnames(featDF)[which(colnames(featDF) == "mean_mC_all")] <- paste0("mean_m", context)
+featDF$kappa_C_density <- featDF$fk_Cs_all / ( (featDF$end - featDF$start + 1) / 1e3)
+featDF$stocha_C_density <- featDF$stocha_Cs_all / ( (featDF$end - featDF$start + 1) / 1e3)
+featDF$parent <- sub(pattern = "\\.\\d+", replacement = "", x = featDF$name)
+featDF$parent <- sub(pattern = "_\\d+", replacement = "", x = featDF$parent)
 
 # Combine dataframes
 merged_DF = pd.merge(ds1_DF, ds3_DF, how="inner", on="gene")
@@ -256,6 +298,22 @@ est_native = make_pipeline(
     ),
 )
 
+# K-fold cross validation
+cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=2,
+                             random_state=36851234)
+
+X_np = X.to_numpy()
+y_np = y.to_numpy()
+
+for train_index, test_index in cv.split(X_np, y_np):
+    print("TRAIN:", train_index, "TEST:", test_index)
+    X_train, X_test = X_np[train_index], X_np[test_index]
+    y_train, y_test = y_np[train_index], y_np[test_index]
+
+n_scores = cross_val_score(est_native, X, y, scoring="accuracy",
+                           cv=cv, n_jobs=-1, error_score="raise")
+
+
 # Train the estimator on the training set (90% of loci)
 print("Training HistGradientBoostingClassifier...")
 tic = time()
@@ -263,12 +321,6 @@ est_native.fit(X_train, y_train)
 print(f"Training done in {time() - tic:.3f}s")
 # Evaluate performance on the test set (the other 10% of loci)
 print(f"Test R2 score: {est_native.score(X_test, y_test):.2f}")
-
-# Fit a HistGradientBoostingClassifier
-print("Training HistGradientBoostingClassifier...")
-tic = time()
-est = HistGradientBoostingClassifier(random_state=0)
-est.fit(X_train, y_train)
 
 
 
@@ -291,59 +343,4 @@ est.fit(X_train, y_train)
 def main():
 
 
-
-# Read in Lloyd et al. (2015) Plant Cell lethal-phenotype status for each gene (target, a.k.a. response variable)
-ds1_DF = pd.read_csv("Lloyd_2015_Plant_Cell_SupplData/plcell_v27_8_2133_s1/plcell_v27_8_2133_s1/TPC2015-00051-LSBR3_Supplemental_Data_set_1_Sheet1.csv")
-
-# Read in Lloyd et al. (2015) Plant Cell gene features, a.k.a predictor variables
-ds3_DF = pd.read_csv("Lloyd_2015_Plant_Cell_SupplData/plcell_v27_8_2133_s1/plcell_v27_8_2133_s1/TPC2015-00051-LSBR3_Supplemental_Data_set_3_Sheet1.csv")
-ds3_DF.rename(columns={"Locus number":"gene"}, inplace=True)
-
-# Read in gene DNA methylation features 
-mC_DF <- pd.read_csv("")
-
-# Load among-read and within-read mC data for featName featRegion
-featDF <- read.table(paste0(outDir,
-                            featName, "_", featRegion, "_", sampleName, "_MappedOn_", refbase,
-                            "_", context,
-                            "_NAmax", NAmax,
-                            "_filt_df_fk_kappa_all_mean_mC_all_complete_",
-                            paste0(chrName, collapse="_"), ".tsv"),
-                     header=T)
-colnames(featDF)[which(colnames(featDF) == "fk_kappa_all")] <- "kappa"
-colnames(featDF)[which(colnames(featDF) == "ka_alpha_all")] <- "alpha"
-colnames(featDF)[which(colnames(featDF) == "mean_stocha_all")] <- "stocha"
-colnames(featDF)[which(colnames(featDF) == "mean_min_acf_all")] <- "min_ACF"
-colnames(featDF)[which(colnames(featDF) == "mean_mean_acf_all")] <- "mean_ACF"
-colnames(featDF)[which(colnames(featDF) == "mean_mC_all")] <- paste0("mean_m", context)
-featDF$kappa_C_density <- featDF$fk_Cs_all / ( (featDF$end - featDF$start + 1) / 1e3)
-featDF$stocha_C_density <- featDF$stocha_Cs_all / ( (featDF$end - featDF$start + 1) / 1e3)
-featDF$parent <- sub(pattern = "\\.\\d+", replacement = "", x = featDF$name)
-featDF$parent <- sub(pattern = "_\\d+", replacement = "", x = featDF$parent)
-
-
-df = pd.merge(ds1_DF, ds3_DF, how = "inner", on = "gene")
-df.replace(to_replace = "?", value = NA, inplace = True)
-df = df[df["phenotype"].isin(["Lethal", "Non-Lethal"])]
-df.phenotype.replace(["Non-Lethal", "Lethal"], [0, 1], inplace = True)
-# Drop rows containing missing values across ANY of the features (predictors) ??
-df.dropna(axis = 0, inplace = True)
-
-df_features = df.loc[:, ~df.columns.isin(["gene", "phenotype", "predicted_lethal"])]
-df_target = df["phenotype"]
-
-X = df_features.values
-y = df_target.values
-
-#print(X.shape, y.shape)
-## With NaNs
-## (3443, 57) (3443,)
-
-print(X.shape, y.shape)
-# Without NaNs
-# (3443, 57) (3443,)
-
-
-knn = KNeighborsClassifier(n_neighbors = 15)
-knn.fit(X, y)
 
