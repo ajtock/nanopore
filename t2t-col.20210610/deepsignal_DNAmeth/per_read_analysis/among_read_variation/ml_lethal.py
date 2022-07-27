@@ -14,11 +14,12 @@ import argparse
 import unittest
 import sys 
 import os
-from time import time, sleep
+import re
 import pandas as pd
 import numpy as np
-import re
 
+from time import time, sleep
+from functools import reduce
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.model_selection import train_test_split
@@ -146,18 +147,11 @@ mC_DF.rename(columns={
                       "mean_mC_all":str("".join("mean_m" + parser.context))
                      },
              inplace=True)
+mC_DF["gene"] = mC_DF["name"].str.replace("\.\d+", "", regex=True)
+mC_DF["kappa_C_density"] = mC_DF["fk_Cs_all"] / ( ( mC_DF["end"] - mC_DF["start"] + 1 ) / 1e3 )
+mC_DF["C_density"] = mC_DF["stocha_Cs_all"] / ( ( mC_DF["end"] - mC_DF["start"] + 1 ) / 1e3 )
 
-
-colnames(featDF)[which(colnames(featDF) == "fk_kappa_all")] <- "kappa"
-colnames(featDF)[which(colnames(featDF) == "ka_alpha_all")] <- "alpha"
-colnames(featDF)[which(colnames(featDF) == "mean_stocha_all")] <- "stocha"
-colnames(featDF)[which(colnames(featDF) == "mean_min_acf_all")] <- "min_ACF"
-colnames(featDF)[which(colnames(featDF) == "mean_mean_acf_all")] <- "mean_ACF"
-colnames(featDF)[which(colnames(featDF) == "mean_mC_all")] <- paste0("mean_m", context)
-featDF$kappa_C_density <- featDF$fk_Cs_all / ( (featDF$end - featDF$start + 1) / 1e3)
-featDF$stocha_C_density <- featDF$stocha_Cs_all / ( (featDF$end - featDF$start + 1) / 1e3)
-featDF$parent <- sub(pattern = "\\.\\d+", replacement = "", x = featDF$name)
-featDF$parent <- sub(pattern = "_\\d+", replacement = "", x = featDF$parent)
+kappa_stocha_DF = mC_DF[["gene", "kappa", "stocha", "C_density"]]
 
 # Combine dataframes
 merged_DF = pd.merge(ds1_DF, ds3_DF, how="inner", on="gene")
