@@ -34,7 +34,9 @@ from sklearn.datasets import fetch_california_housing
 from sklearn.datasets import fetch_openml
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LinearRegression
-
+from sklearn.metrics import roc_curve
+from sklearn.metrics import roc_auc_score
+from matplotlib import pyplot as plt
 
 # ==== Capture user input as command-line arguments
 # https://stackoverflow.com/questions/18160078/how-do-you-write-tests-for-the-argparse-portion-of-a-python-module
@@ -120,6 +122,7 @@ def load_features_DF():
 ds3_DF = load_features_DF()
 ds3_DF.rename(columns={"Locus number":"gene"}, inplace=True)
 
+
 # ==== Read in gene DNA methylation features 
 def load_mC_DF():
     try:
@@ -148,13 +151,26 @@ mC_DF.rename(columns={
                      },
              inplace=True)
 mC_DF["gene"] = mC_DF["name"].str.replace("\.\d+", "", regex=True)
+mC_DF["gene"] = mC_DF["gene"].str.replace("_\d+", "", regex=True)
+
 mC_DF["kappa_C_density"] = mC_DF["fk_Cs_all"] / ( ( mC_DF["end"] - mC_DF["start"] + 1 ) / 1e3 )
 mC_DF["C_density"] = mC_DF["stocha_Cs_all"] / ( ( mC_DF["end"] - mC_DF["start"] + 1 ) / 1e3 )
 
-kappa_stocha_DF = mC_DF[["gene", "kappa", "stocha", "C_density"]]
+kappa_DF = mC_DF[["gene", str("".join("mean_m" + parser.context)), "kappa"]]
+#, "kappa_C_density"]]
+alpha_DF = mC_DF[["gene", str("".join("mean_m" + parser.context)), "alpha"]]
+#, "C_density"]]
+stocha_DF = mC_DF[["gene", str("".join("mean_m" + parser.context)), "stocha"]]
+#, "C_density"]]
+
 
 # Combine dataframes
-merged_DF = pd.merge(ds1_DF, ds3_DF, how="inner", on="gene")
+list_DF = [ds1_DF, kappa_DF, ds3_DF]
+
+merged_DF = reduce(lambda  left, right: pd.merge(left, right,
+                                                 on=["gene"], how="outer"),
+                   list_DF)
+
 merged_DF = merged_DF[merged_DF["phenotype"].isin(["Lethal", "Non-Lethal"])]
 merged_DF.phenotype.replace(["Non-Lethal", "Lethal"], [0, 1], inplace=True)
 ## NOT DONE AS DROPS ALL ROWS: Drop rows containing missing values across ANY of the features (predictors) ??
@@ -168,18 +184,18 @@ merged_DF_target = merged_DF["phenotype"]
 # See https://scikit-learn.org/stable/auto_examples/ensemble/plot_gradient_boosting_categorical.html#sphx-glr-auto-examples-ensemble-plot-gradient-boosting-categorical-py
 
 # Categorical features
-merged_DF_features.iloc[:, 23:57].head()
+merged_DF_features.iloc[:, 25:59].head()
 # Continuous features
-merged_DF_features.iloc[:,0:23].head()
+merged_DF_features.iloc[:,0:25].head()
 
 ## Get column indices of categorical features
 #col_idx_categorical_features = list(range(23, 57))
 
 # Get column names of categorical features
-categorical_columns = list(merged_DF_features.iloc[:, 23:57].columns)
+categorical_columns = list(merged_DF_features.iloc[:, 25:59].columns)
 
 # Get column names of continuous features
-continuous_columns = list(merged_DF_features.iloc[:, 0:23].columns) 
+continuous_columns = list(merged_DF_features.iloc[:, 0:25].columns) 
 
 
 # ==== Remove features that show multi-collinearity, as indicated by high variance-inflation factors (VIFs)
@@ -242,25 +258,30 @@ print(f"Number of rows (loci): {merged_DF_features.shape[0]}")
 # Number of rows (loci): 3443
 print(f"Number of features (predictors): {merged_DF_features.shape[1]}")
 # Number of features (predictors): 57
-# Number of features (predictors): 25
+# Number of features (predictors): 27
 print(f"Number of categorical features: {n_categorical_features}")
 # Number of categorical features: 34
 # Number of categorical features: 12
 print(f"Number of continuous features: {n_continuous_features}")
 # Number of continuous features: 23
-# Number of continuous features: 13
+# Number of continuous features: 15
 
 seed=42
 
 X, y = merged_DF_features, merged_DF_target
 print(X.shape, y.shape)
 # including rows containing NaNs
-# (3443, 25) (3443,)
+# (3443, 27) (3443,)
 
 # Define training (90% of rows) and test subsets (the other 10% of rows)
 # Consulted for use of HistGradientBoostingClassifier() :
 # https://scikit-learn.org/stable/auto_examples/inspection/plot_partial_dependence.html#sphx-glr-auto-examples-inspection-plot-partial-dependence-py
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=seed)
+
+# Generate a no skill prediction (majority class)
+# See https://machinelearningmastery.com/roc-curves-and-precision-recall-curves-for-classification-in-python/
+ns_probs = [0 for _ in range(len(y_test))]
+
 
 # === Gradient boosting estimator with native categorical support, which requires ordinal encoding
 
@@ -292,20 +313,20 @@ est_native = make_pipeline(
     ),
 )
 
-# K-fold cross validation
-cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=2,
-                             random_state=36851234)
-
-X_np = X.to_numpy()
-y_np = y.to_numpy()
-
-for train_index, test_index in cv.split(X_np, y_np):
-    print("TRAIN:", train_index, "TEST:", test_index)
-    X_train, X_test = X_np[train_index], X_np[test_index]
-    y_train, y_test = y_np[train_index], y_np[test_index]
-
-n_scores = cross_val_score(est_native, X, y, scoring="accuracy",
-                           cv=cv, n_jobs=-1, error_score="raise")
+## K-fold cross validation
+#cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=2,
+#                             random_state=36851234)
+#
+#X_np = X.to_numpy()
+#y_np = y.to_numpy()
+#
+#for train_index, test_index in cv.split(X_np, y_np):
+#    print("TRAIN:", train_index, "TEST:", test_index)
+#    X_train, X_test = X_np[train_index], X_np[test_index]
+#    y_train, y_test = y_np[train_index], y_np[test_index]
+#
+#n_scores = cross_val_score(est_native, X, y, scoring="accuracy",
+#                           cv=cv, n_jobs=-1, error_score="raise")
 
 
 # Train the estimator on the training set (90% of loci)
@@ -315,6 +336,33 @@ est_native.fit(X_train, y_train)
 print(f"Training done in {time() - tic:.3f}s")
 # Evaluate performance on the test set (the other 10% of loci)
 print(f"Test R2 score: {est_native.score(X_test, y_test):.2f}")
+
+# For below see https://machinelearningmastery.com/roc-curves-and-precision-recall-curves-for-classification-in-python/
+# Predict probabilities
+hgb_probs = est_native.predict_proba(X_test)
+# Keep probabilities for the positive outcome only
+hgb_probs = hgb_probs[:, 1]
+# Calculate scores
+ns_auc = roc_auc_score(y_test, ns_probs)
+hgb_auc = roc_auc_score(y_test, hgb_probs) 
+# Summarise scores
+print("No-skill classifier: ROC AUC=%.3f" % (ns_auc))
+print("Histogram-based gradient boosting classifier: ROC AUC=%.3f" % (hgb_auc))
+# Calculate ROC curves
+ns_fpr, ns_tpr, _ = roc_curve(y_test, ns_probs)
+hgb_fpr, hgb_tpr, _ = roc_curve(y_test, hgb_probs)
+# Plot the ROC curves
+plt.plot(ns_fpr, ns_tpr, linestyle="--", label=str("No-skill: ROC AUC=%.3f" % (ns_auc)))
+plt.plot(hgb_fpr, hgb_tpr, marker=".", label=str("HistGradientBoosting: ROC AUC=%.3f" % (hgb_auc)))
+# Axis labels
+plt.xlabel("False positive rate")
+plt.ylabel("True positive rate")
+plt.legend(loc=4)
+plt.savefig(outDir +
+            "HistGradientBoostingClassifier_lethal_incl_kappa.pdf",
+            bbox_inches="tight")
+plt.close()
+
 
 
 
