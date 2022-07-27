@@ -239,6 +239,49 @@ def calculate_vif(df, datatype):
     # Return VIF DataFrame
     return pd.DataFrame({"VIF": vif, "Tolerance": tolerance})
 
+# Make single-feature prediction models and get ROC AUC for each
+def feature_pred(feat, targ, datatype):
+    #
+    if datatype=="categorical":
+        features = vif_categorical_pass 
+    elif datatype=="continuous":
+        features = vif_continuous_pass
+    else:
+        print("datatype must be either 'categorical' or 'continuous'")
+    #
+    # All the features to be evaluated
+    for feature in features:
+        print(feat[feature].name)
+        X, y = feat[feature], targ
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=seed)
+        # Generate a no-skill classifier prediction (majority class)
+        ns_probs = [0 for _ in range(len(y_test))]
+        # Set categorical mask for the HistGradientBoostingClassifier
+        if datatype=="categorical":
+            # Make the HistGradientBoostingClassifier estimator
+            est_native = make_pipeline(
+                ordinal_encoder,
+                HistGradientBoostingClassifier(
+                    random_state=seed,
+                    categorical_features=[True]
+                ),
+            )
+        elif datatype=="continuous":
+            est_native = HistGradientBoostingClassifier(random_state=seed) 
+        else:
+            print("datatype must be either 'categorical' or 'continuous'")
+
+# Train the estimator on the training set (90% of loci)
+print("Training HistGradientBoostingClassifier...")
+tic = time()
+est_native.fit(X_train, y_train)
+print(f"Training done in {time() - tic:.3f}s")
+# Evaluate performance on the test set (the other 10% of loci)
+print(f"Test R2 score: {est_native.score(X_test, y_test):.2f}")
+
+
+
+
 vif_categorical = calculate_vif(df=merged_DF_features, datatype="categorical") 
 vif_continuous = calculate_vif(df=merged_DF_features, datatype="continuous")
 
@@ -278,7 +321,7 @@ print(X.shape, y.shape)
 # https://scikit-learn.org/stable/auto_examples/inspection/plot_partial_dependence.html#sphx-glr-auto-examples-inspection-plot-partial-dependence-py
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=seed)
 
-# Generate a no skill prediction (majority class)
+# Generate a no-skill classifier prediction (majority class)
 # See https://machinelearningmastery.com/roc-curves-and-precision-recall-curves-for-classification-in-python/
 ns_probs = [0 for _ in range(len(y_test))]
 
@@ -301,7 +344,7 @@ ordinal_encoder = make_column_transformer(
 )
 
 # "The ordinal encoder will first output the categorical features, and then the
-# continuous (passed-through) features
+# continuous (passed-through) features"
 categorical_mask = [True] * n_categorical_features + [False] * n_continuous_features
 
 # Make the HistGradientBoostingClassifier estimator
