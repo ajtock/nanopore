@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 
 # Author: Andy Tock (ajt200@cam.ac.uk)
-# Date: 19/07/22
+# Date: 28/07/22
 
-# Build supervised learning model to predict lethal-phenotype genes,
-# with features (predictors) including among-read DNA methylation variation (Fleiss' kappa or Krippendorff's alpha),
-# within-read (site-to-site) DNA methylation variation (stochasticity), and
-# others from Lloyd et al. (2015) Plant Cell 
+# Build supervised learning model to predict gene among-read agreement in DNA methylation (Fleiss' kappa),
+# with features (predictors) from Lloyd et al. (2015) Plant Cell
 
 
 # ==== Import libraries
@@ -37,6 +35,9 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import roc_curve
 from sklearn.metrics import roc_auc_score
 from matplotlib import pyplot as plt
+from scipy.stats import spearmanr
+from scipy.stats import kendalltau
+
 
 # ==== Capture user input as command-line arguments
 # https://stackoverflow.com/questions/18160078/how-do-you-write-tests-for-the-argparse-portion-of-a-python-module
@@ -147,7 +148,8 @@ mC_DF.rename(columns={
                       "mean_stocha_all":"stocha",
                       "mean_min_acf_all":"min_ACF",
                       "mean_mean_acf_all":"mean_ACF",
-                      "mean_mC_all":str("".join("mean_m" + parser.context))
+                      "mean_mC_all":str("".join("mean_m" + parser.context)),
+                      "feature_width":"locus_width"
                      },
              inplace=True)
 mC_DF["gene"] = mC_DF["name"].str.replace("\.\d+", "", regex=True)
@@ -156,46 +158,50 @@ mC_DF["gene"] = mC_DF["gene"].str.replace("_\d+", "", regex=True)
 mC_DF["kappa_C_density"] = mC_DF["fk_Cs_all"] / ( ( mC_DF["end"] - mC_DF["start"] + 1 ) / 1e3 )
 mC_DF["C_density"] = mC_DF["stocha_Cs_all"] / ( ( mC_DF["end"] - mC_DF["start"] + 1 ) / 1e3 )
 
-kappa_DF = mC_DF[["gene", str("".join("mean_m" + parser.context)), "kappa"]]
-#, "kappa_C_density"]]
-alpha_DF = mC_DF[["gene", str("".join("mean_m" + parser.context)), "alpha"]]
-#, "C_density"]]
-stocha_DF = mC_DF[["gene", str("".join("mean_m" + parser.context)), "stocha"]]
-#, "C_density"]]
+mC_DF = mC_DF[["gene", "locus_width", "introns_width_prop",
+               str("".join("mean_m" + parser.context)),
+               "kappa", "kappa_C_density"]]
+                
+
+#htmps <- kappa_htmp + alpha_htmp + stocha_htmp +
+#         kappa_C_density_htmp + stocha_C_density_htmp +
+#         mean_mC_htmp + gbM_htmp +
+#         mD_hotspot_htmp + mD_coldspot_htmp +
+#         Expression_breadth_htmp + Expression_variation_htmp + Median_expression_htmp + Coexpression_module_size_htmp +
+#         feature_width_htmp + exons_width_prop_htmp + introns_width_prop_htmp + IRratio_median_htmp +
+#         Lethal_htmp + Sequence_conservation_htmp + Nucleotide_diversity_htmp
+
 
 
 # Combine dataframes
-list_DF = [ds1_DF, kappa_DF, ds3_DF]
+list_DF = [mC_DF, ds3_DF]
 
 merged_DF = reduce(lambda  left, right: pd.merge(left, right,
-                                                 on=["gene"], how="outer"),
+                                                 on=["gene"], how="inner"),
                    list_DF)
 
-merged_DF = merged_DF[merged_DF["phenotype"].isin(["Lethal", "Non-Lethal"])]
-merged_DF.phenotype.replace(["Non-Lethal", "Lethal"], [0, 1], inplace=True)
-## NOT DONE AS DROPS ALL ROWS: Drop rows containing missing values across ANY of the features (predictors) ??
 #merged_DF.dropna(axis=0, inplace=True)
 
-merged_DF_features = merged_DF.loc[:, ~merged_DF.columns.isin(["gene", "phenotype", "predicted_lethal"])]
-merged_DF_target = merged_DF["phenotype"]
+merged_DF_features = merged_DF.loc[:, ~merged_DF.columns.isin(["gene", "kappa"])]
+merged_DF_target = merged_DF["kappa"]
 
 
 # ==== Re-encode categorical features
 # See https://scikit-learn.org/stable/auto_examples/ensemble/plot_gradient_boosting_categorical.html#sphx-glr-auto-examples-ensemble-plot-gradient-boosting-categorical-py
 
 # Categorical features
-merged_DF_features.iloc[:, 25:59].head()
+merged_DF_features.iloc[:, 27:61].head()
 # Continuous features
-merged_DF_features.iloc[:,0:25].head()
+merged_DF_features.iloc[:,0:27].head()
 
 ## Get column indices of categorical features
-#col_idx_categorical_features = list(range(23, 57))
+#col_idx_categorical_features = list(range(27, 61))
 
 # Get column names of categorical features
-categorical_columns = list(merged_DF_features.iloc[:, 25:59].columns)
+categorical_columns = list(merged_DF_features.iloc[:, 27:61].columns)
 
 # Get column names of continuous features
-continuous_columns = list(merged_DF_features.iloc[:, 0:25].columns) 
+continuous_columns = list(merged_DF_features.iloc[:, 0:27].columns) 
 
 
 # ==== Remove features that show multi-collinearity, as indicated by high variance-inflation factors (VIFs)
@@ -279,16 +285,11 @@ def calculate_vif(df, datatype):
 ## Evaluate performance on the test set (the other 10% of loci)
 #print(f"Test R2 score: {est_native.score(X_test, y_test):.2f}")
 
-### !!! ### !!!
-vif_categorical_pass = ['Core eukaryotic gene', 'Gene body methylated', 'GOslim C nucleus', 'alpha WGD paralog retained', 'GOslim F protein binding', 'GOslim C plastid', 'GOslim P cellular component organization', 'No homolog in rice', 'GOslim P nucleobase-containing compound metabolic process', 'GOslim C plasma membrane', 'GOslim P response to abiotic stimulus', 'GOslim P reproduction'] 
-vif_continuous_pass = ['mean_mCpG', 'kappa', 'Median expression', 'PPIs - AIMC', 'Expression correlation - Ks below 2', 'No. of amino acids in protein', 'Ks with putative paralog', 'Nucleotide diversity', 'Sequence conservation in plants (% ID)', 'Expression variation', 'Co-expression module size', 'Percent identity with putative paralog', 'Ka/Ks with putative paralog', 'Expression breadth', 'OrthoMCL paralog cluster size']
-### !!! ### !!!
+vif_categorical = calculate_vif(df=merged_DF_features, datatype="categorical") 
+vif_continuous = calculate_vif(df=merged_DF_features, datatype="continuous")
 
-#vif_categorical = calculate_vif(df=merged_DF_features, datatype="categorical") 
-#vif_continuous = calculate_vif(df=merged_DF_features, datatype="continuous")
-#
-#vif_categorical_pass = list(vif_categorical[vif_categorical["VIF"] < 10].index)
-#vif_continuous_pass = list(vif_continuous[vif_continuous["VIF"] < 10].index)
+vif_categorical_pass = list(vif_categorical[vif_categorical["VIF"] < 7].index)
+vif_continuous_pass = list(vif_continuous[vif_continuous["VIF"] < 7].index)
 
 # Append categorical_columns (left) and continuous_columns (right)
 merged_DF_features = merged_DF_features[vif_categorical_pass + vif_continuous_pass]
@@ -300,16 +301,13 @@ n_categorical_features = merged_DF_features.select_dtypes(include="category").sh
 n_continuous_features = merged_DF_features.select_dtypes(include="number").shape[1]
 
 print(f"Number of rows (loci): {merged_DF_features.shape[0]}")
-# Number of rows (loci): 3443
+# Number of rows (loci): 26751
 print(f"Number of features (predictors): {merged_DF_features.shape[1]}")
-# Number of features (predictors): 57
-# Number of features (predictors): 27
+# Number of features (predictors): 19
 print(f"Number of categorical features: {n_categorical_features}")
-# Number of categorical features: 34
-# Number of categorical features: 12
+# Number of categorical features: 5
 print(f"Number of continuous features: {n_continuous_features}")
-# Number of continuous features: 23
-# Number of continuous features: 15
+# Number of continuous features: 14
 
 seed=42
 
@@ -330,13 +328,13 @@ ns_probs = [0 for _ in range(len(y_test))]
 
 # === Gradient boosting estimator with native categorical support, which requires ordinal encoding
 
-# "Create a [HistGradientBoostingClassifier] estimator that will natively handle categorical features.
+# "Create a HistGradientBoostingRegressor estimator that will natively handle categorical features.
 # "This estimator will not treat categorical features as ordered quantiles.
 # "Since the HistGradientBoostingRegressor [or HistGradientBoostingClassifier] requires
 # category values to be encoded in [0, n_unique_categories - 1], we still rely on an
 # OrdinalEncoder ( https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.OrdinalEncoder.html#sklearn.preprocessing.OrdinalEncoder ) to pre-process the data.
 # "The main difference between this pipeline and the [one with ordinal encoding only] is that in this one,
-# we let the [HistGradientBoostingClassifier] know which features are categorical."
+# we let the HistGradientBoostingRegressor know which features are categorical."
 ordinal_encoder = make_column_transformer(
     (
         OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=np.nan),
@@ -349,10 +347,10 @@ ordinal_encoder = make_column_transformer(
 # continuous (passed-through) features"
 categorical_mask = [True] * n_categorical_features + [False] * n_continuous_features
 
-# Make the HistGradientBoostingClassifier estimator
+# Make the HistGradientBoostingRegressor estimator
 est_native = make_pipeline(
     ordinal_encoder,
-    HistGradientBoostingClassifier(
+    HistGradientBoostingRegressor(
          random_state=seed,
          categorical_features=categorical_mask
     ),
@@ -374,8 +372,15 @@ est_native = make_pipeline(
 #                           cv=cv, n_jobs=-1, error_score="raise")
 
 
+# Define the evaluation procedure
+cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=seed)
+# Evaluate the model and collect the scores
+n_scores = cross_val_score(est_native, X, y, scoring="accuracy", cv=cv, n_jobs=-1)
+# Report performance
+print("Accuracy: %.3f (%.3f)" % (np.mean(n_scores), np.std(n_scores)))
+
 # Train the estimator on the training set (90% of loci)
-print("Training HistGradientBoostingClassifier...")
+print("Training HistGradientBoostingRegressor...")
 tic = time()
 est_native.fit(X_train, y_train)
 print(f"Training done in {time() - tic:.3f}s")
@@ -383,11 +388,24 @@ print(f"Training done in {time() - tic:.3f}s")
 print(f"Test R2 score: {est_native.score(X_test, y_test):.2f}")
 r2 = est_native.score(X_test, y_test)
 
+
+
+
+### define the model
+#model = HistGradientBoostingClassifier(max_bins=255, max_iter=100)
+## define the evaluation procedure
+#cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=1)
+## evaluate the model and collect the scores
+#n_scores = cross_val_score(model, X, y, scoring='accuracy', cv=cv, n_jobs=-1)
+## report performance
+#print('Accuracy: %.3f (%.3f)' % (mean(n_scores), std(n_scores)))
+
+
 # For below see https://machinelearningmastery.com/roc-curves-and-precision-recall-curves-for-classification-in-python/
 # Predict probabilities
-hgb_probs = est_native.predict_proba(X_test)
-# Keep probabilities for the positive outcome only
-hgb_probs = hgb_probs[:, 1]
+hgb_probs = est_native.predict(X_test)
+## Keep probabilities for the positive outcome only
+#hgb_probs = hgb_probs[:, 1]
 # Calculate scores
 ns_auc = roc_auc_score(y_test, ns_probs)
 hgb_auc = roc_auc_score(y_test, hgb_probs) 
@@ -397,61 +415,6 @@ print("Full-model classifier: ROC AUC=%.3f" % (hgb_auc))
 # Calculate ROC curves
 ns_fpr, ns_tpr, _ = roc_curve(y_test, ns_probs)
 hgb_fpr, hgb_tpr, _ = roc_curve(y_test, hgb_probs)
-
-
-# ==== Repeat for full model less kappa
-
-# Append categorical_columns (left) and continuous_columns (right)
-vif_continuous_pass_no_kappa = [vif_continuous_pass[0]] + vif_continuous_pass[2:]
-merged_DF_features_no_kappa = merged_DF_features[vif_categorical_pass + vif_continuous_pass_no_kappa]
-
-# Set categorical_column type to "category" 
-merged_DF_features_no_kappa[vif_categorical_pass] = merged_DF_features_no_kappa[vif_categorical_pass].astype("category")
-
-n_categorical_features = merged_DF_features_no_kappa.select_dtypes(include="category").shape[1]
-n_continuous_features_no_kappa = merged_DF_features_no_kappa.select_dtypes(include="number").shape[1]
-
-seed=42
-
-X, y = merged_DF_features_no_kappa, merged_DF_target
-print(X.shape, y.shape)
-
-# Define training (90% of rows) and test subsets (the other 10% of rows)
-# Consulted for use of HistGradientBoostingClassifier() :
-# https://scikit-learn.org/stable/auto_examples/inspection/plot_partial_dependence.html#sphx-glr-auto-examples-inspection-plot-partial-dependence-py
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=seed)
-
-categorical_mask_no_kappa = [True] * n_categorical_features + [False] * n_continuous_features_no_kappa
-
-# Make the HistGradientBoostingClassifier estimator
-est_native_no_kappa = make_pipeline(
-    ordinal_encoder,
-    HistGradientBoostingClassifier(
-         random_state=seed,
-         categorical_features=categorical_mask_no_kappa
-    ),
-)
-
-# Train the estimator on the training set (90% of loci)
-print("Training HistGradientBoostingClassifier...")
-tic = time()
-est_native_no_kappa.fit(X_train, y_train)
-print(f"Training done in {time() - tic:.3f}s")
-# Evaluate performance on the test set (the other 10% of loci)
-print(f"Test R2 score: {est_native_no_kappa.score(X_test, y_test):.2f}")
-r2_no_kappa = est_native_no_kappa.score(X_test, y_test)
-
-# For below see https://machinelearningmastery.com/roc-curves-and-precision-recall-curves-for-classification-in-python/
-# Predict probabilities
-hgb_probs_no_kappa = est_native_no_kappa.predict_proba(X_test)
-# Keep probabilities for the positive outcome only
-hgb_probs_no_kappa = hgb_probs_no_kappa[:, 1]
-# Calculate scores
-hgb_auc_no_kappa = roc_auc_score(y_test, hgb_probs_no_kappa) 
-# Summarise scores
-print("Full-model-less-kappa classifier: ROC AUC=%.3f" % (hgb_auc_no_kappa))
-# Calculate ROC curves
-hgb_fpr_no_kappa, hgb_tpr_no_kappa, _ = roc_curve(y_test, hgb_probs_no_kappa)
 
 
 # ==== Repeat for full model less coexpress_mod_size
@@ -742,7 +705,7 @@ plt.plot(ns_fpr, ns_tpr, linestyle="--", label=str("No skill: ROC AUC=%.3f" % (n
 plt.xlabel("False positive rate")
 plt.ylabel("True positive rate")
 plt.legend(loc=4)
-plt.savefig(outDir +
+plt.savefig(plotDir +
             "HistGradientBoostingClassifier_lethal.pdf",
             bbox_inches="tight")
 plt.close()
