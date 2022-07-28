@@ -239,54 +239,56 @@ def calculate_vif(df, datatype):
     # Return VIF DataFrame
     return pd.DataFrame({"VIF": vif, "Tolerance": tolerance})
 
-# Make single-feature prediction models and get ROC AUC for each
-def feature_pred(feat, targ, datatype):
-    #
-    if datatype=="categorical":
-        features = vif_categorical_pass 
-    elif datatype=="continuous":
-        features = vif_continuous_pass
-    else:
-        print("datatype must be either 'categorical' or 'continuous'")
-    #
-    # All the features to be evaluated
-    for feature in features:
-        print(feat[feature].name)
-        X, y = feat[feature], targ
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=seed)
-        # Generate a no-skill classifier prediction (majority class)
-        ns_probs = [0 for _ in range(len(y_test))]
-        # Set categorical mask for the HistGradientBoostingClassifier
-        if datatype=="categorical":
-            # Make the HistGradientBoostingClassifier estimator
-            est_native = make_pipeline(
-                ordinal_encoder,
-                HistGradientBoostingClassifier(
-                    random_state=seed,
-                    categorical_features=[True]
-                ),
-            )
-        elif datatype=="continuous":
-            est_native = HistGradientBoostingClassifier(random_state=seed) 
-        else:
-            print("datatype must be either 'categorical' or 'continuous'")
+## Make single-feature prediction models and get ROC AUC for each
+#def feature_pred(feat, targ, datatype):
+#    #
+#    if datatype=="categorical":
+#        features = vif_categorical_pass 
+#    elif datatype=="continuous":
+#        features = vif_continuous_pass
+#    else:
+#        print("datatype must be either 'categorical' or 'continuous'")
+#    #
+#    # All the features to be evaluated
+#    for feature in features:
+#        print(feat[feature].name)
+#        X, y = feat[feature], targ
+#        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=seed)
+#        # Generate a no-skill classifier prediction (majority class)
+#        ns_probs = [0 for _ in range(len(y_test))]
+#        # Set categorical mask for the HistGradientBoostingClassifier
+#        if datatype=="categorical":
+#            # Make the HistGradientBoostingClassifier estimator
+#            est_native = make_pipeline(
+#                ordinal_encoder,
+#                HistGradientBoostingClassifier(
+#                    random_state=seed,
+#                    categorical_features=[True]
+#                ),
+#            )
+#        elif datatype=="continuous":
+#            est_native = HistGradientBoostingClassifier(random_state=seed) 
+#        else:
+#            print("datatype must be either 'categorical' or 'continuous'")
+#
+## Train the estimator on the training set (90% of loci)
+#print("Training HistGradientBoostingClassifier...")
+#tic = time()
+#est_native.fit(X_train, y_train)
+#print(f"Training done in {time() - tic:.3f}s")
+## Evaluate performance on the test set (the other 10% of loci)
+#print(f"Test R2 score: {est_native.score(X_test, y_test):.2f}")
 
-# Train the estimator on the training set (90% of loci)
-print("Training HistGradientBoostingClassifier...")
-tic = time()
-est_native.fit(X_train, y_train)
-print(f"Training done in {time() - tic:.3f}s")
-# Evaluate performance on the test set (the other 10% of loci)
-print(f"Test R2 score: {est_native.score(X_test, y_test):.2f}")
+### !!! ### !!!
+vif_categorical_pass = ['Core eukaryotic gene', 'Gene body methylated', 'GOslim C nucleus', 'alpha WGD paralog retained', 'GOslim F protein binding', 'GOslim C plastid', 'GOslim P cellular component organization', 'No homolog in rice', 'GOslim P nucleobase-containing compound metabolic process', 'GOslim C plasma membrane', 'GOslim P response to abiotic stimulus', 'GOslim P reproduction'] 
+vif_continuous_pass = ['mean_mCpG', 'kappa', 'Median expression', 'PPIs - AIMC', 'Expression correlation - Ks below 2', 'No. of amino acids in protein', 'Ks with putative paralog', 'Nucleotide diversity', 'Sequence conservation in plants (% ID)', 'Expression variation', 'Co-expression module size', 'Percent identity with putative paralog', 'Ka/Ks with putative paralog', 'Expression breadth', 'OrthoMCL paralog cluster size']
+### !!! ### !!!
 
-
-
-
-vif_categorical = calculate_vif(df=merged_DF_features, datatype="categorical") 
-vif_continuous = calculate_vif(df=merged_DF_features, datatype="continuous")
-
-vif_categorical_pass = list(vif_categorical[vif_categorical["VIF"] < 10].index)
-vif_continuous_pass = list(vif_continuous[vif_continuous["VIF"] < 10].index)
+#vif_categorical = calculate_vif(df=merged_DF_features, datatype="categorical") 
+#vif_continuous = calculate_vif(df=merged_DF_features, datatype="continuous")
+#
+#vif_categorical_pass = list(vif_categorical[vif_categorical["VIF"] < 10].index)
+#vif_continuous_pass = list(vif_continuous[vif_continuous["VIF"] < 10].index)
 
 # Append categorical_columns (left) and continuous_columns (right)
 merged_DF_features = merged_DF_features[vif_categorical_pass + vif_continuous_pass]
@@ -379,6 +381,7 @@ est_native.fit(X_train, y_train)
 print(f"Training done in {time() - tic:.3f}s")
 # Evaluate performance on the test set (the other 10% of loci)
 print(f"Test R2 score: {est_native.score(X_test, y_test):.2f}")
+r2 = est_native.score(X_test, y_test)
 
 # For below see https://machinelearningmastery.com/roc-curves-and-precision-recall-curves-for-classification-in-python/
 # Predict probabilities
@@ -390,19 +393,357 @@ ns_auc = roc_auc_score(y_test, ns_probs)
 hgb_auc = roc_auc_score(y_test, hgb_probs) 
 # Summarise scores
 print("No-skill classifier: ROC AUC=%.3f" % (ns_auc))
-print("Histogram-based gradient boosting classifier: ROC AUC=%.3f" % (hgb_auc))
+print("Full-model classifier: ROC AUC=%.3f" % (hgb_auc))
 # Calculate ROC curves
 ns_fpr, ns_tpr, _ = roc_curve(y_test, ns_probs)
 hgb_fpr, hgb_tpr, _ = roc_curve(y_test, hgb_probs)
+
+
+# ==== Repeat for full model less kappa
+
+# Append categorical_columns (left) and continuous_columns (right)
+vif_continuous_pass_no_kappa = [vif_continuous_pass[0]] + vif_continuous_pass[2:]
+merged_DF_features_no_kappa = merged_DF_features[vif_categorical_pass + vif_continuous_pass_no_kappa]
+
+# Set categorical_column type to "category" 
+merged_DF_features_no_kappa[vif_categorical_pass] = merged_DF_features_no_kappa[vif_categorical_pass].astype("category")
+
+n_categorical_features = merged_DF_features_no_kappa.select_dtypes(include="category").shape[1]
+n_continuous_features_no_kappa = merged_DF_features_no_kappa.select_dtypes(include="number").shape[1]
+
+seed=42
+
+X, y = merged_DF_features_no_kappa, merged_DF_target
+print(X.shape, y.shape)
+
+# Define training (90% of rows) and test subsets (the other 10% of rows)
+# Consulted for use of HistGradientBoostingClassifier() :
+# https://scikit-learn.org/stable/auto_examples/inspection/plot_partial_dependence.html#sphx-glr-auto-examples-inspection-plot-partial-dependence-py
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=seed)
+
+categorical_mask_no_kappa = [True] * n_categorical_features + [False] * n_continuous_features_no_kappa
+
+# Make the HistGradientBoostingClassifier estimator
+est_native_no_kappa = make_pipeline(
+    ordinal_encoder,
+    HistGradientBoostingClassifier(
+         random_state=seed,
+         categorical_features=categorical_mask_no_kappa
+    ),
+)
+
+# Train the estimator on the training set (90% of loci)
+print("Training HistGradientBoostingClassifier...")
+tic = time()
+est_native_no_kappa.fit(X_train, y_train)
+print(f"Training done in {time() - tic:.3f}s")
+# Evaluate performance on the test set (the other 10% of loci)
+print(f"Test R2 score: {est_native_no_kappa.score(X_test, y_test):.2f}")
+r2_no_kappa = est_native_no_kappa.score(X_test, y_test)
+
+# For below see https://machinelearningmastery.com/roc-curves-and-precision-recall-curves-for-classification-in-python/
+# Predict probabilities
+hgb_probs_no_kappa = est_native_no_kappa.predict_proba(X_test)
+# Keep probabilities for the positive outcome only
+hgb_probs_no_kappa = hgb_probs_no_kappa[:, 1]
+# Calculate scores
+hgb_auc_no_kappa = roc_auc_score(y_test, hgb_probs_no_kappa) 
+# Summarise scores
+print("Full-model-less-kappa classifier: ROC AUC=%.3f" % (hgb_auc_no_kappa))
+# Calculate ROC curves
+hgb_fpr_no_kappa, hgb_tpr_no_kappa, _ = roc_curve(y_test, hgb_probs_no_kappa)
+
+
+# ==== Repeat for full model less coexpress_mod_size
+
+# Append categorical_columns (left) and continuous_columns (right)
+vif_continuous_pass_no_coexpress_mod_size = vif_continuous_pass[0:10] + vif_continuous_pass[11:]
+merged_DF_features_no_coexpress_mod_size = merged_DF_features[vif_categorical_pass + vif_continuous_pass_no_coexpress_mod_size]
+
+# Set categorical_column type to "category" 
+merged_DF_features_no_coexpress_mod_size[vif_categorical_pass] = merged_DF_features_no_coexpress_mod_size[vif_categorical_pass].astype("category")
+
+n_categorical_features = merged_DF_features_no_coexpress_mod_size.select_dtypes(include="category").shape[1]
+n_continuous_features_no_coexpress_mod_size = merged_DF_features_no_coexpress_mod_size.select_dtypes(include="number").shape[1]
+
+seed=42
+
+X, y = merged_DF_features_no_coexpress_mod_size, merged_DF_target
+print(X.shape, y.shape)
+
+# Define training (90% of rows) and test subsets (the other 10% of rows)
+# Consulted for use of HistGradientBoostingClassifier() :
+# https://scikit-learn.org/stable/auto_examples/inspection/plot_partial_dependence.html#sphx-glr-auto-examples-inspection-plot-partial-dependence-py
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=seed)
+
+categorical_mask_no_coexpress_mod_size = [True] * n_categorical_features + [False] * n_continuous_features_no_coexpress_mod_size
+
+# Make the HistGradientBoostingClassifier estimator
+est_native_no_coexpress_mod_size = make_pipeline(
+    ordinal_encoder,
+    HistGradientBoostingClassifier(
+         random_state=seed,
+         categorical_features=categorical_mask_no_coexpress_mod_size
+    ),
+)
+
+# Train the estimator on the training set (90% of loci)
+print("Training HistGradientBoostingClassifier...")
+tic = time()
+est_native_no_coexpress_mod_size.fit(X_train, y_train)
+print(f"Training done in {time() - tic:.3f}s")
+# Evaluate performance on the test set (the other 10% of loci)
+print(f"Test R2 score: {est_native_no_coexpress_mod_size.score(X_test, y_test):.2f}")
+r2_no_coexpress_mod_size = est_native_no_coexpress_mod_size.score(X_test, y_test)
+
+# For below see https://machinelearningmastery.com/roc-curves-and-precision-recall-curves-for-classification-in-python/
+# Predict probabilities
+hgb_probs_no_coexpress_mod_size = est_native_no_coexpress_mod_size.predict_proba(X_test)
+# Keep probabilities for the positive outcome only
+hgb_probs_no_coexpress_mod_size = hgb_probs_no_coexpress_mod_size[:, 1]
+# Calculate scores
+hgb_auc_no_coexpress_mod_size = roc_auc_score(y_test, hgb_probs_no_coexpress_mod_size) 
+# Summarise scores
+print("Full-model-less-coexpress_mod_size classifier: ROC AUC=%.3f" % (hgb_auc_no_coexpress_mod_size))
+# Calculate ROC curves
+hgb_fpr_no_coexpress_mod_size, hgb_tpr_no_coexpress_mod_size, _ = roc_curve(y_test, hgb_probs_no_coexpress_mod_size)
+
+
+# ==== Repeat for full model less paralog_ID
+
+# Append categorical_columns (left) and continuous_columns (right)
+vif_continuous_pass_no_paralog_ID = vif_continuous_pass[0:11] + vif_continuous_pass[12:]
+merged_DF_features_no_paralog_ID = merged_DF_features[vif_categorical_pass + vif_continuous_pass_no_paralog_ID]
+
+# Set categorical_column type to "category" 
+merged_DF_features_no_paralog_ID[vif_categorical_pass] = merged_DF_features_no_paralog_ID[vif_categorical_pass].astype("category")
+
+n_categorical_features = merged_DF_features_no_paralog_ID.select_dtypes(include="category").shape[1]
+n_continuous_features_no_paralog_ID = merged_DF_features_no_paralog_ID.select_dtypes(include="number").shape[1]
+
+seed=42
+
+X, y = merged_DF_features_no_paralog_ID, merged_DF_target
+print(X.shape, y.shape)
+
+# Define training (90% of rows) and test subsets (the other 10% of rows)
+# Consulted for use of HistGradientBoostingClassifier() :
+# https://scikit-learn.org/stable/auto_examples/inspection/plot_partial_dependence.html#sphx-glr-auto-examples-inspection-plot-partial-dependence-py
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=seed)
+
+categorical_mask_no_paralog_ID = [True] * n_categorical_features + [False] * n_continuous_features_no_paralog_ID
+
+# Make the HistGradientBoostingClassifier estimator
+est_native_no_paralog_ID = make_pipeline(
+    ordinal_encoder,
+    HistGradientBoostingClassifier(
+         random_state=seed,
+         categorical_features=categorical_mask_no_paralog_ID
+    ),
+)
+
+# Train the estimator on the training set (90% of loci)
+print("Training HistGradientBoostingClassifier...")
+tic = time()
+est_native_no_paralog_ID.fit(X_train, y_train)
+print(f"Training done in {time() - tic:.3f}s")
+# Evaluate performance on the test set (the other 10% of loci)
+print(f"Test R2 score: {est_native_no_paralog_ID.score(X_test, y_test):.2f}")
+r2_no_paralog_ID = est_native_no_paralog_ID.score(X_test, y_test)
+
+# For below see https://machinelearningmastery.com/roc-curves-and-precision-recall-curves-for-classification-in-python/
+# Predict probabilities
+hgb_probs_no_paralog_ID = est_native_no_paralog_ID.predict_proba(X_test)
+# Keep probabilities for the positive outcome only
+hgb_probs_no_paralog_ID = hgb_probs_no_paralog_ID[:, 1]
+# Calculate scores
+hgb_auc_no_paralog_ID = roc_auc_score(y_test, hgb_probs_no_paralog_ID) 
+# Summarise scores
+print("Full-model-less-paralog_ID classifier: ROC AUC=%.3f" % (hgb_auc_no_paralog_ID))
+# Calculate ROC curves
+hgb_fpr_no_paralog_ID, hgb_tpr_no_paralog_ID, _ = roc_curve(y_test, hgb_probs_no_paralog_ID)
+
+
+# ==== Repeat for full model less paralog_clust_size
+
+# Append categorical_columns (left) and continuous_columns (right)
+vif_continuous_pass_no_paralog_clust_size = vif_continuous_pass[0:14]
+merged_DF_features_no_paralog_clust_size = merged_DF_features[vif_categorical_pass + vif_continuous_pass_no_paralog_clust_size]
+
+# Set categorical_column type to "category" 
+merged_DF_features_no_paralog_clust_size[vif_categorical_pass] = merged_DF_features_no_paralog_clust_size[vif_categorical_pass].astype("category")
+
+n_categorical_features = merged_DF_features_no_paralog_clust_size.select_dtypes(include="category").shape[1]
+n_continuous_features_no_paralog_clust_size = merged_DF_features_no_paralog_clust_size.select_dtypes(include="number").shape[1]
+
+seed=42
+
+X, y = merged_DF_features_no_paralog_clust_size, merged_DF_target
+print(X.shape, y.shape)
+
+# Define training (90% of rows) and test subsets (the other 10% of rows)
+# Consulted for use of HistGradientBoostingClassifier() :
+# https://scikit-learn.org/stable/auto_examples/inspection/plot_partial_dependence.html#sphx-glr-auto-examples-inspection-plot-partial-dependence-py
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=seed)
+
+categorical_mask_no_paralog_clust_size = [True] * n_categorical_features + [False] * n_continuous_features_no_paralog_clust_size
+
+# Make the HistGradientBoostingClassifier estimator
+est_native_no_paralog_clust_size = make_pipeline(
+    ordinal_encoder,
+    HistGradientBoostingClassifier(
+         random_state=seed,
+         categorical_features=categorical_mask_no_paralog_clust_size
+    ),
+)
+
+# Train the estimator on the training set (90% of loci)
+print("Training HistGradientBoostingClassifier...")
+tic = time()
+est_native_no_paralog_clust_size.fit(X_train, y_train)
+print(f"Training done in {time() - tic:.3f}s")
+# Evaluate performance on the test set (the other 10% of loci)
+print(f"Test R2 score: {est_native_no_paralog_clust_size.score(X_test, y_test):.2f}")
+r2_no_paralog_clust_size = est_native_no_paralog_clust_size.score(X_test, y_test)
+
+# For below see https://machinelearningmastery.com/roc-curves-and-precision-recall-curves-for-classification-in-python/
+# Predict probabilities
+hgb_probs_no_paralog_clust_size = est_native_no_paralog_clust_size.predict_proba(X_test)
+# Keep probabilities for the positive outcome only
+hgb_probs_no_paralog_clust_size = hgb_probs_no_paralog_clust_size[:, 1]
+# Calculate scores
+hgb_auc_no_paralog_clust_size = roc_auc_score(y_test, hgb_probs_no_paralog_clust_size) 
+# Summarise scores
+print("Full-model-less-paralog_clust_size classifier: ROC AUC=%.3f" % (hgb_auc_no_paralog_clust_size))
+# Calculate ROC curves
+hgb_fpr_no_paralog_clust_size, hgb_tpr_no_paralog_clust_size, _ = roc_curve(y_test, hgb_probs_no_paralog_clust_size)
+
+
+# ==== Repeat for full model less express_breadth
+
+# Append categorical_columns (left) and continuous_columns (right)
+vif_continuous_pass_no_express_breadth = vif_continuous_pass[0:13] + [vif_continuous_pass[14]]
+merged_DF_features_no_express_breadth = merged_DF_features[vif_categorical_pass + vif_continuous_pass_no_express_breadth]
+
+# Set categorical_column type to "category" 
+merged_DF_features_no_express_breadth[vif_categorical_pass] = merged_DF_features_no_express_breadth[vif_categorical_pass].astype("category")
+
+n_categorical_features = merged_DF_features_no_express_breadth.select_dtypes(include="category").shape[1]
+n_continuous_features_no_express_breadth = merged_DF_features_no_express_breadth.select_dtypes(include="number").shape[1]
+
+seed=42
+
+X, y = merged_DF_features_no_express_breadth, merged_DF_target
+print(X.shape, y.shape)
+
+# Define training (90% of rows) and test subsets (the other 10% of rows)
+# Consulted for use of HistGradientBoostingClassifier() :
+# https://scikit-learn.org/stable/auto_examples/inspection/plot_partial_dependence.html#sphx-glr-auto-examples-inspection-plot-partial-dependence-py
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=seed)
+
+categorical_mask_no_express_breadth = [True] * n_categorical_features + [False] * n_continuous_features_no_express_breadth
+
+# Make the HistGradientBoostingClassifier estimator
+est_native_no_express_breadth = make_pipeline(
+    ordinal_encoder,
+    HistGradientBoostingClassifier(
+         random_state=seed,
+         categorical_features=categorical_mask_no_express_breadth
+    ),
+)
+
+# Train the estimator on the training set (90% of loci)
+print("Training HistGradientBoostingClassifier...")
+tic = time()
+est_native_no_express_breadth.fit(X_train, y_train)
+print(f"Training done in {time() - tic:.3f}s")
+# Evaluate performance on the test set (the other 10% of loci)
+print(f"Test R2 score: {est_native_no_express_breadth.score(X_test, y_test):.2f}")
+r2_no_express_breadth = est_native_no_express_breadth.score(X_test, y_test)
+
+# For below see https://machinelearningmastery.com/roc-curves-and-precision-recall-curves-for-classification-in-python/
+# Predict probabilities
+hgb_probs_no_express_breadth = est_native_no_express_breadth.predict_proba(X_test)
+# Keep probabilities for the positive outcome only
+hgb_probs_no_express_breadth = hgb_probs_no_express_breadth[:, 1]
+# Calculate scores
+hgb_auc_no_express_breadth = roc_auc_score(y_test, hgb_probs_no_express_breadth) 
+# Summarise scores
+print("Full-model-less-express_breadth classifier: ROC AUC=%.3f" % (hgb_auc_no_express_breadth))
+# Calculate ROC curves
+hgb_fpr_no_express_breadth, hgb_tpr_no_express_breadth, _ = roc_curve(y_test, hgb_probs_no_express_breadth)
+
+
+# ==== Repeat for full model less alpha_WGD
+
+# Append categorical_columns (left) and continuous_columns (right)
+vif_categorical_pass_no_alpha_WGD = vif_categorical_pass[0:3] + vif_categorical_pass[4:]
+merged_DF_features_no_alpha_WGD = merged_DF_features[vif_categorical_pass_no_alpha_WGD + vif_continuous_pass]
+
+# Set categorical_column type to "category" 
+merged_DF_features_no_alpha_WGD[vif_categorical_pass_no_alpha_WGD] = merged_DF_features_no_alpha_WGD[vif_categorical_pass_no_alpha_WGD].astype("category")
+
+n_categorical_features_no_alpha_WGD = merged_DF_features_no_alpha_WGD.select_dtypes(include="category").shape[1]
+n_continuous_features = merged_DF_features_no_alpha_WGD.select_dtypes(include="number").shape[1]
+
+seed=42
+
+X, y = merged_DF_features_no_alpha_WGD, merged_DF_target
+print(X.shape, y.shape)
+
+# Define training (90% of rows) and test subsets (the other 10% of rows)
+# Consulted for use of HistGradientBoostingClassifier() :
+# https://scikit-learn.org/stable/auto_examples/inspection/plot_partial_dependence.html#sphx-glr-auto-examples-inspection-plot-partial-dependence-py
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=seed)
+
+categorical_mask_no_alpha_WGD = [True] * n_categorical_features_no_alpha_WGD + [False] * n_continuous_features
+
+# Make the HistGradientBoostingClassifier estimator
+est_native_no_alpha_WGD = make_pipeline(
+    ordinal_encoder,
+    HistGradientBoostingClassifier(
+         random_state=seed,
+         categorical_features=categorical_mask_no_alpha_WGD
+    ),
+)
+
+# Train the estimator on the training set (90% of loci)
+print("Training HistGradientBoostingClassifier...")
+tic = time()
+est_native_no_alpha_WGD.fit(X_train, y_train)
+print(f"Training done in {time() - tic:.3f}s")
+# Evaluate performance on the test set (the other 10% of loci)
+print(f"Test R2 score: {est_native_no_alpha_WGD.score(X_test, y_test):.2f}")
+r2_no_alpha_WGD = est_native_no_alpha_WGD.score(X_test, y_test)
+
+# For below see https://machinelearningmastery.com/roc-curves-and-precision-recall-curves-for-classification-in-python/
+# Predict probabilities
+hgb_probs_no_alpha_WGD = est_native_no_alpha_WGD.predict_proba(X_test)
+# Keep probabilities for the positive outcome only
+hgb_probs_no_alpha_WGD = hgb_probs_no_alpha_WGD[:, 1]
+# Calculate scores
+hgb_auc_no_alpha_WGD = roc_auc_score(y_test, hgb_probs_no_alpha_WGD) 
+# Summarise scores
+print("Full-model-less-alpha_WGD classifier: ROC AUC=%.3f" % (hgb_auc_no_alpha_WGD))
+# Calculate ROC curves
+hgb_fpr_no_alpha_WGD, hgb_tpr_no_alpha_WGD, _ = roc_curve(y_test, hgb_probs_no_alpha_WGD)
+
+
 # Plot the ROC curves
-plt.plot(ns_fpr, ns_tpr, linestyle="--", label=str("No-skill: ROC AUC=%.3f" % (ns_auc)))
-plt.plot(hgb_fpr, hgb_tpr, marker=".", label=str("HistGradientBoosting: ROC AUC=%.3f" % (hgb_auc)))
+plt.plot(hgb_fpr, hgb_tpr, label=str("Full model: ROC AUC=%.3f" % (hgb_auc)))
+plt.plot(hgb_fpr_no_kappa, hgb_tpr_no_kappa, label=str("Excl. kappa: ROC AUC=%.3f" % (hgb_auc_no_kappa)))
+plt.plot(hgb_fpr_no_coexpress_mod_size, hgb_tpr_no_coexpress_mod_size, label=str("Excl. coexpress. mod. size: ROC AUC=%.3f" % (hgb_auc_no_coexpress_mod_size)))
+plt.plot(hgb_fpr_no_paralog_ID, hgb_tpr_no_paralog_ID, label=str("Excl. paralog identity: ROC AUC=%.3f" % (hgb_auc_no_paralog_ID)))
+plt.plot(hgb_fpr_no_paralog_clust_size, hgb_tpr_no_paralog_clust_size, label=str("Excl. paralog cluster size: ROC AUC=%.3f" % (hgb_auc_no_paralog_clust_size)))
+plt.plot(hgb_fpr_no_express_breadth, hgb_tpr_no_express_breadth, label=str("Excl. express. breadth: ROC AUC=%.3f" % (hgb_auc_no_express_breadth)))
+plt.plot(hgb_fpr_no_alpha_WGD, hgb_tpr_no_alpha_WGD, label=str("Excl. alpha WGD: ROC AUC=%.3f" % (hgb_auc_no_alpha_WGD)))
+plt.plot(ns_fpr, ns_tpr, linestyle="--", label=str("No skill: ROC AUC=%.3f" % (ns_auc)))
 # Axis labels
 plt.xlabel("False positive rate")
 plt.ylabel("True positive rate")
 plt.legend(loc=4)
 plt.savefig(outDir +
-            "HistGradientBoostingClassifier_lethal_incl_kappa.pdf",
+            "HistGradientBoostingClassifier_lethal.pdf",
             bbox_inches="tight")
 plt.close()
 
