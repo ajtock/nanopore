@@ -45,6 +45,7 @@ nonCENGR <- GRanges(seqnames = rep(seqnames(CENGR), 2),
 # Get genes in low-recombining zones (LRZgenes)
 mRNA_rep_LRZ <- read.csv("cold.genes.for.andy.csv", header = T)[,c(2:9, 11)]
 colnames(mRNA_rep_LRZ) <- c("seqid", "source", "type", "start", "end", "score", "strand", "phase", "Parent")
+mRNA_rep_LRZ <- mRNA_rep_LRZ[mRNA_rep_LRZ$seqid %in% chrName,]
 #mRNA_rep_LRZ[mRNA_rep_LRZ == "."] <- "NA"
 nrow(mRNA_rep_LRZ)
 #[1] 712
@@ -55,6 +56,7 @@ mRNA_rep_nonLRZ <- read.csv("hot.genes.for.andy.csv", header = T)[,c(2:10)]
 colnames(mRNA_rep_nonLRZ) <- c("seqid", "source", "type", "start", "end", "score", "strand", "phase", "Parent")
 mRNA_rep_nonLRZ$Parent <- gsub("ID=", "", mRNA_rep_nonLRZ$Parent)
 mRNA_rep_nonLRZ$Parent <- gsub(";.+", "", mRNA_rep_nonLRZ$Parent)
+mRNA_rep_nonLRZ <- mRNA_rep_nonLRZ[mRNA_rep_nonLRZ$seqid %in% chrName,]
 #mRNA_rep_nonLRZ[mRNA_rep_nonLRZ == "."] <- "NA"
 nrow(mRNA_rep_nonLRZ)
 #[1] 27686
