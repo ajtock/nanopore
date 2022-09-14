@@ -28,9 +28,10 @@ regionGR <- GRanges(seqnames = chrs,
                     ranges = IRanges(start = rep(1, length(chrs)),
                                      end = chrLens),
                     strand = "*")
-CEN <- read.table("/home/ajt200/analysis/nanopore/t2t-col.20210610/t2t-col.20210610.fa.centromeres", header = T)
-CENstart <- CEN$start[which(fai$V1 %in% chrName)]
-CENend <- CEN$end[which(fai$V1 %in% chrName)]
+# NOTE: CENstart and CENend coordinates are LRZ boundaries provided by Ian on 14/09/2022
+CEN <- read.table("/home/ajt200/analysis/nanopore/t2t-col.20210610/t2t-col.20210610.fa.LRZs", header = T)
+CENstart <- CEN$start
+CENend <- CEN$end
 CENGR <- GRanges(seqnames = chrs,
                  ranges = IRanges(start = CENstart,
                                   end = CENend),
