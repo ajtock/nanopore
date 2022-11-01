@@ -1,0 +1,5 @@
+barcode1_120: 0.153
+barcode2_57: 0.155
+barcode3_123: 0.152
+barcode4_2: 0.189
+barcode5_88: 0.179
